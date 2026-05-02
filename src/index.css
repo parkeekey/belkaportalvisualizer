@@ -7,9 +7,9 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: light;
+  color: #111827;
+  background-color: #f3f4f6;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -30,6 +30,16 @@ body {
   width: 100%;
   margin: 0 auto;
   text-align: left;
+}
+
+/* Keep form control values readable on mobile browsers (Samsung Internet/Chrome). */
+input,
+select,
+textarea {
+  color: #111827;
+  background-color: #ffffff;
+  -webkit-text-fill-color: #111827;
+  opacity: 1;
 }
 
 /* Custom styles for graph visualization */

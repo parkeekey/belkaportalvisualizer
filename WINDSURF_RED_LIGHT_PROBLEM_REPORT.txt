@@ -1,0 +1,58 @@
+Belka Portal EC Digitizer - Red Light Line Problem Report
+Date: 2026-05-02
+Author: GitHub Copilot (GPT-5.3-Codex)
+
+1) Problem Summary
+The app was stuck on the Red Light feature:
+- Red light line did not toggle reliably ON/OFF on the screenshot canvas.
+- Red light line behavior was inconsistent between screenshot view and custom graph view.
+- The custom graph showed red-light status text, but did not consistently render the vertical red reference line itself.
+
+2) Root Causes
+A) Stale redraw dependencies in screenshot canvas logic
+- The screenshot draw function depended on red-light state, but callback dependencies did not include all red-light values.
+- Result: UI state changed, but canvas render did not always refresh with latest red-line values.
+
+B) Missing line rendering in interactive graph canvas
+- The interactive graph component had red-light display cards/labels but no guaranteed vertical-line draw path tied to toggle state.
+- Result: toggling state did not produce a visible red-line overlay on the graph canvas.
+
+3) Fix Implemented
+A) ManualDigitizer
+File: src/components/ManualDigitizer.tsx
+- Added missing dependencies in draw callback for red-light state so screenshot canvas redraws when toggle/time changes.
+- Added explicit UI toggle checkbox: "Show Red Light Line".
+- Kept recalculation separate from visibility toggle.
+
+B) InteractiveDataGraph
+File: src/components/InteractiveDataGraph.tsx
+- Added actual red vertical dashed line drawing on canvas when showRedLight is true and redLightTime exists.
+- Added line label near top of chart with formatted time.
+- Ensured redraw effect includes red-light state so toggling updates immediately.
+
+4) Validation
+Build command run:
+- npm run build
+Result:
+- TypeScript + Vite build passed successfully.
+- No remaining compile errors from this fix.
+
+5) How To Verify In App
+1. Upload screenshot and complete calibration.
+2. Extract or generate points.
+3. Click "Recalculate Red Light".
+4. Toggle "Show Red Light Line" ON/OFF.
+5. Confirm line appears/disappears in BOTH:
+   - Screenshot canvas
+   - Interactive custom graph
+
+6) Why This Matters To The Project
+This restores the key workflow for EC threshold timing analysis so you can confidently compare EC behavior against external datasets (like Ultrakoki) and build your coffee extraction traffic analysis pipeline.
+
+7) Output Artifact
+This report is saved as:
+WINDSURF_RED_LIGHT_PROBLEM_REPORT.txt
+
+If needed, I can also generate:
+- A shorter executive summary text file for non-technical sharing.
+- A commit-style changelog text file with per-file line-level references.

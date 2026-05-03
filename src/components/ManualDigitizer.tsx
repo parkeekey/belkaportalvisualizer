@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, Target, AlertCircle } from 'lucide-react';
 import { InteractiveDataGraph } from './InteractiveDataGraph';
+import { UltrakokiGraph, type UltrakokiBrewData } from './UltrakokiGraph';
 
 interface CalibrationPoint {
   x: number;
@@ -51,7 +52,73 @@ interface SavedCalibrationProfile {
   createdAt: string;
 }
 
+interface SavedPhaseLogProfile {
+  version: number;
+  name: string;
+  phaseLogs: PhaseLog[];
+  createdAt: string;
+}
+
 const CALIBRATION_PROFILE_STORAGE_KEY = 'belkaCalibrationProfiles';
+const PHASE_LOG_PROFILE_STORAGE_KEY = 'belkaPhaseLogProfiles';
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null;
+};
+
+const toFiniteNumber = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+const toNumberArray = (value: unknown): number[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(item => toFiniteNumber(item))
+    .filter((item): item is number => item !== null);
+};
+
+const buildPreviewUltrakokiBrewData = (): UltrakokiBrewData => {
+  const period = 127;
+  const intervalSeconds = 1;
+  const sampleCount = period + 1;
+  const pourFlow: number[] = [];
+  const dripFlow: number[] = [];
+  const cumulativePour: number[] = [];
+  let runningPour = 0;
+
+  for (let index = 0; index < sampleCount; index += 1) {
+    const pulseA = 5.1 * Math.exp(-Math.pow((index - 12) / 5.2, 2));
+    const pulseB = 4.6 * Math.exp(-Math.pow((index - 39) / 6.5, 2));
+    const pulseC = 3.9 * Math.exp(-Math.pow((index - 72) / 7.3, 2));
+    const pulseD = 2.7 * Math.exp(-Math.pow((index - 98) / 8.2, 2));
+    const pour = Math.max(0, pulseA + pulseB + pulseC + pulseD);
+    const delayedPour = index >= 4 ? pourFlow[index - 4] ?? 0 : 0;
+    const drip = Math.max(0, delayedPour * 0.82 + 0.18 * Math.sin(index / 7));
+
+    runningPour += pour;
+    pourFlow.push(Number(pour.toFixed(3)));
+    dripFlow.push(Number(drip.toFixed(3)));
+    cumulativePour.push(Number(runningPour.toFixed(3)));
+  }
+
+  return {
+    period,
+    label: 'Preview brew / mock Ultrakoki data',
+    intervalSeconds,
+    pourFlow,
+    dripFlow,
+    cumulativePour,
+  };
+};
 
 type Step = 'upload' | 'calibrate-origin' | 'calibrate-x' | 'calibrate-y' | 'calibrate-highest' | 'calibrate-temp-min' | 'calibrate-temp-max' | 'extract' | 'complete';
 
@@ -92,6 +159,11 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   const [showSaveProfileForm, setShowSaveProfileForm] = useState<boolean>(false);
   const [newProfileName, setNewProfileName] = useState<string>('');
   const [loadedCalibrationProfileName, setLoadedCalibrationProfileName] = useState<string | null>(null);
+  const [savedPhaseLogProfiles, setSavedPhaseLogProfiles] = useState<SavedPhaseLogProfile[]>([]);
+  const [selectedPhaseLogProfile, setSelectedPhaseLogProfile] = useState<string>('');
+  const [showSavePhaseProfileForm, setShowSavePhaseProfileForm] = useState<boolean>(false);
+  const [newPhaseProfileName, setNewPhaseProfileName] = useState<string>('');
+  const [loadedPhaseProfileName, setLoadedPhaseProfileName] = useState<string | null>(null);
   const [autoDetectPreference, setAutoDetectPreference] = useState<boolean>(() => {
     // Load saved preference from localStorage
     const saved = localStorage.getItem('autoDetectPreference');
@@ -109,6 +181,12 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     time: 0,
     visible: false
   });
+  const [calibrateXValue, setCalibrateXValue] = useState<number>(150);
+  const [calibrateYValue, setCalibrateYValue] = useState<number>(20);
+  const [showJsonImportPrompt, setShowJsonImportPrompt] = useState<boolean>(false);
+  const [importedJsonText, setImportedJsonText] = useState<string>('');
+  const [importedJsonLabel, setImportedJsonLabel] = useState<string | null>(null);
+  const [ultrakokiBrewData, setUltrakokiBrewData] = useState<UltrakokiBrewData | null>(null);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -145,110 +223,138 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     }
   }, []);
 
-  const getCurrentData = useCallback(() => {
-    switch (viewMode) {
-      case 'fine': return fineGeneratedCurve;
-      default: return extractedPoints;
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PHASE_LOG_PROFILE_STORAGE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as SavedPhaseLogProfile[];
+      if (!Array.isArray(parsed)) return;
+
+      const validProfiles = parsed.filter(profile => {
+        if (!profile || typeof profile.name !== 'string' || profile.name.trim().length === 0 || !Array.isArray(profile.phaseLogs)) {
+          return false;
+        }
+
+        return profile.phaseLogs.every(log => (
+          log &&
+          typeof log.name === 'string' &&
+          typeof log.startTime === 'number' &&
+          typeof log.endTime === 'number' &&
+          typeof log.color === 'string'
+        ));
+      });
+
+      setSavedPhaseLogProfiles(validProfiles);
+    } catch (err) {
+      console.error('Failed to load phase log profiles:', err);
     }
+  }, []);
+
+  const getCurrentData = useCallback((): DataPoint[] => {
+    if (viewMode === 'fine' && fineGeneratedCurve.length > 0) {
+      return fineGeneratedCurve;
+    }
+    return extractedPoints;
   }, [viewMode, fineGeneratedCurve, extractedPoints]);
 
-  const getCurveEndTime = useCallback(() => {
-    const currentData = getCurrentData();
-    if (currentData.length === 0) return 0;
-    const sorted = [...currentData].sort((a, b) => a.time - b.time);
-    return sorted[sorted.length - 1].time;
-  }, [getCurrentData]);
-
-  const getSortedCurrentData = useCallback(() => {
+  const getSortedCurrentData = useCallback((): DataPoint[] => {
     return [...getCurrentData()].sort((a, b) => a.time - b.time);
   }, [getCurrentData]);
 
-  const getECAtTime = useCallback((time: number) => {
+  const getCurveEndTime = useCallback((): number => {
     const sorted = getSortedCurrentData();
-    if (sorted.length === 0) return null;
-    if (time <= sorted[0].time) return sorted[0].ecValue;
-    if (time >= sorted[sorted.length - 1].time) return sorted[sorted.length - 1].ecValue;
-
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const start = sorted[i];
-      const end = sorted[i + 1];
-      if (time >= start.time && time <= end.time) {
-        const dt = end.time - start.time;
-        if (dt <= 0) return start.ecValue;
-        const ratio = (time - start.time) / dt;
-        return start.ecValue + (end.ecValue - start.ecValue) * ratio;
-      }
-    }
-
-    return sorted[sorted.length - 1].ecValue;
+    return sorted.length > 0 ? sorted[sorted.length - 1].time : 0;
   }, [getSortedCurrentData]);
 
+  const getCumulativePourAtTime = useCallback((time: number): number | null => {
+    if (!ultrakokiBrewData || ultrakokiBrewData.cumulativePour.length === 0 || ultrakokiBrewData.intervalSeconds <= 0) {
+      return null;
+    }
+
+    const clampedTime = Math.max(0, time);
+    const rawIndex = clampedTime / ultrakokiBrewData.intervalSeconds;
+    const lowerIndex = Math.max(0, Math.min(ultrakokiBrewData.cumulativePour.length - 1, Math.floor(rawIndex)));
+    const upperIndex = Math.max(0, Math.min(ultrakokiBrewData.cumulativePour.length - 1, Math.ceil(rawIndex)));
+    const lowerValue = ultrakokiBrewData.cumulativePour[lowerIndex];
+    const upperValue = ultrakokiBrewData.cumulativePour[upperIndex];
+
+    if (!Number.isFinite(lowerValue) && !Number.isFinite(upperValue)) {
+      return null;
+    }
+    if (lowerIndex === upperIndex || !Number.isFinite(upperValue)) {
+      return Number.isFinite(lowerValue) ? Number(lowerValue.toFixed(1)) : null;
+    }
+    if (!Number.isFinite(lowerValue)) {
+      return Number(upperValue.toFixed(1));
+    }
+
+    const interpolated = lowerValue + (upperValue - lowerValue) * (rawIndex - lowerIndex);
+    return Number(interpolated.toFixed(1));
+  }, [ultrakokiBrewData]);
+
+  const formatPourAmount = useCallback((value: number | null | undefined) => {
+    return value === null || value === undefined || !Number.isFinite(value) ? 'n/a' : `${value.toFixed(1)} ml`;
+  }, []);
+
   const getPhaseMetrics = useCallback((log: PhaseLog) => {
-    const startEC = getECAtTime(log.startTime);
-    const endEC = getECAtTime(log.endTime);
+    const points = getSortedCurrentData().filter(point => point.time >= log.startTime && point.time <= log.endTime);
+    const startEC = points.length > 0 ? points[0].ecValue : null;
+    const endEC = points.length > 0 ? points[points.length - 1].ecValue : null;
+    const startPour = getCumulativePourAtTime(log.startTime);
+    const endPour = getCumulativePourAtTime(log.endTime);
+    const ecDelta = startEC !== null && endEC !== null
+      ? Number((endEC - startEC).toFixed(2))
+      : null;
+    const pouredAmount = startPour !== null && endPour !== null
+      ? Number(Math.max(0, endPour - startPour).toFixed(1))
+      : null;
+
     return {
+      duration: Math.max(0, log.endTime - log.startTime),
       startEC,
       endEC,
-      duration: Math.max(0, log.endTime - log.startTime),
-      ecDelta: startEC !== null && endEC !== null ? endEC - startEC : null
+      ecDelta,
+      startPour,
+      endPour,
+      pouredAmount,
+      pointCount: points.length,
     };
-  }, [getECAtTime]);
+  }, [getCumulativePourAtTime, getSortedCurrentData]);
 
   const autoDetectPhaseLogs = useCallback(() => {
-    const currentData = getCurrentData();
-    if (currentData.length < 8) {
-      setError('Need more points before auto-detecting phase logs');
+    const sorted = [...getCurrentData()].sort((a, b) => a.time - b.time);
+    if (sorted.length < 3) {
+      setError('Need at least 3 data points to detect phase durations');
       return;
     }
 
-    const sorted = [...currentData].sort((a, b) => a.time - b.time);
-    const endTime = sorted[sorted.length - 1].time;
-    const startTime = sorted[0].time;
+    const curveStart = sorted[0].time;
+    const curveEnd = sorted[sorted.length - 1].time;
+    const peakPoint = sorted.reduce((best, point) => point.ecValue > best.ecValue ? point : best, sorted[0]);
+    const boundaries: number[] = [curveStart];
 
-    // Find peak as the highest EC point (typical bloom peak).
-    let peakIndex = 0;
-    for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i].ecValue > sorted[peakIndex].ecValue) {
-        peakIndex = i;
-      }
+    if (peakPoint.time > curveStart + 2 && peakPoint.time < curveEnd - 2) {
+      boundaries.push(peakPoint.time);
     }
-    const peak = sorted[peakIndex];
 
-    // After the peak, find a major drop milestone.
-    const dropThreshold = peak.ecValue * 0.65;
-    let dropTime = Math.min(endTime, peak.time + 20);
-    for (let i = peakIndex + 1; i < sorted.length; i++) {
-      if (sorted[i].ecValue <= dropThreshold) {
-        dropTime = sorted[i].time;
-        break;
+    for (let index = 1; index < sorted.length - 1; index += 1) {
+      const previousSlope = sorted[index].ecValue - sorted[index - 1].ecValue;
+      const nextSlope = sorted[index + 1].ecValue - sorted[index].ecValue;
+      const time = sorted[index].time;
+      const isTurningPoint = Math.sign(previousSlope) !== Math.sign(nextSlope);
+      const isMeaningful = Math.abs(previousSlope - nextSlope) >= 0.35;
+      if (isTurningPoint && isMeaningful && time > curveStart + 4 && time < curveEnd - 4) {
+        boundaries.push(time);
       }
     }
 
-    // Find stabilization where slope becomes small after the drop.
-    let stableTime = Math.min(endTime, dropTime + 20);
-    for (let i = peakIndex + 2; i < sorted.length; i++) {
-      const dt = sorted[i].time - sorted[i - 1].time;
-      if (dt <= 0) continue;
-      const slope = Math.abs((sorted[i].ecValue - sorted[i - 1].ecValue) / dt);
-      if (sorted[i].time > dropTime && slope < 0.18) {
-        stableTime = sorted[i].time;
-        break;
-      }
-    }
-
-    // Red Light can be used as an additional boundary marker.
-    const boundaries = [
-      Math.max(0, startTime),
-      peak.time,
-      dropTime,
-      stableTime,
-      endTime
-    ];
-    if (redLightTime !== null && redLightTime > startTime && redLightTime < endTime) {
+    if (redLightTime !== null && redLightTime > curveStart && redLightTime < curveEnd) {
       boundaries.push(redLightTime);
     }
+    boundaries.push(curveEnd);
 
-    const uniqueBoundaries = Array.from(new Set(boundaries.map(v => Math.round(v * 10) / 10)))
+    const uniqueBoundaries = Array.from(new Set(boundaries.map(value => Math.round(value * 10) / 10)))
       .sort((a, b) => a - b)
       .filter((value, index, array) => {
         if (index === 0) return true;
@@ -256,18 +362,18 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       });
 
     const detectedLogs: PhaseLog[] = [];
-    for (let i = 0; i < uniqueBoundaries.length - 1; i++) {
-      const start = uniqueBoundaries[i];
-      const end = uniqueBoundaries[i + 1];
+    for (let index = 0; index < uniqueBoundaries.length - 1; index += 1) {
+      const start = uniqueBoundaries[index];
+      const end = uniqueBoundaries[index + 1];
       if (end <= start) continue;
       detectedLogs.push({
-        id: `phase-${Date.now()}-${i}`,
-        name: DEFAULT_PHASE_NAMES[i] || `Phase ${i + 1}`,
+        id: `phase-${Date.now()}-${index}`,
+        name: DEFAULT_PHASE_NAMES[index] || `Phase ${index + 1}`,
         startTime: start,
         endTime: end,
-        color: PHASE_COLORS[i % PHASE_COLORS.length],
+        color: PHASE_COLORS[index % PHASE_COLORS.length],
         expectedECMin: null,
-        expectedECMax: null
+        expectedECMax: null,
       });
     }
 
@@ -400,6 +506,8 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       setPhasePinTarget(null);
       setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
       setLoadedCalibrationProfileName(null);
+      setLoadedPhaseProfileName(null);
+      setImportedJsonLabel(null);
       setError(null);
       setCurrentStep('calibrate-origin');
     };
@@ -439,8 +547,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       console.log('Drawing Red Light line:', { showRedLight, redLightTime, calibrationPointsLength: calibrationPoints.length });
       
       const origin = calibrationPoints[0];
-      const xEnd = calibrationPoints[1]; // 150s point
-      const xScale = (xEnd.x - origin.x) / 150; // 150 second range
+      const xEnd = calibrationPoints[1]; // calibrated time end point
+      const xAxisMax = xEnd.dataX || 150;
+      const xScale = xAxisMax !== 0 ? (xEnd.x - origin.x) / xAxisMax : 0;
       
       const redLineX = origin.x + redLightTime * xScale;
       
@@ -470,12 +579,13 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       const origin = calibrationPoints[0];
       const xEnd = calibrationPoints[1];
       const xSpan = xEnd.x - origin.x;
+      const xAxisMax = xEnd.dataX || 150;
       const timeToPixel = (time: number) => {
         if (xSpan === 0) return origin.x;
-        if (time <= 150) {
-          return origin.x + (time / 150) * xSpan;
+        if (time <= xAxisMax) {
+          return origin.x + (time / xAxisMax) * xSpan;
         }
-        const beyondRatio = (time - 150) / 50;
+        const beyondRatio = (time - xAxisMax) / 50;
         return xEnd.x + beyondRatio * xSpan;
       };
 
@@ -659,11 +769,12 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         const origin = calibrationPoints[0];
         const xEnd = calibrationPoints[1];
         const xSpan = xEnd.x - origin.x;
+        const xAxisMax = xEnd.dataX || calibrateXValue;
         if (xSpan !== 0) {
           if (canvasX <= xEnd.x) {
-            pinnedTime = ((canvasX - origin.x) / xSpan) * 150;
+            pinnedTime = ((canvasX - origin.x) / xSpan) * xAxisMax;
           } else {
-            pinnedTime = 150 + ((canvasX - xEnd.x) / xSpan) * 50;
+            pinnedTime = xAxisMax + ((canvasX - xEnd.x) / xSpan) * 50;
           }
         }
       }
@@ -692,13 +803,13 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       setCurrentStep('calibrate-x');
       
     } else if (currentStep === 'calibrate-x') {
-      // Second click: X-axis end point at 150 seconds (last visible mark)
+      // Second click: X-axis end point at user-specified seconds (last visible mark)
       const newPoint: CalibrationPoint = {
         x: x * (canvas.width / rect.width),
         y: y * (canvas.height / rect.height),
-        dataX: 150, // 150 seconds (last visible mark)
+        dataX: calibrateXValue,
         dataY: 0,
-        label: 'Time Axis End (150s mark)'
+        label: `Time Axis End (${calibrateXValue}s mark)`
       };
       
       const updated = [...calibrationPoints, newPoint];
@@ -707,13 +818,13 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       setCurrentStep('calibrate-y');
       
     } else if (currentStep === 'calibrate-y') {
-      // Third click: Y-axis end point at EC 20 (last visible mark)
+      // Third click: Y-axis end point at user-specified EC (last visible mark)
       const newPoint: CalibrationPoint = {
         x: x * (canvas.width / rect.width),
         y: y * (canvas.height / rect.height),
         dataX: 0,
-        dataY: 20, // 20 EC units (last visible mark)
-        label: 'EC Axis End (20 EC mark)'
+        dataY: calibrateYValue,
+        label: `EC Axis End (${calibrateYValue} EC mark)`
       };
       
       const updated = [...calibrationPoints, newPoint];
@@ -822,7 +933,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         }
       }
     }
-  }, [currentStep, calibrationPoints, extractedPoints, findPointAtPosition, eraserMode, eraserSizePx, phasePinTarget, updatePhaseLog]);
+  }, [currentStep, calibrationPoints, extractedPoints, findPointAtPosition, eraserMode, eraserSizePx, phasePinTarget, updatePhaseLog, calibrateXValue, calibrateYValue]);
 
   const pixelToData = useCallback((pixelX: number, pixelY: number) => {
     if (calibrationPoints.length < 3) {
@@ -855,32 +966,28 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       temperature = tempMinPoint.dataY + (pixelY - tempMinPoint.y) * tempScale;
     }
 
-    // Extrapolate beyond 150 seconds if pixel is beyond the calibration point
+    // Extrapolate beyond calibrated x-max seconds if pixel is beyond the calibration point
+    const xAxisMax = xEnd.dataX || calibrateXValue;
     if (pixelX > xEnd.x) {
-      // Calculate how far beyond 150s we are (as a ratio) with division by zero protection
       const beyondRatio = (xEnd.x - origin.x) !== 0 ? (pixelX - xEnd.x) / (xEnd.x - origin.x) : 0;
-      // Extrapolate time up to 200 seconds maximum
-      time = Math.min(200, 150 + (beyondRatio * 50)); // 50s extrapolation range
+      time = Math.min(xAxisMax + 50, xAxisMax + (beyondRatio * 50));
     }
 
     // Improved EC extrapolation using highest point reference
+    const yAxisMax = yEnd.dataY || calibrateYValue;
     if (pixelY < yEnd.y && highestPoint) {
-      // Calculate how far above 20 EC we are (as a ratio) with division by zero protection
       const aboveRatio = (yEnd.y - origin.y) !== 0 ? (yEnd.y - pixelY) / (yEnd.y - origin.y) : 0;
       
-      // Use highest point for better extrapolation
-      if (highestPoint.dataY > 20) {
-        // If highest point is above 20, use it as reference
-        const ecRange = highestPoint.dataY - 20; // Range from 20 to highest point
-        ecValue = Math.min(40, 20 + (aboveRatio * (ecRange + 10))); // Extrapolate beyond highest
+      if (highestPoint.dataY > yAxisMax) {
+        const ecRange = highestPoint.dataY - yAxisMax;
+        ecValue = Math.min(40, yAxisMax + (aboveRatio * (ecRange + 10)));
       } else {
-        // Fall back to original extrapolation
-        ecValue = Math.min(30, 20 + (aboveRatio * 10));
+        ecValue = Math.min(yAxisMax + 10, yAxisMax + (aboveRatio * 10));
       }
     }
 
     return { time, ecValue, temperature };
-  }, [calibrationPoints]);
+  }, [calibrationPoints, calibrateXValue, calibrateYValue]);
 
   const dataToCanvas = useCallback((time: number, ecValue: number) => {
     if (calibrationPoints.length < 3) {
@@ -900,23 +1007,25 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     let pixelX = xScale !== 0 ? origin.x + (time - origin.dataX) / xScale : origin.x;
     let pixelY = yScale !== 0 ? origin.y + (ecValue - origin.dataY) / yScale : origin.y;
 
-    // Handle extrapolation for time beyond 150s
-    if (time > 150) {
-      const beyondRatio = (time - 150) / 50; // 50s extrapolation range
+    // Handle extrapolation for time beyond calibrated x-max
+    const xAxisMaxC = xEnd.dataX || calibrateXValue;
+    if (time > xAxisMaxC) {
+      const beyondRatio = (time - xAxisMaxC) / 50;
       pixelX = xEnd.x + beyondRatio * (xEnd.x - origin.x);
     }
 
-    // Handle extrapolation for EC above 20
-    if (ecValue > 20 && calibrationPoints.length >= 4) {
+    // Handle extrapolation for EC above calibrated y-max
+    const yAxisMaxC = yEnd.dataY || calibrateYValue;
+    if (ecValue > yAxisMaxC && calibrationPoints.length >= 4) {
       const highestPoint = calibrationPoints[3];
-      if (highestPoint.dataY > 20) {
-        const aboveRatio = (ecValue - 20) / (highestPoint.dataY - 20);
+      if (highestPoint.dataY > yAxisMaxC) {
+        const aboveRatio = (ecValue - yAxisMaxC) / (highestPoint.dataY - yAxisMaxC);
         pixelY = yEnd.y - aboveRatio * (yEnd.y - highestPoint.y);
       }
     }
 
     return { x: pixelX, y: pixelY };
-  }, [calibrationPoints]);
+  }, [calibrationPoints, calibrateXValue, calibrateYValue]);
 
   const handleCanvasMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -1294,6 +1403,92 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     applyCalibrationProfile(profile);
   }, [selectedCalibrationProfile, savedCalibrationProfiles, applyCalibrationProfile]);
 
+  const savePhaseLogProfile = useCallback((profileName: string) => {
+    if (phaseLogs.length === 0) {
+      setError('Add at least one phase log before saving a phase profile');
+      return;
+    }
+
+    const name = profileName.trim();
+    if (!name) {
+      setError('Phase profile name cannot be empty');
+      return;
+    }
+
+    const sanitizedPhaseLogs = phaseLogs
+      .map((log, index) => ({
+        id: `phase-${index + 1}`,
+        name: (log.name || `Phase ${index + 1}`).trim() || `Phase ${index + 1}`,
+        startTime: Number.isFinite(log.startTime) ? Number(log.startTime.toFixed(1)) : 0,
+        endTime: Number.isFinite(log.endTime) ? Number(log.endTime.toFixed(1)) : 0,
+        color: log.color || PHASE_COLORS[index % PHASE_COLORS.length],
+        expectedECMin: log.expectedECMin ?? null,
+        expectedECMax: log.expectedECMax ?? null,
+      }))
+      .sort((a, b) => a.startTime - b.startTime);
+
+    const payload: SavedPhaseLogProfile = {
+      version: 1,
+      name,
+      phaseLogs: sanitizedPhaseLogs,
+      createdAt: new Date().toISOString(),
+    };
+
+    const existingIndex = savedPhaseLogProfiles.findIndex(profile => profile.name === name);
+    let updatedProfiles: SavedPhaseLogProfile[] = [];
+
+    if (existingIndex >= 0) {
+      updatedProfiles = [...savedPhaseLogProfiles];
+      updatedProfiles[existingIndex] = payload;
+    } else {
+      updatedProfiles = [...savedPhaseLogProfiles, payload];
+    }
+
+    updatedProfiles.sort((a, b) => a.name.localeCompare(b.name));
+    setSavedPhaseLogProfiles(updatedProfiles);
+    setSelectedPhaseLogProfile(name);
+    setLoadedPhaseProfileName(name);
+    localStorage.setItem(PHASE_LOG_PROFILE_STORAGE_KEY, JSON.stringify(updatedProfiles));
+    setShowSavePhaseProfileForm(false);
+    setNewPhaseProfileName('');
+    setError(null);
+  }, [phaseLogs, PHASE_COLORS, savedPhaseLogProfiles]);
+
+  const applyPhaseLogProfile = useCallback((profile: SavedPhaseLogProfile) => {
+    const appliedLogs = profile.phaseLogs
+      .map((log, index) => ({
+        id: `phase-loaded-${Date.now()}-${index}`,
+        name: (log.name || `Phase ${index + 1}`).trim() || `Phase ${index + 1}`,
+        startTime: Number.isFinite(log.startTime) ? Number(log.startTime.toFixed(1)) : 0,
+        endTime: Number.isFinite(log.endTime) ? Number(log.endTime.toFixed(1)) : 0,
+        color: log.color || PHASE_COLORS[index % PHASE_COLORS.length],
+        expectedECMin: log.expectedECMin ?? null,
+        expectedECMax: log.expectedECMax ?? null,
+      }))
+      .sort((a, b) => a.startTime - b.startTime);
+
+    setPhaseLogs(appliedLogs);
+    setPhasePinTarget(null);
+    setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
+    setLoadedPhaseProfileName(profile.name);
+    setError(null);
+  }, [PHASE_COLORS]);
+
+  const loadSelectedPhaseLogProfile = useCallback(() => {
+    if (!selectedPhaseLogProfile) {
+      setError('Select a phase profile first');
+      return;
+    }
+
+    const profile = savedPhaseLogProfiles.find(item => item.name === selectedPhaseLogProfile);
+    if (!profile) {
+      setError('Selected phase profile was not found');
+      return;
+    }
+
+    applyPhaseLogProfile(profile);
+  }, [selectedPhaseLogProfile, savedPhaseLogProfiles, applyPhaseLogProfile]);
+
   const toggleDataView = useCallback(() => {
     setViewMode(prev => prev === 'original' ? 'fine' : 'original');
   }, []);
@@ -1307,10 +1502,156 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     setPhasePinTarget(null);
     setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
     setLoadedCalibrationProfileName(null);
+    setLoadedPhaseProfileName(null);
     setViewMode('original');
     setManualHighestEC('');
+    setImportedJsonLabel(null);
+    setImportedJsonText('');
+    setShowJsonImportPrompt(false);
+    setUltrakokiBrewData(null);
     setCurrentStep('calibrate-origin');
   }, []);
+
+  const importJsonData = useCallback(() => {
+    try {
+      // ── Sanitize raw input before parsing ────────────────────────────────
+      let raw = importedJsonText
+        .replace(/^\uFEFF/, '')          // strip UTF-8 BOM
+        .replace(/^\u200B/, '')          // strip zero-width space
+        .trim();
+
+      // Extract the first JSON value if the text has extra leading/trailing chars
+      const firstBracket = raw.search(/[\[{]/);
+      if (firstBracket > 0) raw = raw.slice(firstBracket);
+      // Remove trailing text after the closing bracket/brace
+      const closingChar = raw[0] === '[' ? ']' : '}';
+      const lastClose = raw.lastIndexOf(closingChar);
+      if (lastClose > 0) raw = raw.slice(0, lastClose + 1);
+
+      // Strip single-line // comments
+      raw = raw.replace(/\/\/[^\n]*/g, '');
+      // Strip block /* … */ comments
+      raw = raw.replace(/\/\*[\s\S]*?\*\//g, '');
+      // Remove trailing commas before } or ] (common JSONC issue)
+      raw = raw.replace(/,\s*([}\]])/g, '$1');
+
+      const parsed = JSON.parse(raw) as unknown;
+
+      const buildPoint = (time: number, ecValue: number, temperature: number | undefined, index: number): DataPoint => ({
+        x: 0,
+        y: 0,
+        time: Number(time.toFixed(3)),
+        ecValue: Number(ecValue.toFixed(3)),
+        temperature,
+        isAutoDetected: true,
+        id: `import-${index}`
+      });
+
+      let importedPoints: DataPoint[] = [];
+      let importedLabel = 'Imported JSON';
+      let importedBrewData: UltrakokiBrewData | null = null;
+
+      if (Array.isArray(parsed)) {
+        importedPoints = parsed
+          .map((item, index) => {
+            if (!isRecord(item)) return null;
+            const timeMs = toFiniteNumber(item.timeMs);
+            const timeSeconds = toFiniteNumber(item.time);
+            const ecValue = toFiniteNumber(item.ecValue) ?? toFiniteNumber(item.ec) ?? toFiniteNumber(item.value);
+            const temperature = toFiniteNumber(item.temperature) ?? undefined;
+
+            if (ecValue === null) return null;
+
+            const resolvedTime = timeMs !== null
+              ? timeMs / 1000
+              : timeSeconds !== null
+                ? timeSeconds
+                : index;
+
+            return buildPoint(resolvedTime, ecValue, temperature, index);
+          })
+          .filter((point): point is DataPoint => point !== null)
+          .sort((a, b) => a.time - b.time);
+
+        importedLabel = 'Imported point array';
+        setUltrakokiBrewData(null);
+      } else if (isRecord(parsed)) {
+        // Handle outer { id, json: { ... } } wrapper exported by ultrakoki app.
+        // Ultrakoki is treated as a timed smart-scale log, not an EC source.
+        const inner: Record<string, unknown> = isRecord(parsed.json) ? parsed.json as Record<string, unknown> : parsed;
+        const brewingLog = isRecord(inner.brewingLog) ? inner.brewingLog as Record<string, unknown>
+                         : isRecord(parsed.brewingLog) ? parsed.brewingLog as Record<string, unknown>
+                         : null;
+        if (brewingLog) {
+          const pourFlow = toNumberArray(brewingLog.size);
+          const dripFlow = toNumberArray(brewingLog.bsize);
+          const cumulativePour = toNumberArray(brewingLog.adc1);
+          const sampleCount = Math.max(pourFlow.length, dripFlow.length, cumulativePour.length);
+
+          if (sampleCount > 1) {
+            const duration =
+              toFiniteNumber(brewingLog.period) ??
+              toFiniteNumber(inner.period) ??
+              toFiniteNumber(inner.totalDuration) ??
+              Math.max(sampleCount - 1, 1);
+
+            const intervalSeconds = sampleCount > 1 ? duration / (sampleCount - 1) : 1;
+          const singleBean = isRecord(inner.singleBean) ? inner.singleBean as Record<string, unknown> : null;
+          const labelParts = [
+            typeof inner.cupFactory === 'string' ? inner.cupFactory.trim() : '',
+            typeof inner.cupModel === 'string' ? inner.cupModel.trim() : '',
+            typeof singleBean?.name === 'string' ? singleBean.name.trim() : ''
+          ].filter(Boolean);
+          importedLabel = labelParts.length > 0 ? labelParts.join(' / ') : 'Imported ultrakoki brew log';
+
+            importedBrewData = {
+              period: duration,
+              label: importedLabel,
+              intervalSeconds,
+              pourFlow,
+              dripFlow,
+              cumulativePour,
+            };
+          }
+        }
+      }
+
+      if (importedBrewData) {
+        setUltrakokiBrewData(importedBrewData);
+        setImportedJsonLabel(importedLabel);
+        setShowJsonImportPrompt(false);
+        setImportedJsonText('');
+        setError(null);
+        return;
+      }
+
+      if (importedPoints.length < 2) {
+        setError('Could not find a supported import in this JSON. Expected either an EC point array or an Ultrakoki brewingLog with pour data.');
+        return;
+      }
+
+      // Map imported data coordinates through current calibration so points render on the canvas
+      const mappedPoints = calibrationPoints.length >= 3
+        ? importedPoints.map(pt => {
+            const canvasCoords = dataToCanvas(pt.time, pt.ecValue);
+            return { ...pt, x: canvasCoords.x, y: canvasCoords.y };
+          })
+        : importedPoints;
+
+      setExtractedPoints(mappedPoints);
+      setFineGeneratedCurve([]);
+      setViewMode('original');
+      setImportedJsonLabel(importedLabel);
+      setCurrentStep('extract');
+      setShowJsonImportPrompt(false);
+      setImportedJsonText('');
+      setError(null);
+      onDataExtracted(mappedPoints);
+    } catch (err) {
+      console.error('Failed to import JSON:', err);
+      setError('Invalid JSON. Paste a full JSON object or point-array export.');
+    }
+  }, [importedJsonText, onDataExtracted, calibrationPoints, dataToCanvas]);
 
   const resetGenerated = useCallback(() => {
     setFineGeneratedCurve([]);
@@ -1488,9 +1829,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       case 'calibrate-origin':
         return 'Click on the ORIGIN where time = 0 and EC = 0 (bottom-left corner of the graph)';
       case 'calibrate-x':
-        return 'Click on the 150 SECOND mark on the X-axis (right side of the graph)';
+        return `Click on the ${calibrateXValue} SECOND mark on the X-axis (right side of the graph)`;
       case 'calibrate-y':
-        return 'Click on the 20 EC mark on the Y-axis (left side of the graph)';
+        return `Click on the ${calibrateYValue} EC mark on the Y-axis (left side of the graph)`;
       case 'calibrate-highest':
         return 'Click on the HIGHEST visible EC point on the blue curve. This helps the system extrapolate EC values above 20 more accurately.';
       case 'calibrate-temp-min':
@@ -1519,6 +1860,63 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         </div>
 
         <div className="p-6">
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-semibold text-amber-900">Ultrakoki Graph Sandbox</div>
+                <p className="text-sm text-amber-800">
+                  Open a mock Ultrakoki brew first so we can iterate on the custom graph layout in-app without touching calibration or JSON import.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  onClick={() => {
+                    setUltrakokiBrewData(buildPreviewUltrakokiBrewData());
+                    setImportedJsonLabel('Preview brew / mock Ultrakoki data');
+                  }}
+                  className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100"
+                >
+                  Preview Ultrakoki Graph
+                </button>
+                <button
+                  onClick={() => setShowJsonImportPrompt(true)}
+                  className="rounded-lg border border-slate-300 bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-950"
+                >
+                  Import Ultrakoki JSON
+                </button>
+                {ultrakokiBrewData && (
+                  <button
+                    onClick={() => {
+                      setUltrakokiBrewData(null);
+                      if (importedJsonLabel === 'Preview brew / mock Ultrakoki data') {
+                        setImportedJsonLabel(null);
+                      }
+                    }}
+                    className="rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Hide Graph
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {ultrakokiBrewData && (
+            <div className="mb-6">
+              <UltrakokiGraph
+                data={ultrakokiBrewData}
+                comparisonCurve={getCurrentData().map(point => ({
+                  time: point.time,
+                  ecValue: point.ecValue,
+                }))}
+                comparisonLabel={viewMode === 'fine' ? 'Generated EC curve' : 'Digitized EC curve'}
+                phaseLogs={phaseLogs}
+                redLightTime={redLightTime}
+                showRedLight={redLightTime !== null}
+              />
+            </div>
+          )}
+
           {/* Upload Step */}
           {currentStep === 'upload' && (
             <div className="mb-6">
@@ -1549,7 +1947,106 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                   <Target className="w-5 h-5 text-blue-500 mr-2" />
                   <p className="text-blue-700 font-medium">{getInstructions()}</p>
                 </div>
+                {currentStep === 'calibrate-x' && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <label className="text-sm font-medium text-blue-800 whitespace-nowrap">Time axis max (s):</label>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={calibrateXValue}
+                      onChange={(e) => setCalibrateXValue(Math.max(1, Number(e.target.value) || 150))}
+                      className="w-28 px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                    <span className="text-xs text-blue-600">Change this to match the last tick on the time axis.</span>
+                  </div>
+                )}
+                {currentStep === 'calibrate-y' && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <label className="text-sm font-medium text-blue-800 whitespace-nowrap">EC axis max:</label>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={calibrateYValue}
+                      onChange={(e) => setCalibrateYValue(Math.max(1, Number(e.target.value) || 20))}
+                      className="w-28 px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                    <span className="text-xs text-blue-600">Change this to match the last tick on the EC axis.</span>
+                  </div>
+                )}
               </div>
+
+              {/* Calibration Confirmation (shown after 4-point calibration completes) */}
+              {currentStep === 'extract' && calibrationPoints.length >= 4 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div className="font-semibold text-green-900 flex items-center gap-2">
+                      <span>✓ Calibration Complete</span>
+                      {loadedCalibrationProfileName && (
+                        <span className="text-xs font-normal text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                          {loadedCalibrationProfileName}
+                        </span>
+                      )}
+                      {importedJsonLabel && (
+                        <span className="text-xs font-normal text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          JSON: {importedJsonLabel}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={resetCalibration}
+                      className="px-3 py-1 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200 border border-red-200"
+                    >
+                      Reset Calibration
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-green-800">
+                    <div className="bg-white rounded border border-green-100 px-2 py-1.5">
+                      <div className="font-medium text-green-700">Origin</div>
+                      <div>({calibrationPoints[0].dataX}, {calibrationPoints[0].dataY})</div>
+                      <div className="text-green-500">px ({Math.round(calibrationPoints[0].x)}, {Math.round(calibrationPoints[0].y)})</div>
+                    </div>
+                    <div className="bg-white rounded border border-green-100 px-2 py-1.5">
+                      <div className="font-medium text-green-700">Time max</div>
+                      <div>{calibrationPoints[1].dataX}s</div>
+                      <div className="text-green-500">px ({Math.round(calibrationPoints[1].x)}, {Math.round(calibrationPoints[1].y)})</div>
+                    </div>
+                    <div className="bg-white rounded border border-green-100 px-2 py-1.5">
+                      <div className="font-medium text-green-700">EC max</div>
+                      <div>{calibrationPoints[2].dataY} EC</div>
+                      <div className="text-green-500">px ({Math.round(calibrationPoints[2].x)}, {Math.round(calibrationPoints[2].y)})</div>
+                    </div>
+                    <div className="bg-white rounded border border-green-100 px-2 py-1.5">
+                      <div className="font-medium text-green-700">Highest EC</div>
+                      <div>{calibrationPoints[3].dataY.toFixed(2)} EC</div>
+                      <div className="text-green-500">at {calibrationPoints[3].dataX.toFixed(1)}s</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-green-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        onClick={() => {
+                          setUltrakokiBrewData(buildPreviewUltrakokiBrewData());
+                          setImportedJsonLabel('Preview brew / mock Ultrakoki data');
+                        }}
+                        className="py-2.5 bg-amber-100 text-amber-900 font-medium rounded-lg hover:bg-amber-200 text-sm border border-amber-200"
+                      >
+                        Preview Ultrakoki Graph
+                      </button>
+                      <button
+                        onClick={() => setShowJsonImportPrompt(true)}
+                        className="py-2.5 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-900 text-sm flex items-center justify-center gap-2"
+                      >
+                        <span>⬆</span> Import Ultrakoki JSON
+                      </button>
+                    </div>
+                    <p className="text-xs text-green-700 mt-1.5 text-center">
+                      Preview the custom Ultrakoki graph first, or import a real brew log once the layout looks right.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                 <div className="text-sm font-semibold text-slate-800 mb-2">Calibration Profile</div>
@@ -1664,13 +2161,95 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                       </button>
                       {phaseLogs.length > 0 && (
                         <button
-                          onClick={() => setPhaseLogs([])}
+                          onClick={() => {
+                            setPhaseLogs([]);
+                            setLoadedPhaseProfileName(null);
+                          }}
                           className="px-3 py-1 bg-slate-500 text-white text-sm rounded hover:bg-slate-600"
                         >
                           Clear Logs
                         </button>
                       )}
                     </div>
+                  </div>
+
+                  <div className="mb-3 rounded-lg border border-indigo-200 bg-white p-3">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Phase Summary Profile</div>
+                    <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-center">
+                      <select
+                        value={selectedPhaseLogProfile}
+                        onChange={(e) => setSelectedPhaseLogProfile(e.target.value)}
+                        className="flex-1 rounded border border-indigo-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">Select saved phase profile...</option>
+                        {savedPhaseLogProfiles.map(profile => (
+                          <option key={profile.name} value={profile.name}>{profile.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={loadSelectedPhaseLogProfile}
+                        disabled={!selectedPhaseLogProfile}
+                        className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
+                      >
+                        Load Phase Profile
+                      </button>
+                      {!showSavePhaseProfileForm && (
+                        <button
+                          onClick={() => {
+                            const defaultName = selectedImageName
+                              ? `${selectedImageName.replace(/\.[^/.]+$/, '')}_phases`
+                              : 'belka_phase_profile';
+                            setNewPhaseProfileName(defaultName);
+                            setShowSavePhaseProfileForm(true);
+                          }}
+                          disabled={phaseLogs.length === 0}
+                          className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                        >
+                          Save Phase Profile
+                        </button>
+                      )}
+                    </div>
+
+                    {showSavePhaseProfileForm && (
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                          type="text"
+                          value={newPhaseProfileName}
+                          onChange={(e) => setNewPhaseProfileName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') savePhaseLogProfile(newPhaseProfileName);
+                            if (e.key === 'Escape') {
+                              setShowSavePhaseProfileForm(false);
+                              setNewPhaseProfileName('');
+                            }
+                          }}
+                          placeholder="Phase profile name..."
+                          autoFocus
+                          className="flex-1 rounded border border-indigo-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                        <button
+                          onClick={() => savePhaseLogProfile(newPhaseProfileName)}
+                          className="rounded bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowSavePhaseProfileForm(false);
+                            setNewPhaseProfileName('');
+                          }}
+                          className="rounded bg-slate-400 px-3 py-2 text-sm font-medium text-white hover:bg-slate-500"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+
+                    {loadedPhaseProfileName && (
+                      <div className="mt-2 text-xs text-indigo-700">
+                        Loaded phase profile: <strong>{loadedPhaseProfileName}</strong>
+                      </div>
+                    )}
                   </div>
 
                   {phasePinTarget && (
@@ -1815,6 +2394,94 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                           </div>
                         </div>
                       )})}
+                    </div>
+                  )}
+
+                  {/* Phase Summary */}
+                  {phaseLogs.length > 0 && (
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
+                      <div className="border-b border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-sky-50 px-4 py-4">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                          <div>
+                            <div className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">Phase Summary</div>
+                            <h4 className="mt-1 text-lg font-semibold text-slate-900">Phase timing, EC and pour targets</h4>
+                            <p className="mt-1 text-sm text-slate-600">
+                              Focus view for what each phase covers, how EC moves, and how much water is added inside that phase.
+                            </p>
+                          </div>
+                          {redLightTime !== null && (
+                            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+                              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-red-500">Red Light Stop</div>
+                              <div className="mt-1 text-base font-semibold">Stop at {formatPourAmount(getCumulativePourAtTime(redLightTime))}</div>
+                              <div className="mt-1 text-xs text-red-700">Time {formatTime(redLightTime)} ({formatRawSeconds(redLightTime)}s)</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto px-4 py-4">
+                        <table className="min-w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              <th className="pb-3 pr-4">Phase</th>
+                              <th className="pb-3 pr-4">Time</th>
+                              <th className="pb-3 pr-4">Duration</th>
+                              <th className="pb-3 pr-4">EC</th>
+                              <th className="pb-3 pr-0 text-right">Pour</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[...phaseLogs]
+                              .sort((a, b) => a.startTime - b.startTime)
+                              .map((log) => {
+                                const metrics = getPhaseMetrics(log);
+                                return (
+                                  <tr key={log.id} className="border-b border-slate-100 align-top last:border-b-0">
+                                    <td className="py-3 pr-4">
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-block h-3 w-3 rounded-full" style={{ background: log.color }} />
+                                        <span className="font-medium text-slate-900">{log.name}</span>
+                                      </div>
+                                    </td>
+                                    <td className="py-3 pr-4 text-slate-700">
+                                      <div>{formatTime(log.startTime)} - {formatTime(log.endTime)}</div>
+                                      <div className="mt-1 text-xs text-slate-500">{formatRawSeconds(log.startTime)}s - {formatRawSeconds(log.endTime)}s</div>
+                                    </td>
+                                    <td className="py-3 pr-4 text-slate-700">{metrics.duration.toFixed(1)}s</td>
+                                    <td className="py-3 pr-4 text-slate-700">
+                                      {metrics.startEC !== null ? (
+                                        <>
+                                          <div>{metrics.startEC.toFixed(2)} - {metrics.endEC !== null ? metrics.endEC.toFixed(2) : 'n/a'}</div>
+                                          <div className={`mt-1 text-xs font-semibold ${metrics.ecDelta !== null && metrics.ecDelta < 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                                            Delta {metrics.ecDelta !== null ? `${metrics.ecDelta > 0 ? '+' : ''}${metrics.ecDelta.toFixed(2)}` : 'n/a'}
+                                          </div>
+                                        </>
+                                      ) : (
+                                        'n/a'
+                                      )}
+                                    </td>
+                                    <td className="py-3 pl-4 pr-0 text-right text-slate-700">
+                                      <div className="font-medium text-slate-900">{formatPourAmount(metrics.pouredAmount)}</div>
+                                      <div className="mt-1 text-xs text-slate-500">{formatPourAmount(metrics.startPour)} - {formatPourAmount(metrics.endPour)}</div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            {redLightTime !== null && (
+                              <tr className="bg-red-50/80 align-top">
+                                <td className="py-3 pr-4 font-semibold text-red-800">Red Light</td>
+                                <td className="py-3 pr-4 text-red-700">
+                                  <div>{formatTime(redLightTime)}</div>
+                                  <div className="mt-1 text-xs text-red-600">{formatRawSeconds(redLightTime)}s</div>
+                                </td>
+                                <td className="py-3 pr-4 text-red-700">Stop water</td>
+                                <td className="py-3 pr-4 text-red-700">Target hand-off point</td>
+                                <td className="py-3 pl-4 pr-0 text-right font-semibold text-red-800">{formatPourAmount(getCumulativePourAtTime(redLightTime))}</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2204,6 +2871,96 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                 </div>
               )}
 
+              {showJsonImportPrompt && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900">Import Ultrakoki JSON</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Ultrakoki loads brew timing, flow, and pour total. Point-array JSON still imports EC curve data.</p>
+                      </div>
+                      <button
+                        onClick={() => { setShowJsonImportPrompt(false); setImportedJsonText(''); }}
+                        className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+                        aria-label="Close"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* File upload */}
+                    <div className="px-5 pt-4">
+                      <label className="flex items-center gap-3 w-full border-2 border-dashed border-slate-300 rounded-lg px-4 py-3 cursor-pointer hover:border-slate-500 hover:bg-slate-50 transition-colors">
+                        <span className="text-2xl">📂</span>
+                        <div>
+                          <div className="text-sm font-medium text-slate-700">Upload a .json file</div>
+                          <div className="text-xs text-slate-400">Replaces anything pasted below</div>
+                        </div>
+                        <input
+                          type="file"
+                          accept=".json,application/json"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = (ev) => setImportedJsonText(ev.target?.result as string ?? '');
+                            reader.readAsText(file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="flex items-center gap-3 px-5 py-3">
+                      <div className="flex-1 h-px bg-gray-200" />
+                      <span className="text-xs text-gray-400 font-medium">or paste</span>
+                      <div className="flex-1 h-px bg-gray-200" />
+                    </div>
+
+                    {/* Paste area */}
+                    <div className="px-5">
+                      <textarea
+                        value={importedJsonText}
+                        onChange={(e) => setImportedJsonText(e.target.value)}
+                        placeholder='{ "json": { "brewingLog": { "adc1": [...], "size": [...], "bsize": [...], "period": 127 } } }'
+                        rows={8}
+                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                      />
+                      {importedJsonText.length > 0 && (
+                        <div className="text-right">
+                          <button
+                            onClick={() => setImportedJsonText('')}
+                            className="text-xs text-gray-400 hover:text-gray-600 mt-0.5"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-5 py-4 flex gap-2 justify-end">
+                      <button
+                        onClick={() => { setShowJsonImportPrompt(false); setImportedJsonText(''); }}
+                        className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={importJsonData}
+                        disabled={importedJsonText.trim().length === 0}
+                        className="px-5 py-2 text-sm font-semibold bg-slate-800 text-white rounded-lg hover:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Import
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Interactive Graph */}
               {(extractedPoints.length > 0 || fineGeneratedCurve.length > 0) && (
                 <InteractiveDataGraph
@@ -2220,62 +2977,97 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                   redLightTime={redLightTime}
                   showRedLight={showRedLight}
                   phaseLogs={phaseLogs}
+                  cumulativePourData={ultrakokiBrewData ? {
+                    values: ultrakokiBrewData.cumulativePour,
+                    intervalSeconds: ultrakokiBrewData.intervalSeconds,
+                    label: importedJsonLabel || ultrakokiBrewData.label,
+                  } : undefined}
                 />
               )}
 
-              {/* Data Points Table */}
+              {/* Data Table */}
               {(extractedPoints.length > 0 || fineGeneratedCurve.length > 0) && (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium text-gray-900">
-                      {viewMode === 'fine'
-                        ? `Generated Curve (${intervalMs}ms interval): ${fineGeneratedCurve.length} points`
-                        : `Extracted Points: ${extractedPoints.length}`
-                      }
-                    </h4>
-                    <div className="flex gap-2">
-                      {fineGeneratedCurve.length > 0 && (
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50 px-4 py-4 sm:px-5">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <div className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Curve Table</div>
+                        <h4 className="mt-1 text-lg font-semibold text-slate-900">
+                          {viewMode === 'fine' ? `Generated EC curve (${intervalMs}ms)` : 'Digitized EC curve'}
+                        </h4>
+                        <p className="mt-1 text-sm text-slate-600">
+                          Same timebase as the charts above, with point-by-point EC values and optional temperature readings.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {fineGeneratedCurve.length > 0 && (
+                          <button
+                            onClick={toggleDataView}
+                            className="rounded-full bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-200"
+                          >
+                            {viewMode === 'fine' ? 'Show Original' : 'Show Generated'}
+                          </button>
+                        )}
                         <button
-                          onClick={toggleDataView}
-                          className="px-3 py-1 bg-orange-500 text-white text-sm rounded hover:bg-orange-600"
+                          onClick={() => setShowMinSec(!showMinSec)}
+                          className="rounded-full bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-950"
                         >
-                          {viewMode === 'fine' ? 'Show Original' : 'Show Generated'}
+                          {showMinSec ? 'Show Seconds' : 'Show Min:Sec'}
                         </button>
-                      )}
-                      <button
-                        onClick={() => setShowMinSec(!showMinSec)}
-                        className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
-                      >
-                        {showMinSec ? 'Show Seconds' : 'Show Min:Sec'}
-                      </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[420px]">
+                      <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+                        <div className="font-medium opacity-80">Total Points</div>
+                        <div className="mt-1 text-sm font-semibold">{getCurrentData().length}</div>
+                      </div>
+                      <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+                        <div className="font-medium opacity-80">Time Range</div>
+                        <div className="mt-1 text-sm font-semibold">
+                          {getCurrentData().length > 0 ? `${getCurrentData()[getCurrentData().length - 1]?.time.toFixed(0)}s` : '0s'}
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs text-violet-900">
+                        <div className="font-medium opacity-80">EC Range</div>
+                        <div className="mt-1 text-sm font-semibold">
+                          {getCurrentData().length > 0
+                            ? `${Math.min(...getCurrentData().map(p => p.ecValue)).toFixed(1)}-${Math.max(...getCurrentData().map(p => p.ecValue)).toFixed(1)}`
+                            : '0-0'}
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs text-cyan-900">
+                        <div className="font-medium opacity-80">Pour Overlay</div>
+                        <div className="mt-1 text-sm font-semibold">
+                          {ultrakokiBrewData ? `${Math.max(...ultrakokiBrewData.cumulativePour.filter(Number.isFinite), 0).toFixed(1)} g` : 'Not loaded'}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="max-h-96 overflow-y-auto">
+
+                  <div className="max-h-96 overflow-auto px-4 py-4 sm:px-5">
                     <table className="min-w-full text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-1 text-gray-900 font-medium">
-                            Time ({showMinSec ? 'Min:Sec' : 'Seconds'})
-                          </th>
-                          <th className="text-left py-1 text-gray-900 font-medium">EC Value</th>
-                          <th className="text-left py-1 text-gray-900 font-medium">Temperature (°C)</th>
+                      <thead className="sticky top-0 bg-white">
+                        <tr className="border-b border-slate-200 text-slate-500">
+                          <th className="py-2 pr-4 text-left font-semibold">Time ({showMinSec ? 'Min:Sec' : 'Seconds'})</th>
+                          <th className="py-2 pr-4 text-left font-semibold">EC Value</th>
+                          <th className="py-2 pr-4 text-left font-semibold">Temperature (°C)</th>
                         </tr>
                       </thead>
                       <tbody>
                         {getCurrentData().map((point, index) => (
-                          <tr key={index} className="border-b">
-                            <td className="py-1 text-gray-800">
-                              {showMinSec 
+                          <tr key={index} className="border-b border-slate-100 odd:bg-slate-50/60">
+                            <td className="py-2 pr-4 text-slate-800">
+                              {showMinSec
                                 ? (() => {
                                     const minutes = Math.floor(point.time / 60);
                                     const seconds = Math.floor(point.time % 60);
                                     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
                                   })()
-                                : `${point.time.toFixed(1)}s`
-                              }
+                                : `${point.time.toFixed(1)}s`}
                             </td>
-                            <td className="py-1 text-gray-800">{point.ecValue.toFixed(2)}</td>
-                            <td className="py-1 text-gray-800">
+                            <td className="py-2 pr-4 font-medium text-slate-900">{point.ecValue.toFixed(2)}</td>
+                            <td className="py-2 pr-4 text-slate-700">
                               {point.temperature ? `${point.temperature.toFixed(1)}°C` : 'N/A'}
                             </td>
                           </tr>
@@ -2283,48 +3075,6 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                       </tbody>
                     </table>
                   </div>
-                </div>
-              )}
-
-              {/* Summary Box */}
-              {(extractedPoints.length > 0 || fineGeneratedCurve.length > 0) && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-blue-900 mb-3">Data Summary</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white p-3 rounded">
-                      <div className="text-sm text-gray-600">Total Points</div>
-                      <div className="text-xl font-bold text-blue-600">{getCurrentData().length}</div>
-                    </div>
-                    <div className="bg-white p-3 rounded">
-                      <div className="text-sm text-gray-600">Time Range</div>
-                      <div className="text-xl font-bold text-green-600">
-                        {getCurrentData().length > 0 
-                          ? `${getCurrentData()[getCurrentData().length - 1]?.time.toFixed(0)}s`
-                          : '0s'
-                        }
-                      </div>
-                    </div>
-                    <div className="bg-white p-3 rounded">
-                      <div className="text-sm text-gray-600">EC Range</div>
-                      <div className="text-xl font-bold text-purple-600">
-                        {getCurrentData().length > 0 
-                          ? `${Math.min(...getCurrentData().map(p => p.ecValue)).toFixed(1)}-${Math.max(...getCurrentData().map(p => p.ecValue)).toFixed(1)}`
-                          : '0-0'
-                        }
-                      </div>
-                    </div>
-                    <div className="bg-white p-3 rounded">
-                      <div className="text-sm text-gray-600">Red Light</div>
-                      <div className="text-xl font-bold text-red-600">
-                        {redLightTime !== null ? `${formatTime(redLightTime)} (${formatRawSeconds(redLightTime)}s)` : 'Not Set'}
-                      </div>
-                    </div>
-                  </div>
-                  {redLightTime !== null && (
-                    <div className="mt-3 text-sm text-blue-700">
-                      <strong>Analysis:</strong> Red Light detected at {formatTime(redLightTime)} ({formatRawSeconds(redLightTime)}s) - extraction compounds appear after this point
-                    </div>
-                  )}
                 </div>
               )}
 

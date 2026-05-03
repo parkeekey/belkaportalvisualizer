@@ -18,12 +18,19 @@ interface PhaseLog {
   color: string;
 }
 
+interface CumulativePourData {
+  values: number[];
+  intervalSeconds: number;
+  label: string;
+}
+
 interface InteractiveDataGraphProps {
   dataPoints: DataPoint[];
   onDataUpdate?: (updatedPoints: DataPoint[]) => void;
   redLightTime?: number | null;
   showRedLight?: boolean;
   phaseLogs?: PhaseLog[];
+  cumulativePourData?: CumulativePourData;
 }
 
 interface TooltipData {
@@ -31,6 +38,7 @@ interface TooltipData {
   y: number;
   time: string;
   ecValue: number;
+  pourTotal?: number | null;
   visible: boolean;
 }
 
@@ -39,7 +47,8 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
   onDataUpdate,
   redLightTime,
   showRedLight = false,
-  phaseLogs = []
+  phaseLogs = [],
+  cumulativePourData,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +57,7 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
     y: 0,
     time: '',
     ecValue: 0,
+    pourTotal: null,
     visible: false
   });
 
@@ -68,7 +78,10 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
         const container = containerRef.current;
         const containerWidth = container.clientWidth;
         const newCanvasWidth = Math.min(containerWidth - 32, 1200); // Max 1200px, with padding
-        const newCanvasHeight = Math.max(300, Math.min(window.innerHeight * 0.4, 600)); // Between 300-600px
+        const isMobile = window.innerWidth < 768;
+        const newCanvasHeight = isMobile
+          ? Math.max(400, Math.min(window.innerHeight * 0.65, 520))
+          : Math.max(400, Math.min(window.innerHeight * 0.5, 650)); // Between 400-650px
         
         setCanvasWidth(newCanvasWidth);
         setCanvasHeight(newCanvasHeight);
@@ -87,7 +100,7 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
   const [yMin, setYMin] = useState(0);
   
   // Canvas dimensions and padding
-  const padding = { top: 40, right: 40, bottom: 100, left: 80 };
+  const padding = { top: 40, right: 72, bottom: 100, left: 80 };
   const [canvasWidth, setCanvasWidth] = useState(800);
   const [canvasHeight, setCanvasHeight] = useState(400);
 
@@ -174,6 +187,10 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
     ctx.lineTo(padding.left, canvasHeight - padding.bottom);
     ctx.stroke();
     
+    const hasPourOverlay = !!cumulativePourData && cumulativePourData.values.length > 1;
+    const pourValues = cumulativePourData?.values ?? [];
+    const pourMax = hasPourOverlay ? Math.max(...pourValues.filter(Number.isFinite), 1) : 1;
+
     // Draw axis labels
     ctx.fillStyle = '#374151';
     ctx.font = '12px sans-serif';
@@ -189,12 +206,21 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
       ctx.fillText(label, x, canvasHeight - padding.bottom + 20);
     }
     
-    // Y-axis labels
+    // Left axis labels for cumulative pour when available, otherwise EC.
     ctx.textAlign = 'right';
     for (let i = 0; i <= 5; i++) {
-      const value = yMin + (i * (yMax - yMin)) / 5;
+      const value = hasPourOverlay ? (pourMax * i) / 5 : yMin + (i * (yMax - yMin)) / 5;
       const y = canvasHeight - padding.bottom - (i * (canvasHeight - padding.top - padding.bottom)) / 5;
-      ctx.fillText(value.toFixed(1), padding.left - 10, y + 4);
+      ctx.fillText(hasPourOverlay ? value.toFixed(0) : value.toFixed(1), padding.left - 10, y + 4);
+    }
+
+    if (hasPourOverlay) {
+      ctx.textAlign = 'left';
+      for (let i = 0; i <= 5; i++) {
+        const value = yMin + (i * (yMax - yMin)) / 5;
+        const y = canvasHeight - padding.bottom - (i * (canvasHeight - padding.top - padding.bottom)) / 5;
+        ctx.fillText(value.toFixed(1), canvasWidth - padding.right + 10, y + 4);
+      }
     }
     
     // Draw axis titles
@@ -207,8 +233,36 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
     ctx.save();
     ctx.translate(20, canvasHeight / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillText('EC (μS/cm)', 0, 0);
+    ctx.fillText(hasPourOverlay ? 'Pour Total (g)' : 'EC', 0, 0);
     ctx.restore();
+
+    if (hasPourOverlay) {
+      ctx.save();
+      ctx.translate(canvasWidth - 18, canvasHeight / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.fillText('EC', 0, 0);
+      ctx.restore();
+    }
+
+    if (hasPourOverlay && cumulativePourData) {
+      const plotHeight = canvasHeight - padding.top - padding.bottom;
+      ctx.strokeStyle = '#0891b2';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      cumulativePourData.values.forEach((value, index) => {
+        if (!Number.isFinite(value)) return;
+        const time = index * cumulativePourData.intervalSeconds;
+        if (time < xMin || time > xMax) return;
+        const x = padding.left + (time - xMin) * scales.xScale;
+        const y = canvasHeight - padding.bottom - (value / pourMax) * plotHeight;
+        if (index === 0 || time <= xMin) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      ctx.stroke();
+    }
     
     // Draw data points and lines
     if (dataPoints.length > 0) {
@@ -380,11 +434,18 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
       const seconds = Math.floor(point.time % 60);
       const timeFormatted = `${minutes}:${seconds.toString().padStart(2, '0')}`;
       
+      let pourTotal: number | null = null;
+      if (cumulativePourData && cumulativePourData.values.length > 1) {
+        const index = Math.max(0, Math.min(cumulativePourData.values.length - 1, Math.round(point.time / cumulativePourData.intervalSeconds)));
+        pourTotal = cumulativePourData.values[index] ?? null;
+      }
+
       setTooltip({
         x: event.clientX,
         y: event.clientY,
         time: timeFormatted,
         ecValue: point.ecValue,
+        pourTotal,
         visible: true
       });
     } else {
@@ -417,10 +478,37 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
     updateDataPoints();
   }, [xMin, xMax, yMin, yMax]);
 
+  const summaryCards = [
+    { label: 'Total Points', value: `${dataPoints.length}`, tone: 'bg-blue-50 text-blue-900 border-blue-100' },
+    { label: 'Auto / Manual', value: `${dataPoints.filter(p => p.isAutoDetected).length} / ${dataPoints.filter(p => !p.isAutoDetected).length}`, tone: 'bg-violet-50 text-violet-900 border-violet-100' },
+    { label: 'Phases', value: `${phaseLogs.length}`, tone: 'bg-amber-50 text-amber-900 border-amber-100' },
+    { label: 'Pour Total', value: cumulativePourData ? `${Math.max(...cumulativePourData.values.filter(Number.isFinite), 0).toFixed(1)} g` : 'Not loaded', tone: 'bg-cyan-50 text-cyan-900 border-cyan-100' },
+  ];
+
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Interactive Data Graph</h3>
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 bg-gradient-to-r from-sky-50 via-white to-cyan-50 px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Custom EC Chart</div>
+            <h3 className="mt-1 text-lg font-semibold text-slate-900">Generated curve + timed overlays</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Your EC curve stays primary. When Ultrakoki flow is loaded, total pour is drawn on the same time axis for back-and-forth comparison.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[420px]">
+            {summaryCards.map(card => (
+              <div key={card.label} className={`rounded-xl border px-3 py-2 text-xs ${card.tone}`}>
+                <div className="font-medium opacity-80">{card.label}</div>
+                <div className="mt-1 text-sm font-semibold">{card.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
+        <div className="mb-6">
         
         {/* Axis Range Controls */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -485,12 +573,12 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
       </div>
 
       {/* Canvas */}
-      <div ref={containerRef} className="relative w-full">
+      <div ref={containerRef} className="relative w-full rounded-2xl border border-slate-200 bg-slate-50/40 p-2 sm:p-3">
         <canvas
           ref={canvasRef}
           width={canvasWidth}
           height={canvasHeight}
-          className="border border-gray-300 rounded-lg cursor-crosshair w-full"
+          className="border border-slate-200 bg-white rounded-xl cursor-crosshair w-full"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
         />
@@ -527,6 +615,9 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
           >
             <div className="text-sm font-semibold">{tooltip.time}</div>
             <div className="text-xs text-blue-300">EC: {tooltip.ecValue.toFixed(2)}</div>
+            {tooltip.pourTotal !== null && tooltip.pourTotal !== undefined && (
+              <div className="text-xs text-cyan-300">Pour: {tooltip.pourTotal.toFixed(1)} g</div>
+            )}
           </div>
         )}
       </div>
@@ -557,6 +648,7 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
             </span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

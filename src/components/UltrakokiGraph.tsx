@@ -84,8 +84,10 @@ export const UltrakokiGraph: React.FC<Props> = ({
 
   const [canvasWidth, setCanvasWidth] = useState(800);
   const [canvasHeight, setCanvasHeight] = useState(380);
+  const [zoomLevel, setZoomLevel] = useState(1.0);
   const [preset, setPreset] = useState<PresetKey>('brew');
   const [enabled, setEnabled] = useState<Set<SeriesKey>>(() => new Set(PRESET_SERIES.brew));
+  const [showFlowPanel, setShowFlowPanel] = useState<boolean>(true);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [showSeriesControls, setShowSeriesControls] = useState<boolean>(false);
@@ -95,19 +97,19 @@ export const UltrakokiGraph: React.FC<Props> = ({
   useEffect(() => {
     const update = () => {
       if (!containerRef.current) return;
-      const width = Math.min(containerRef.current.clientWidth - 2, 1240);
+      const baseW = Math.min(containerRef.current.clientWidth - 2, 1240);
       const isMobile = window.innerWidth < 768;
       const height = isMobile
         ? Math.max(440, Math.min(window.innerHeight * 0.66, 560))
         : Math.max(420, Math.min(window.innerHeight * 0.54, 620));
-      setCanvasWidth(width);
+      setCanvasWidth(Math.round(baseW * zoomLevel));
       setCanvasHeight(height);
     };
 
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
-  }, []);
+  }, [zoomLevel]);
 
   const setPresetMode = useCallback((nextPreset: PresetKey) => {
     setPreset(nextPreset);
@@ -185,112 +187,142 @@ export const UltrakokiGraph: React.FC<Props> = ({
     if (timelinePointCount < 2) return;
 
     const xStep = plotWidth / (timelinePointCount - 1);
-    let leftMax = 0;
+    const toX = (index: number) => PAD.left + index * xStep;
+
+    // ── Panel layout ─────────────────────────────────────────────────────
+    const hasFlowSeries = enabled.has('pourFlow') || enabled.has('dripFlow');
+    const activeFlowPanel = showFlowPanel && hasFlowSeries;
+    const DIVIDER_H = 10;
+    const mainH = activeFlowPanel ? Math.floor(plotHeight * 0.60) : plotHeight;
+    const flowPanelTop = PAD.top + mainH + DIVIDER_H;
+    const flowH = activeFlowPanel ? plotHeight - mainH - DIVIDER_H : 0;
+
+    // ── Axis max values ───────────────────────────────────────────────────
+    let mainLeftMax = 0;
+    let flowMax = 0;
     let rightMax = 0;
 
     for (const cfg of SERIES_CFG) {
       if (!enabled.has(cfg.key)) continue;
       const maxValue = maxOf(getSeries(cfg.key));
-      if (cfg.axis === 'left') leftMax = Math.max(leftMax, maxValue);
+      if (cfg.key === 'cumulativePour') mainLeftMax = Math.max(mainLeftMax, maxValue);
+      else if (cfg.key === 'pourFlow' || cfg.key === 'dripFlow') flowMax = Math.max(flowMax, maxValue);
     }
-    if (showComparison) {
-      rightMax = Math.max(rightMax, maxOf(sortedComparisonCurve.map(point => point.ecValue)));
-    }
+    if (showComparison) rightMax = Math.max(rightMax, maxOf(sortedComparisonCurve.map(p => p.ecValue)));
 
-    leftMax = leftMax > 0 ? leftMax * 1.12 : 1;
-    rightMax = rightMax > 0 ? rightMax * 1.12 : 1;
+    mainLeftMax = mainLeftMax > 0 ? mainLeftMax * 1.12 : 1;
+    flowMax     = flowMax     > 0 ? flowMax     * 1.15 : 1;
+    rightMax    = rightMax    > 0 ? rightMax    * 1.12 : 1;
 
-    const toX = (index: number) => PAD.left + index * xStep;
-    const toY = (value: number, axis: 'left' | 'right') => {
-      const ceiling = axis === 'left' ? leftMax : rightMax;
-      return PAD.top + plotHeight - (value / ceiling) * plotHeight;
-    };
+    const toYmain = (value: number) => PAD.top    + mainH - (value / mainLeftMax) * mainH;
+    const toYec   = (value: number) => PAD.top    + mainH - (value / rightMax)    * mainH;
+    const toYflow = (value: number) => flowPanelTop + flowH  - (value / flowMax)    * flowH;
 
+    // ── Draw main panel ───────────────────────────────────────────────────
+    // Grid
     ctx.strokeStyle = '#e2e8f0';
     ctx.lineWidth = 1;
-    for (let index = 0; index <= 6; index += 1) {
-      const y = PAD.top + (index * plotHeight) / 6;
-      ctx.beginPath();
-      ctx.moveTo(PAD.left, y);
-      ctx.lineTo(PAD.left + plotWidth, y);
-      ctx.stroke();
+    for (let i = 0; i <= 6; i++) {
+      const y = PAD.top + (i * mainH) / 6;
+      ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + plotWidth, y); ctx.stroke();
     }
-    for (let index = 0; index <= 6; index += 1) {
-      const x = PAD.left + (index * plotWidth) / 6;
-      ctx.beginPath();
-      ctx.moveTo(x, PAD.top);
-      ctx.lineTo(x, PAD.top + plotHeight);
-      ctx.stroke();
+    for (let i = 0; i <= 6; i++) {
+      const x = PAD.left + (i * plotWidth) / 6;
+      ctx.beginPath(); ctx.moveTo(x, PAD.top); ctx.lineTo(x, PAD.top + mainH); ctx.stroke();
     }
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(PAD.left, PAD.top, plotWidth, mainH);
 
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(PAD.left, PAD.top, plotWidth, plotHeight);
-
-    ctx.fillStyle = '#64748b';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    for (let index = 0; index <= 6; index += 1) {
-      const pointIndex = Math.round(((timelinePointCount - 1) * index) / 6);
-      const time = pointIndex * data.intervalSeconds;
-      ctx.fillText(formatClock(time), toX(pointIndex), PAD.top + plotHeight + 18);
-    }
-
-    ctx.textAlign = 'right';
-    for (let index = 0; index <= 5; index += 1) {
-      const value = (leftMax / 1.12) * (index / 5);
-      const y = PAD.top + plotHeight - (index / 5) * plotHeight;
+    // Left axis ticks (pour g)
+    ctx.fillStyle = '#64748b'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+    for (let i = 0; i <= 5; i++) {
+      const value = (mainLeftMax / 1.12) * (i / 5);
+      const y = PAD.top + mainH - (i / 5) * mainH;
       ctx.fillText(value.toFixed(value >= 10 ? 0 : 1), PAD.left - 8, y + 4);
     }
 
-    ctx.textAlign = 'left';
-    for (let index = 0; index <= 5; index += 1) {
-      const value = (rightMax / 1.12) * (index / 5);
-      const y = PAD.top + plotHeight - (index / 5) * plotHeight;
-      ctx.fillText(value.toFixed(value >= 10 ? 1 : 2), PAD.left + plotWidth + 8, y + 4);
+    // Right axis ticks (EC mS/cm)
+    if (showComparison) {
+      ctx.fillStyle = '#c2410c'; ctx.textAlign = 'left';
+      for (let i = 0; i <= 5; i++) {
+        const value = (rightMax / 1.12) * (i / 5);
+        const y = PAD.top + mainH - (i / 5) * mainH;
+        ctx.fillText(value.toFixed(value >= 10 ? 1 : 2), PAD.left + plotWidth + 8, y + 4);
+      }
     }
 
+    // X-axis time labels (bottom of main panel or bottom of chart)
+    const labelY = activeFlowPanel ? PAD.top + mainH + DIVIDER_H + flowH + 18 : PAD.top + mainH + 18;
+    ctx.fillStyle = '#64748b'; ctx.textAlign = 'center';
+    for (let i = 0; i <= 6; i++) {
+      const pointIndex = Math.round(((timelinePointCount - 1) * i) / 6);
+      const time = pointIndex * data.intervalSeconds;
+      ctx.fillText(formatClock(time), toX(pointIndex), labelY);
+    }
+
+    // Left axis label
     ctx.save();
-    ctx.translate(18, PAD.top + plotHeight / 2);
+    ctx.translate(18, PAD.top + mainH / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.fillStyle = '#0f766e';
     ctx.font = '12px sans-serif';
-    ctx.fillText('Weight / Flow (g)', 0, 0);
+    ctx.fillText('Pour (g)', 0, 0);
     ctx.restore();
 
+    // Right axis label (EC)
     if (showComparison) {
       ctx.save();
-      ctx.translate(canvasWidth - 16, PAD.top + plotHeight / 2);
+      ctx.translate(canvasWidth - 16, PAD.top + mainH / 2);
       ctx.rotate(Math.PI / 2);
       ctx.textAlign = 'center';
       ctx.fillStyle = '#c2410c';
       ctx.font = '12px sans-serif';
-      ctx.fillText('EC Curve', 0, 0);
+      ctx.fillText('EC (mS/cm)', 0, 0);
       ctx.restore();
     }
 
-    ctx.fillStyle = '#475569';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Time (min:sec)', PAD.left + plotWidth / 2, canvasHeight - 12);
+    // ── Draw flow panel ───────────────────────────────────────────────────
+    if (activeFlowPanel && flowH > 0) {
+      // Panel background
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(PAD.left, flowPanelTop, plotWidth, flowH);
 
-    for (const cfg of SERIES_CFG.filter(item => item.drawAs === 'bar' && enabled.has(item.key))) {
-      const barWidth = Math.max(2, xStep * 0.58);
-      const values = getSeries(cfg.key);
-      const hex = cfg.color;
-      const red = parseInt(hex.slice(1, 3), 16);
-      const green = parseInt(hex.slice(3, 5), 16);
-      const blue = parseInt(hex.slice(5, 7), 16);
-      ctx.fillStyle = `rgba(${red}, ${green}, ${blue}, 0.30)`;
-      values.forEach((value, index) => {
-        if (!Number.isFinite(value) || value <= 0) return;
-        const x = toX(index);
-        const y = toY(value, cfg.axis);
-        ctx.fillRect(x - barWidth / 2, y, barWidth, PAD.top + plotHeight - y);
-      });
+      // Grid
+      ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 0.8;
+      for (let i = 0; i <= 4; i++) {
+        const y = flowPanelTop + (i * flowH) / 4;
+        ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + plotWidth, y); ctx.stroke();
+      }
+      ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1;
+      ctx.strokeRect(PAD.left, flowPanelTop, plotWidth, flowH);
+
+      // Flow y-axis ticks (right side in teal)
+      ctx.fillStyle = '#0f766e'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+      for (let i = 0; i <= 4; i++) {
+        const value = (flowMax / 1.15) * (i / 4);
+        const y = flowPanelTop + flowH - (i / 4) * flowH;
+        ctx.fillText(value.toFixed(2), PAD.left + plotWidth + 6, y + 3);
+      }
+      ctx.fillStyle = '#0f766e'; ctx.textAlign = 'right'; ctx.font = '10px sans-serif';
+      ctx.fillText('g/s', PAD.left - 6, flowPanelTop + 10);
+
+      // Flow panel label (left side rotated)
+      ctx.save();
+      ctx.translate(18, flowPanelTop + flowH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#0e7490';
+      ctx.font = '11px sans-serif';
+      ctx.fillText('Flow (g/s)', 0, 0);
+      ctx.restore();
+
+      // Divider label
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('▼ Flow Rate', PAD.left + 4, flowPanelTop - 2);
     }
 
+    // ── Phase bands (span both panels) ───────────────────────────────────
     const hexToRgba = (hex: string, alpha: number) => {
       const clean = hex.replace('#', '');
       const bigint = parseInt(clean, 16);
@@ -300,134 +332,141 @@ export const UltrakokiGraph: React.FC<Props> = ({
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
 
+    const totalBottom = activeFlowPanel ? flowPanelTop + flowH : PAD.top + mainH;
     phaseLogs.forEach((log, index) => {
       const startX = PAD.left + (log.startTime / data.intervalSeconds) * xStep;
-      const endX = PAD.left + (log.endTime / data.intervalSeconds) * xStep;
-      const left = Math.max(PAD.left, Math.min(startX, endX));
+      const endX   = PAD.left + (log.endTime   / data.intervalSeconds) * xStep;
+      const left  = Math.max(PAD.left, Math.min(startX, endX));
       const right = Math.min(PAD.left + plotWidth, Math.max(startX, endX));
-      const width = right - left;
-      if (width <= 1) return;
+      if (right - left <= 1) return;
 
       ctx.fillStyle = hexToRgba(log.color, 0.10);
-      ctx.fillRect(left, PAD.top, width, plotHeight);
+      ctx.fillRect(left, PAD.top, right - left, totalBottom - PAD.top);
 
-      ctx.strokeStyle = log.color;
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = log.color; ctx.lineWidth = 1.5;
       ctx.setLineDash([5, 4]);
-      ctx.beginPath();
-      ctx.moveTo(left, PAD.top);
-      ctx.lineTo(left, PAD.top + plotHeight);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(right, PAD.top);
-      ctx.lineTo(right, PAD.top + plotHeight);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(left, PAD.top); ctx.lineTo(left, totalBottom); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(right, PAD.top); ctx.lineTo(right, totalBottom); ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.fillStyle = log.color;
-      ctx.font = '11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(log.name, left + width / 2, PAD.top - 10 - (index % 2) * 12);
+      ctx.fillStyle = log.color; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(log.name, left + (right - left) / 2, PAD.top - 10 - (index % 2) * 12);
     });
 
+    // ── Red light line ─────────────────────────────────────────────────────
     if (showRedLight && redLightTime !== null) {
       const redX = PAD.left + (redLightTime / data.intervalSeconds) * xStep;
       if (redX >= PAD.left && redX <= PAD.left + plotWidth) {
         ctx.save();
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
         ctx.setLineDash([6, 4]);
-        ctx.beginPath();
-        ctx.moveTo(redX, PAD.top);
-        ctx.lineTo(redX, PAD.top + plotHeight);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(redX, PAD.top); ctx.lineTo(redX, totalBottom); ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle = '#ef4444';
-        ctx.font = '12px sans-serif';
-        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ef4444'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText(`Red Light ${formatClock(redLightTime)}`, redX, PAD.top - 28);
         ctx.restore();
       }
     }
 
+    // ── Flow bars (lower panel) ───────────────────────────────────────────
+    if (activeFlowPanel && flowH > 0) {
+      for (const cfg of SERIES_CFG.filter(item => item.drawAs === 'bar' && enabled.has(item.key))) {
+        const barWidth = Math.max(2, xStep * 0.58);
+        const values = getSeries(cfg.key);
+        const hex = cfg.color;
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.55)`;
+        values.forEach((value, index) => {
+          if (!Number.isFinite(value) || value <= 0) return;
+          const x = toX(index);
+          const y = toYflow(value);
+          ctx.fillRect(x - barWidth / 2, y, barWidth, flowPanelTop + flowH - y);
+        });
+        // Line over bars
+        ctx.strokeStyle = cfg.color; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        let started = false;
+        values.forEach((value, index) => {
+          if (!Number.isFinite(value)) return;
+          const x = toX(index); const y = toYflow(value);
+          if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+    }
+
+    // ── Cumulative pour line (main panel) ─────────────────────────────────
     for (const cfg of SERIES_CFG.filter(item => item.drawAs === 'line' && enabled.has(item.key))) {
       const values = getSeries(cfg.key);
       ctx.strokeStyle = cfg.color;
-      ctx.lineWidth = cfg.key === 'cumulativePour' ? 2.8 : 2.2;
+      ctx.lineWidth = 2.8;
       ctx.beginPath();
       let started = false;
       values.forEach((value, index) => {
         if (!Number.isFinite(value)) return;
-        const x = toX(index);
-        const y = toY(value, cfg.axis);
-        if (!started) {
-          ctx.moveTo(x, y);
-          started = true;
-        } else {
-          ctx.lineTo(x, y);
-        }
+        const x = toX(index); const y = toYmain(value);
+        if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
       });
       ctx.stroke();
     }
 
+    // ── EC comparison curve ───────────────────────────────────────────────
     if (showComparison) {
       ctx.save();
-      ctx.strokeStyle = COMPARISON_COLOR;
-      ctx.lineWidth = 2.4;
+      ctx.strokeStyle = COMPARISON_COLOR; ctx.lineWidth = 2.4;
       ctx.setLineDash([7, 4]);
       ctx.beginPath();
       sortedComparisonCurve.forEach((point, index) => {
-        const normalizedIndex = Math.max(0, Math.min(timelinePointCount - 1, point.time / data.intervalSeconds));
-        const x = PAD.left + normalizedIndex * xStep;
-        const y = toY(point.ecValue, 'right');
-        if (index === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        const normIdx = Math.max(0, Math.min(timelinePointCount - 1, point.time / data.intervalSeconds));
+        const x = PAD.left + normIdx * xStep;
+        const y = toYec(point.ecValue);
+        if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       });
       ctx.stroke();
       ctx.restore();
     }
 
+    // ── Hover ─────────────────────────────────────────────────────────────
     if (hoverIdx !== null) {
       const hoverX = toX(hoverIdx);
-      const hoverTime = hoverIdx * data.intervalSeconds;
-
       ctx.save();
-      ctx.strokeStyle = '#94a3b8';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#94a3b880'; ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(hoverX, PAD.top);
-      ctx.lineTo(hoverX, PAD.top + plotHeight);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(hoverX, PAD.top); ctx.lineTo(hoverX, totalBottom); ctx.stroke();
       ctx.restore();
 
-      for (const cfg of SERIES_CFG.filter(item => enabled.has(item.key))) {
-        const value = getSeries(cfg.key)[hoverIdx];
-        if (!Number.isFinite(value)) continue;
-        const y = toY(value, cfg.axis);
-        ctx.fillStyle = cfg.color;
-        ctx.beginPath();
-        ctx.arc(hoverX, y, cfg.key === 'cumulativePour' ? 5 : 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(hoverX, y, 2, 0, Math.PI * 2);
-        ctx.fill();
+      // Main panel dots
+      if (enabled.has('cumulativePour')) {
+        const v = data.cumulativePour[hoverIdx];
+        if (Number.isFinite(v)) {
+          ctx.fillStyle = SERIES_CFG.find(c => c.key === 'cumulativePour')!.color;
+          ctx.beginPath(); ctx.arc(hoverX, toYmain(v), 5, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(hoverX, toYmain(v), 2, 0, Math.PI * 2); ctx.fill();
+        }
       }
-
       if (showComparison) {
-        const comparisonPoint = compareAtTime(hoverTime);
-        if (comparisonPoint) {
-          const x = PAD.left + Math.max(0, Math.min(timelinePointCount - 1, comparisonPoint.time / data.intervalSeconds)) * xStep;
-          const y = toY(comparisonPoint.ecValue, 'right');
+        const cp = compareAtTime(hoverIdx * data.intervalSeconds);
+        if (cp) {
           ctx.fillStyle = COMPARISON_COLOR;
-          ctx.beginPath();
-          ctx.arc(x, y, 4, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.beginPath(); ctx.arc(PAD.left + Math.max(0, Math.min(timelinePointCount - 1, cp.time / data.intervalSeconds)) * xStep, toYec(cp.ecValue), 4, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      // Flow panel dots
+      if (activeFlowPanel && flowH > 0) {
+        for (const key of ['pourFlow', 'dripFlow'] as SeriesKey[]) {
+          if (!enabled.has(key)) continue;
+          const v = getSeries(key)[hoverIdx];
+          if (!Number.isFinite(v)) continue;
+          const cfg = SERIES_CFG.find(c => c.key === key)!;
+          ctx.fillStyle = cfg.color;
+          ctx.beginPath(); ctx.arc(hoverX, toYflow(v), 4, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(hoverX, toYflow(v), 2, 0, Math.PI * 2); ctx.fill();
         }
       }
     }
-  }, [canvasWidth, canvasHeight, data, enabled, getSeries, hoverIdx, showComparison, sortedComparisonCurve, compareAtTime, timelinePointCount]);
+  }, [canvasWidth, canvasHeight, data, enabled, showFlowPanel, getSeries, hoverIdx, showComparison, sortedComparisonCurve, compareAtTime, timelinePointCount, phaseLogs, showRedLight, redLightTime]);
 
   useEffect(() => {
     drawGraph();
@@ -514,6 +553,12 @@ export const UltrakokiGraph: React.FC<Props> = ({
             >
               {showSeriesControls ? 'Hide series' : 'Choose series'}
             </button>
+            <button
+              onClick={() => setShowFlowPanel(prev => !prev)}
+              className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${showFlowPanel ? 'bg-teal-700 text-white' : 'border border-slate-300 text-slate-600 hover:bg-slate-50'}`}
+            >
+              {showFlowPanel ? '▼ Flow panel ON' : '▼ Flow panel OFF'}
+            </button>
             {hasComparisonCurve && (
               <div className="rounded-full border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600">
                 Always showing <span className="font-medium text-slate-900">{comparisonLabel}</span>
@@ -536,7 +581,9 @@ export const UltrakokiGraph: React.FC<Props> = ({
                     <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: series.color, opacity: isOn ? 1 : 0.35 }} />
                     <span className="font-medium">{series.shortLabel}</span>
                   </div>
-                  <div className="mt-1 text-xs opacity-75">{series.axis === 'left' ? 'Left axis' : 'Right axis'}</div>
+                  <div className="mt-1 text-xs opacity-75">
+                    {series.key === 'cumulativePour' ? 'Pour panel (g)' : 'Flow panel (g/s)'}
+                  </div>
                 </button>
               );
             })}
@@ -544,12 +591,24 @@ export const UltrakokiGraph: React.FC<Props> = ({
         )}
 
         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/40 p-2 sm:p-3">
-          <div className="relative overflow-hidden rounded-xl bg-white">
+          <div className="flex items-center justify-end gap-2 pb-2">
+            <span className="text-xs text-slate-500">Zoom</span>
+            <button
+              onClick={() => setZoomLevel(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}
+              className="w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-100 flex items-center justify-center"
+            >−</button>
+            <span className="text-xs font-semibold text-slate-700 w-8 text-center">{zoomLevel === 1 ? '1×' : `${zoomLevel}×`}</span>
+            <button
+              onClick={() => setZoomLevel(z => Math.min(4, parseFloat((z + 0.25).toFixed(2))))}
+              className="w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-100 flex items-center justify-center"
+            >+</button>
+          </div>
+          <div className="relative rounded-xl bg-white overflow-x-auto">
             <canvas
               ref={canvasRef}
               onMouseMove={handleMouseMove}
               onMouseLeave={handleMouseLeave}
-              style={{ display: 'block', width: '100%', height: 'auto', cursor: 'crosshair' }}
+              style={{ display: 'block', width: canvasWidth, height: 'auto', cursor: 'crosshair' }}
             />
 
             {hoverIdx !== null && hoverTime !== null && (
@@ -565,7 +624,10 @@ export const UltrakokiGraph: React.FC<Props> = ({
                         <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: series.color }} />
                         <span>{series.shortLabel}</span>
                       </div>
-                      <span className="font-semibold text-slate-900">{(getSeries(series.key)[hoverIdx] ?? 0).toFixed(2)}</span>
+                      <span className="font-semibold text-slate-900">
+                        {(getSeries(series.key)[hoverIdx] ?? 0).toFixed(series.key === 'cumulativePour' ? 1 : 3)}
+                        <span className="ml-0.5 font-normal text-slate-400">{series.key === 'cumulativePour' ? 'g' : 'g/s'}</span>
+                      </span>
                     </div>
                   ))}
                   {hoverComparison && (

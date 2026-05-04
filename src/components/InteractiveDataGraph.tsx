@@ -71,28 +71,6 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
     return seconds.toFixed(1);
   }, []);
 
-  // Update canvas dimensions based on container size
-  useEffect(() => {
-    const updateCanvasSize = () => {
-      if (containerRef.current) {
-        const container = containerRef.current;
-        const containerWidth = container.clientWidth;
-        const newCanvasWidth = Math.min(containerWidth - 32, 1200); // Max 1200px, with padding
-        const isMobile = window.innerWidth < 768;
-        const newCanvasHeight = isMobile
-          ? Math.max(400, Math.min(window.innerHeight * 0.65, 520))
-          : Math.max(400, Math.min(window.innerHeight * 0.5, 650)); // Between 400-650px
-        
-        setCanvasWidth(newCanvasWidth);
-        setCanvasHeight(newCanvasHeight);
-      }
-    };
-
-    updateCanvasSize();
-    window.addEventListener('resize', updateCanvasSize);
-    return () => window.removeEventListener('resize', updateCanvasSize);
-  }, []);
-  
   // Axis range controls
   const [xMax, setXMax] = useState(200); // Time in seconds (extended for extrapolation)
   const [yMax, setYMax] = useState(30); // EC max value (extended for extrapolation)
@@ -103,7 +81,30 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
   const padding = { top: 40, right: 72, bottom: 100, left: 80 };
   const [canvasWidth, setCanvasWidth] = useState(800);
   const [canvasHeight, setCanvasHeight] = useState(400);
+  const [zoomLevel, setZoomLevel] = useState(1.0);
 
+  // Update canvas dimensions based on container size
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      if (containerRef.current) {
+        const container = containerRef.current;
+        const containerWidth = container.clientWidth;
+        const baseW = Math.min(containerWidth - 32, 1200);
+        const isMobile = window.innerWidth < 768;
+        const newCanvasHeight = isMobile
+          ? Math.max(400, Math.min(window.innerHeight * 0.65, 520))
+          : Math.max(400, Math.min(window.innerHeight * 0.5, 650));
+        
+        setCanvasWidth(Math.round(baseW * zoomLevel));
+        setCanvasHeight(newCanvasHeight);
+      }
+    };
+
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    return () => window.removeEventListener('resize', updateCanvasSize);
+  }, [zoomLevel]);
+  
   // Calculate scales based on current axis ranges
   const calculateScales = useCallback(() => {
     const xRange = xMax - xMin || 1;
@@ -573,12 +574,25 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
       </div>
 
       {/* Canvas */}
-      <div ref={containerRef} className="relative w-full rounded-2xl border border-slate-200 bg-slate-50/40 p-2 sm:p-3">
+      <div className="flex items-center justify-end gap-2 px-3 pb-2 pt-1">
+        <span className="text-xs text-slate-500">Zoom</span>
+        <button
+          onClick={() => setZoomLevel(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}
+          className="w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-100 flex items-center justify-center"
+        >−</button>
+        <span className="text-xs font-semibold text-slate-700 w-8 text-center">{zoomLevel === 1 ? '1×' : `${zoomLevel}×`}</span>
+        <button
+          onClick={() => setZoomLevel(z => Math.min(4, parseFloat((z + 0.25).toFixed(2))))}
+          className="w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-100 flex items-center justify-center"
+        >+</button>
+      </div>
+      <div ref={containerRef} className="relative w-full rounded-2xl border border-slate-200 bg-slate-50/40 p-2 sm:p-3 overflow-x-auto">
         <canvas
           ref={canvasRef}
           width={canvasWidth}
           height={canvasHeight}
-          className="border border-slate-200 bg-white rounded-xl cursor-crosshair w-full"
+          className="border border-slate-200 bg-white rounded-xl cursor-crosshair"
+          style={{ width: canvasWidth, height: canvasHeight }}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
         />

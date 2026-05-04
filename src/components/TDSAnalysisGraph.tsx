@@ -1,0 +1,1029 @@
+import React, { useRef, useEffect, useState, useMemo } from 'react';
+
+// ─── Types ─────────────────────────────────────────────────────────────────
+
+interface ECPoint {
+  time: number;        // seconds
+  ecValue: number;     // mS/cm
+  temperature?: number; // °C, optional
+}
+
+interface BrewData {
+  intervalSeconds: number;
+  cumulativePour: number[]; // grams per index
+}
+
+interface PhaseLog {
+  id: string;
+  name: string;
+  startTime: number;
+  endTime: number;
+  color: string;
+}
+
+interface TDSPoint {
+  time: number;
+  ec: number;       // raw EC mS/cm
+  ec25: number;     // temp-compensated EC @ 25°C
+  tds: number;      // TDS %
+  ey: number;       // Extraction Yield %
+  beverageWeight: number; // g
+  temperature?: number;
+}
+
+export interface TDSAnalysisGraphProps {
+  ecPoints: ECPoint[];
+  brewData?: BrewData | null;
+  phaseLogs?: PhaseLog[];
+  doseWeight: number;       // g of coffee grounds
+  conversionFactor?: number; // EC→TDS factor, default 0.5
+  refractometerTDS?: number | null; // optional final-cup TDS % anchor
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+
+function interpolateEC(points: ECPoint[], t: number): { ec: number; temperature?: number } {
+  if (points.length === 0) return { ec: 0 };
+  if (t <= points[0].time) return { ec: points[0].ecValue, temperature: points[0].temperature };
+  if (t >= points[points.length - 1].time) {
+    const last = points[points.length - 1];
+    return { ec: last.ecValue, temperature: last.temperature };
+  }
+  let lo = 0, hi = points.length - 1;
+  while (lo < hi - 1) {
+    const mid = (lo + hi) >> 1;
+    if (points[mid].time <= t) lo = mid; else hi = mid;
+  }
+  const p0 = points[lo], p1 = points[hi];
+  const frac = (t - p0.time) / (p1.time - p0.time);
+  const ec = lerp(p0.ecValue, p1.ecValue, frac);
+  const temperature =
+    p0.temperature != null && p1.temperature != null
+      ? lerp(p0.temperature, p1.temperature, frac)
+      : (p0.temperature ?? p1.temperature);
+  return { ec, temperature };
+}
+
+function getCumulativePour(brewData: BrewData, t: number): number {
+  const { cumulativePour, intervalSeconds } = brewData;
+  if (cumulativePour.length === 0 || intervalSeconds <= 0) return 0;
+  const rawIdx = Math.max(0, t) / intervalSeconds;
+  const lo = Math.min(cumulativePour.length - 1, Math.floor(rawIdx));
+  const hi = Math.min(cumulativePour.length - 1, Math.ceil(rawIdx));
+  if (lo === hi) return cumulativePour[lo] ?? 0;
+  return lerp(cumulativePour[lo] ?? 0, cumulativePour[hi] ?? 0, rawIdx - lo);
+}
+
+function compensateEC(ecRaw: number, temperature?: number): number {
+  if (temperature == null || !isFinite(temperature)) return ecRaw;
+  const factor = 1 + 0.02 * (temperature - 25);
+  return factor !== 0 ? ecRaw / factor : ecRaw;
+}
+
+const formatClock = (s: number) => {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+};
+
+const formatBrewRatio = (waterIn: number, dose: number): string => {
+  if (!Number.isFinite(waterIn) || !Number.isFinite(dose) || dose <= 0) return 'n/a';
+  return `1:${(waterIn / dose).toFixed(1)}`;
+};
+
+const formatBrewRatioRange = (minWater: number, maxWater: number, dose: number): string => {
+  if (!Number.isFinite(minWater) || !Number.isFinite(maxWater) || !Number.isFinite(dose) || dose <= 0) return 'n/a';
+  return `${formatBrewRatio(minWater, dose)}-${formatBrewRatio(maxWater, dose)}`;
+};
+
+type TargetWindow = {
+  startTime: number;
+  endTime: number;
+  minEC: number;
+  maxEC: number;
+  minWaterIn: number;
+  maxWaterIn: number;
+};
+
+const PAD = { top: 40, right: 80, bottom: 56, left: 72 };
+
+// ─── Main Component ────────────────────────────────────────────────────────
+
+export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
+  ecPoints,
+  brewData,
+  phaseLogs = [],
+  doseWeight,
+  conversionFactor = 0.5,
+  refractometerTDS = null,
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 340 });
+  const [baseWidth, setBaseWidth] = useState(800);
+  const [zoomLevel, setZoomLevel] = useState(1.0);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [showECOverlay, setShowECOverlay] = useState<boolean>(true);
+  const [showPourOverlay, setShowPourOverlay] = useState<boolean>(true);
+  const [showTargetAssistant, setShowTargetAssistant] = useState<boolean>(false);
+  const [targetMode, setTargetMode] = useState<'tds' | 'ey'>('tds');
+  const [targetTDSInput, setTargetTDSInput] = useState<string>('1.36');
+  const [targetEYInput, setTargetEYInput] = useState<string>('20.0');
+
+  const refractometerAnchor = useMemo(() => {
+    if (refractometerTDS == null || !Number.isFinite(refractometerTDS) || refractometerTDS <= 0) {
+      return null;
+    }
+    return refractometerTDS;
+  }, [refractometerTDS]);
+
+  const adjustedConversionFactor = useMemo(() => {
+    if (refractometerAnchor == null || ecPoints.length === 0) return null;
+    const sorted = [...ecPoints].sort((a, b) => a.time - b.time);
+    const final = sorted[sorted.length - 1];
+    const finalEC25 = compensateEC(final.ecValue, final.temperature);
+    if (!Number.isFinite(finalEC25) || finalEC25 <= 0) return null;
+    const next = refractometerAnchor / finalEC25;
+    return Number.isFinite(next) && next > 0 ? next : null;
+  }, [refractometerAnchor, ecPoints]);
+
+  const factorToUse = adjustedConversionFactor ?? conversionFactor;
+  const hasBrewData = Boolean(brewData && brewData.cumulativePour && brewData.cumulativePour.length > 0);
+  const targetTDS = useMemo(() => {
+    const parsed = parseFloat(targetTDSInput);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }, [targetTDSInput]);
+  const targetEY = useMemo(() => {
+    const parsed = parseFloat(targetEYInput);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }, [targetEYInput]);
+
+  // ── Compute TDS/EY time series ──────────────────────────────────────────
+
+  const series: TDSPoint[] = useMemo(() => {
+    const sorted = [...ecPoints].sort((a, b) => a.time - b.time);
+    if (sorted.length === 0 || doseWeight <= 0) return [];
+
+    return sorted.map((pt) => {
+      const { ec, temperature } = interpolateEC(sorted, pt.time);
+      const ec25 = compensateEC(ec, temperature);
+      const tds = ec25 * factorToUse; // TDS %
+      const beverageWeight = brewData ? getCumulativePour(brewData, pt.time) : 0;
+      const ey = beverageWeight > 0 ? (tds / 100) * beverageWeight / doseWeight * 100 : 0;
+      return { time: pt.time, ec, ec25, tds, ey, beverageWeight, temperature };
+    });
+  }, [ecPoints, brewData, doseWeight, factorToUse]);
+
+  // ── Axis limits ─────────────────────────────────────────────────────────
+
+  const { tdsMax, eyMax, timeMax } = useMemo(() => {
+    if (series.length === 0) return { tdsMax: 3, eyMax: 30, timeMax: 120 };
+    const maxTDS = Math.max(...series.map(p => p.tds));
+    const maxEY  = Math.max(...series.map(p => p.ey));
+    const maxT   = series[series.length - 1].time;
+    return {
+      tdsMax: Math.max(1, Math.ceil(maxTDS * 1.2 * 10) / 10),
+      eyMax:  Math.max(5, Math.ceil(maxEY  * 1.2)),
+      timeMax: maxT,
+    };
+  }, [series]);
+
+  // ── Resize observer ─────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0].contentRect.width;
+      if (w > 100) setBaseWidth(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    setCanvasSize({ width: Math.round(baseWidth * zoomLevel), height: 340 });
+  }, [baseWidth, zoomLevel]);
+
+  // ── Canvas draw ─────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const { width, height } = canvasSize;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = width  * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width  = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.scale(dpr, dpr);
+
+    ctx.clearRect(0, 0, width, height);
+
+    const plotW = width  - PAD.left - PAD.right;
+    const plotH = height - PAD.top  - PAD.bottom;
+    if (plotW < 1 || plotH < 1 || series.length < 2) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        series.length === 0 ? 'No EC data — extract points from screenshot first' : 'Need at least 2 EC points',
+        width / 2, height / 2
+      );
+      return;
+    }
+
+    // coord helpers
+    const toX = (t: number) => PAD.left + (t / timeMax) * plotW;
+    const toYtds = (v: number) => PAD.top + plotH - (v / tdsMax) * plotH;
+    const toYey  = (v: number) => PAD.top + plotH - (v / eyMax)  * plotH;
+
+    // ── Phase bands ──────────────────────────────────────────────────────
+    phaseLogs.forEach(phase => {
+      const x0 = toX(phase.startTime);
+      const x1 = toX(Math.min(phase.endTime, timeMax));
+      if (x1 < PAD.left || x0 > PAD.left + plotW) return;
+      ctx.fillStyle = phase.color + '28';
+      ctx.fillRect(x0, PAD.top, Math.max(0, x1 - x0), plotH);
+      ctx.strokeStyle = phase.color + '88';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x0, PAD.top);
+      ctx.lineTo(x0, PAD.top + plotH);
+      ctx.stroke();
+      // label
+      ctx.fillStyle = phase.color;
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'left';
+      const labelX = Math.max(PAD.left + 2, x0 + 3);
+      ctx.fillText(phase.name, labelX, PAD.top + 12);
+    });
+
+    // ── Grid & axes ───────────────────────────────────────────────────────
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    const tdsGridCount = 5;
+    for (let i = 0; i <= tdsGridCount; i++) {
+      const v = (tdsMax / tdsGridCount) * i;
+      const y = toYtds(v);
+      ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + plotW, y); ctx.stroke();
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(v.toFixed(1) + '%', PAD.left - 6, y + 4);
+    }
+
+    // EY right-axis labels
+    const eyGridCount = 5;
+    for (let i = 0; i <= eyGridCount; i++) {
+      const v = (eyMax / eyGridCount) * i;
+      const y = toYey(v);
+      ctx.fillStyle = '#b45309';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(v.toFixed(0) + '%', PAD.left + plotW + 6, y + 4);
+    }
+
+    // X-axis ticks
+    const tickInterval = timeMax <= 120 ? 15 : timeMax <= 240 ? 30 : 60;
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    for (let t = 0; t <= timeMax; t += tickInterval) {
+      const x = toX(t);
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(x, PAD.top); ctx.lineTo(x, PAD.top + plotH); ctx.stroke();
+      ctx.fillStyle = '#64748b';
+      ctx.fillText(formatClock(t), x, PAD.top + plotH + 16);
+    }
+
+    // Plot border
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(PAD.left, PAD.top, plotW, plotH);
+
+    // Axis labels
+    ctx.save();
+    ctx.translate(14, PAD.top + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('TDS %', 0, 0);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(width - 14, PAD.top + plotH / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = '#d97706';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('EY %', 0, 0);
+    ctx.restore();
+
+    // ── EY line ──────────────────────────────────────────────────────────
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    series.forEach((pt, i) => {
+      const x = toX(pt.time);
+      const y = toYey(pt.ey);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // ── TDS line ─────────────────────────────────────────────────────────
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    series.forEach((pt, i) => {
+      const x = toX(pt.time);
+      const y = toYtds(pt.tds);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // ── Target TDS guide line ────────────────────────────────────────────
+    if (showTargetAssistant && targetMode === 'tds' && targetTDS != null) {
+      const yTarget = toYtds(Math.max(0, Math.min(targetTDS, tdsMax)));
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([8, 4]);
+      ctx.beginPath();
+      ctx.moveTo(PAD.left, yTarget);
+      ctx.lineTo(PAD.left + plotW, yTarget);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ef4444';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Target ${targetTDS.toFixed(2)}%`, PAD.left + 6, Math.max(PAD.top + 12, yTarget - 6));
+    }
+
+    // ── Target EY guide line ─────────────────────────────────────────────
+    if (showTargetAssistant && targetMode === 'ey' && targetEY != null) {
+      const yTargetEY = toYey(Math.max(0, Math.min(targetEY, eyMax)));
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(PAD.left, yTargetEY);
+      ctx.lineTo(PAD.left + plotW, yTargetEY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#b45309';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`EY target ${targetEY.toFixed(1)}%`, PAD.left + plotW - 6, Math.max(PAD.top + 12, yTargetEY - 6));
+    }
+
+    // ── EC raw overlay ────────────────────────────────────────────────────
+    if (showECOverlay && ecPoints.length > 1) {
+      const sortedEC = [...ecPoints].sort((a, b) => a.time - b.time);
+      const ecMax = Math.max(...sortedEC.map(p => p.ecValue)) * 1.1 || 1;
+      ctx.strokeStyle = '#7c3aed';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 3]);
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      sortedEC.forEach((pt, i) => {
+        if (pt.time > timeMax) return;
+        const x = toX(pt.time);
+        const y = PAD.top + plotH - (pt.ecValue / ecMax) * plotH;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // EC axis label (right inner, above EY label)
+      ctx.fillStyle = '#7c3aed';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`EC max ${(ecMax / 1.1).toFixed(1)} mS/cm`, PAD.left + plotW + 6, PAD.top + 8);
+    }
+
+    // ── Cumulative pour overlay ───────────────────────────────────────────
+    if (showPourOverlay && brewData && brewData.cumulativePour.length > 1) {
+      const pourMax = Math.max(...brewData.cumulativePour.filter(Number.isFinite)) * 1.1 || 1;
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      let pourStarted = false;
+      for (let i = 0; i < brewData.cumulativePour.length; i++) {
+        const t = i * brewData.intervalSeconds;
+        if (t > timeMax) break;
+        const v = brewData.cumulativePour[i];
+        if (!Number.isFinite(v)) continue;
+        const x = toX(t);
+        const y = PAD.top + plotH - (v / pourMax) * plotH;
+        if (!pourStarted) { ctx.moveTo(x, y); pourStarted = true; } else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Pour label (left inner)
+      ctx.fillStyle = '#2563eb';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`Pour max ${(pourMax / 1.1).toFixed(0)} g`, PAD.left - 6, PAD.top + 8);
+    }
+
+    // ── Hover marker ─────────────────────────────────────────────────────
+    if (hoverIndex != null && hoverIndex >= 0 && hoverIndex < series.length) {
+      const pt = series[hoverIndex];
+      const hx = toX(pt.time);
+      // vertical guide
+      ctx.strokeStyle = '#64748b80';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(hx, PAD.top); ctx.lineTo(hx, PAD.top + plotH); ctx.stroke();
+      ctx.setLineDash([]);
+      // TDS dot
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(hx, toYtds(pt.tds), 4, 0, Math.PI * 2);
+      ctx.fill();
+      // EY dot
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(hx, toYey(pt.ey), 4, 0, Math.PI * 2);
+      ctx.fill();
+      // tooltip box
+      const lines = [
+        `t = ${formatClock(pt.time)}`,
+        `EC = ${pt.ec.toFixed(2)} mS/cm${pt.temperature != null ? ` @ ${pt.temperature.toFixed(1)}°C` : ''}`,
+        `EC₂₅ = ${pt.ec25.toFixed(2)} mS/cm`,
+        `TDS = ${pt.tds.toFixed(2)}%`,
+        `Pour = ${pt.beverageWeight.toFixed(1)} g`,
+        `EY = ${pt.ey.toFixed(1)}%`,
+      ];
+      const boxW = 162, lineH = 16, boxH = lines.length * lineH + 10;
+      let bx = hx + 10;
+      if (bx + boxW > PAD.left + plotW) bx = hx - boxW - 10;
+      const by = PAD.top + 10;
+      ctx.fillStyle = 'rgba(15,23,42,0.88)';
+      ctx.beginPath();
+      (ctx as CanvasRenderingContext2D).roundRect?.(bx, by, boxW, boxH, 6);
+      ctx.fill();
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'left';
+      lines.forEach((line, i) => {
+        ctx.fillStyle = i === 3 ? '#6ee7b7' : i === 5 ? '#fcd34d' : '#e2e8f0';
+        ctx.fillText(line, bx + 8, by + 16 + i * lineH);
+      });
+    }
+
+    // ── Legend ───────────────────────────────────────────────────────────
+    const legend: { color: string; label: string; dash?: number[] }[] = [
+      { color: '#10b981', label: 'TDS %' },
+      { color: '#f59e0b', label: `EY % (dose ${doseWeight.toFixed(1)} g)` },
+    ];
+    if (showTargetAssistant && targetMode === 'tds' && targetTDS != null) {
+      legend.push({ color: '#ef4444', label: `Target TDS ${targetTDS.toFixed(2)}%`, dash: [8, 4] });
+    }
+    if (showTargetAssistant && targetMode === 'ey' && targetEY != null) {
+      legend.push({ color: '#b45309', label: `Target EY ${targetEY.toFixed(1)}%`, dash: [4, 4] });
+    }
+    if (showECOverlay) legend.push({ color: '#7c3aed', label: 'EC (mS/cm)', dash: [6, 3] });
+    if (showPourOverlay && brewData) legend.push({ color: '#2563eb', label: 'Water-in (g)', dash: [3, 3] });
+    let lx = PAD.left;
+    legend.forEach(({ color, label, dash }) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      if (dash) ctx.setLineDash(dash); else ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(lx, height - 12); ctx.lineTo(lx + 20, height - 12); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#334155';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, lx + 24, height - 8);
+      lx += ctx.measureText(label).width + 52;
+    });
+
+  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showECOverlay, showPourOverlay, showTargetAssistant, targetMode, targetTDS, targetEY, ecPoints, brewData]);
+
+  // ── Hover handler ────────────────────────────────────────────────────────
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || series.length === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const plotW = canvasSize.width - PAD.left - PAD.right;
+    const tFrac = (mx - PAD.left) / plotW;
+    const tAtMouse = tFrac * timeMax;
+    // find closest index by time
+    let closest = 0, minDist = Infinity;
+    series.forEach((pt, i) => {
+      const d = Math.abs(pt.time - tAtMouse);
+      if (d < minDist) { minDist = d; closest = i; }
+    });
+    setHoverIndex(closest);
+  };
+
+  // ── Phase summary table ──────────────────────────────────────────────────
+
+  interface PhaseSummaryRow {
+    phase: PhaseLog;
+    pts: TDSPoint[];
+    peakTDS: number;
+    avgTDS: number;
+    endEY: number;
+    startEY: number;
+    endPour: number;
+    duration: number;
+  }
+
+  const phaseSummary = useMemo((): PhaseSummaryRow[] => {
+    if (series.length === 0 || phaseLogs.length === 0) return [];
+    const rows: PhaseSummaryRow[] = [];
+    for (const phase of phaseLogs) {
+      const pts = series.filter(p => p.time >= phase.startTime && p.time <= phase.endTime);
+      if (pts.length === 0) continue;
+      const peakTDS = Math.max(...pts.map(p => p.tds));
+      const avgTDS  = pts.reduce((s, p) => s + p.tds, 0) / pts.length;
+      const endEY   = pts[pts.length - 1].ey;
+      const startEY = pts[0].ey;
+      const endPour = pts[pts.length - 1].beverageWeight;
+      const duration = phase.endTime - phase.startTime;
+      rows.push({ phase, pts, peakTDS, avgTDS, endEY, startEY, endPour, duration });
+    }
+    return rows;
+  }, [series, phaseLogs]);
+
+  const targetTDSWindows = useMemo(() => {
+    if (!showTargetAssistant || targetMode !== 'tds' || targetTDS == null || series.length === 0) {
+      return [] as TargetWindow[];
+    }
+
+    const tolerance = Math.max(0.03, targetTDS * 0.02);
+    const hitIndices: number[] = [];
+    series.forEach((pt, i) => {
+      if (Math.abs(pt.tds - targetTDS) <= tolerance) {
+        hitIndices.push(i);
+      }
+    });
+    if (hitIndices.length === 0) return [];
+
+    const windows: TargetWindow[] = [];
+
+    let start = hitIndices[0];
+    let prev = hitIndices[0];
+    for (let i = 1; i <= hitIndices.length; i++) {
+      const current = hitIndices[i];
+      const contiguous = current === prev + 1;
+      if (i < hitIndices.length && contiguous) {
+        prev = current;
+        continue;
+      }
+
+      const windowPts = series.slice(start, prev + 1);
+      windows.push({
+        startTime: windowPts[0].time,
+        endTime: windowPts[windowPts.length - 1].time,
+        minEC: Math.min(...windowPts.map(p => p.ec25)),
+        maxEC: Math.max(...windowPts.map(p => p.ec25)),
+        minWaterIn: Math.min(...windowPts.map(p => p.beverageWeight)),
+        maxWaterIn: Math.max(...windowPts.map(p => p.beverageWeight)),
+      });
+
+      start = current;
+      prev = current;
+    }
+
+    return windows;
+  }, [showTargetAssistant, targetMode, targetTDS, series]);
+
+  const nearestTargetPoint = useMemo(() => {
+    if (!showTargetAssistant || targetMode !== 'tds' || targetTDS == null || series.length === 0) return null;
+    let best = series[0];
+    let bestDiff = Math.abs(series[0].tds - targetTDS);
+    for (let i = 1; i < series.length; i++) {
+      const d = Math.abs(series[i].tds - targetTDS);
+      if (d < bestDiff) {
+        best = series[i];
+        bestDiff = d;
+      }
+    }
+    return { point: best, diff: bestDiff };
+  }, [showTargetAssistant, targetMode, targetTDS, series]);
+
+  const targetEYWindows = useMemo(() => {
+    if (!showTargetAssistant || targetMode !== 'ey' || targetEY == null || series.length === 0) {
+      return [] as TargetWindow[];
+    }
+
+    const tolerance = Math.max(0.25, targetEY * 0.02);
+    const hitIndices: number[] = [];
+    series.forEach((pt, i) => {
+      if (Math.abs(pt.ey - targetEY) <= tolerance) {
+        hitIndices.push(i);
+      }
+    });
+    if (hitIndices.length === 0) return [];
+
+    const windows: TargetWindow[] = [];
+
+    let start = hitIndices[0];
+    let prev = hitIndices[0];
+    for (let i = 1; i <= hitIndices.length; i++) {
+      const current = hitIndices[i];
+      const contiguous = current === prev + 1;
+      if (i < hitIndices.length && contiguous) {
+        prev = current;
+        continue;
+      }
+
+      const windowPts = series.slice(start, prev + 1);
+      windows.push({
+        startTime: windowPts[0].time,
+        endTime: windowPts[windowPts.length - 1].time,
+        minEC: Math.min(...windowPts.map(p => p.ec25)),
+        maxEC: Math.max(...windowPts.map(p => p.ec25)),
+        minWaterIn: Math.min(...windowPts.map(p => p.beverageWeight)),
+        maxWaterIn: Math.max(...windowPts.map(p => p.beverageWeight)),
+      });
+
+      start = current;
+      prev = current;
+    }
+
+    return windows;
+  }, [showTargetAssistant, targetMode, targetEY, series]);
+
+  const nearestTargetEYPoint = useMemo(() => {
+    if (!showTargetAssistant || targetMode !== 'ey' || targetEY == null || series.length === 0) return null;
+    let best = series[0];
+    let bestDiff = Math.abs(series[0].ey - targetEY);
+    for (let i = 1; i < series.length; i++) {
+      const d = Math.abs(series[i].ey - targetEY);
+      if (d < bestDiff) {
+        best = series[i];
+        bestDiff = d;
+      }
+    }
+    return { point: best, diff: bestDiff };
+  }, [showTargetAssistant, targetMode, targetEY, series]);
+
+  const renderTargetWindows = (windows: TargetWindow[], tone: 'rose' | 'amber') => {
+    const palette = tone === 'rose'
+      ? {
+          border: 'border-rose-200/80',
+          headerBg: 'bg-gradient-to-r from-rose-50 to-white',
+          badgeBg: 'bg-rose-100 text-rose-800',
+          label: 'text-rose-700',
+          tableBorder: 'border-rose-100',
+          stripe: 'even:bg-rose-50/40',
+        }
+      : {
+          border: 'border-amber-200/80',
+          headerBg: 'bg-gradient-to-r from-amber-50 to-white',
+          badgeBg: 'bg-amber-100 text-amber-800',
+          label: 'text-amber-700',
+          tableBorder: 'border-amber-100',
+          stripe: 'even:bg-amber-50/40',
+        };
+
+    return (
+      <div className="mt-3 grid gap-3 text-xs text-slate-700">
+        {windows.slice(0, 3).map((window, idx) => {
+          const rows = [
+            ['EC25', `${window.minEC.toFixed(2)}-${window.maxEC.toFixed(2)} mS/cm`],
+            ['Water-in', `${window.minWaterIn.toFixed(0)}-${window.maxWaterIn.toFixed(0)} ml`],
+            ['Ratio', hasBrewData ? formatBrewRatioRange(window.minWaterIn, window.maxWaterIn, doseWeight) : 'n/a (no Ultrakoki data)'],
+          ];
+
+          return (
+            <div key={`${tone}-target-window-${idx}`} className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${palette.border}`}>
+              <div className={`flex flex-wrap items-center justify-between gap-2 px-4 py-3 ${palette.headerBg}`}>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${palette.badgeBg}`}>
+                    Window {idx + 1}
+                  </span>
+                  <span className="text-sm font-semibold text-slate-900">
+                    {formatClock(window.startTime)} - {formatClock(window.endTime)}
+                  </span>
+                </div>
+                <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${palette.label}`}>
+                  Match Range
+                </span>
+              </div>
+
+              <div className="px-4 py-3">
+                <table className="w-full border-separate border-spacing-0 text-left text-[13px]">
+                  <tbody>
+                    {rows.map(([label, value]) => (
+                      <tr key={label} className={palette.stripe}>
+                        <th className={`w-32 border-t px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] ${palette.label} ${palette.tableBorder}`}>
+                          {label}
+                        </th>
+                        <td className={`border-t px-3 py-2 font-medium text-slate-800 ${palette.tableBorder}`}>
+                          {value}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // ── Overall summary ──────────────────────────────────────────────────────
+
+  const overall = useMemo(() => {
+    if (series.length === 0) return null;
+    const finalEY  = series[series.length - 1].ey;
+    const peakTDS  = Math.max(...series.map(p => p.tds));
+    const finalBev = series[series.length - 1].beverageWeight;
+    const peakTime = series.find(p => p.tds === peakTDS)?.time ?? 0;
+    const refractometerFinalEY =
+      refractometerAnchor != null && doseWeight > 0
+        ? (refractometerAnchor / 100) * finalBev / doseWeight * 100
+        : null;
+    return { finalEY, peakTDS, finalBev, peakTime, refractometerFinalEY };
+  }, [series, refractometerAnchor, doseWeight]);
+
+  const overallWaterIn = useMemo(() => {
+    if (!brewData || !Array.isArray(brewData.cumulativePour) || brewData.cumulativePour.length === 0) {
+      return null;
+    }
+    for (let i = brewData.cumulativePour.length - 1; i >= 0; i--) {
+      const v = brewData.cumulativePour[i];
+      if (Number.isFinite(v)) return v;
+    }
+    return null;
+  }, [brewData]);
+
+  const overallBrewRatio = useMemo(() => {
+    if (overallWaterIn == null || !Number.isFinite(overallWaterIn) || doseWeight <= 0) return null;
+    return overallWaterIn / doseWeight;
+  }, [overallWaterIn, doseWeight]);
+
+  // ── Render ───────────────────────────────────────────────────────────────
+
+  if (ecPoints.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600">
+          <h3 className="text-white font-semibold text-sm">TDS &amp; Extraction Yield Analysis</h3>
+          <p className="text-emerald-100 text-xs mt-0.5">Extract EC data from a screenshot to enable this analysis</p>
+        </div>
+        <div className="p-6 text-center text-slate-400 text-sm">No EC data available yet.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-white font-semibold text-sm">TDS &amp; Extraction Yield Analysis</h3>
+            <p className="text-emerald-100 text-xs mt-0.5">
+              EC → TDS (×{factorToUse.toFixed(3)}) → EY% &nbsp;|&nbsp; dose: {doseWeight.toFixed(1)} g
+              {ecPoints.some(p => p.temperature != null) && ' | temp-compensated @ 25°C'}
+              {refractometerAnchor != null && adjustedConversionFactor != null && ' | refractometer-anchored'}
+              {overallBrewRatio != null && ` | ratio 1:${overallBrewRatio.toFixed(1)} (Ultrakoki)`}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setShowECOverlay(v => !v)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showECOverlay ? 'bg-violet-200 text-violet-900' : 'bg-white/20 text-white/70'}`}
+            >
+              EC curve {showECOverlay ? '✓' : '–'}
+            </button>
+            <button
+              onClick={() => setShowPourOverlay(v => !v)}
+              disabled={!brewData}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showPourOverlay && brewData ? 'bg-blue-200 text-blue-900' : 'bg-white/20 text-white/60'}`}
+            >
+              Water-in {showPourOverlay && brewData ? '✓' : '–'}
+            </button>
+            <button
+              onClick={() => setShowTargetAssistant(v => !v)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showTargetAssistant ? 'bg-rose-200 text-rose-900' : 'bg-white/20 text-white/70'}`}
+            >
+              Target Assistant {showTargetAssistant ? '✓' : '–'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {showTargetAssistant && (
+        <div className={`px-4 py-3 border-b ${targetMode === 'tds' ? 'border-rose-100 bg-gradient-to-r from-rose-50 to-pink-50' : 'border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50'}`}>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="inline-flex rounded-lg border border-white/70 bg-white/70 p-1 shadow-sm">
+              <button
+                onClick={() => setTargetMode('tds')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold ${targetMode === 'tds' ? 'bg-rose-200 text-rose-900' : 'text-slate-600 hover:bg-white'}`}
+              >
+                TDS
+              </button>
+              <button
+                onClick={() => setTargetMode('ey')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold ${targetMode === 'ey' ? 'bg-amber-200 text-amber-900' : 'text-slate-600 hover:bg-white'}`}
+              >
+                EY
+              </button>
+            </div>
+
+            <label className={`text-xs font-semibold tracking-wide uppercase ${targetMode === 'tds' ? 'text-rose-700' : 'text-amber-700'}`}>
+              {targetMode === 'tds' ? 'Target TDS %' : 'Target EY %'}
+            </label>
+            <input
+              type="number"
+              min={targetMode === 'tds' ? 0.1 : 1}
+              max={targetMode === 'tds' ? 5 : 40}
+              step={targetMode === 'tds' ? 0.01 : 0.1}
+              value={targetMode === 'tds' ? targetTDSInput : targetEYInput}
+              onChange={(e) => {
+                if (targetMode === 'tds') setTargetTDSInput(e.target.value);
+                else setTargetEYInput(e.target.value);
+              }}
+              className={`w-24 px-2.5 py-1.5 text-sm font-semibold border rounded-lg bg-white shadow-sm focus:outline-none ${targetMode === 'tds' ? 'border-rose-200 focus:ring-2 focus:ring-rose-300' : 'border-amber-200 focus:ring-2 focus:ring-amber-300'}`}
+            />
+            <span className={`text-xs ${targetMode === 'tds' ? 'text-rose-700/90' : 'text-amber-700/90'}`}>
+              Shows EC range, time window, water-in amount, and brew ratio for your target.
+            </span>
+          </div>
+
+          {targetMode === 'tds' && targetTDS != null && targetTDSWindows.length > 0 && (
+            renderTargetWindows(targetTDSWindows, 'rose')
+          )}
+          {targetMode === 'tds' && targetTDS != null && targetTDSWindows.length === 0 && nearestTargetPoint && (
+            <div className="mt-3 text-xs text-slate-700 rounded-xl border border-rose-200/80 bg-white px-3 py-2 shadow-sm">
+              No direct window found. Nearest: {formatClock(nearestTargetPoint.point.time)} | TDS {nearestTargetPoint.point.tds.toFixed(2)}% (Δ {nearestTargetPoint.diff.toFixed(2)}), EC25 {nearestTargetPoint.point.ec25.toFixed(2)} mS/cm, Water-in {nearestTargetPoint.point.beverageWeight.toFixed(0)} ml, Ratio {hasBrewData ? formatBrewRatio(nearestTargetPoint.point.beverageWeight, doseWeight) : 'n/a (no Ultrakoki data)'}.
+            </div>
+          )}
+
+          {targetMode === 'ey' && targetEY != null && targetEYWindows.length > 0 && (
+            renderTargetWindows(targetEYWindows, 'amber')
+          )}
+          {targetMode === 'ey' && targetEY != null && targetEYWindows.length === 0 && nearestTargetEYPoint && (
+            <div className="mt-3 text-xs text-slate-700 rounded-xl border border-amber-200/80 bg-white px-3 py-2 shadow-sm">
+              No direct window found. Nearest: {formatClock(nearestTargetEYPoint.point.time)} | EY {nearestTargetEYPoint.point.ey.toFixed(1)}% (Δ {nearestTargetEYPoint.diff.toFixed(1)}), EC25 {nearestTargetEYPoint.point.ec25.toFixed(2)} mS/cm, Water-in {nearestTargetEYPoint.point.beverageWeight.toFixed(0)} ml, Ratio {hasBrewData ? formatBrewRatio(nearestTargetEYPoint.point.beverageWeight, doseWeight) : 'n/a (no Ultrakoki data)'}.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Overall summary cards */}
+      {overall && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 px-4 py-2 bg-slate-50 border-b border-slate-100">
+          <div className="bg-white rounded-lg border border-slate-200 px-3 py-2 shadow-sm">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Peak TDS</div>
+            <div className="mt-1 flex items-end justify-between gap-2">
+              <div className="text-lg font-bold leading-none text-emerald-600">{overall.peakTDS.toFixed(2)}%</div>
+              <div className="text-[11px] font-medium text-slate-500">@ {formatClock(overall.peakTime)}</div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border border-slate-200 px-3 py-2 shadow-sm">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Final EY</div>
+            <div className="mt-1 flex items-end justify-between gap-2">
+              <div className="text-lg font-bold leading-none text-amber-600">{overall.finalEY.toFixed(1)}%</div>
+              <div className="text-[11px] font-medium text-slate-500 text-right">
+                {overall.refractometerFinalEY != null ? `ref ${overall.refractometerFinalEY.toFixed(1)}%` : 'calculated'}
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border border-slate-200 px-3 py-2 shadow-sm">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              {overallWaterIn != null ? 'Water-in' : 'Beverage'}
+            </div>
+            <div className="mt-1 flex items-end justify-between gap-2">
+              <div className="text-lg font-bold leading-none text-blue-600">{overallWaterIn != null ? `${overallWaterIn.toFixed(0)} g` : `${overall.finalBev.toFixed(0)} g`}</div>
+              <div className="text-[11px] font-medium text-slate-500 text-right">
+                {overallWaterIn != null ? 'Ultrakoki' : 'final weight'}
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border border-slate-200 px-3 py-2 shadow-sm">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              {overallBrewRatio != null ? 'Brew Ratio' : (adjustedConversionFactor != null ? 'Correction' : 'Dose')}
+            </div>
+            <div className="mt-1 flex items-end justify-between gap-2">
+              <div className="text-lg font-bold leading-none text-slate-700">{overallBrewRatio != null ? `1:${overallBrewRatio.toFixed(1)}` : (adjustedConversionFactor != null ? adjustedConversionFactor.toFixed(3) : `${doseWeight.toFixed(1)} g`)}</div>
+              <div className="text-[11px] font-medium text-slate-500 text-right">
+                {overallBrewRatio != null ? 'Ultrakoki' : (adjustedConversionFactor != null ? 'TDS only' : 'coffee')}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Canvas graph */}
+      <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-1">
+        <span className="text-xs text-slate-500">Zoom</span>
+        <button
+          onClick={() => setZoomLevel(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}
+          className="w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-100 flex items-center justify-center"
+        >−</button>
+        <span className="text-xs font-semibold text-slate-700 w-8 text-center">{zoomLevel === 1 ? '1×' : `${zoomLevel}×`}</span>
+        <button
+          onClick={() => setZoomLevel(z => Math.min(4, parseFloat((z + 0.25).toFixed(2))))}
+          className="w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-100 flex items-center justify-center"
+        >+</button>
+      </div>
+      <div ref={containerRef} className="w-full px-4 pt-1 pb-2 overflow-x-auto">
+        <canvas
+          ref={canvasRef}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setHoverIndex(null)}
+          className="rounded cursor-crosshair"
+          style={{ height: '340px' }}
+        />
+      </div>
+
+      {/* Phase summary table */}
+      {phaseSummary.length > 0 && (
+        <div className="px-4 pb-4">
+          <div className="text-xs font-semibold text-slate-600 uppercase tracking-[0.14em] mb-2">Phase Extraction Summary</div>
+          <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+            <table className="w-full min-w-[760px] text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-100/90">
+                  <th className="text-left px-3 py-2 border border-slate-200 font-semibold text-slate-600">Phase</th>
+                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-slate-600">Time range</th>
+                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-slate-600">Duration</th>
+                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-emerald-700">Peak TDS%</th>
+                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-emerald-700">Avg TDS%</th>
+                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-amber-700">EY start</th>
+                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-amber-700">EY end</th>
+                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-blue-700">Pour at end</th>
+                </tr>
+              </thead>
+              <tbody>
+                {phaseSummary.map(({ phase, peakTDS, avgTDS, endEY, startEY, endPour, duration }) => (
+                  <tr key={phase.id} className="odd:bg-white even:bg-slate-50/60 hover:bg-blue-50/40 transition-colors">
+                    <td className="px-3 py-2 border border-slate-200">
+                      <span
+                        className="inline-block w-2 h-2 rounded-full mr-1.5"
+                        style={{ background: phase.color }}
+                      />
+                      <span className="font-semibold text-slate-800">{phase.name}</span>
+                    </td>
+                    <td className="text-center px-3 py-2 border border-slate-200 font-mono text-slate-600">
+                      {formatClock(phase.startTime)} → {formatClock(phase.endTime)}
+                    </td>
+                    <td className="text-center px-3 py-2 border border-slate-200 text-slate-600">
+                      {duration.toFixed(0)} s
+                    </td>
+                    <td className="text-center px-3 py-2 border border-slate-200 font-bold text-emerald-700">
+                      {peakTDS.toFixed(2)}%
+                    </td>
+                    <td className="text-center px-3 py-2 border border-slate-200 text-emerald-600">
+                      {avgTDS.toFixed(2)}%
+                    </td>
+                    <td className="text-center px-3 py-2 border border-slate-200 text-amber-600">
+                      {startEY.toFixed(1)}%
+                    </td>
+                    <td className="text-center px-3 py-2 border border-slate-200 font-bold text-amber-700">
+                      {endEY.toFixed(1)}%
+                    </td>
+                    <td className="text-center px-3 py-2 border border-slate-200 text-blue-700">
+                      {endPour.toFixed(0)} g
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Interpretation guide */}
+          <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-600 space-y-1">
+            <div className="font-semibold text-slate-700 mb-1">Reading guide</div>
+            <div><span className="text-emerald-600 font-medium">TDS 1.2–1.5%</span> = ideal extraction window for most filter coffee</div>
+            <div><span className="text-amber-600 font-medium">EY 18–22%</span> = specialty target range (SCA standard)</div>
+            {refractometerAnchor != null && adjustedConversionFactor != null && (
+              <div><span className="text-violet-600 font-medium">Ref anchor:</span> TDS/EY are scaled so final cup equals {refractometerAnchor.toFixed(2)}%; EC curve and EC values are not modified.</div>
+            )}
+            <div><span className="text-slate-500">EY rising fast</span> = high extraction rate phase — watch for over-extraction</div>
+            <div><span className="text-slate-500">TDS falling + EY flat</span> = dilution phase, grounds nearly exhausted</div>
+          </div>
+        </div>
+      )}
+
+      {/* No phase logs hint */}
+      {phaseSummary.length === 0 && series.length > 0 && (
+        <div className="px-4 pb-4 text-xs text-slate-400 italic">
+          Add phase logs in the Phase Analysis panel to see per-phase TDS/EY breakdown.
+        </div>
+      )}
+    </div>
+  );
+};

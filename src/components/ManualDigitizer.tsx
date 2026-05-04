@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, Target, AlertCircle } from 'lucide-react';
 import { InteractiveDataGraph } from './InteractiveDataGraph';
 import { UltrakokiGraph, type UltrakokiBrewData } from './UltrakokiGraph';
+import { TDSAnalysisGraph } from './TDSAnalysisGraph';
 
 interface CalibrationPoint {
   x: number;
@@ -187,7 +188,18 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   const [importedJsonText, setImportedJsonText] = useState<string>('');
   const [importedJsonLabel, setImportedJsonLabel] = useState<string | null>(null);
   const [ultrakokiBrewData, setUltrakokiBrewData] = useState<UltrakokiBrewData | null>(null);
-  
+  const [doseWeight, setDoseWeight] = useState<number>(() => {
+    const saved = localStorage.getItem('belkaDoseWeight');
+    return saved ? (parseFloat(saved) || 15) : 15;
+  });
+  const [conversionFactor, setConversionFactor] = useState<number>(() => {
+    const saved = localStorage.getItem('belkaConversionFactor');
+    return saved ? (parseFloat(saved) || 0.5) : 0.5;
+  });
+  const [refractometerTDSInput, setRefractometerTDSInput] = useState<string>(() => {
+    return localStorage.getItem('belkaRefractometerTDS') || '';
+  });
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
 
@@ -1120,6 +1132,27 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     }
   }, [calibrationPoints]);
 
+  const autoPlaceHighestPoint = useCallback(() => {
+    const highestEC = parseFloat(manualHighestEC);
+    if (!isFinite(highestEC) || highestEC <= 0 || calibrationPoints.length < 3) return;
+    const origin = calibrationPoints[0];
+    const xEnd = calibrationPoints[1];
+    const yEnd = calibrationPoints[2];
+    const ySpan = yEnd.y - origin.y; // negative (canvas Y increases downward)
+    const yDataSpan = yEnd.dataY - origin.dataY;
+    const pixelY = yDataSpan !== 0 ? origin.y + (highestEC - origin.dataY) * (ySpan / yDataSpan) : yEnd.y;
+    const pixelX = (origin.x + xEnd.x) / 2;
+    const newPoint: CalibrationPoint = {
+      x: pixelX,
+      y: pixelY,
+      dataX: (origin.dataX + xEnd.dataX) / 2,
+      dataY: highestEC,
+      label: `Highest EC Point (${highestEC})`
+    };
+    setCalibrationPoints([...calibrationPoints.slice(0, 3), newPoint]);
+    setCurrentStep('extract');
+  }, [calibrationPoints, manualHighestEC]);
+
   const completeHighestCalibration = useCallback(() => {
     if (calibrationPoints.length >= 4) {
       // Add the highest calibration point to extracted points
@@ -1383,6 +1416,8 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
 
     setCalibrationPoints(scaledPoints);
     setManualHighestEC(scaledPoints[3].dataY.toFixed(2));
+    if (scaledPoints.length >= 2) setCalibrateXValue(scaledPoints[1].dataX);
+    if (scaledPoints.length >= 3) setCalibrateYValue(scaledPoints[2].dataY);
     setCurrentStep('extract');
     setLoadedCalibrationProfileName(profile.name);
     setError(null);
@@ -1512,10 +1547,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     setCurrentStep('calibrate-origin');
   }, []);
 
-  const importJsonData = useCallback(() => {
+  const importJsonPayload = useCallback((inputText: string, closePromptOnSuccess: boolean = true) => {
     try {
       // ── Sanitize raw input before parsing ────────────────────────────────
-      let raw = importedJsonText
+      let raw = inputText
         .replace(/^\uFEFF/, '')          // strip UTF-8 BOM
         .replace(/^\u200B/, '')          // strip zero-width space
         .trim();
@@ -1576,50 +1611,101 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         importedLabel = 'Imported point array';
         setUltrakokiBrewData(null);
       } else if (isRecord(parsed)) {
-        // Handle outer { id, json: { ... } } wrapper exported by ultrakoki app.
-        // Ultrakoki is treated as a timed smart-scale log, not an EC source.
-        const inner: Record<string, unknown> = isRecord(parsed.json) ? parsed.json as Record<string, unknown> : parsed;
-        const brewingLog = isRecord(inner.brewingLog) ? inner.brewingLog as Record<string, unknown>
-                         : isRecord(parsed.brewingLog) ? parsed.brewingLog as Record<string, unknown>
-                         : null;
-        if (brewingLog) {
-          const pourFlow = toNumberArray(brewingLog.size);
-          const dripFlow = toNumberArray(brewingLog.bsize);
-          const cumulativePour = toNumberArray(brewingLog.adc1);
+        // Accept ultrakoki wrappers where payload may be nested or stringified.
+        const tryRecord = (value: unknown): Record<string, unknown> | null => {
+          if (isRecord(value)) return value as Record<string, unknown>;
+          if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+              try {
+                const parsedInner = JSON.parse(trimmed) as unknown;
+                return isRecord(parsedInner) ? parsedInner as Record<string, unknown> : null;
+              } catch {
+                return null;
+              }
+            }
+          }
+          return null;
+        };
+
+        const outer = parsed as Record<string, unknown>;
+        const candidates: Record<string, unknown>[] = [outer];
+        const nestedCandidates = [outer.json, outer.data, outer.payload, outer.body, outer.result]
+          .map(value => tryRecord(value))
+          .filter((value): value is Record<string, unknown> => value !== null);
+        candidates.push(...nestedCandidates);
+
+        const pickArray = (obj: Record<string, unknown>, keys: string[]): number[] => {
+          for (const key of keys) {
+            const values = toNumberArray(obj[key]);
+            if (values.length > 0) return values;
+          }
+          return [];
+        };
+
+        for (const candidate of candidates) {
+          const brewingLog = isRecord(candidate.brewingLog)
+            ? candidate.brewingLog as Record<string, unknown>
+            : isRecord(candidate.brewLog)
+              ? candidate.brewLog as Record<string, unknown>
+              : candidate;
+
+          let pourFlow = pickArray(brewingLog, ['size', 'pourFlow', 'flow']);
+          let dripFlow = pickArray(brewingLog, ['bsize', 'dripFlow', 'outflow']);
+          let cumulativePour = pickArray(brewingLog, ['adc1', 'cumulativePour', 'cumulative']);
+
+          if (cumulativePour.length === 0 && pourFlow.length > 0) {
+            let running = 0;
+            cumulativePour = pourFlow.map(value => {
+              running += value;
+              return Number(running.toFixed(3));
+            });
+          }
+
           const sampleCount = Math.max(pourFlow.length, dripFlow.length, cumulativePour.length);
+          if (sampleCount <= 1) continue;
 
-          if (sampleCount > 1) {
-            const duration =
-              toFiniteNumber(brewingLog.period) ??
-              toFiniteNumber(inner.period) ??
-              toFiniteNumber(inner.totalDuration) ??
-              Math.max(sampleCount - 1, 1);
+          if (pourFlow.length === 0) pourFlow = Array(sampleCount).fill(0);
+          if (dripFlow.length === 0) dripFlow = Array(sampleCount).fill(0);
+          if (cumulativePour.length === 0) cumulativePour = Array(sampleCount).fill(0);
 
-            const intervalSeconds = sampleCount > 1 ? duration / (sampleCount - 1) : 1;
-          const singleBean = isRecord(inner.singleBean) ? inner.singleBean as Record<string, unknown> : null;
+          const rawDuration =
+            toFiniteNumber(brewingLog.period) ??
+            toFiniteNumber(brewingLog.totalDuration) ??
+            toFiniteNumber(candidate.period) ??
+            toFiniteNumber(candidate.totalDuration) ??
+            toFiniteNumber(outer.period) ??
+            toFiniteNumber(outer.totalDuration) ??
+            Math.max(sampleCount - 1, 1);
+
+          // Some exports store duration in ms.
+          const duration = rawDuration > 10000 ? rawDuration / 1000 : rawDuration;
+          const intervalSeconds = sampleCount > 1 ? duration / (sampleCount - 1) : 1;
+
+          const singleBean = isRecord(candidate.singleBean) ? candidate.singleBean as Record<string, unknown> : null;
           const labelParts = [
-            typeof inner.cupFactory === 'string' ? inner.cupFactory.trim() : '',
-            typeof inner.cupModel === 'string' ? inner.cupModel.trim() : '',
+            typeof candidate.cupFactory === 'string' ? candidate.cupFactory.trim() : '',
+            typeof candidate.cupModel === 'string' ? candidate.cupModel.trim() : '',
             typeof singleBean?.name === 'string' ? singleBean.name.trim() : ''
           ].filter(Boolean);
           importedLabel = labelParts.length > 0 ? labelParts.join(' / ') : 'Imported ultrakoki brew log';
 
-            importedBrewData = {
-              period: duration,
-              label: importedLabel,
-              intervalSeconds,
-              pourFlow,
-              dripFlow,
-              cumulativePour,
-            };
-          }
+          importedBrewData = {
+            period: Number(duration.toFixed(3)),
+            label: importedLabel,
+            intervalSeconds: Number(intervalSeconds.toFixed(6)),
+            pourFlow,
+            dripFlow,
+            cumulativePour,
+          };
+          break;
         }
       }
 
       if (importedBrewData) {
         setUltrakokiBrewData(importedBrewData);
         setImportedJsonLabel(importedLabel);
-        setShowJsonImportPrompt(false);
+        if (closePromptOnSuccess) setShowJsonImportPrompt(false);
         setImportedJsonText('');
         setError(null);
         return;
@@ -1643,7 +1729,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       setViewMode('original');
       setImportedJsonLabel(importedLabel);
       setCurrentStep('extract');
-      setShowJsonImportPrompt(false);
+      if (closePromptOnSuccess) setShowJsonImportPrompt(false);
       setImportedJsonText('');
       setError(null);
       onDataExtracted(mappedPoints);
@@ -1651,7 +1737,11 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       console.error('Failed to import JSON:', err);
       setError('Invalid JSON. Paste a full JSON object or point-array export.');
     }
-  }, [importedJsonText, onDataExtracted, calibrationPoints, dataToCanvas]);
+  }, [onDataExtracted, calibrationPoints, dataToCanvas]);
+
+  const importJsonData = useCallback(() => {
+    importJsonPayload(importedJsonText, true);
+  }, [importJsonPayload, importedJsonText]);
 
   const resetGenerated = useCallback(() => {
     setFineGeneratedCurve([]);
@@ -1845,6 +1935,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       default:
         return '';
     }
+
   };
 
   return (
@@ -1857,9 +1948,80 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
           <p className="text-gray-600">
             Click-based calibration for accurate EC data extraction
           </p>
-        </div>
+          {/* Status indicators */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {/* Screenshot */}
+            <div
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                selectedImage
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-gray-100 text-gray-500'
+              }`}
+              title={selectedImage ? `Screenshot loaded: ${selectedImageName}` : 'No screenshot loaded'}
+            >
+              <span className={`h-2 w-2 rounded-full ${selectedImage ? 'bg-green-500' : 'bg-gray-400'}`} />
+              {selectedImage ? `Screenshot: ${selectedImageName}` : 'No screenshot'}
+            </div>
 
-        <div className="p-6">
+            {/* Calibration */}
+            {(() => {
+              const calibrated = calibrationPoints.length >= 3;
+              const loaded = loadedCalibrationProfileName !== null;
+              const ok = calibrated || loaded;
+              const label = loaded
+                ? `Calibration: ${loadedCalibrationProfileName}`
+                : calibrated
+                ? 'Calibration done'
+                : 'Not calibrated';
+              return (
+                <div
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                    ok ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'
+                  }`}
+                  title={label}
+                >
+                  <span className={`h-2 w-2 rounded-full ${ok ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  {label}
+                </div>
+              );
+            })()}
+
+            {/* Ultrakoki JSON (optional) */}
+            <div
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                ultrakokiBrewData
+                  ? 'bg-blue-100 text-blue-800'
+                  : 'bg-gray-100 text-gray-400'
+              }`}
+              title={ultrakokiBrewData ? 'Ultrakoki JSON loaded' : 'Ultrakoki JSON not loaded (optional)'}
+            >
+              <span className={`h-2 w-2 rounded-full ${ultrakokiBrewData ? 'bg-blue-500' : 'bg-gray-300'}`} />
+              {ultrakokiBrewData ? 'Ultrakoki: loaded' : 'Ultrakoki: —'}
+            </div>
+          </div>
+        </div>
+          <div className="p-6">
+            {/* Upload Step */}
+          {currentStep === 'upload' && (
+            <div className="mb-6">
+              <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <Upload className="w-10 h-10 mb-3 text-gray-400" />
+                  <p className="mb-2 text-sm text-gray-500">
+                    <span className="font-semibold">Click to upload</span> Belka Portal screenshot
+                  </p>
+                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+              </label>
+            </div>
+          )}
+
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -1917,27 +2079,6 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
             </div>
           )}
 
-          {/* Upload Step */}
-          {currentStep === 'upload' && (
-            <div className="mb-6">
-              <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                  <p className="mb-2 text-sm text-gray-500">
-                    <span className="font-semibold">Click to upload</span> Belka Portal screenshot
-                  </p>
-                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                </div>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                />
-              </label>
-            </div>
-          )}
-
           {/* Image Display and Calibration */}
           {selectedImage && (
             <div className="space-y-6">
@@ -1947,6 +2088,13 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                   <Target className="w-5 h-5 text-blue-500 mr-2" />
                   <p className="text-blue-700 font-medium">{getInstructions()}</p>
                 </div>
+                {currentStep === 'calibrate-origin' && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <label className="text-sm font-medium text-blue-800 whitespace-nowrap">Zero point value:</label>
+                    <span className="px-3 py-1 text-sm bg-white border border-blue-300 rounded font-mono font-bold text-blue-900">0 (fixed)</span>
+                    <span className="text-xs text-blue-600">Click the bottom-left corner where both axes meet. This is always (0, 0).</span>
+                  </div>
+                )}
                 {currentStep === 'calibrate-x' && (
                   <div className="mt-3 flex items-center gap-3">
                     <label className="text-sm font-medium text-blue-800 whitespace-nowrap">Time axis max (s):</label>
@@ -1957,8 +2105,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                       value={calibrateXValue}
                       onChange={(e) => setCalibrateXValue(Math.max(1, Number(e.target.value) || 150))}
                       className="w-28 px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      autoFocus
                     />
-                    <span className="text-xs text-blue-600">Change this to match the last tick on the time axis.</span>
+                    <span className="text-xs text-blue-600">Type the last visible time tick (e.g. 100, 150, 200), then click that mark on the graph.</span>
                   </div>
                 )}
                 {currentStep === 'calibrate-y' && (
@@ -1971,8 +2120,34 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                       value={calibrateYValue}
                       onChange={(e) => setCalibrateYValue(Math.max(1, Number(e.target.value) || 20))}
                       className="w-28 px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      autoFocus
                     />
-                    <span className="text-xs text-blue-600">Change this to match the last tick on the EC axis.</span>
+                    <span className="text-xs text-blue-600">Type the last visible EC tick (e.g. 20, 25, 35), then click that mark on the graph.</span>
+                  </div>
+                )}
+                {currentStep === 'calibrate-highest' && (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-medium text-blue-800 whitespace-nowrap">Highest EC value:</label>
+                      <input
+                        type="number"
+                        min={0.1}
+                        step={0.5}
+                        value={manualHighestEC}
+                        onChange={(e) => setManualHighestEC(e.target.value)}
+                        className="w-28 px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="e.g. 25"
+                        autoFocus
+                      />
+                      <button
+                        onClick={autoPlaceHighestPoint}
+                        disabled={calibrationPoints.length < 3 || !manualHighestEC || !parseFloat(manualHighestEC)}
+                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        Confirm without clicking
+                      </button>
+                    </div>
+                    <p className="text-xs text-blue-600">Type the peak EC you read on the graph, then confirm — or click the peak directly on the curve.</p>
                   </div>
                 )}
               </div>
@@ -2614,9 +2789,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                       </div>
                       <div className="space-y-2">
                         <div className="text-xs text-gray-600">
-                          {currentStep === 'calibrate-origin' && 'Click on the origin (0,0) point, then click Finish.'}
-                          {currentStep === 'calibrate-x' && 'Click on the 150 second mark, then click Finish.'}
-                          {currentStep === 'calibrate-y' && 'Click on the 20 EC mark, then click Finish.'}
+                          {currentStep === 'calibrate-origin' && 'Click the origin corner (value = 0), then click Finish.'}
+                          {currentStep === 'calibrate-x' && `Click the ${calibrateXValue}s mark on the time axis, then click Finish.`}
+                          {currentStep === 'calibrate-y' && `Click the ${calibrateYValue} EC mark on the Y-axis, then click Finish.`}
                         </div>
                         <button
                           onClick={() => {
@@ -2905,7 +3080,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                             const file = e.target.files?.[0];
                             if (!file) return;
                             const reader = new FileReader();
-                            reader.onload = (ev) => setImportedJsonText(ev.target?.result as string ?? '');
+                            reader.onload = (ev) => {
+                              const text = ev.target?.result as string ?? '';
+                              setImportedJsonText(text);
+                            };
                             reader.readAsText(file);
                             e.target.value = '';
                           }}
@@ -2958,6 +3136,86 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                       </button>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* TDS & EY Analysis */}
+              {(extractedPoints.length > 0 || fineGeneratedCurve.length > 0) && (
+                <div className="space-y-3">
+                  {/* Dose / factor inputs */}
+                  <div className="flex flex-wrap items-center gap-4 px-1">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Coffee dose (g):</label>
+                      <input
+                        type="number"
+                        min={1}
+                        step={0.5}
+                        value={doseWeight}
+                        onChange={(e) => {
+                          const v = Math.max(0.1, parseFloat(e.target.value) || 15);
+                          setDoseWeight(v);
+                          localStorage.setItem('belkaDoseWeight', String(v));
+                        }}
+                        className="w-24 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-slate-700 whitespace-nowrap">EC→TDS factor:</label>
+                      <input
+                        type="number"
+                        min={0.1}
+                        max={1}
+                        step={0.01}
+                        value={conversionFactor}
+                        onChange={(e) => {
+                          const v = Math.min(1, Math.max(0.1, parseFloat(e.target.value) || 0.5));
+                          setConversionFactor(v);
+                          localStorage.setItem('belkaConversionFactor', String(v));
+                        }}
+                        className="w-20 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      />
+                      <span className="text-xs text-slate-500">(0.5 = standard, 0.55 = mineral-rich)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Refractometer TDS % (optional):</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={5}
+                        step={0.01}
+                        placeholder="e.g. 1.35"
+                        value={refractometerTDSInput}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setRefractometerTDSInput(value);
+                          localStorage.setItem('belkaRefractometerTDS', value);
+                        }}
+                        className="w-24 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      />
+                      {refractometerTDSInput.trim().length > 0 && (
+                        <button
+                          onClick={() => {
+                            setRefractometerTDSInput('');
+                            localStorage.removeItem('belkaRefractometerTDS');
+                          }}
+                          className="text-xs text-slate-500 hover:text-slate-700"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <TDSAnalysisGraph
+                    ecPoints={getCurrentData()}
+                    brewData={ultrakokiBrewData}
+                    phaseLogs={phaseLogs}
+                    doseWeight={doseWeight}
+                    conversionFactor={conversionFactor}
+                    refractometerTDS={(() => {
+                      const n = parseFloat(refractometerTDSInput);
+                      return Number.isFinite(n) && n > 0 ? n : null;
+                    })()}
+                  />
                 </div>
               )}
 

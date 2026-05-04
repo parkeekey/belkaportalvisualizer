@@ -184,6 +184,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   });
   const [calibrateXValue, setCalibrateXValue] = useState<number>(150);
   const [calibrateYValue, setCalibrateYValue] = useState<number>(20);
+  const [useBoxCalibrationMode, setUseBoxCalibrationMode] = useState<boolean>(false);
+  const [isDrawingCalibrationBox, setIsDrawingCalibrationBox] = useState<boolean>(false);
+  const [calibrationBoxStart, setCalibrationBoxStart] = useState<{ x: number; y: number } | null>(null);
+  const [calibrationBoxCurrent, setCalibrationBoxCurrent] = useState<{ x: number; y: number } | null>(null);
   const [showJsonImportPrompt, setShowJsonImportPrompt] = useState<boolean>(false);
   const [importedJsonText, setImportedJsonText] = useState<string>('');
   const [importedJsonLabel, setImportedJsonLabel] = useState<string | null>(null);
@@ -202,6 +206,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const suppressNextCanvasClickRef = useRef<boolean>(false);
 
   
   // Save auto-detect preference to localStorage
@@ -681,6 +686,63 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       ctx.fill();
     });
 
+    // Optional box alignment preview (for origin/x-end/y-max calibration)
+    if (useBoxCalibrationMode && calibrationBoxStart && calibrationBoxCurrent) {
+      const left = Math.min(calibrationBoxStart.x, calibrationBoxCurrent.x);
+      const right = Math.max(calibrationBoxStart.x, calibrationBoxCurrent.x);
+      const top = Math.min(calibrationBoxStart.y, calibrationBoxCurrent.y);
+      const bottom = Math.max(calibrationBoxStart.y, calibrationBoxCurrent.y);
+      const width = right - left;
+      const height = bottom - top;
+
+      if (width > 2 && height > 2) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(37, 99, 235, 0.12)';
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.fillRect(left, top, width, height);
+        ctx.strokeRect(left, top, width, height);
+        ctx.setLineDash([]);
+
+        // Origin marker (0,0)
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(left, bottom, 7, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(left, bottom, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // X end marker (Xmax,0)
+        ctx.fillStyle = '#2563eb';
+        ctx.beginPath();
+        ctx.arc(right, bottom, 7, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(right, bottom, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Y max marker (0,Ymax)
+        ctx.fillStyle = '#16a34a';
+        ctx.beginPath();
+        ctx.arc(left, top, 7, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(left, top, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.fillStyle = '#1e3a8a';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('Drag box: origin (0,0) -> top-right axis corner', left + 10, Math.max(16, top - 10));
+        ctx.restore();
+      }
+    }
+
     // Draw current data points (extracted, generated, or fine generated)
     const currentData = getCurrentData();
     currentData.forEach((point, index) => {
@@ -733,7 +795,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     phasePinTarget,
     phasePinCursor,
     showRedLight,
-    redLightTime
+    redLightTime,
+    useBoxCalibrationMode,
+    calibrationBoxStart,
+    calibrationBoxCurrent
   ]);
 
   // Redraw canvas when Red Light state changes
@@ -762,6 +827,16 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   }, [getCurrentData]);
 
   const handleCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (suppressNextCanvasClickRef.current) {
+      suppressNextCanvasClickRef.current = false;
+      return;
+    }
+
+    // In box calibration mode, click-based axis calibration is disabled.
+    if (useBoxCalibrationMode && (currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y')) {
+      return;
+    }
+
     console.log('Canvas clicked! Current step:', currentStep, 'View mode:', viewMode);
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -945,7 +1020,98 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         }
       }
     }
-  }, [currentStep, calibrationPoints, extractedPoints, findPointAtPosition, eraserMode, eraserSizePx, phasePinTarget, updatePhaseLog, calibrateXValue, calibrateYValue]);
+  }, [currentStep, calibrationPoints, extractedPoints, findPointAtPosition, eraserMode, eraserSizePx, phasePinTarget, updatePhaseLog, calibrateXValue, calibrateYValue, useBoxCalibrationMode]);
+
+  const getCanvasCoordinatesFromClient = useCallback((clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const canvasX = (clientX - rect.left) * (canvas.width / rect.width);
+    const canvasY = (clientY - rect.top) * (canvas.height / rect.height);
+    return { canvas, canvasX, canvasY };
+  }, []);
+
+  const applyBoxCalibrationFromPoints = useCallback((start: { x: number; y: number }, end: { x: number; y: number }) => {
+    const left = Math.min(start.x, end.x);
+    const right = Math.max(start.x, end.x);
+    const top = Math.min(start.y, end.y);
+    const bottom = Math.max(start.y, end.y);
+    const width = right - left;
+    const height = bottom - top;
+
+    if (width < 10 || height < 10) {
+      setError('Draw a larger box. It should span the full EC graph area from origin to top-right axis corner.');
+      return;
+    }
+
+    const originPoint: CalibrationPoint = {
+      x: left,
+      y: bottom,
+      dataX: 0,
+      dataY: 0,
+      label: 'Origin (0, 0)'
+    };
+    const xEndPoint: CalibrationPoint = {
+      x: right,
+      y: bottom,
+      dataX: calibrateXValue,
+      dataY: 0,
+      label: `Time Axis End (${calibrateXValue}s mark)`
+    };
+    const yEndPoint: CalibrationPoint = {
+      x: left,
+      y: top,
+      dataX: 0,
+      dataY: calibrateYValue,
+      label: `EC Axis End (${calibrateYValue} EC mark)`
+    };
+
+    setCalibrationPoints([originPoint, xEndPoint, yEndPoint]);
+    setCurrentStep('calibrate-highest');
+    setCalibrationBoxStart(null);
+    setCalibrationBoxCurrent(null);
+    setError(null);
+  }, [calibrateXValue, calibrateYValue]);
+
+  const handleCanvasPointerDown = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!(useBoxCalibrationMode && (currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y'))) {
+      return;
+    }
+
+    const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
+    if (!coords) return;
+    event.preventDefault();
+    coords.canvas.setPointerCapture(event.pointerId);
+    setIsDrawingCalibrationBox(true);
+    setCalibrationBoxStart({ x: coords.canvasX, y: coords.canvasY });
+    setCalibrationBoxCurrent({ x: coords.canvasX, y: coords.canvasY });
+  }, [useBoxCalibrationMode, currentStep, getCanvasCoordinatesFromClient]);
+
+  const handleCanvasPointerMove = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingCalibrationBox || !calibrationBoxStart) return;
+    const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
+    if (!coords) return;
+    event.preventDefault();
+    setCalibrationBoxCurrent({ x: coords.canvasX, y: coords.canvasY });
+  }, [isDrawingCalibrationBox, calibrationBoxStart, getCanvasCoordinatesFromClient]);
+
+  const handleCanvasPointerUp = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingCalibrationBox || !calibrationBoxStart) return;
+
+    const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
+    if (!coords) return;
+
+    event.preventDefault();
+    try {
+      coords.canvas.releasePointerCapture(event.pointerId);
+    } catch {
+      // no-op: release can throw if pointer capture is already released
+    }
+
+    setIsDrawingCalibrationBox(false);
+    suppressNextCanvasClickRef.current = true;
+    applyBoxCalibrationFromPoints(calibrationBoxStart, { x: coords.canvasX, y: coords.canvasY });
+  }, [isDrawingCalibrationBox, calibrationBoxStart, getCanvasCoordinatesFromClient, applyBoxCalibrationFromPoints]);
 
   const pixelToData = useCallback((pixelX: number, pixelY: number) => {
     if (calibrationPoints.length < 3) {
@@ -1096,6 +1262,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     setDraggedPointIndex(null);
     setEraserCursor(prev => ({ ...prev, visible: false }));
     setPhasePinCursor(prev => ({ ...prev, visible: false }));
+    setIsDrawingCalibrationBox(false);
   }, []);
 
   useEffect(() => {
@@ -1544,6 +1711,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     setImportedJsonText('');
     setShowJsonImportPrompt(false);
     setUltrakokiBrewData(null);
+    setCalibrationBoxStart(null);
+    setCalibrationBoxCurrent(null);
+    setUseBoxCalibrationMode(false);
     setCurrentStep('calibrate-origin');
   }, []);
 
@@ -2123,6 +2293,30 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                       autoFocus
                     />
                     <span className="text-xs text-blue-600">Type the last visible EC tick (e.g. 20, 25, 35), then click that mark on the graph.</span>
+                  </div>
+                )}
+                {(currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y') && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUseBoxCalibrationMode(prev => {
+                          const next = !prev;
+                          if (!next) {
+                            setCalibrationBoxStart(null);
+                            setCalibrationBoxCurrent(null);
+                            setIsDrawingCalibrationBox(false);
+                          }
+                          return next;
+                        });
+                      }}
+                      className={`px-3 py-1.5 text-sm rounded border ${useBoxCalibrationMode ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-100'}`}
+                    >
+                      {useBoxCalibrationMode ? 'Draw EC Box: ON' : 'Use Draw EC Box'}
+                    </button>
+                    <span className="text-xs text-blue-700">
+                      Drag from graph origin (0,0) to the top-right EC axis corner. Works on phone and PC.
+                    </span>
                   </div>
                 )}
                 {currentStep === 'calibrate-highest' && (
@@ -2724,19 +2918,32 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                   ref={canvasRef}
                   className="border border-gray-300 rounded-lg"
                   onClick={handleCanvasClick}
+                  onPointerDown={handleCanvasPointerDown}
+                  onPointerMove={handleCanvasPointerMove}
+                  onPointerUp={handleCanvasPointerUp}
                   onMouseMove={handleCanvasMouseMove}
                   onMouseUp={handleCanvasMouseUp}
                   onMouseLeave={handleCanvasMouseLeave}
                   style={{ 
-                    cursor: eraserMode ? 'crosshair' : 'default',
+                    cursor: useBoxCalibrationMode && (currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y')
+                      ? 'crosshair'
+                      : eraserMode
+                        ? 'crosshair'
+                        : 'default',
                     display: 'block',
                     maxWidth: '100%',
-                    height: 'auto'
+                    height: 'auto',
+                    touchAction: 'none'
                   }}
                 />
                 {eraserMode && (
                   <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
                     Eraser Mode - Radius: {eraserSizePx}px
+                  </div>
+                )}
+                {useBoxCalibrationMode && (currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y') && (
+                  <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-sm">
+                    Draw EC Box Mode
                   </div>
                 )}
               </div>

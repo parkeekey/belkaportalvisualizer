@@ -60,8 +60,17 @@ interface SavedPhaseLogProfile {
   createdAt: string;
 }
 
+interface CalibrationBoxRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
 const CALIBRATION_PROFILE_STORAGE_KEY = 'belkaCalibrationProfiles';
 const PHASE_LOG_PROFILE_STORAGE_KEY = 'belkaPhaseLogProfiles';
+const CALIBRATION_BOX_MIN_SIZE = 10;
+const CALIBRATION_BOX_HANDLE_RADIUS = 26;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null;
@@ -185,9 +194,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   const [calibrateXValue, setCalibrateXValue] = useState<number>(150);
   const [calibrateYValue, setCalibrateYValue] = useState<number>(20);
   const [useBoxCalibrationMode, setUseBoxCalibrationMode] = useState<boolean>(false);
-  const [isDrawingCalibrationBox, setIsDrawingCalibrationBox] = useState<boolean>(false);
-  const [calibrationBoxStart, setCalibrationBoxStart] = useState<{ x: number; y: number } | null>(null);
-  const [calibrationBoxCurrent, setCalibrationBoxCurrent] = useState<{ x: number; y: number } | null>(null);
+  const [editableCalibrationBox, setEditableCalibrationBox] = useState<CalibrationBoxRect | null>(null);
+  const [calibrationBoxDragMode, setCalibrationBoxDragMode] = useState<'draw' | 'move' | 'resize-top-left' | 'resize-top-right' | 'resize-bottom-left' | 'resize-bottom-right' | null>(null);
+  const [calibrationBoxDragOrigin, setCalibrationBoxDragOrigin] = useState<{ x: number; y: number } | null>(null);
+  const [calibrationBoxInitialRect, setCalibrationBoxInitialRect] = useState<CalibrationBoxRect | null>(null);
   const [showJsonImportPrompt, setShowJsonImportPrompt] = useState<boolean>(false);
   const [importedJsonText, setImportedJsonText] = useState<string>('');
   const [importedJsonLabel, setImportedJsonLabel] = useState<string | null>(null);
@@ -208,6 +218,96 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   const imageRef = useRef<HTMLImageElement>(null);
   const suppressNextCanvasClickRef = useRef<boolean>(false);
 
+  const updateCalibrateXValue = useCallback((rawValue: string) => {
+    const parsed = Number(rawValue);
+    setCalibrateXValue(Number.isFinite(parsed) ? Math.max(1, parsed) : 150);
+  }, []);
+
+  const updateCalibrateYValue = useCallback((rawValue: string) => {
+    const parsed = Number(rawValue);
+    setCalibrateYValue(Number.isFinite(parsed) ? Math.max(1, parsed) : 20);
+  }, []);
+
+  const clampValue = useCallback((value: number, min: number, max: number) => {
+    return Math.min(max, Math.max(min, value));
+  }, []);
+
+  const createCalibrationBoxRect = useCallback((start: { x: number; y: number }, end: { x: number; y: number }): CalibrationBoxRect => ({
+    left: Math.min(start.x, end.x),
+    top: Math.min(start.y, end.y),
+    right: Math.max(start.x, end.x),
+    bottom: Math.max(start.y, end.y),
+  }), []);
+
+  const syncCalibrationPointsFromBox = useCallback((rect: CalibrationBoxRect) => {
+    const originPoint: CalibrationPoint = {
+      x: rect.left,
+      y: rect.bottom,
+      dataX: 0,
+      dataY: 0,
+      label: 'Origin (0, 0)'
+    };
+    const xEndPoint: CalibrationPoint = {
+      x: rect.right,
+      y: rect.bottom,
+      dataX: calibrateXValue,
+      dataY: 0,
+      label: `Time Axis End (${calibrateXValue}s mark)`
+    };
+    const yEndPoint: CalibrationPoint = {
+      x: rect.left,
+      y: rect.top,
+      dataX: 0,
+      dataY: calibrateYValue,
+      label: `EC Axis End (${calibrateYValue} EC mark)`
+    };
+
+    setCalibrationPoints(prev => {
+      const tail = prev.length > 3 ? prev.slice(3) : [];
+      return [originPoint, xEndPoint, yEndPoint, ...tail];
+    });
+  }, [calibrateXValue, calibrateYValue]);
+
+  const getCalibrationBoxHitTarget = useCallback((x: number, y: number, rect: CalibrationBoxRect) => {
+    const corners = [
+      { mode: 'resize-top-left' as const, x: rect.left, y: rect.top },
+      { mode: 'resize-top-right' as const, x: rect.right, y: rect.top },
+      { mode: 'resize-bottom-left' as const, x: rect.left, y: rect.bottom },
+      { mode: 'resize-bottom-right' as const, x: rect.right, y: rect.bottom },
+    ];
+
+    for (const corner of corners) {
+      const distance = Math.hypot(x - corner.x, y - corner.y);
+      if (distance <= CALIBRATION_BOX_HANDLE_RADIUS) {
+        return corner.mode;
+      }
+    }
+
+    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+      return 'move' as const;
+    }
+
+    return null;
+  }, []);
+
+  const commitEditableBoxCalibration = useCallback(() => {
+    if (!editableCalibrationBox) {
+      setError('Draw or adjust the EC box first, then confirm it.');
+      return;
+    }
+
+    const width = editableCalibrationBox.right - editableCalibrationBox.left;
+    const height = editableCalibrationBox.bottom - editableCalibrationBox.top;
+    if (width < CALIBRATION_BOX_MIN_SIZE || height < CALIBRATION_BOX_MIN_SIZE) {
+      setError('The EC box is too small. Resize it larger before confirming.');
+      return;
+    }
+
+    syncCalibrationPointsFromBox(editableCalibrationBox);
+    setCurrentStep('calibrate-highest');
+    setError(null);
+  }, [editableCalibrationBox, syncCalibrationPointsFromBox]);
+
   
   // Save auto-detect preference to localStorage
   useEffect(() => {
@@ -217,6 +317,35 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   useEffect(() => {
     localStorage.setItem('autoGenerateAfterDetectPreference', autoGenerateAfterDetectPreference.toString());
   }, [autoGenerateAfterDetectPreference]);
+
+  useEffect(() => {
+    setCalibrationPoints(prev => {
+      if (prev.length < 3) return prev;
+
+      let changed = false;
+      const next = [...prev];
+
+      if (next[1] && next[1].dataX !== calibrateXValue) {
+        next[1] = {
+          ...next[1],
+          dataX: calibrateXValue,
+          label: `Time Axis End (${calibrateXValue}s mark)`
+        };
+        changed = true;
+      }
+
+      if (next[2] && next[2].dataY !== calibrateYValue) {
+        next[2] = {
+          ...next[2],
+          dataY: calibrateYValue,
+          label: `EC Axis End (${calibrateYValue} EC mark)`
+        };
+        changed = true;
+      }
+
+      return changed ? next : prev;
+    });
+  }, [calibrateXValue, calibrateYValue]);
 
   useEffect(() => {
     try {
@@ -686,12 +815,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       ctx.fill();
     });
 
-    // Optional box alignment preview (for origin/x-end/y-max calibration)
-    if (useBoxCalibrationMode && calibrationBoxStart && calibrationBoxCurrent) {
-      const left = Math.min(calibrationBoxStart.x, calibrationBoxCurrent.x);
-      const right = Math.max(calibrationBoxStart.x, calibrationBoxCurrent.x);
-      const top = Math.min(calibrationBoxStart.y, calibrationBoxCurrent.y);
-      const bottom = Math.max(calibrationBoxStart.y, calibrationBoxCurrent.y);
+    // Optional editable box alignment preview (for origin/x-end/y-max calibration)
+    if (useBoxCalibrationMode && editableCalibrationBox) {
+      const { left, right, top, bottom } = editableCalibrationBox;
       const width = right - left;
       const height = bottom - top;
 
@@ -738,7 +864,23 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         ctx.fillStyle = '#1e3a8a';
         ctx.font = 'bold 12px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText('Drag box: origin (0,0) -> top-right axis corner', left + 10, Math.max(16, top - 10));
+        ctx.fillText('Drag inside to move. Drag corners to resize.', left + 10, Math.max(16, top - 10));
+
+        const handles = [
+          { x: left, y: top },
+          { x: right, y: top },
+          { x: left, y: bottom },
+          { x: right, y: bottom },
+        ];
+        handles.forEach(handle => {
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = '#1d4ed8';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.rect(handle.x - 8, handle.y - 8, 16, 16);
+          ctx.fill();
+          ctx.stroke();
+        });
         ctx.restore();
       }
     }
@@ -797,8 +939,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     showRedLight,
     redLightTime,
     useBoxCalibrationMode,
-    calibrationBoxStart,
-    calibrationBoxCurrent
+    editableCalibrationBox
   ]);
 
   // Redraw canvas when Red Light state changes
@@ -1031,48 +1172,6 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     return { canvas, canvasX, canvasY };
   }, []);
 
-  const applyBoxCalibrationFromPoints = useCallback((start: { x: number; y: number }, end: { x: number; y: number }) => {
-    const left = Math.min(start.x, end.x);
-    const right = Math.max(start.x, end.x);
-    const top = Math.min(start.y, end.y);
-    const bottom = Math.max(start.y, end.y);
-    const width = right - left;
-    const height = bottom - top;
-
-    if (width < 10 || height < 10) {
-      setError('Draw a larger box. It should span the full EC graph area from origin to top-right axis corner.');
-      return;
-    }
-
-    const originPoint: CalibrationPoint = {
-      x: left,
-      y: bottom,
-      dataX: 0,
-      dataY: 0,
-      label: 'Origin (0, 0)'
-    };
-    const xEndPoint: CalibrationPoint = {
-      x: right,
-      y: bottom,
-      dataX: calibrateXValue,
-      dataY: 0,
-      label: `Time Axis End (${calibrateXValue}s mark)`
-    };
-    const yEndPoint: CalibrationPoint = {
-      x: left,
-      y: top,
-      dataX: 0,
-      dataY: calibrateYValue,
-      label: `EC Axis End (${calibrateYValue} EC mark)`
-    };
-
-    setCalibrationPoints([originPoint, xEndPoint, yEndPoint]);
-    setCurrentStep('calibrate-highest');
-    setCalibrationBoxStart(null);
-    setCalibrationBoxCurrent(null);
-    setError(null);
-  }, [calibrateXValue, calibrateYValue]);
-
   const handleCanvasPointerDown = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
     if (!(useBoxCalibrationMode && (currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y'))) {
       return;
@@ -1082,21 +1181,81 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     if (!coords) return;
     event.preventDefault();
     coords.canvas.setPointerCapture(event.pointerId);
-    setIsDrawingCalibrationBox(true);
-    setCalibrationBoxStart({ x: coords.canvasX, y: coords.canvasY });
-    setCalibrationBoxCurrent({ x: coords.canvasX, y: coords.canvasY });
-  }, [useBoxCalibrationMode, currentStep, getCanvasCoordinatesFromClient]);
+    const hitTarget = editableCalibrationBox
+      ? getCalibrationBoxHitTarget(coords.canvasX, coords.canvasY, editableCalibrationBox)
+      : null;
+
+    setCalibrationBoxDragOrigin({ x: coords.canvasX, y: coords.canvasY });
+    setCalibrationBoxInitialRect(editableCalibrationBox);
+
+    if (hitTarget && editableCalibrationBox) {
+      setCalibrationBoxDragMode(hitTarget);
+      return;
+    }
+
+    const freshRect = createCalibrationBoxRect(
+      { x: coords.canvasX, y: coords.canvasY },
+      { x: coords.canvasX, y: coords.canvasY }
+    );
+    setCalibrationBoxDragMode('draw');
+    setCalibrationBoxInitialRect(freshRect);
+    setEditableCalibrationBox(freshRect);
+  }, [useBoxCalibrationMode, currentStep, getCanvasCoordinatesFromClient, editableCalibrationBox, getCalibrationBoxHitTarget, createCalibrationBoxRect]);
 
   const handleCanvasPointerMove = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawingCalibrationBox || !calibrationBoxStart) return;
+    if (!calibrationBoxDragMode || !calibrationBoxDragOrigin) return;
     const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
     if (!coords) return;
     event.preventDefault();
-    setCalibrationBoxCurrent({ x: coords.canvasX, y: coords.canvasY });
-  }, [isDrawingCalibrationBox, calibrationBoxStart, getCanvasCoordinatesFromClient]);
+
+    const canvasWidth = coords.canvas.width;
+    const canvasHeight = coords.canvas.height;
+    let nextRect: CalibrationBoxRect | null = null;
+
+    if (calibrationBoxDragMode === 'draw') {
+      nextRect = createCalibrationBoxRect(calibrationBoxDragOrigin, { x: coords.canvasX, y: coords.canvasY });
+    } else if (calibrationBoxInitialRect) {
+      const dx = coords.canvasX - calibrationBoxDragOrigin.x;
+      const dy = coords.canvasY - calibrationBoxDragOrigin.y;
+      const initial = calibrationBoxInitialRect;
+
+      if (calibrationBoxDragMode === 'move') {
+        const width = initial.right - initial.left;
+        const height = initial.bottom - initial.top;
+        const left = clampValue(initial.left + dx, 0, canvasWidth - width);
+        const top = clampValue(initial.top + dy, 0, canvasHeight - height);
+        nextRect = {
+          left,
+          top,
+          right: left + width,
+          bottom: top + height,
+        };
+      } else {
+        nextRect = { ...initial };
+        if (calibrationBoxDragMode === 'resize-top-left' || calibrationBoxDragMode === 'resize-bottom-left') {
+          nextRect.left = clampValue(coords.canvasX, 0, initial.right - CALIBRATION_BOX_MIN_SIZE);
+        }
+        if (calibrationBoxDragMode === 'resize-top-right' || calibrationBoxDragMode === 'resize-bottom-right') {
+          nextRect.right = clampValue(coords.canvasX, initial.left + CALIBRATION_BOX_MIN_SIZE, canvasWidth);
+        }
+        if (calibrationBoxDragMode === 'resize-top-left' || calibrationBoxDragMode === 'resize-top-right') {
+          nextRect.top = clampValue(coords.canvasY, 0, initial.bottom - CALIBRATION_BOX_MIN_SIZE);
+        }
+        if (calibrationBoxDragMode === 'resize-bottom-left' || calibrationBoxDragMode === 'resize-bottom-right') {
+          nextRect.bottom = clampValue(coords.canvasY, initial.top + CALIBRATION_BOX_MIN_SIZE, canvasHeight);
+        }
+      }
+    }
+
+    if (nextRect) {
+      setEditableCalibrationBox(nextRect);
+      syncCalibrationPointsFromBox(nextRect);
+      setError(null);
+    }
+  }, [calibrationBoxDragMode, calibrationBoxDragOrigin, getCanvasCoordinatesFromClient, calibrationBoxInitialRect, createCalibrationBoxRect, clampValue, syncCalibrationPointsFromBox]);
 
   const handleCanvasPointerUp = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawingCalibrationBox || !calibrationBoxStart) return;
+    if (!calibrationBoxDragMode) return;
 
     const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
     if (!coords) return;
@@ -1108,10 +1267,19 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       // no-op: release can throw if pointer capture is already released
     }
 
-    setIsDrawingCalibrationBox(false);
+    if (editableCalibrationBox) {
+      const width = editableCalibrationBox.right - editableCalibrationBox.left;
+      const height = editableCalibrationBox.bottom - editableCalibrationBox.top;
+      if (width < CALIBRATION_BOX_MIN_SIZE || height < CALIBRATION_BOX_MIN_SIZE) {
+        setError('Draw a larger box. Then drag inside to move it or use the corner handles to resize it.');
+      }
+    }
+
+    setCalibrationBoxDragMode(null);
+    setCalibrationBoxDragOrigin(null);
+    setCalibrationBoxInitialRect(null);
     suppressNextCanvasClickRef.current = true;
-    applyBoxCalibrationFromPoints(calibrationBoxStart, { x: coords.canvasX, y: coords.canvasY });
-  }, [isDrawingCalibrationBox, calibrationBoxStart, getCanvasCoordinatesFromClient, applyBoxCalibrationFromPoints]);
+  }, [calibrationBoxDragMode, getCanvasCoordinatesFromClient, editableCalibrationBox]);
 
   const pixelToData = useCallback((pixelX: number, pixelY: number) => {
     if (calibrationPoints.length < 3) {
@@ -1262,7 +1430,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     setDraggedPointIndex(null);
     setEraserCursor(prev => ({ ...prev, visible: false }));
     setPhasePinCursor(prev => ({ ...prev, visible: false }));
-    setIsDrawingCalibrationBox(false);
+    setCalibrationBoxDragMode(null);
+    setCalibrationBoxDragOrigin(null);
+    setCalibrationBoxInitialRect(null);
   }, []);
 
   useEffect(() => {
@@ -1711,8 +1881,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     setImportedJsonText('');
     setShowJsonImportPrompt(false);
     setUltrakokiBrewData(null);
-    setCalibrationBoxStart(null);
-    setCalibrationBoxCurrent(null);
+    setEditableCalibrationBox(null);
+    setCalibrationBoxDragMode(null);
+    setCalibrationBoxDragOrigin(null);
+    setCalibrationBoxInitialRect(null);
     setUseBoxCalibrationMode(false);
     setCurrentStep('calibrate-origin');
   }, []);
@@ -2197,7 +2369,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
               <div>
                 <div className="text-sm font-semibold text-amber-900">Ultrakoki Graph Sandbox</div>
                 <p className="text-sm text-amber-800">
-                  Open a mock Ultrakoki brew first so we can iterate on the custom graph layout in-app without touching calibration or JSON import.
+                  Open Ultrakoki brew first so we can iterate on the custom graph layout in-app without touching calibration or JSON import.
                 </p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -2265,58 +2437,88 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                     <span className="text-xs text-blue-600">Click the bottom-left corner where both axes meet. This is always (0, 0).</span>
                   </div>
                 )}
-                {currentStep === 'calibrate-x' && (
-                  <div className="mt-3 flex items-center gap-3">
-                    <label className="text-sm font-medium text-blue-800 whitespace-nowrap">Time axis max (s):</label>
-                    <input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={calibrateXValue}
-                      onChange={(e) => setCalibrateXValue(Math.max(1, Number(e.target.value) || 150))}
-                      className="w-28 px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      autoFocus
-                    />
-                    <span className="text-xs text-blue-600">Type the last visible time tick (e.g. 100, 150, 200), then click that mark on the graph.</span>
-                  </div>
-                )}
-                {currentStep === 'calibrate-y' && (
-                  <div className="mt-3 flex items-center gap-3">
-                    <label className="text-sm font-medium text-blue-800 whitespace-nowrap">EC axis max:</label>
-                    <input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={calibrateYValue}
-                      onChange={(e) => setCalibrateYValue(Math.max(1, Number(e.target.value) || 20))}
-                      className="w-28 px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      autoFocus
-                    />
-                    <span className="text-xs text-blue-600">Type the last visible EC tick (e.g. 20, 25, 35), then click that mark on the graph.</span>
-                  </div>
-                )}
                 {(currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y') && (
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUseBoxCalibrationMode(prev => {
-                          const next = !prev;
-                          if (!next) {
-                            setCalibrationBoxStart(null);
-                            setCalibrationBoxCurrent(null);
-                            setIsDrawingCalibrationBox(false);
-                          }
-                          return next;
-                        });
-                      }}
-                      className={`px-3 py-1.5 text-sm rounded border ${useBoxCalibrationMode ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-100'}`}
-                    >
-                      {useBoxCalibrationMode ? 'Draw EC Box: ON' : 'Use Draw EC Box'}
-                    </button>
-                    <span className="text-xs text-blue-700">
-                      Drag from graph origin (0,0) to the top-right EC axis corner. Works on phone and PC.
-                    </span>
+                  <div className="mt-3 space-y-2">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label className="text-sm font-medium text-blue-800 whitespace-nowrap">Time Axis End (s):</label>
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={calibrateXValue}
+                        onChange={(e) => updateCalibrateXValue(e.target.value)}
+                        className="w-28 px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                      <label className="text-sm font-medium text-blue-800 whitespace-nowrap">EC Axis End:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={calibrateYValue}
+                        onChange={(e) => updateCalibrateYValue(e.target.value)}
+                        className="w-28 px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                      <span className="text-xs text-blue-600">Adjust these values any time before extraction.</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUseBoxCalibrationMode(prev => {
+                            const next = !prev;
+                            if (next && calibrationPoints.length >= 3) {
+                              setEditableCalibrationBox({
+                                left: calibrationPoints[0].x,
+                                top: calibrationPoints[2].y,
+                                right: calibrationPoints[1].x,
+                                bottom: calibrationPoints[0].y,
+                              });
+                            }
+                            if (!next) {
+                              setEditableCalibrationBox(null);
+                              setCalibrationBoxDragMode(null);
+                              setCalibrationBoxDragOrigin(null);
+                              setCalibrationBoxInitialRect(null);
+                            }
+                            return next;
+                          });
+                        }}
+                        className={`px-3 py-1.5 text-sm rounded border ${useBoxCalibrationMode ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-100'}`}
+                      >
+                        {useBoxCalibrationMode ? 'Draw EC Box: ON' : 'Use Draw EC Box'}
+                      </button>
+                      <span className="text-xs text-blue-700">
+                        Draw the box, then drag inside to move it or use the corner handles to resize it. Better for phone corrections.
+                      </span>
+                    </div>
+                    {useBoxCalibrationMode && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={commitEditableBoxCalibration}
+                          disabled={!editableCalibrationBox}
+                          className="px-3 py-1.5 text-sm rounded bg-emerald-600 text-white border border-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:border-slate-300 disabled:cursor-not-allowed"
+                        >
+                          Confirm Box Calibration
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditableCalibrationBox(null);
+                            setCalibrationBoxDragMode(null);
+                            setCalibrationBoxDragOrigin(null);
+                            setCalibrationBoxInitialRect(null);
+                            setCalibrationPoints(prev => prev.slice(0, 1));
+                          }}
+                          className="px-3 py-1.5 text-sm rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                        >
+                          Clear Box
+                        </button>
+                        <span className="text-xs text-blue-600">
+                          Confirm only when the box lines up with the true graph origin, time end, and EC top.
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
                 {currentStep === 'calibrate-highest' && (

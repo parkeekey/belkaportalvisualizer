@@ -479,6 +479,18 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
     updateDataPoints();
   }, [xMin, xMax, yMin, yMax]);
 
+  const downloadCustomGraphScreenshot = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = `custom-ec-graph-${new Date().toISOString().slice(0, 10)}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, []);
+
   const summaryCards = [
     { label: 'Total Points', value: `${dataPoints.length}`, tone: 'bg-blue-50 text-blue-900 border-blue-100' },
     { label: 'Auto / Manual', value: `${dataPoints.filter(p => p.isAutoDetected).length} / ${dataPoints.filter(p => !p.isAutoDetected).length}`, tone: 'bg-violet-50 text-violet-900 border-violet-100' },
@@ -575,6 +587,13 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
 
       {/* Canvas */}
       <div className="flex items-center justify-end gap-2 px-3 pb-2 pt-1">
+        <button
+          onClick={downloadCustomGraphScreenshot}
+          className="h-7 rounded-full border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
+          title="Download screenshot of this custom graph"
+        >
+          Screenshot
+        </button>
         <span className="text-xs text-slate-500">Zoom</span>
         <button
           onClick={() => setZoomLevel(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}

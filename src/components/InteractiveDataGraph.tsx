@@ -52,6 +52,8 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const skipBgRef = useRef<boolean>(false);
+  const [screenshotBg, setScreenshotBg] = useState<'white' | 'transparent'>('white');
   const [tooltip, setTooltip] = useState<TooltipData>({
     x: 0,
     y: 0,
@@ -147,8 +149,10 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     
     // Draw background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    if (!skipBgRef.current) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    }
     
     // Draw grid
     ctx.strokeStyle = '#e5e7eb';
@@ -483,13 +487,25 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const link = document.createElement('a');
-    link.href = canvas.toDataURL('image/png');
-    link.download = `custom-ec-graph-${new Date().toISOString().slice(0, 10)}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, []);
+    const doExport = () => {
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = `custom-ec-graph-${new Date().toISOString().slice(0, 10)}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    if (screenshotBg === 'transparent') {
+      skipBgRef.current = true;
+      drawGraph();
+      doExport();
+      skipBgRef.current = false;
+      drawGraph();
+    } else {
+      doExport();
+    }
+  }, [screenshotBg, drawGraph]);
 
   const summaryCards = [
     { label: 'Total Points', value: `${dataPoints.length}`, tone: 'bg-blue-50 text-blue-900 border-blue-100' },
@@ -587,13 +603,26 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
 
       {/* Canvas */}
       <div className="flex items-center justify-end gap-2 px-3 pb-2 pt-1">
-        <button
-          onClick={downloadCustomGraphScreenshot}
-          className="h-7 rounded-full border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
-          title="Download screenshot of this custom graph"
-        >
-          Screenshot
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={downloadCustomGraphScreenshot}
+            className="h-7 rounded-full border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
+            title="Download screenshot of this custom graph"
+          >
+            Screenshot
+          </button>
+          <button
+            onClick={() => setScreenshotBg(b => b === 'white' ? 'transparent' : 'white')}
+            title={screenshotBg === 'white' ? 'Currently: white background — click for transparent' : 'Currently: transparent background — click for white'}
+            className={`h-7 px-2 rounded-full border text-xs font-medium ${
+              screenshotBg === 'white'
+                ? 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                : 'bg-slate-800 border-slate-600 text-white hover:bg-slate-700'
+            }`}
+          >
+            {screenshotBg === 'white' ? 'BG: White' : 'BG: Alpha'}
+          </button>
+        </div>
         <span className="text-xs text-slate-500">Zoom</span>
         <button
           onClick={() => setZoomLevel(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}

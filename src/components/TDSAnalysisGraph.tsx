@@ -38,6 +38,10 @@ export interface TDSAnalysisGraphProps {
   doseWeight: number;       // g of coffee grounds
   conversionFactor?: number; // EC→TDS factor, default 0.5
   refractometerTDS?: number | null; // optional final-cup TDS % anchor
+  refractometerTDSInput?: string;
+  onDoseWeightChange?: (value: number) => void;
+  onConversionFactorChange?: (value: number) => void;
+  onRefractometerTDSInputChange?: (value: string) => void;
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -120,6 +124,10 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   doseWeight,
   conversionFactor = 0.5,
   refractometerTDS = null,
+  refractometerTDSInput,
+  onDoseWeightChange,
+  onConversionFactorChange,
+  onRefractometerTDSInputChange,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -129,10 +137,13 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [showECOverlay, setShowECOverlay] = useState<boolean>(true);
   const [showPourOverlay, setShowPourOverlay] = useState<boolean>(true);
+  const [showPhaseLog, setShowPhaseLog] = useState<boolean>(true);
   const [showTargetAssistant, setShowTargetAssistant] = useState<boolean>(false);
   const [targetMode, setTargetMode] = useState<'tds' | 'ey'>('tds');
   const [targetTDSInput, setTargetTDSInput] = useState<string>('1.36');
   const [targetEYInput, setTargetEYInput] = useState<string>('20.0');
+  const [targetStartInput, setTargetStartInput] = useState<string>('60');
+  const [screenshotBg, setScreenshotBg] = useState<'white' | 'transparent'>('white');
 
   const refractometerAnchor = useMemo(() => {
     if (refractometerTDS == null || !Number.isFinite(refractometerTDS) || refractometerTDS <= 0) {
@@ -161,6 +172,10 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     const parsed = parseFloat(targetEYInput);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   }, [targetEYInput]);
+  const targetStartAfter = useMemo(() => {
+    const n = parseFloat(targetStartInput);
+    return Number.isFinite(n) && n >= 0 ? n : 60;
+  }, [targetStartInput]);
 
   // ── Compute TDS/EY time series ──────────────────────────────────────────
 
@@ -245,25 +260,27 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     const toYey  = (v: number) => PAD.top + plotH - (v / eyMax)  * plotH;
 
     // ── Phase bands ──────────────────────────────────────────────────────
-    phaseLogs.forEach(phase => {
-      const x0 = toX(phase.startTime);
-      const x1 = toX(Math.min(phase.endTime, timeMax));
-      if (x1 < PAD.left || x0 > PAD.left + plotW) return;
-      ctx.fillStyle = phase.color + '28';
-      ctx.fillRect(x0, PAD.top, Math.max(0, x1 - x0), plotH);
-      ctx.strokeStyle = phase.color + '88';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x0, PAD.top);
-      ctx.lineTo(x0, PAD.top + plotH);
-      ctx.stroke();
-      // label
-      ctx.fillStyle = phase.color;
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'left';
-      const labelX = Math.max(PAD.left + 2, x0 + 3);
-      ctx.fillText(phase.name, labelX, PAD.top + 12);
-    });
+    if (showPhaseLog) {
+      phaseLogs.forEach(phase => {
+        const x0 = toX(phase.startTime);
+        const x1 = toX(Math.min(phase.endTime, timeMax));
+        if (x1 < PAD.left || x0 > PAD.left + plotW) return;
+        ctx.fillStyle = phase.color + '28';
+        ctx.fillRect(x0, PAD.top, Math.max(0, x1 - x0), plotH);
+        ctx.strokeStyle = phase.color + '88';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x0, PAD.top);
+        ctx.lineTo(x0, PAD.top + plotH);
+        ctx.stroke();
+        // label
+        ctx.fillStyle = phase.color;
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'left';
+        const labelX = Math.max(PAD.left + 2, x0 + 3);
+        ctx.fillText(phase.name, labelX, PAD.top + 12);
+      });
+    }
 
     // ── Grid & axes ───────────────────────────────────────────────────────
     ctx.strokeStyle = '#e2e8f0';
@@ -509,7 +526,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       lx += ctx.measureText(label).width + 52;
     });
 
-  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showECOverlay, showPourOverlay, showTargetAssistant, targetMode, targetTDS, targetEY, ecPoints, brewData]);
+  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showECOverlay, showPourOverlay, showPhaseLog, showTargetAssistant, targetMode, targetTDS, targetEY, ecPoints, brewData]);
 
   // ── Hover handler ────────────────────────────────────────────────────────
 
@@ -568,7 +585,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     const tolerance = Math.max(0.03, targetTDS * 0.02);
     const hitIndices: number[] = [];
     series.forEach((pt, i) => {
-      if (Math.abs(pt.tds - targetTDS) <= tolerance) {
+      if (pt.time >= targetStartAfter && Math.abs(pt.tds - targetTDS) <= tolerance) {
         hitIndices.push(i);
       }
     });
@@ -601,21 +618,23 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     }
 
     return windows;
-  }, [showTargetAssistant, targetMode, targetTDS, series]);
+  }, [showTargetAssistant, targetMode, targetTDS, series, targetStartAfter]);
 
   const nearestTargetPoint = useMemo(() => {
     if (!showTargetAssistant || targetMode !== 'tds' || targetTDS == null || series.length === 0) return null;
-    let best = series[0];
-    let bestDiff = Math.abs(series[0].tds - targetTDS);
-    for (let i = 1; i < series.length; i++) {
-      const d = Math.abs(series[i].tds - targetTDS);
+    const filtered = series.filter(p => p.time >= targetStartAfter);
+    if (filtered.length === 0) return null;
+    let best = filtered[0];
+    let bestDiff = Math.abs(filtered[0].tds - targetTDS);
+    for (let i = 1; i < filtered.length; i++) {
+      const d = Math.abs(filtered[i].tds - targetTDS);
       if (d < bestDiff) {
-        best = series[i];
+        best = filtered[i];
         bestDiff = d;
       }
     }
     return { point: best, diff: bestDiff };
-  }, [showTargetAssistant, targetMode, targetTDS, series]);
+  }, [showTargetAssistant, targetMode, targetTDS, series, targetStartAfter]);
 
   const targetEYWindows = useMemo(() => {
     if (!showTargetAssistant || targetMode !== 'ey' || targetEY == null || series.length === 0) {
@@ -625,7 +644,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     const tolerance = Math.max(0.25, targetEY * 0.02);
     const hitIndices: number[] = [];
     series.forEach((pt, i) => {
-      if (Math.abs(pt.ey - targetEY) <= tolerance) {
+      if (pt.time >= targetStartAfter && Math.abs(pt.ey - targetEY) <= tolerance) {
         hitIndices.push(i);
       }
     });
@@ -658,21 +677,23 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     }
 
     return windows;
-  }, [showTargetAssistant, targetMode, targetEY, series]);
+  }, [showTargetAssistant, targetMode, targetEY, series, targetStartAfter]);
 
   const nearestTargetEYPoint = useMemo(() => {
     if (!showTargetAssistant || targetMode !== 'ey' || targetEY == null || series.length === 0) return null;
-    let best = series[0];
-    let bestDiff = Math.abs(series[0].ey - targetEY);
-    for (let i = 1; i < series.length; i++) {
-      const d = Math.abs(series[i].ey - targetEY);
+    const filtered = series.filter(p => p.time >= targetStartAfter);
+    if (filtered.length === 0) return null;
+    let best = filtered[0];
+    let bestDiff = Math.abs(filtered[0].ey - targetEY);
+    for (let i = 1; i < filtered.length; i++) {
+      const d = Math.abs(filtered[i].ey - targetEY);
       if (d < bestDiff) {
-        best = series[i];
+        best = filtered[i];
         bestDiff = d;
       }
     }
     return { point: best, diff: bestDiff };
-  }, [showTargetAssistant, targetMode, targetEY, series]);
+  }, [showTargetAssistant, targetMode, targetEY, series, targetStartAfter]);
 
   const renderTargetWindows = (windows: TargetWindow[], tone: 'rose' | 'amber') => {
     const palette = tone === 'rose'
@@ -772,6 +793,37 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     return overallWaterIn / doseWeight;
   }, [overallWaterIn, doseWeight]);
 
+  const downloadGraphScreenshot = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let exportCanvas = canvas;
+    if (screenshotBg === 'white') {
+      const tmp = document.createElement('canvas');
+      tmp.width = canvas.width;
+      tmp.height = canvas.height;
+      const tmpCtx = tmp.getContext('2d')!;
+      tmpCtx.fillStyle = '#ffffff';
+      tmpCtx.fillRect(0, 0, tmp.width, tmp.height);
+      tmpCtx.drawImage(canvas, 0, 0);
+      exportCanvas = tmp;
+    }
+
+    const link = document.createElement('a');
+    link.href = exportCanvas.toDataURL('image/png');
+    link.download = `belka_tds_ey_graph_${new Date().toISOString().slice(0, 10)}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const refractometerInputValue = useMemo(() => {
+    if (typeof refractometerTDSInput === 'string') {
+      return refractometerTDSInput;
+    }
+    return refractometerTDS != null ? String(refractometerTDS) : '';
+  }, [refractometerTDSInput, refractometerTDS]);
+
   // ── Render ───────────────────────────────────────────────────────────────
 
   if (ecPoints.length === 0) {
@@ -820,6 +872,68 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             >
               Target Assistant {showTargetAssistant ? '✓' : '–'}
             </button>
+            <button
+              onClick={() => setShowPhaseLog(v => !v)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showPhaseLog ? 'bg-amber-200 text-amber-900' : 'bg-white/20 text-white/70'}`}
+            >
+              Phase Log {showPhaseLog ? '✓' : '–'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 py-3 border-b border-slate-100 bg-white">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Coffee dose (g):</label>
+            <input
+              type="number"
+              min={1}
+              step={0.5}
+              value={doseWeight}
+              onChange={(e) => {
+                const v = Math.max(0.1, parseFloat(e.target.value) || 15);
+                onDoseWeightChange?.(v);
+              }}
+              className="w-24 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">EC→TDS factor:</label>
+            <input
+              type="number"
+              min={0.1}
+              max={1}
+              step={0.01}
+              value={conversionFactor}
+              onChange={(e) => {
+                const v = Math.min(1, Math.max(0.1, parseFloat(e.target.value) || 0.5));
+                onConversionFactorChange?.(v);
+              }}
+              className="w-20 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+            <span className="text-xs text-slate-500">(0.5 = standard, 0.55 = mineral-rich)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Refractometer TDS % (optional):</label>
+            <input
+              type="number"
+              min={0}
+              max={5}
+              step={0.01}
+              placeholder="e.g. 1.35"
+              value={refractometerInputValue}
+              onChange={(e) => onRefractometerTDSInputChange?.(e.target.value)}
+              className="w-24 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+            {refractometerInputValue.trim().length > 0 && (
+              <button
+                onClick={() => onRefractometerTDSInputChange?.('')}
+                className="text-xs text-slate-500 hover:text-slate-700"
+              >
+                Clear
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -860,6 +974,16 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             <span className={`text-xs ${targetMode === 'tds' ? 'text-rose-700/90' : 'text-amber-700/90'}`}>
               Shows EC range, time window, water-in amount, and brew ratio for your target.
             </span>
+            <label className="text-xs font-semibold text-slate-500 whitespace-nowrap ml-2">Start after (s):</label>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              placeholder="60"
+              value={targetStartInput}
+              onChange={(e) => setTargetStartInput(e.target.value)}
+              className="w-16 px-2 py-1.5 text-sm border border-slate-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+            />
           </div>
 
           {targetMode === 'tds' && targetTDS != null && targetTDSWindows.length > 0 && (
@@ -927,7 +1051,27 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       )}
 
       {/* Canvas graph */}
-      <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-1">
+      <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-1">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={downloadGraphScreenshot}
+            className="px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700"
+          >
+            Screenshot
+          </button>
+          <button
+            onClick={() => setScreenshotBg(b => b === 'white' ? 'transparent' : 'white')}
+            title={screenshotBg === 'white' ? 'Currently: white background — click for transparent' : 'Currently: transparent background — click for white'}
+            className={`h-7 px-2 rounded-lg border text-xs font-medium ${
+              screenshotBg === 'white'
+                ? 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                : 'bg-slate-800 border-slate-600 text-white hover:bg-slate-700'
+            }`}
+          >
+            {screenshotBg === 'white' ? 'BG: White' : 'BG: Alpha'}
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
         <span className="text-xs text-slate-500">Zoom</span>
         <button
           onClick={() => setZoomLevel(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}
@@ -938,6 +1082,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
           onClick={() => setZoomLevel(z => Math.min(4, parseFloat((z + 0.25).toFixed(2))))}
           className="w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-100 flex items-center justify-center"
         >+</button>
+        </div>
       </div>
       <div ref={containerRef} className="w-full px-4 pt-1 pb-2 overflow-x-auto">
         <canvas
@@ -950,7 +1095,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       </div>
 
       {/* Phase summary table */}
-      {phaseSummary.length > 0 && (
+      {showPhaseLog && phaseSummary.length > 0 && (
         <div className="px-4 pb-4">
           <div className="text-xs font-semibold text-slate-600 uppercase tracking-[0.14em] mb-2">Phase Extraction Summary</div>
           <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
@@ -1019,7 +1164,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       )}
 
       {/* No phase logs hint */}
-      {phaseSummary.length === 0 && series.length > 0 && (
+      {showPhaseLog && phaseSummary.length === 0 && series.length > 0 && (
         <div className="px-4 pb-4 text-xs text-slate-400 italic">
           Add phase logs in the Phase Analysis panel to see per-phase TDS/EY breakdown.
         </div>

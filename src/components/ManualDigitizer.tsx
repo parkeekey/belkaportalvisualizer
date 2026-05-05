@@ -186,6 +186,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   const [pendingAutoGenerate, setPendingAutoGenerate] = useState<boolean>(false);
   const [phaseLogs, setPhaseLogs] = useState<PhaseLog[]>([]);
   const [phasePinTarget, setPhasePinTarget] = useState<PhasePinTarget | null>(null);
+  const [phasePinSequenceLogId, setPhasePinSequenceLogId] = useState<string | null>(null);
   const [phasePinCursor, setPhasePinCursor] = useState<{ x: number; time: number; visible: boolean }>({
     x: 0,
     time: 0,
@@ -217,6 +218,12 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const suppressNextCanvasClickRef = useRef<boolean>(false);
+
+  const scrollToScreenshotCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
 
   const updateCalibrateXValue = useCallback((rawValue: string) => {
     const parsed = Number(rawValue);
@@ -628,9 +635,20 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   const beginPhasePinning = useCallback((logId: string, boundary: 'startTime' | 'endTime') => {
     setEraserMode(false);
     setEraserCursor(cursor => ({ ...cursor, visible: false }));
+    setPhasePinSequenceLogId(null);
     setPhasePinTarget({ logId, boundary });
     setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
-  }, []);
+    scrollToScreenshotCanvas();
+  }, [scrollToScreenshotCanvas]);
+
+  const beginPhasePinningSequence = useCallback((logId: string) => {
+    setEraserMode(false);
+    setEraserCursor(cursor => ({ ...cursor, visible: false }));
+    setPhasePinSequenceLogId(logId);
+    setPhasePinTarget({ logId, boundary: 'startTime' });
+    setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
+    scrollToScreenshotCanvas();
+  }, [scrollToScreenshotCanvas]);
 
   const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -650,6 +668,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       setFineGeneratedCurve([]);
       setPhaseLogs([]);
       setPhasePinTarget(null);
+      setPhasePinSequenceLogId(null);
       setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
       setLoadedCalibrationProfileName(null);
       setLoadedPhaseProfileName(null);
@@ -992,6 +1011,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     console.log('Current data points:', getCurrentData().length);
 
     if (currentStep === 'extract' && phasePinTarget) {
+      const activeTarget = phasePinTarget;
       let pinnedTime = 0;
       if (calibrationPoints.length >= 2) {
         const origin = calibrationPoints[0];
@@ -1007,10 +1027,19 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         }
       }
       pinnedTime = Math.max(0, Number(pinnedTime.toFixed(1)));
-      updatePhaseLog(phasePinTarget.logId, {
-        [phasePinTarget.boundary]: pinnedTime
+      updatePhaseLog(activeTarget.logId, {
+        [activeTarget.boundary]: pinnedTime
       } as Partial<PhaseLog>);
+      if (phasePinSequenceLogId === activeTarget.logId && activeTarget.boundary === 'startTime') {
+        setPhasePinTarget({ logId: activeTarget.logId, boundary: 'endTime' });
+        setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
+        setError('Start pinned. Tap the screenshot again to set the phase end.');
+        return;
+      }
       setPhasePinTarget(null);
+      if (phasePinSequenceLogId === activeTarget.logId) {
+        setPhasePinSequenceLogId(null);
+      }
       setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
       setError(null);
       return;
@@ -1161,7 +1190,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         }
       }
     }
-  }, [currentStep, calibrationPoints, extractedPoints, findPointAtPosition, eraserMode, eraserSizePx, phasePinTarget, updatePhaseLog, calibrateXValue, calibrateYValue, useBoxCalibrationMode]);
+  }, [currentStep, calibrationPoints, extractedPoints, findPointAtPosition, eraserMode, eraserSizePx, phasePinTarget, phasePinSequenceLogId, updatePhaseLog, calibrateXValue, calibrateYValue, useBoxCalibrationMode]);
 
   const getCanvasCoordinatesFromClient = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
@@ -1841,6 +1870,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
 
     setPhaseLogs(appliedLogs);
     setPhasePinTarget(null);
+    setPhasePinSequenceLogId(null);
     setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
     setLoadedPhaseProfileName(profile.name);
     setError(null);
@@ -1872,6 +1902,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     setFineGeneratedCurve([]);
     setPhaseLogs([]);
     setPhasePinTarget(null);
+    setPhasePinSequenceLogId(null);
     setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
     setLoadedCalibrationProfileName(null);
     setLoadedPhaseProfileName(null);
@@ -2241,6 +2272,118 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     URL.revokeObjectURL(url);
   }, [getCurrentData, viewMode, showMinSec]);
 
+  const downloadPhaseSummaryCsv = useCallback(() => {
+    if (phaseLogs.length === 0) {
+      setError('No phase logs to export yet.');
+      return;
+    }
+
+    const sortedLogs = [...phaseLogs].sort((a, b) => a.startTime - b.startTime);
+    const formatOptionalNumber = (value: number | null, digits: number) => {
+      return value !== null ? value.toFixed(digits) : '';
+    };
+    const rows = [
+      [
+        'Phase',
+        'Start Time (s)',
+        'End Time (s)',
+        'Duration (s)',
+        'Start EC',
+        'End EC',
+        'EC Delta',
+        'Start Pour (g)',
+        'End Pour (g)',
+        'Poured Amount (g)',
+      ].join(','),
+      ...sortedLogs.map(log => {
+        const metrics = getPhaseMetrics(log);
+        return [
+          `"${(log.name || '').replace(/"/g, '""')}"`,
+          log.startTime.toFixed(1),
+          log.endTime.toFixed(1),
+          metrics.duration.toFixed(1),
+          metrics.startEC !== null ? metrics.startEC.toFixed(3) : '',
+          metrics.endEC !== null ? metrics.endEC.toFixed(3) : '',
+          metrics.ecDelta !== null ? metrics.ecDelta.toFixed(3) : '',
+          formatOptionalNumber(metrics.startPour, 2),
+          formatOptionalNumber(metrics.endPour, 2),
+          formatOptionalNumber(metrics.pouredAmount, 2),
+        ].join(',');
+      })
+    ];
+
+    if (redLightTime !== null) {
+      const redLightPour = getCumulativePourAtTime(redLightTime);
+      rows.push([
+        '"Red Light"',
+        redLightTime.toFixed(1),
+        redLightTime.toFixed(1),
+        '0.0',
+        '',
+        '',
+        '',
+        formatOptionalNumber(redLightPour, 2),
+        formatOptionalNumber(redLightPour, 2),
+        '0.00',
+      ].join(','));
+    }
+
+    const csv = rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `belka_phase_summary_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [phaseLogs, getPhaseMetrics, redLightTime, getCumulativePourAtTime]);
+
+  const downloadPhaseSummaryText = useCallback(() => {
+    if (phaseLogs.length === 0) {
+      setError('No phase logs to export yet.');
+      return;
+    }
+
+    const sortedLogs = [...phaseLogs].sort((a, b) => a.startTime - b.startTime);
+    const lines: string[] = [
+      'Belka Phase Summary',
+      `Date: ${new Date().toLocaleString()}`,
+      '',
+      'Phase details:'
+    ];
+
+    sortedLogs.forEach((log, index) => {
+      const metrics = getPhaseMetrics(log);
+      lines.push(`${index + 1}. ${log.name}`);
+      lines.push(`   Time: ${formatTime(log.startTime)} - ${formatTime(log.endTime)} (${metrics.duration.toFixed(1)}s)`);
+      lines.push(`   EC: ${metrics.startEC !== null ? metrics.startEC.toFixed(2) : 'n/a'} -> ${metrics.endEC !== null ? metrics.endEC.toFixed(2) : 'n/a'} (delta ${metrics.ecDelta !== null ? `${metrics.ecDelta > 0 ? '+' : ''}${metrics.ecDelta.toFixed(2)}` : 'n/a'})`);
+      lines.push(`   Pour: ${formatPourAmount(metrics.startPour)} -> ${formatPourAmount(metrics.endPour)} (added ${formatPourAmount(metrics.pouredAmount)})`);
+      lines.push('');
+    });
+
+    if (redLightTime !== null) {
+      lines.push('Red Light:');
+      lines.push(`   Time: ${formatTime(redLightTime)} (${formatRawSeconds(redLightTime)}s)`);
+      lines.push(`   Stop at pour: ${formatPourAmount(getCumulativePourAtTime(redLightTime))}`);
+      lines.push('');
+    }
+
+    const text = lines.join('\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `belka_phase_summary_${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [phaseLogs, getPhaseMetrics, formatTime, formatRawSeconds, formatPourAmount, redLightTime, getCumulativePourAtTime]);
+
   useEffect(() => {
     if (selectedImage && imageRef.current) {
       const img = imageRef.current;
@@ -2378,9 +2521,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                     setUltrakokiBrewData(buildPreviewUltrakokiBrewData());
                     setImportedJsonLabel('Preview brew / mock Ultrakoki data');
                   }}
-                  className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100"
+                  className={`rounded-lg border px-4 py-2 text-sm font-medium ${ultrakokiBrewData ? 'border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700' : 'border-amber-300 bg-white text-amber-900 hover:bg-amber-100'}`}
                 >
-                  Preview Ultrakoki Graph
+                  {ultrakokiBrewData ? 'Ultrakoki Graph Loaded' : 'Load Ultrakoki Graph'}
                 </button>
                 <button
                   onClick={() => setShowJsonImportPrompt(true)}
@@ -2601,9 +2744,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                           setUltrakokiBrewData(buildPreviewUltrakokiBrewData());
                           setImportedJsonLabel('Preview brew / mock Ultrakoki data');
                         }}
-                        className="py-2.5 bg-amber-100 text-amber-900 font-medium rounded-lg hover:bg-amber-200 text-sm border border-amber-200"
+                        className={`py-2.5 font-medium rounded-lg text-sm border ${ultrakokiBrewData ? 'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-300' : 'bg-amber-100 text-amber-900 hover:bg-amber-200 border-amber-200'}`}
                       >
-                        Preview Ultrakoki Graph
+                        {ultrakokiBrewData ? 'Ultrakoki Graph Loaded' : 'Load Ultrakoki Graph'}
                       </button>
                       <button
                         onClick={() => setShowJsonImportPrompt(true)}
@@ -2613,7 +2756,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                       </button>
                     </div>
                     <p className="text-xs text-green-700 mt-1.5 text-center">
-                      Preview the custom Ultrakoki graph first, or import a real brew log once the layout looks right.
+                      Load the Ultrakoki graph first, or import a real brew log once the layout looks right.
                     </p>
                   </div>
                 </div>
@@ -2644,419 +2787,6 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                   Upload screenshot first, then load a saved calibration profile by name.
                 </div>
               </div>
-
-              {/* Red Light Control */}
-              {currentStep === 'extract' && getCurrentData().length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center gap-4 mb-3">
-                    <button
-                      onClick={calculateRedLight}
-                      className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
-                    >
-                      Recalculate Red Light
-                    </button>
-                    {redLightTime !== null && (
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={showRedLight}
-                          onChange={(e) => setShowRedLight(e.target.checked)}
-                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                        />
-                        Show Red Light Line
-                      </label>
-                    )}
-                    {redLightTime !== null && (
-                      <div className="text-sm font-medium text-gray-700">
-                        Red Light: {formatTime(redLightTime)} ({formatRawSeconds(redLightTime)}s)
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Red Light Settings */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Time Threshold (seconds)
-                      </label>
-                      <input
-                        type="number"
-                        value={redLightTimeThreshold}
-                        onChange={(e) => setRedLightTimeThreshold(Number(e.target.value))}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
-                        min="0"
-                        max="200"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        EC Threshold
-                      </label>
-                      <input
-                        type="number"
-                        value={redLightECThreshold}
-                        onChange={(e) => setRedLightECThreshold(Number(e.target.value))}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
-                        min="0"
-                        max="50"
-                        step="0.1"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="text-xs text-gray-600 mt-2">
-                    Finds when time &gt; {redLightTimeThreshold}s AND EC &lt; {redLightECThreshold} - automatically shows result below graph
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 'extract' && getCurrentData().length > 0 && (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                    <div>
-                      <div className="font-semibold text-indigo-900">Extraction Phase Logs</div>
-                      <div className="text-xs text-indigo-700 mt-1">Manual-first workflow: pick start/end directly on the screenshot for each phase.</div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={autoDetectPhaseLogs}
-                        className="px-3 py-1 bg-indigo-200 text-indigo-900 text-sm rounded hover:bg-indigo-300"
-                      >
-                        Auto-Suggest
-                      </button>
-                      <button
-                        onClick={addPhaseLog}
-                        className="px-3 py-1 bg-teal-500 text-white text-sm rounded hover:bg-teal-600"
-                      >
-                        Add Log
-                      </button>
-                      {phaseLogs.length > 0 && (
-                        <button
-                          onClick={() => {
-                            setPhaseLogs([]);
-                            setLoadedPhaseProfileName(null);
-                          }}
-                          className="px-3 py-1 bg-slate-500 text-white text-sm rounded hover:bg-slate-600"
-                        >
-                          Clear Logs
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mb-3 rounded-lg border border-indigo-200 bg-white p-3">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Phase Summary Profile</div>
-                    <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-center">
-                      <select
-                        value={selectedPhaseLogProfile}
-                        onChange={(e) => setSelectedPhaseLogProfile(e.target.value)}
-                        className="flex-1 rounded border border-indigo-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="">Select saved phase profile...</option>
-                        {savedPhaseLogProfiles.map(profile => (
-                          <option key={profile.name} value={profile.name}>{profile.name}</option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={loadSelectedPhaseLogProfile}
-                        disabled={!selectedPhaseLogProfile}
-                        className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
-                      >
-                        Load Phase Profile
-                      </button>
-                      {!showSavePhaseProfileForm && (
-                        <button
-                          onClick={() => {
-                            const defaultName = selectedImageName
-                              ? `${selectedImageName.replace(/\.[^/.]+$/, '')}_phases`
-                              : 'belka_phase_profile';
-                            setNewPhaseProfileName(defaultName);
-                            setShowSavePhaseProfileForm(true);
-                          }}
-                          disabled={phaseLogs.length === 0}
-                          className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
-                        >
-                          Save Phase Profile
-                        </button>
-                      )}
-                    </div>
-
-                    {showSavePhaseProfileForm && (
-                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <input
-                          type="text"
-                          value={newPhaseProfileName}
-                          onChange={(e) => setNewPhaseProfileName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') savePhaseLogProfile(newPhaseProfileName);
-                            if (e.key === 'Escape') {
-                              setShowSavePhaseProfileForm(false);
-                              setNewPhaseProfileName('');
-                            }
-                          }}
-                          placeholder="Phase profile name..."
-                          autoFocus
-                          className="flex-1 rounded border border-indigo-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
-                        <button
-                          onClick={() => savePhaseLogProfile(newPhaseProfileName)}
-                          className="rounded bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowSavePhaseProfileForm(false);
-                            setNewPhaseProfileName('');
-                          }}
-                          className="rounded bg-slate-400 px-3 py-2 text-sm font-medium text-white hover:bg-slate-500"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-
-                    {loadedPhaseProfileName && (
-                      <div className="mt-2 text-xs text-indigo-700">
-                        Loaded phase profile: <strong>{loadedPhaseProfileName}</strong>
-                      </div>
-                    )}
-                  </div>
-
-                  {phasePinTarget && (
-                    <div className="mb-3 bg-white border border-indigo-300 rounded-lg p-3 text-sm text-indigo-900">
-                      Click the screenshot to set
-                      {' '}
-                      <strong>{phasePinTarget.boundary === 'startTime' ? 'start' : 'end'}</strong>
-                      {' '}
-                      for
-                      {' '}
-                      <strong>{phaseLogs.find(log => log.id === phasePinTarget.logId)?.name || 'selected phase'}</strong>.
-                      <button
-                        onClick={() => {
-                          setPhasePinTarget(null);
-                          setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
-                        }}
-                        className="ml-3 px-2 py-1 bg-slate-200 text-slate-800 rounded hover:bg-slate-300"
-                      >
-                        Cancel Pinning
-                      </button>
-                    </div>
-                  )}
-
-                  {phaseLogs.length === 0 ? (
-                    <div className="text-sm text-indigo-700">No phase logs yet. Click Add Log, then use Pick Start and Pick End on the screenshot.</div>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                      {phaseLogs.map((log) => {
-                        const metrics = getPhaseMetrics(log);
-                        return (
-                        <div key={log.id} className="bg-white border border-indigo-100 rounded-lg p-3">
-                          <div className="grid grid-cols-3 gap-2 items-end">
-                            <div className="col-span-2">
-                              <label className="text-xs text-gray-600">Name</label>
-                              <input
-                                type="text"
-                                value={log.name}
-                                onChange={(e) => updatePhaseLog(log.id, { name: e.target.value })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs text-gray-600">Color</label>
-                              <input
-                                type="color"
-                                value={log.color}
-                                onChange={(e) => updatePhaseLog(log.id, { color: e.target.value })}
-                                className="w-full h-8 border border-gray-300 rounded"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="text-xs text-gray-600">Start (s)</label>
-                              <input
-                                type="number"
-                                min={0}
-                                step={0.1}
-                                value={log.startTime}
-                                onChange={(e) => updatePhaseLog(log.id, { startTime: Math.max(0, Number(e.target.value) || 0) })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs text-gray-600">End (s)</label>
-                              <input
-                                type="number"
-                                min={0}
-                                step={0.1}
-                                value={log.endTime}
-                                onChange={(e) => updatePhaseLog(log.id, { endTime: Math.max(0, Number(e.target.value) || 0) })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                              />
-                            </div>
-                            <div className="flex items-center justify-center rounded border border-indigo-100 bg-indigo-50 h-9 text-xs font-semibold text-indigo-700">
-                              {metrics.duration.toFixed(1)}s
-                            </div>
-
-                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-2 text-xs text-slate-700">
-                              Start EC: <strong>{metrics.startEC !== null ? metrics.startEC.toFixed(2) : 'n/a'}</strong>
-                            </div>
-                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-2 text-xs text-slate-700">
-                              End EC: <strong>{metrics.endEC !== null ? metrics.endEC.toFixed(2) : 'n/a'}</strong>
-                            </div>
-                            <div className={`rounded border px-2 py-2 text-xs ${metrics.ecDelta !== null && metrics.ecDelta < 0 ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
-                              EC Delta: <strong>{metrics.ecDelta !== null ? `${metrics.ecDelta > 0 ? '+' : ''}${metrics.ecDelta.toFixed(2)}` : 'n/a'}</strong>
-                            </div>
-
-                            <div>
-                              <label className="text-xs text-gray-600">Expected EC Min</label>
-                              <input
-                                type="number"
-                                step={0.1}
-                                value={log.expectedECMin ?? ''}
-                                onChange={(e) => updatePhaseLog(log.id, { expectedECMin: e.target.value === '' ? null : Number(e.target.value) })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs text-gray-600">Expected EC Max</label>
-                              <input
-                                type="number"
-                                step={0.1}
-                                value={log.expectedECMax ?? ''}
-                                onChange={(e) => updatePhaseLog(log.id, { expectedECMax: e.target.value === '' ? null : Number(e.target.value) })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                              />
-                            </div>
-                            <button
-                              onClick={() => fitPhaseLogToExpectedRange(log.id)}
-                              className="px-2 py-2 bg-sky-500 text-white text-xs rounded hover:bg-sky-600"
-                            >
-                              Fit to EC Range
-                            </button>
-
-                            <button
-                              onClick={() => beginPhasePinning(log.id, 'startTime')}
-                              className={`px-2 py-2 text-xs rounded ${phasePinTarget?.logId === log.id && phasePinTarget.boundary === 'startTime' ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-900 hover:bg-indigo-200'}`}
-                            >
-                              Pick Start
-                            </button>
-                            <button
-                              onClick={() => beginPhasePinning(log.id, 'endTime')}
-                              className={`px-2 py-2 text-xs rounded ${phasePinTarget?.logId === log.id && phasePinTarget.boundary === 'endTime' ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-900 hover:bg-indigo-200'}`}
-                            >
-                              Pick End
-                            </button>
-                            <button
-                              onClick={() => addPhaseLogAfter(log.id)}
-                              className="px-2 py-2 bg-teal-500 text-white text-xs rounded hover:bg-teal-600"
-                            >
-                              + Add Next
-                            </button>
-                          </div>
-
-                          <div className="mt-2 flex justify-end">
-                            <button
-                              onClick={() => removePhaseLog(log.id)}
-                              className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-                      )})}
-                    </div>
-                  )}
-
-                  {/* Phase Summary */}
-                  {phaseLogs.length > 0 && (
-                    <div className="mt-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
-                      <div className="border-b border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-sky-50 px-4 py-4">
-                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                          <div>
-                            <div className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">Phase Summary</div>
-                            <h4 className="mt-1 text-lg font-semibold text-slate-900">Phase timing, EC and pour targets</h4>
-                            <p className="mt-1 text-sm text-slate-600">
-                              Focus view for what each phase covers, how EC moves, and how much water is added inside that phase.
-                            </p>
-                          </div>
-                          {redLightTime !== null && (
-                            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
-                              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-red-500">Red Light Stop</div>
-                              <div className="mt-1 text-base font-semibold">Stop at {formatPourAmount(getCumulativePourAtTime(redLightTime))}</div>
-                              <div className="mt-1 text-xs text-red-700">Time {formatTime(redLightTime)} ({formatRawSeconds(redLightTime)}s)</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="overflow-x-auto px-4 py-4">
-                        <table className="min-w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              <th className="pb-3 pr-4">Phase</th>
-                              <th className="pb-3 pr-4">Time</th>
-                              <th className="pb-3 pr-4">Duration</th>
-                              <th className="pb-3 pr-4">EC</th>
-                              <th className="pb-3 pr-0 text-right">Pour</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {[...phaseLogs]
-                              .sort((a, b) => a.startTime - b.startTime)
-                              .map((log) => {
-                                const metrics = getPhaseMetrics(log);
-                                return (
-                                  <tr key={log.id} className="border-b border-slate-100 align-top last:border-b-0">
-                                    <td className="py-3 pr-4">
-                                      <div className="flex items-center gap-2">
-                                        <span className="inline-block h-3 w-3 rounded-full" style={{ background: log.color }} />
-                                        <span className="font-medium text-slate-900">{log.name}</span>
-                                      </div>
-                                    </td>
-                                    <td className="py-3 pr-4 text-slate-700">
-                                      <div>{formatTime(log.startTime)} - {formatTime(log.endTime)}</div>
-                                      <div className="mt-1 text-xs text-slate-500">{formatRawSeconds(log.startTime)}s - {formatRawSeconds(log.endTime)}s</div>
-                                    </td>
-                                    <td className="py-3 pr-4 text-slate-700">{metrics.duration.toFixed(1)}s</td>
-                                    <td className="py-3 pr-4 text-slate-700">
-                                      {metrics.startEC !== null ? (
-                                        <>
-                                          <div>{metrics.startEC.toFixed(2)} - {metrics.endEC !== null ? metrics.endEC.toFixed(2) : 'n/a'}</div>
-                                          <div className={`mt-1 text-xs font-semibold ${metrics.ecDelta !== null && metrics.ecDelta < 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
-                                            Delta {metrics.ecDelta !== null ? `${metrics.ecDelta > 0 ? '+' : ''}${metrics.ecDelta.toFixed(2)}` : 'n/a'}
-                                          </div>
-                                        </>
-                                      ) : (
-                                        'n/a'
-                                      )}
-                                    </td>
-                                    <td className="py-3 pl-4 pr-0 text-right text-slate-700">
-                                      <div className="font-medium text-slate-900">{formatPourAmount(metrics.pouredAmount)}</div>
-                                      <div className="mt-1 text-xs text-slate-500">{formatPourAmount(metrics.startPour)} - {formatPourAmount(metrics.endPour)}</div>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            {redLightTime !== null && (
-                              <tr className="bg-red-50/80 align-top">
-                                <td className="py-3 pr-4 font-semibold text-red-800">Red Light</td>
-                                <td className="py-3 pr-4 text-red-700">
-                                  <div>{formatTime(redLightTime)}</div>
-                                  <div className="mt-1 text-xs text-red-600">{formatRawSeconds(redLightTime)}s</div>
-                                </td>
-                                <td className="py-3 pr-4 text-red-700">Stop water</td>
-                                <td className="py-3 pr-4 text-red-700">Target hand-off point</td>
-                                <td className="py-3 pl-4 pr-0 text-right font-semibold text-red-800">{formatPourAmount(getCumulativePourAtTime(redLightTime))}</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {currentStep === 'extract' && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
@@ -3146,6 +2876,26 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                 {useBoxCalibrationMode && (currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y') && (
                   <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-sm">
                     Draw EC Box Mode
+                  </div>
+                )}
+                {phasePinTarget && (
+                  <div className="absolute bottom-2 left-2 right-2 sm:right-auto sm:max-w-md bg-indigo-900/95 text-white px-3 py-2 rounded text-sm shadow-lg">
+                    <div className="font-medium">
+                      Pinning {phasePinTarget.boundary === 'startTime' ? 'start' : 'end'} for {phaseLogs.find(log => log.id === phasePinTarget.logId)?.name || 'selected phase'}
+                    </div>
+                    <div className="mt-1 flex items-center gap-2 text-xs">
+                      <span>Tap on the screenshot to set this point.</span>
+                      <button
+                        onClick={() => {
+                          setPhasePinTarget(null);
+                          setPhasePinSequenceLogId(null);
+                          setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
+                        }}
+                        className="px-2 py-1 bg-white/20 rounded hover:bg-white/30"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -3358,6 +3108,437 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                 </div>
               )}
 
+              {/* Red Light Control */}
+              {currentStep === 'extract' && getCurrentData().length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-4 mb-3">
+                    <button
+                      onClick={calculateRedLight}
+                      className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                    >
+                      Recalculate Red Light
+                    </button>
+                    {redLightTime !== null && (
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={showRedLight}
+                          onChange={(e) => setShowRedLight(e.target.checked)}
+                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                        />
+                        Show Red Light Line
+                      </label>
+                    )}
+                    {redLightTime !== null && (
+                      <div className="text-sm font-medium text-gray-700">
+                        Red Light: {formatTime(redLightTime)} ({formatRawSeconds(redLightTime)}s)
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Time Threshold (seconds)
+                      </label>
+                      <input
+                        type="number"
+                        value={redLightTimeThreshold}
+                        onChange={(e) => setRedLightTimeThreshold(Number(e.target.value))}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                        min="0"
+                        max="200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        EC Threshold
+                      </label>
+                      <input
+                        type="number"
+                        value={redLightECThreshold}
+                        onChange={(e) => setRedLightECThreshold(Number(e.target.value))}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                        min="0"
+                        max="50"
+                        step="0.1"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-2">
+                    Finds when time &gt; {redLightTimeThreshold}s AND EC &lt; {redLightECThreshold} - automatically shows result below graph
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 'extract' && getCurrentData().length > 0 && (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div>
+                      <div className="font-semibold text-indigo-900">Extraction Phase Logs</div>
+                      <div className="text-xs text-indigo-700 mt-1">Manual-first workflow: pick start/end directly on the screenshot for each phase.</div>
+                      <div className="text-xs text-indigo-600 mt-1">Tip: use Pick Start + End to set both points in one pass on the screenshot.</div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={autoDetectPhaseLogs}
+                        className="px-3 py-1 bg-indigo-200 text-indigo-900 text-sm rounded hover:bg-indigo-300"
+                      >
+                        Auto-Suggest
+                      </button>
+                      <button
+                        onClick={addPhaseLog}
+                        className="px-3 py-1 bg-teal-500 text-white text-sm rounded hover:bg-teal-600"
+                      >
+                        Add Log
+                      </button>
+                      {phaseLogs.length > 0 && (
+                        <button
+                          onClick={() => {
+                            setPhaseLogs([]);
+                            setLoadedPhaseProfileName(null);
+                          }}
+                          className="px-3 py-1 bg-slate-500 text-white text-sm rounded hover:bg-slate-600"
+                        >
+                          Clear Logs
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mb-3 rounded-lg border border-indigo-200 bg-white p-3">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Phase Summary Profile</div>
+                    <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-center">
+                      <select
+                        value={selectedPhaseLogProfile}
+                        onChange={(e) => setSelectedPhaseLogProfile(e.target.value)}
+                        className="flex-1 rounded border border-indigo-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">Select saved phase profile...</option>
+                        {savedPhaseLogProfiles.map(profile => (
+                          <option key={profile.name} value={profile.name}>{profile.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={loadSelectedPhaseLogProfile}
+                        disabled={!selectedPhaseLogProfile}
+                        className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
+                      >
+                        Load Phase Profile
+                      </button>
+                      {!showSavePhaseProfileForm && (
+                        <button
+                          onClick={() => {
+                            const defaultName = selectedImageName
+                              ? `${selectedImageName.replace(/\.[^/.]+$/, '')}_phases`
+                              : 'belka_phase_profile';
+                            setNewPhaseProfileName(defaultName);
+                            setShowSavePhaseProfileForm(true);
+                          }}
+                          disabled={phaseLogs.length === 0}
+                          className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                        >
+                          Save Phase Profile
+                        </button>
+                      )}
+                    </div>
+
+                    {showSavePhaseProfileForm && (
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                          type="text"
+                          value={newPhaseProfileName}
+                          onChange={(e) => setNewPhaseProfileName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') savePhaseLogProfile(newPhaseProfileName);
+                            if (e.key === 'Escape') {
+                              setShowSavePhaseProfileForm(false);
+                              setNewPhaseProfileName('');
+                            }
+                          }}
+                          placeholder="Phase profile name..."
+                          autoFocus
+                          className="flex-1 rounded border border-indigo-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                        <button
+                          onClick={() => savePhaseLogProfile(newPhaseProfileName)}
+                          className="rounded bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowSavePhaseProfileForm(false);
+                            setNewPhaseProfileName('');
+                          }}
+                          className="rounded bg-slate-400 px-3 py-2 text-sm font-medium text-white hover:bg-slate-500"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+
+                    {loadedPhaseProfileName && (
+                      <div className="mt-2 text-xs text-indigo-700">
+                        Loaded phase profile: <strong>{loadedPhaseProfileName}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  {phasePinTarget && (
+                    <div className="mb-3 bg-white border border-indigo-300 rounded-lg p-3 text-sm text-indigo-900">
+                      Click the screenshot to set
+                      {' '}
+                      <strong>{phasePinTarget.boundary === 'startTime' ? 'start' : 'end'}</strong>
+                      {' '}
+                      for
+                      {' '}
+                      <strong>{phaseLogs.find(log => log.id === phasePinTarget.logId)?.name || 'selected phase'}</strong>.
+                      <button
+                        onClick={() => {
+                          setPhasePinTarget(null);
+                          setPhasePinSequenceLogId(null);
+                          setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
+                        }}
+                        className="ml-3 px-2 py-1 bg-slate-200 text-slate-800 rounded hover:bg-slate-300"
+                      >
+                        Cancel Pinning
+                      </button>
+                    </div>
+                  )}
+
+                  {phaseLogs.length === 0 ? (
+                    <div className="text-sm text-indigo-700">No phase logs yet. Click Add Log, then use Pick Start and Pick End on the screenshot.</div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                      {phaseLogs.map((log) => {
+                        const metrics = getPhaseMetrics(log);
+                        return (
+                        <div key={log.id} className="bg-white border border-indigo-100 rounded-lg p-3">
+                          <div className="grid grid-cols-3 gap-2 items-end">
+                            <div className="col-span-2">
+                              <label className="text-xs text-gray-600">Name</label>
+                              <input
+                                type="text"
+                                value={log.name}
+                                onChange={(e) => updatePhaseLog(log.id, { name: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-600">Color</label>
+                              <input
+                                type="color"
+                                value={log.color}
+                                onChange={(e) => updatePhaseLog(log.id, { color: e.target.value })}
+                                className="w-full h-8 border border-gray-300 rounded"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-xs text-gray-600">Start (s)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                step={0.1}
+                                value={log.startTime}
+                                onChange={(e) => updatePhaseLog(log.id, { startTime: Math.max(0, Number(e.target.value) || 0) })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-600">End (s)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                step={0.1}
+                                value={log.endTime}
+                                onChange={(e) => updatePhaseLog(log.id, { endTime: Math.max(0, Number(e.target.value) || 0) })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                              />
+                            </div>
+                            <div className="flex items-center justify-center rounded border border-indigo-100 bg-indigo-50 h-9 text-xs font-semibold text-indigo-700">
+                              {metrics.duration.toFixed(1)}s
+                            </div>
+
+                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-2 text-xs text-slate-700">
+                              Start EC: <strong>{metrics.startEC !== null ? metrics.startEC.toFixed(2) : 'n/a'}</strong>
+                            </div>
+                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-2 text-xs text-slate-700">
+                              End EC: <strong>{metrics.endEC !== null ? metrics.endEC.toFixed(2) : 'n/a'}</strong>
+                            </div>
+                            <div className={`rounded border px-2 py-2 text-xs ${metrics.ecDelta !== null && metrics.ecDelta < 0 ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+                              EC Delta: <strong>{metrics.ecDelta !== null ? `${metrics.ecDelta > 0 ? '+' : ''}${metrics.ecDelta.toFixed(2)}` : 'n/a'}</strong>
+                            </div>
+
+                            <div>
+                              <label className="text-xs text-gray-600">Expected EC Min</label>
+                              <input
+                                type="number"
+                                step={0.1}
+                                value={log.expectedECMin ?? ''}
+                                onChange={(e) => updatePhaseLog(log.id, { expectedECMin: e.target.value === '' ? null : Number(e.target.value) })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-600">Expected EC Max</label>
+                              <input
+                                type="number"
+                                step={0.1}
+                                value={log.expectedECMax ?? ''}
+                                onChange={(e) => updatePhaseLog(log.id, { expectedECMax: e.target.value === '' ? null : Number(e.target.value) })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                              />
+                            </div>
+                            <button
+                              onClick={() => fitPhaseLogToExpectedRange(log.id)}
+                              className="px-2 py-2 bg-sky-500 text-white text-xs rounded hover:bg-sky-600"
+                            >
+                              Fit to EC Range
+                            </button>
+
+                            <button
+                              onClick={() => beginPhasePinning(log.id, 'startTime')}
+                              className={`px-2 py-2 text-xs rounded ${phasePinTarget?.logId === log.id && phasePinTarget.boundary === 'startTime' ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-900 hover:bg-indigo-200'}`}
+                            >
+                              Pick Start
+                            </button>
+                            <button
+                              onClick={() => beginPhasePinning(log.id, 'endTime')}
+                              className={`px-2 py-2 text-xs rounded ${phasePinTarget?.logId === log.id && phasePinTarget.boundary === 'endTime' ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-900 hover:bg-indigo-200'}`}
+                            >
+                              Pick End
+                            </button>
+                            <button
+                              onClick={() => beginPhasePinningSequence(log.id)}
+                              className={`px-2 py-2 text-xs rounded ${phasePinSequenceLogId === log.id ? 'bg-indigo-700 text-white' : 'bg-indigo-500 text-white hover:bg-indigo-600'}`}
+                            >
+                              Pick Start + End
+                            </button>
+                            <button
+                              onClick={() => addPhaseLogAfter(log.id)}
+                              className="px-2 py-2 bg-teal-500 text-white text-xs rounded hover:bg-teal-600"
+                            >
+                              + Add Next
+                            </button>
+                          </div>
+
+                          <div className="mt-2 flex justify-end">
+                            <button
+                              onClick={() => removePhaseLog(log.id)}
+                              className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      )})}
+                    </div>
+                  )}
+
+                  {phaseLogs.length > 0 && (
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
+                      <div className="border-b border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-sky-50 px-4 py-4">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                          <div>
+                            <div className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">Phase Summary</div>
+                            <h4 className="mt-1 text-lg font-semibold text-slate-900">Phase timing, EC and pour targets</h4>
+                            <p className="mt-1 text-sm text-slate-600">
+                              Focus view for what each phase covers, how EC moves, and how much water is added inside that phase.
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                onClick={downloadPhaseSummaryText}
+                                className="rounded border border-indigo-300 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50"
+                              >
+                                Export Phase TXT
+                              </button>
+                              <button
+                                onClick={downloadPhaseSummaryCsv}
+                                className="rounded border border-indigo-300 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50"
+                              >
+                                Export Phase CSV
+                              </button>
+                            </div>
+                          </div>
+                          {redLightTime !== null && (
+                            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+                              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-red-500">Red Light Stop</div>
+                              <div className="mt-1 text-base font-semibold">Stop at {formatPourAmount(getCumulativePourAtTime(redLightTime))}</div>
+                              <div className="mt-1 text-xs text-red-700">Time {formatTime(redLightTime)} ({formatRawSeconds(redLightTime)}s)</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto px-4 py-4">
+                        <table className="min-w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              <th className="pb-3 pr-4">Phase</th>
+                              <th className="pb-3 pr-4">Time</th>
+                              <th className="pb-3 pr-4">Duration</th>
+                              <th className="pb-3 pr-4">EC</th>
+                              <th className="pb-3 pr-0 text-right">Pour</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[...phaseLogs]
+                              .sort((a, b) => a.startTime - b.startTime)
+                              .map((log) => {
+                                const metrics = getPhaseMetrics(log);
+                                return (
+                                  <tr key={log.id} className="border-b border-slate-100 align-top last:border-b-0">
+                                    <td className="py-3 pr-4">
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-block h-3 w-3 rounded-full" style={{ background: log.color }} />
+                                        <span className="font-medium text-slate-900">{log.name}</span>
+                                      </div>
+                                    </td>
+                                    <td className="py-3 pr-4 text-slate-700">
+                                      <div>{formatTime(log.startTime)} - {formatTime(log.endTime)}</div>
+                                      <div className="mt-1 text-xs text-slate-500">{formatRawSeconds(log.startTime)}s - {formatRawSeconds(log.endTime)}s</div>
+                                    </td>
+                                    <td className="py-3 pr-4 text-slate-700">{metrics.duration.toFixed(1)}s</td>
+                                    <td className="py-3 pr-4 text-slate-700">
+                                      {metrics.startEC !== null ? (
+                                        <>
+                                          <div>{metrics.startEC.toFixed(2)} - {metrics.endEC !== null ? metrics.endEC.toFixed(2) : 'n/a'}</div>
+                                          <div className={`mt-1 text-xs font-semibold ${metrics.ecDelta !== null && metrics.ecDelta < 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                                            Delta {metrics.ecDelta !== null ? `${metrics.ecDelta > 0 ? '+' : ''}${metrics.ecDelta.toFixed(2)}` : 'n/a'}
+                                          </div>
+                                        </>
+                                      ) : (
+                                        'n/a'
+                                      )}
+                                    </td>
+                                    <td className="py-3 pl-4 pr-0 text-right text-slate-700">
+                                      <div className="font-medium text-slate-900">{formatPourAmount(metrics.pouredAmount)}</div>
+                                      <div className="mt-1 text-xs text-slate-500">{formatPourAmount(metrics.startPour)} - {formatPourAmount(metrics.endPour)}</div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            {redLightTime !== null && (
+                              <tr className="bg-red-50/80 align-top">
+                                <td className="py-3 pr-4 font-semibold text-red-800">Red Light</td>
+                                <td className="py-3 pr-4 text-red-700">
+                                  <div>{formatTime(redLightTime)}</div>
+                                  <div className="mt-1 text-xs text-red-600">{formatRawSeconds(redLightTime)}s</div>
+                                </td>
+                                <td className="py-3 pr-4 text-red-700">Stop water</td>
+                                <td className="py-3 pr-4 text-red-700">Target hand-off point</td>
+                                <td className="py-3 pl-4 pr-0 text-right font-semibold text-red-800">{formatPourAmount(getCumulativePourAtTime(redLightTime))}</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Auto-Detect Preference */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
                 <label className="flex items-center cursor-pointer">
@@ -3551,75 +3732,29 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
               {/* TDS & EY Analysis */}
               {(extractedPoints.length > 0 || fineGeneratedCurve.length > 0) && (
                 <div className="space-y-3">
-                  {/* Dose / factor inputs */}
-                  <div className="flex flex-wrap items-center gap-4 px-1">
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Coffee dose (g):</label>
-                      <input
-                        type="number"
-                        min={1}
-                        step={0.5}
-                        value={doseWeight}
-                        onChange={(e) => {
-                          const v = Math.max(0.1, parseFloat(e.target.value) || 15);
-                          setDoseWeight(v);
-                          localStorage.setItem('belkaDoseWeight', String(v));
-                        }}
-                        className="w-24 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium text-slate-700 whitespace-nowrap">EC→TDS factor:</label>
-                      <input
-                        type="number"
-                        min={0.1}
-                        max={1}
-                        step={0.01}
-                        value={conversionFactor}
-                        onChange={(e) => {
-                          const v = Math.min(1, Math.max(0.1, parseFloat(e.target.value) || 0.5));
-                          setConversionFactor(v);
-                          localStorage.setItem('belkaConversionFactor', String(v));
-                        }}
-                        className="w-20 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                      />
-                      <span className="text-xs text-slate-500">(0.5 = standard, 0.55 = mineral-rich)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Refractometer TDS % (optional):</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={5}
-                        step={0.01}
-                        placeholder="e.g. 1.35"
-                        value={refractometerTDSInput}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setRefractometerTDSInput(value);
-                          localStorage.setItem('belkaRefractometerTDS', value);
-                        }}
-                        className="w-24 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                      />
-                      {refractometerTDSInput.trim().length > 0 && (
-                        <button
-                          onClick={() => {
-                            setRefractometerTDSInput('');
-                            localStorage.removeItem('belkaRefractometerTDS');
-                          }}
-                          className="text-xs text-slate-500 hover:text-slate-700"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                  </div>
                   <TDSAnalysisGraph
                     ecPoints={getCurrentData()}
                     brewData={ultrakokiBrewData}
                     phaseLogs={phaseLogs}
                     doseWeight={doseWeight}
                     conversionFactor={conversionFactor}
+                    refractometerTDSInput={refractometerTDSInput}
+                    onDoseWeightChange={(value) => {
+                      setDoseWeight(value);
+                      localStorage.setItem('belkaDoseWeight', String(value));
+                    }}
+                    onConversionFactorChange={(value) => {
+                      setConversionFactor(value);
+                      localStorage.setItem('belkaConversionFactor', String(value));
+                    }}
+                    onRefractometerTDSInputChange={(value) => {
+                      setRefractometerTDSInput(value);
+                      if (value.trim().length > 0) {
+                        localStorage.setItem('belkaRefractometerTDS', value);
+                      } else {
+                        localStorage.removeItem('belkaRefractometerTDS');
+                      }
+                    }}
                     refractometerTDS={(() => {
                       const n = parseFloat(refractometerTDSInput);
                       return Number.isFinite(n) && n > 0 ? n : null;

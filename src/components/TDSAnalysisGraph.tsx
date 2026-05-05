@@ -36,10 +36,15 @@ export interface TDSAnalysisGraphProps {
   brewData?: BrewData | null;
   phaseLogs?: PhaseLog[];
   doseWeight: number;       // g of coffee grounds
+  brewRatio?: number;       // 1:x
+  totalWaterIn?: number;    // grams
+  waterInSource?: 'ultrakoki' | 'estimated';
   conversionFactor?: number; // EC→TDS factor, default 0.5
   refractometerTDS?: number | null; // optional final-cup TDS % anchor
   refractometerTDSInput?: string;
   onDoseWeightChange?: (value: number) => void;
+  onBrewRatioChange?: (value: number) => void;
+  onTotalWaterInChange?: (value: number) => void;
   onConversionFactorChange?: (value: number) => void;
   onRefractometerTDSInputChange?: (value: string) => void;
 }
@@ -122,15 +127,22 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   brewData,
   phaseLogs = [],
   doseWeight,
+  brewRatio = 15,
+  totalWaterIn = 225,
+  waterInSource = 'estimated',
   conversionFactor = 0.5,
   refractometerTDS = null,
   refractometerTDSInput,
   onDoseWeightChange,
+  onBrewRatioChange,
+  onTotalWaterInChange,
   onConversionFactorChange,
   onRefractometerTDSInputChange,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const phaseSummaryWrapRef = useRef<HTMLDivElement>(null);
+  const phaseSummaryTableRef = useRef<HTMLTableElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 340 });
   const [baseWidth, setBaseWidth] = useState(800);
   const [zoomLevel, setZoomLevel] = useState(1.0);
@@ -138,12 +150,23 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   const [showECOverlay, setShowECOverlay] = useState<boolean>(true);
   const [showPourOverlay, setShowPourOverlay] = useState<boolean>(true);
   const [showPhaseLog, setShowPhaseLog] = useState<boolean>(true);
+  const [phaseMetricVisibility, setPhaseMetricVisibility] = useState({
+    peakTDS: true,
+    avgTDS: true,
+    eyStart: true,
+    eyEnd: true,
+    pourEnd: true,
+    pourPercent: true,
+  });
   const [showTargetAssistant, setShowTargetAssistant] = useState<boolean>(false);
   const [targetMode, setTargetMode] = useState<'tds' | 'ey'>('tds');
   const [targetTDSInput, setTargetTDSInput] = useState<string>('1.36');
   const [targetEYInput, setTargetEYInput] = useState<string>('20.0');
   const [targetStartInput, setTargetStartInput] = useState<string>('60');
+  const [phaseSummaryZoom, setPhaseSummaryZoom] = useState<number>(1);
+  const [phaseSummaryHasManualZoom, setPhaseSummaryHasManualZoom] = useState<boolean>(false);
   const [screenshotBg, setScreenshotBg] = useState<'white' | 'transparent'>('white');
+  const [hiddenTargetWindows, setHiddenTargetWindows] = useState<Set<string>>(new Set());
 
   const refractometerAnchor = useMemo(() => {
     if (refractometerTDS == null || !Number.isFinite(refractometerTDS) || refractometerTDS <= 0) {
@@ -163,7 +186,8 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   }, [refractometerAnchor, ecPoints]);
 
   const factorToUse = adjustedConversionFactor ?? conversionFactor;
-  const hasBrewData = Boolean(brewData && brewData.cumulativePour && brewData.cumulativePour.length > 0);
+  const waterInSourceLabel = waterInSource === 'ultrakoki' ? 'Ultrakoki' : 'Estimated';
+  const isEstimatedWaterInMode = waterInSource !== 'ultrakoki';
   const targetTDS = useMemo(() => {
     const parsed = parseFloat(targetTDSInput);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
@@ -176,6 +200,32 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     const n = parseFloat(targetStartInput);
     return Number.isFinite(n) && n >= 0 ? n : 60;
   }, [targetStartInput]);
+
+  const waterInPercentBase = useMemo(() => {
+    if (brewData && Array.isArray(brewData.cumulativePour) && brewData.cumulativePour.length > 0) {
+      for (let i = brewData.cumulativePour.length - 1; i >= 0; i--) {
+        const v = brewData.cumulativePour[i];
+        if (Number.isFinite(v) && v > 0) return v;
+      }
+    }
+    return Number.isFinite(totalWaterIn) && totalWaterIn > 0 ? totalWaterIn : null;
+  }, [brewData, totalWaterIn]);
+
+  const computePhaseSummaryFitZoom = () => {
+    const wrap = phaseSummaryWrapRef.current;
+    const table = phaseSummaryTableRef.current;
+    if (!wrap || !table) return 1;
+
+    const wrapWidth = wrap.clientWidth;
+    const renderedTableWidth = table.getBoundingClientRect().width;
+    if (!Number.isFinite(wrapWidth) || !Number.isFinite(renderedTableWidth) || wrapWidth <= 0 || renderedTableWidth <= 0) {
+      return 1;
+    }
+
+    const unzoomedTableWidth = renderedTableWidth / Math.max(phaseSummaryZoom, 0.01);
+    const fit = wrapWidth / unzoomedTableWidth;
+    return Math.max(0.45, Math.min(1, Number(fit.toFixed(2))));
+  };
 
   // ── Compute TDS/EY time series ──────────────────────────────────────────
 
@@ -480,7 +530,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
         `EC = ${pt.ec.toFixed(2)} mS/cm${pt.temperature != null ? ` @ ${pt.temperature.toFixed(1)}°C` : ''}`,
         `EC₂₅ = ${pt.ec25.toFixed(2)} mS/cm`,
         `TDS = ${pt.tds.toFixed(2)}%`,
-        `Pour = ${pt.beverageWeight.toFixed(1)} g`,
+        `Pour = ${pt.beverageWeight.toFixed(1)} g (${waterInPercentBase != null && waterInPercentBase > 0 ? `${((pt.beverageWeight / waterInPercentBase) * 100).toFixed(1)}%` : 'n/a'})`,
         `EY = ${pt.ey.toFixed(1)}%`,
       ];
       const boxW = 162, lineH = 16, boxH = lines.length * lineH + 10;
@@ -526,7 +576,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       lx += ctx.measureText(label).width + 52;
     });
 
-  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showECOverlay, showPourOverlay, showPhaseLog, showTargetAssistant, targetMode, targetTDS, targetEY, ecPoints, brewData]);
+  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showECOverlay, showPourOverlay, showPhaseLog, showTargetAssistant, targetMode, targetTDS, targetEY, ecPoints, brewData, waterInPercentBase]);
 
   // ── Hover handler ────────────────────────────────────────────────────────
 
@@ -576,6 +626,15 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     }
     return rows;
   }, [series, phaseLogs]);
+
+  useEffect(() => {
+    if (phaseSummaryHasManualZoom || !showPhaseLog || phaseSummary.length === 0) return;
+    const frame = window.requestAnimationFrame(() => {
+      const fitZoom = computePhaseSummaryFitZoom();
+      setPhaseSummaryZoom((prev) => (Math.abs(prev - fitZoom) < 0.01 ? prev : fitZoom));
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [phaseSummaryHasManualZoom, showPhaseLog, phaseSummary.length, phaseMetricVisibility, canvasSize.width]);
 
   const targetTDSWindows = useMemo(() => {
     if (!showTargetAssistant || targetMode !== 'tds' || targetTDS == null || series.length === 0) {
@@ -720,12 +779,28 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
           const rows = [
             ['EC25', `${window.minEC.toFixed(2)}-${window.maxEC.toFixed(2)} mS/cm`],
             ['Water-in', `${window.minWaterIn.toFixed(0)}-${window.maxWaterIn.toFixed(0)} ml`],
-            ['Ratio', hasBrewData ? formatBrewRatioRange(window.minWaterIn, window.maxWaterIn, doseWeight) : 'n/a (no Ultrakoki data)'],
+            ['Water-in %', waterInPercentBase != null && waterInPercentBase > 0
+              ? `${((window.minWaterIn / waterInPercentBase) * 100).toFixed(1)}-${((window.maxWaterIn / waterInPercentBase) * 100).toFixed(1)}%`
+              : 'n/a'],
+            ['Ratio', formatBrewRatioRange(window.minWaterIn, window.maxWaterIn, doseWeight)],
           ];
+
+          const windowKey = `${tone}-${idx}`;
+          const isHidden = hiddenTargetWindows.has(windowKey);
+          const toggleHidden = () => setHiddenTargetWindows(prev => {
+            const next = new Set(prev);
+            if (next.has(windowKey)) next.delete(windowKey);
+            else next.add(windowKey);
+            return next;
+          });
 
           return (
             <div key={`${tone}-target-window-${idx}`} className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${palette.border}`}>
-              <div className={`flex flex-wrap items-center justify-between gap-2 px-4 py-3 ${palette.headerBg}`}>
+              <button
+                type="button"
+                onClick={toggleHidden}
+                className={`w-full flex flex-wrap items-center justify-between gap-2 px-4 py-3 ${palette.headerBg} cursor-pointer text-left`}
+              >
                 <div className="flex items-center gap-2">
                   <span className={`inline-flex rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${palette.badgeBg}`}>
                     Window {idx + 1}
@@ -734,27 +809,32 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                     {formatClock(window.startTime)} - {formatClock(window.endTime)}
                   </span>
                 </div>
-                <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${palette.label}`}>
-                  Match Range
-                </span>
-              </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${palette.label}`}>
+                    Match Range
+                  </span>
+                  <span className={`text-[11px] ${palette.label}`}>{isHidden ? '▸' : '▾'}</span>
+                </div>
+              </button>
 
-              <div className="px-4 py-3">
-                <table className="w-full border-separate border-spacing-0 text-left text-[13px]">
-                  <tbody>
-                    {rows.map(([label, value]) => (
-                      <tr key={label} className={palette.stripe}>
-                        <th className={`w-32 border-t px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] ${palette.label} ${palette.tableBorder}`}>
-                          {label}
-                        </th>
-                        <td className={`border-t px-3 py-2 font-medium text-slate-800 ${palette.tableBorder}`}>
-                          {value}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {!isHidden && (
+                <div className="px-4 py-3">
+                  <table className="w-full border-separate border-spacing-0 text-left text-[13px]">
+                    <tbody>
+                      {rows.map(([label, value]) => (
+                        <tr key={label} className={palette.stripe}>
+                          <th className={`w-32 border-t px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] ${palette.label} ${palette.tableBorder}`}>
+                            {label}
+                          </th>
+                          <td className={`border-t px-3 py-2 font-medium text-slate-800 ${palette.tableBorder}`}>
+                            {value}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           );
         })}
@@ -849,7 +929,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
               EC → TDS (×{factorToUse.toFixed(3)}) → EY% &nbsp;|&nbsp; dose: {doseWeight.toFixed(1)} g
               {ecPoints.some(p => p.temperature != null) && ' | temp-compensated @ 25°C'}
               {refractometerAnchor != null && adjustedConversionFactor != null && ' | refractometer-anchored'}
-              {overallBrewRatio != null && ` | ratio 1:${overallBrewRatio.toFixed(1)} (Ultrakoki)`}
+              {overallBrewRatio != null && ` | ratio 1:${overallBrewRatio.toFixed(1)} (${waterInSourceLabel})`}
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -899,6 +979,36 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             />
           </div>
           <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Brew ratio (1:x):</label>
+            <input
+              type="number"
+              min={1}
+              max={30}
+              step={0.1}
+              value={brewRatio}
+              onChange={(e) => {
+                const v = Math.min(30, Math.max(1, parseFloat(e.target.value) || 15));
+                onBrewRatioChange?.(v);
+              }}
+              className="w-20 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Total water-in (g):</label>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={totalWaterIn}
+              onChange={(e) => {
+                const v = Math.max(1, parseFloat(e.target.value) || (doseWeight * brewRatio));
+                onTotalWaterInChange?.(v);
+              }}
+              className="w-24 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+            <span className="text-xs text-slate-500">{waterInSourceLabel}</span>
+          </div>
+          <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-slate-700 whitespace-nowrap">EC→TDS factor:</label>
             <input
               type="number"
@@ -936,6 +1046,11 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             )}
           </div>
         </div>
+        {isEstimatedWaterInMode && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <span className="font-semibold">Tip:</span> Without Ultrakoki JSON, the water-in curve is an idealized estimate from brew ratio and EC timeline. Treat absolute pour values and EY as reference-only. Use this mode mainly to compare extraction behavior shape (flow-rate and thermal influence reflected in the EC curve), not exact real-world water-in totals.
+          </div>
+        )}
       </div>
 
       {showTargetAssistant && (
@@ -991,7 +1106,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
           )}
           {targetMode === 'tds' && targetTDS != null && targetTDSWindows.length === 0 && nearestTargetPoint && (
             <div className="mt-3 text-xs text-slate-700 rounded-xl border border-rose-200/80 bg-white px-3 py-2 shadow-sm">
-              No direct window found. Nearest: {formatClock(nearestTargetPoint.point.time)} | TDS {nearestTargetPoint.point.tds.toFixed(2)}% (Δ {nearestTargetPoint.diff.toFixed(2)}), EC25 {nearestTargetPoint.point.ec25.toFixed(2)} mS/cm, Water-in {nearestTargetPoint.point.beverageWeight.toFixed(0)} ml, Ratio {hasBrewData ? formatBrewRatio(nearestTargetPoint.point.beverageWeight, doseWeight) : 'n/a (no Ultrakoki data)'}.
+              No direct window found. Nearest: {formatClock(nearestTargetPoint.point.time)} | TDS {nearestTargetPoint.point.tds.toFixed(2)}% (Δ {nearestTargetPoint.diff.toFixed(2)}), EC25 {nearestTargetPoint.point.ec25.toFixed(2)} mS/cm, Water-in {nearestTargetPoint.point.beverageWeight.toFixed(0)} ml ({waterInPercentBase != null && waterInPercentBase > 0 ? `${((nearestTargetPoint.point.beverageWeight / waterInPercentBase) * 100).toFixed(1)}%` : 'n/a'}), Ratio {formatBrewRatio(nearestTargetPoint.point.beverageWeight, doseWeight)}.
             </div>
           )}
 
@@ -1000,7 +1115,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
           )}
           {targetMode === 'ey' && targetEY != null && targetEYWindows.length === 0 && nearestTargetEYPoint && (
             <div className="mt-3 text-xs text-slate-700 rounded-xl border border-amber-200/80 bg-white px-3 py-2 shadow-sm">
-              No direct window found. Nearest: {formatClock(nearestTargetEYPoint.point.time)} | EY {nearestTargetEYPoint.point.ey.toFixed(1)}% (Δ {nearestTargetEYPoint.diff.toFixed(1)}), EC25 {nearestTargetEYPoint.point.ec25.toFixed(2)} mS/cm, Water-in {nearestTargetEYPoint.point.beverageWeight.toFixed(0)} ml, Ratio {hasBrewData ? formatBrewRatio(nearestTargetEYPoint.point.beverageWeight, doseWeight) : 'n/a (no Ultrakoki data)'}.
+              No direct window found. Nearest: {formatClock(nearestTargetEYPoint.point.time)} | EY {nearestTargetEYPoint.point.ey.toFixed(1)}% (Δ {nearestTargetEYPoint.diff.toFixed(1)}), EC25 {nearestTargetEYPoint.point.ec25.toFixed(2)} mS/cm, Water-in {nearestTargetEYPoint.point.beverageWeight.toFixed(0)} ml ({waterInPercentBase != null && waterInPercentBase > 0 ? `${((nearestTargetEYPoint.point.beverageWeight / waterInPercentBase) * 100).toFixed(1)}%` : 'n/a'}), Ratio {formatBrewRatio(nearestTargetEYPoint.point.beverageWeight, doseWeight)}.
             </div>
           )}
         </div>
@@ -1032,7 +1147,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             <div className="mt-1 flex items-end justify-between gap-2">
               <div className="text-lg font-bold leading-none text-blue-600">{overallWaterIn != null ? `${overallWaterIn.toFixed(0)} g` : `${overall.finalBev.toFixed(0)} g`}</div>
               <div className="text-[11px] font-medium text-slate-500 text-right">
-                {overallWaterIn != null ? 'Ultrakoki' : 'final weight'}
+                {overallWaterIn != null ? waterInSourceLabel : 'final weight'}
               </div>
             </div>
           </div>
@@ -1043,7 +1158,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             <div className="mt-1 flex items-end justify-between gap-2">
               <div className="text-lg font-bold leading-none text-slate-700">{overallBrewRatio != null ? `1:${overallBrewRatio.toFixed(1)}` : (adjustedConversionFactor != null ? adjustedConversionFactor.toFixed(3) : `${doseWeight.toFixed(1)} g`)}</div>
               <div className="text-[11px] font-medium text-slate-500 text-right">
-                {overallBrewRatio != null ? 'Ultrakoki' : (adjustedConversionFactor != null ? 'TDS only' : 'coffee')}
+                {overallBrewRatio != null ? waterInSourceLabel : (adjustedConversionFactor != null ? 'TDS only' : 'coffee')}
               </div>
             </div>
           </div>
@@ -1097,19 +1212,80 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       {/* Phase summary table */}
       {showPhaseLog && phaseSummary.length > 0 && (
         <div className="px-4 pb-4">
-          <div className="text-xs font-semibold text-slate-600 uppercase tracking-[0.14em] mb-2">Phase Extraction Summary</div>
-          <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
-            <table className="w-full min-w-[760px] text-xs border-collapse">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="text-xs font-semibold text-slate-600 uppercase tracking-[0.14em]">Phase Extraction Summary</div>
+            <div className="flex flex-wrap items-center justify-end gap-1.5">
+              <div className="mr-1 flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-1.5 py-1">
+                <span className="text-[11px] font-semibold text-slate-500">Zoom</span>
+                <button
+                  onClick={() => {
+                    setPhaseSummaryHasManualZoom(false);
+                    setPhaseSummaryZoom(computePhaseSummaryFitZoom());
+                  }}
+                  className="h-5 rounded-full border border-slate-300 bg-white px-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+                  title="Fit table to available width"
+                >
+                  Fit
+                </button>
+                <button
+                  onClick={() => {
+                    setPhaseSummaryHasManualZoom(true);
+                    setPhaseSummaryZoom(z => Math.max(0.45, Number((z - 0.1).toFixed(2))));
+                  }}
+                  className="h-5 w-5 rounded-full border border-slate-300 bg-white text-slate-700 text-xs font-bold leading-none hover:bg-slate-100"
+                  title="Zoom out"
+                >
+                  -
+                </button>
+                <span className="w-10 text-center text-[11px] font-semibold text-slate-700">{Math.round(phaseSummaryZoom * 100)}%</span>
+                <button
+                  onClick={() => {
+                    setPhaseSummaryHasManualZoom(true);
+                    setPhaseSummaryZoom(z => Math.min(1.8, Number((z + 0.1).toFixed(2))));
+                  }}
+                  className="h-5 w-5 rounded-full border border-slate-300 bg-white text-slate-700 text-xs font-bold leading-none hover:bg-slate-100"
+                  title="Zoom in"
+                >
+                  +
+                </button>
+              </div>
+              {[
+                { key: 'peakTDS', label: 'Peak TDS%' },
+                { key: 'avgTDS', label: 'Avg TDS%' },
+                { key: 'eyStart', label: 'EY start' },
+                { key: 'eyEnd', label: 'EY end' },
+                { key: 'pourEnd', label: 'Pour at end' },
+                { key: 'pourPercent', label: 'Pour %' },
+              ].map((metric) => {
+                const visible = phaseMetricVisibility[metric.key as keyof typeof phaseMetricVisibility];
+                return (
+                  <button
+                    key={metric.key}
+                    onClick={() => setPhaseMetricVisibility(prev => ({
+                      ...prev,
+                      [metric.key]: !prev[metric.key as keyof typeof prev],
+                    }))}
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${visible ? 'border-indigo-300 bg-indigo-100 text-indigo-800' : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    {metric.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div ref={phaseSummaryWrapRef} className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm" style={{ zoom: phaseSummaryZoom }}>
+            <table ref={phaseSummaryTableRef} className="w-full min-w-[760px] text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-100/90">
                   <th className="text-left px-3 py-2 border border-slate-200 font-semibold text-slate-600">Phase</th>
                   <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-slate-600">Time range</th>
                   <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-slate-600">Duration</th>
-                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-emerald-700">Peak TDS%</th>
-                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-emerald-700">Avg TDS%</th>
-                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-amber-700">EY start</th>
-                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-amber-700">EY end</th>
-                  <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-blue-700">Pour at end</th>
+                  {phaseMetricVisibility.peakTDS && <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-emerald-700">Peak TDS%</th>}
+                  {phaseMetricVisibility.avgTDS && <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-emerald-700">Avg TDS%</th>}
+                  {phaseMetricVisibility.eyStart && <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-amber-700">EY start</th>}
+                  {phaseMetricVisibility.eyEnd && <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-amber-700">EY end</th>}
+                  {phaseMetricVisibility.pourEnd && <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-blue-700">Pour at end</th>}
+                  {phaseMetricVisibility.pourPercent && <th className="text-center px-3 py-2 border border-slate-200 font-semibold text-blue-700">Pour %</th>}
                 </tr>
               </thead>
               <tbody>
@@ -1128,21 +1304,36 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                     <td className="text-center px-3 py-2 border border-slate-200 text-slate-600">
                       {duration.toFixed(0)} s
                     </td>
-                    <td className="text-center px-3 py-2 border border-slate-200 font-bold text-emerald-700">
-                      {peakTDS.toFixed(2)}%
-                    </td>
-                    <td className="text-center px-3 py-2 border border-slate-200 text-emerald-600">
-                      {avgTDS.toFixed(2)}%
-                    </td>
-                    <td className="text-center px-3 py-2 border border-slate-200 text-amber-600">
-                      {startEY.toFixed(1)}%
-                    </td>
-                    <td className="text-center px-3 py-2 border border-slate-200 font-bold text-amber-700">
-                      {endEY.toFixed(1)}%
-                    </td>
-                    <td className="text-center px-3 py-2 border border-slate-200 text-blue-700">
-                      {endPour.toFixed(0)} g
-                    </td>
+                    {phaseMetricVisibility.peakTDS && (
+                      <td className="text-center px-3 py-2 border border-slate-200 font-bold text-emerald-700">
+                        {peakTDS.toFixed(2)}%
+                      </td>
+                    )}
+                    {phaseMetricVisibility.avgTDS && (
+                      <td className="text-center px-3 py-2 border border-slate-200 text-emerald-600">
+                        {avgTDS.toFixed(2)}%
+                      </td>
+                    )}
+                    {phaseMetricVisibility.eyStart && (
+                      <td className="text-center px-3 py-2 border border-slate-200 text-amber-600">
+                        {startEY.toFixed(1)}%
+                      </td>
+                    )}
+                    {phaseMetricVisibility.eyEnd && (
+                      <td className="text-center px-3 py-2 border border-slate-200 font-bold text-amber-700">
+                        {endEY.toFixed(1)}%
+                      </td>
+                    )}
+                    {phaseMetricVisibility.pourEnd && (
+                      <td className="text-center px-3 py-2 border border-slate-200 text-blue-700">
+                        {endPour.toFixed(0)} g
+                      </td>
+                    )}
+                    {phaseMetricVisibility.pourPercent && (
+                      <td className="text-center px-3 py-2 border border-slate-200 text-blue-700">
+                        {overallWaterIn != null && overallWaterIn > 0 ? `${((endPour / overallWaterIn) * 100).toFixed(1)}%` : 'n/a'}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -1154,6 +1345,9 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             <div className="font-semibold text-slate-700 mb-1">Reading guide</div>
             <div><span className="text-emerald-600 font-medium">TDS 1.2–1.5%</span> = ideal extraction window for most filter coffee</div>
             <div><span className="text-amber-600 font-medium">EY 18–22%</span> = specialty target range (SCA standard)</div>
+            {isEstimatedWaterInMode && (
+              <div><span className="text-amber-700 font-medium">Estimated water-in mode:</span> values are idealized and may not match real pours exactly; use trends and phase behavior as reference.</div>
+            )}
             {refractometerAnchor != null && adjustedConversionFactor != null && (
               <div><span className="text-violet-600 font-medium">Ref anchor:</span> TDS/EY are scaled so final cup equals {refractometerAnchor.toFixed(2)}%; EC curve and EC values are not modified.</div>
             )}

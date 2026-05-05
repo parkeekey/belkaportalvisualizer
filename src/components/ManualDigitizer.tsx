@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Upload, Target, AlertCircle } from 'lucide-react';
 import { InteractiveDataGraph } from './InteractiveDataGraph';
 import { UltrakokiGraph, type UltrakokiBrewData } from './UltrakokiGraph';
@@ -58,6 +58,13 @@ interface SavedPhaseLogProfile {
   name: string;
   phaseLogs: PhaseLog[];
   createdAt: string;
+}
+
+interface CumulativePourData {
+  values: number[];
+  intervalSeconds: number;
+  label: string;
+  source: 'ultrakoki' | 'estimated';
 }
 
 interface CalibrationBoxRect {
@@ -185,6 +192,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   });
   const [pendingAutoGenerate, setPendingAutoGenerate] = useState<boolean>(false);
   const [phaseLogs, setPhaseLogs] = useState<PhaseLog[]>([]);
+  const [phaseSummaryZoom, setPhaseSummaryZoom] = useState<number>(1);
   const [phasePinTarget, setPhasePinTarget] = useState<PhasePinTarget | null>(null);
   const [phasePinSequenceLogId, setPhasePinSequenceLogId] = useState<string | null>(null);
   const [phasePinCursor, setPhasePinCursor] = useState<{ x: number; time: number; visible: boolean }>({
@@ -207,6 +215,18 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     const saved = localStorage.getItem('belkaDoseWeight');
     return saved ? (parseFloat(saved) || 15) : 15;
   });
+  const [brewRatio, setBrewRatio] = useState<number>(() => {
+    const saved = localStorage.getItem('belkaBrewRatio');
+    return saved ? (parseFloat(saved) || 15) : 15;
+  });
+  const [totalWaterIn, setTotalWaterIn] = useState<number>(() => {
+    const saved = localStorage.getItem('belkaTotalWaterIn');
+    if (saved) {
+      const parsed = parseFloat(saved);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+    return 225;
+  });
   const [conversionFactor, setConversionFactor] = useState<number>(() => {
     const saved = localStorage.getItem('belkaConversionFactor');
     return saved ? (parseFloat(saved) || 0.5) : 0.5;
@@ -218,12 +238,33 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const suppressNextCanvasClickRef = useRef<boolean>(false);
+  const uploadSectionRef = useRef<HTMLDivElement>(null);
+  const calibrationSectionRef = useRef<HTMLDivElement>(null);
+  const ultrakokiSectionRef = useRef<HTMLDivElement>(null);
 
   const scrollToScreenshotCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     canvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
+
+  const scrollToSection = useCallback((target: 'upload' | 'calibration' | 'ultrakoki') => {
+    const section =
+      target === 'upload'
+        ? uploadSectionRef.current
+        : target === 'calibration'
+        ? calibrationSectionRef.current
+        : ultrakokiSectionRef.current;
+
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    if ((target === 'calibration' || target === 'upload') && selectedImage) {
+      scrollToScreenshotCanvas();
+    }
+  }, [selectedImage, scrollToScreenshotCanvas]);
 
   const updateCalibrateXValue = useCallback((rawValue: string) => {
     const parsed = Number(rawValue);
@@ -420,17 +461,70 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     return sorted.length > 0 ? sorted[sorted.length - 1].time : 0;
   }, [getSortedCurrentData]);
 
+  const computedWaterInTarget = useMemo(() => {
+    return Number.isFinite(doseWeight) && Number.isFinite(brewRatio) && doseWeight > 0 && brewRatio > 0
+      ? doseWeight * brewRatio
+      : null;
+  }, [doseWeight, brewRatio]);
+
+  const resolvedWaterInTarget = useMemo(() => {
+    if (Number.isFinite(totalWaterIn) && totalWaterIn > 0) return totalWaterIn;
+    return computedWaterInTarget;
+  }, [totalWaterIn, computedWaterInTarget]);
+
+  const effectivePourData = useMemo<CumulativePourData | null>(() => {
+    if (ultrakokiBrewData && ultrakokiBrewData.cumulativePour.length > 0 && ultrakokiBrewData.intervalSeconds > 0) {
+      return {
+        values: ultrakokiBrewData.cumulativePour,
+        intervalSeconds: ultrakokiBrewData.intervalSeconds,
+        label: importedJsonLabel || ultrakokiBrewData.label || 'Ultrakoki data',
+        source: 'ultrakoki',
+      };
+    }
+
+    const endTime = getCurveEndTime();
+    if (!Number.isFinite(endTime) || endTime <= 0 || resolvedWaterInTarget == null || resolvedWaterInTarget <= 0) {
+      return null;
+    }
+
+    const intervalSeconds = 1;
+    const sampleCount = Math.max(2, Math.ceil(endTime / intervalSeconds) + 1);
+    const values: number[] = [];
+
+    for (let index = 0; index < sampleCount; index += 1) {
+      const t = Math.min(endTime, index * intervalSeconds);
+      const ratio = Math.max(0, Math.min(1, t / endTime));
+      values.push(Number((resolvedWaterInTarget * ratio).toFixed(3)));
+    }
+
+    return {
+      values,
+      intervalSeconds,
+      label: 'Estimated linear water-in (time-based)',
+      source: 'estimated',
+    };
+  }, [ultrakokiBrewData, importedJsonLabel, getCurveEndTime, resolvedWaterInTarget]);
+
+  const effectiveWaterInTotal = useMemo(() => {
+    if (!effectivePourData || effectivePourData.values.length === 0) return null;
+    for (let i = effectivePourData.values.length - 1; i >= 0; i -= 1) {
+      const v = effectivePourData.values[i];
+      if (Number.isFinite(v)) return v;
+    }
+    return null;
+  }, [effectivePourData]);
+
   const getCumulativePourAtTime = useCallback((time: number): number | null => {
-    if (!ultrakokiBrewData || ultrakokiBrewData.cumulativePour.length === 0 || ultrakokiBrewData.intervalSeconds <= 0) {
+    if (!effectivePourData || effectivePourData.values.length === 0 || effectivePourData.intervalSeconds <= 0) {
       return null;
     }
 
     const clampedTime = Math.max(0, time);
-    const rawIndex = clampedTime / ultrakokiBrewData.intervalSeconds;
-    const lowerIndex = Math.max(0, Math.min(ultrakokiBrewData.cumulativePour.length - 1, Math.floor(rawIndex)));
-    const upperIndex = Math.max(0, Math.min(ultrakokiBrewData.cumulativePour.length - 1, Math.ceil(rawIndex)));
-    const lowerValue = ultrakokiBrewData.cumulativePour[lowerIndex];
-    const upperValue = ultrakokiBrewData.cumulativePour[upperIndex];
+    const rawIndex = clampedTime / effectivePourData.intervalSeconds;
+    const lowerIndex = Math.max(0, Math.min(effectivePourData.values.length - 1, Math.floor(rawIndex)));
+    const upperIndex = Math.max(0, Math.min(effectivePourData.values.length - 1, Math.ceil(rawIndex)));
+    const lowerValue = effectivePourData.values[lowerIndex];
+    const upperValue = effectivePourData.values[upperIndex];
 
     if (!Number.isFinite(lowerValue) && !Number.isFinite(upperValue)) {
       return null;
@@ -444,7 +538,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
 
     const interpolated = lowerValue + (upperValue - lowerValue) * (rawIndex - lowerIndex);
     return Number(interpolated.toFixed(1));
-  }, [ultrakokiBrewData]);
+  }, [effectivePourData]);
 
   const formatPourAmount = useCallback((value: number | null | undefined) => {
     return value === null || value === undefined || !Number.isFinite(value) ? 'n/a' : `${value.toFixed(1)} ml`;
@@ -462,6 +556,15 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     const pouredAmount = startPour !== null && endPour !== null
       ? Number(Math.max(0, endPour - startPour).toFixed(1))
       : null;
+    const startPourPercent = startPour !== null && effectiveWaterInTotal != null && effectiveWaterInTotal > 0
+      ? Number(((startPour / effectiveWaterInTotal) * 100).toFixed(1))
+      : null;
+    const endPourPercent = endPour !== null && effectiveWaterInTotal != null && effectiveWaterInTotal > 0
+      ? Number(((endPour / effectiveWaterInTotal) * 100).toFixed(1))
+      : null;
+    const pouredPercent = pouredAmount !== null && effectiveWaterInTotal != null && effectiveWaterInTotal > 0
+      ? Number(((pouredAmount / effectiveWaterInTotal) * 100).toFixed(1))
+      : null;
 
     return {
       duration: Math.max(0, log.endTime - log.startTime),
@@ -471,9 +574,12 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       startPour,
       endPour,
       pouredAmount,
+      startPourPercent,
+      endPourPercent,
+      pouredPercent,
       pointCount: points.length,
     };
-  }, [getCumulativePourAtTime, getSortedCurrentData]);
+  }, [getCumulativePourAtTime, getSortedCurrentData, effectiveWaterInTotal]);
 
   const autoDetectPhaseLogs = useCallback(() => {
     const sorted = [...getCurrentData()].sort((a, b) => a.time - b.time);
@@ -2294,6 +2400,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         'Start Pour (g)',
         'End Pour (g)',
         'Poured Amount (g)',
+        'Start Pour (%)',
+        'End Pour (%)',
+        'Poured Amount (%)',
       ].join(','),
       ...sortedLogs.map(log => {
         const metrics = getPhaseMetrics(log);
@@ -2308,6 +2417,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
           formatOptionalNumber(metrics.startPour, 2),
           formatOptionalNumber(metrics.endPour, 2),
           formatOptionalNumber(metrics.pouredAmount, 2),
+          formatOptionalNumber(metrics.startPourPercent, 1),
+          formatOptionalNumber(metrics.endPourPercent, 1),
+          formatOptionalNumber(metrics.pouredPercent, 1),
         ].join(',');
       })
     ];
@@ -2325,6 +2437,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         formatOptionalNumber(redLightPour, 2),
         formatOptionalNumber(redLightPour, 2),
         '0.00',
+        formatOptionalNumber(effectiveWaterInTotal != null && redLightPour != null && effectiveWaterInTotal > 0 ? (redLightPour / effectiveWaterInTotal) * 100 : null, 1),
+        formatOptionalNumber(effectiveWaterInTotal != null && redLightPour != null && effectiveWaterInTotal > 0 ? (redLightPour / effectiveWaterInTotal) * 100 : null, 1),
+        '0.0',
       ].join(','));
     }
 
@@ -2339,7 +2454,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [phaseLogs, getPhaseMetrics, redLightTime, getCumulativePourAtTime]);
+  }, [phaseLogs, getPhaseMetrics, redLightTime, getCumulativePourAtTime, effectiveWaterInTotal]);
 
   const downloadPhaseSummaryText = useCallback(() => {
     if (phaseLogs.length === 0) {
@@ -2361,13 +2476,18 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       lines.push(`   Time: ${formatTime(log.startTime)} - ${formatTime(log.endTime)} (${metrics.duration.toFixed(1)}s)`);
       lines.push(`   EC: ${metrics.startEC !== null ? metrics.startEC.toFixed(2) : 'n/a'} -> ${metrics.endEC !== null ? metrics.endEC.toFixed(2) : 'n/a'} (delta ${metrics.ecDelta !== null ? `${metrics.ecDelta > 0 ? '+' : ''}${metrics.ecDelta.toFixed(2)}` : 'n/a'})`);
       lines.push(`   Pour: ${formatPourAmount(metrics.startPour)} -> ${formatPourAmount(metrics.endPour)} (added ${formatPourAmount(metrics.pouredAmount)})`);
+      lines.push(`   Pour %: ${metrics.startPourPercent !== null ? metrics.startPourPercent.toFixed(1) : 'n/a'}% -> ${metrics.endPourPercent !== null ? metrics.endPourPercent.toFixed(1) : 'n/a'}% (added ${metrics.pouredPercent !== null ? metrics.pouredPercent.toFixed(1) : 'n/a'}%)`);
       lines.push('');
     });
 
     if (redLightTime !== null) {
+      const redLightPour = getCumulativePourAtTime(redLightTime);
       lines.push('Red Light:');
       lines.push(`   Time: ${formatTime(redLightTime)} (${formatRawSeconds(redLightTime)}s)`);
-      lines.push(`   Stop at pour: ${formatPourAmount(getCumulativePourAtTime(redLightTime))}`);
+      lines.push(`   Stop at pour: ${formatPourAmount(redLightPour)}`);
+      if (effectiveWaterInTotal != null && redLightPour != null && effectiveWaterInTotal > 0) {
+        lines.push(`   Stop at: ${(redLightPour / effectiveWaterInTotal * 100).toFixed(1)}% of total water-in`);
+      }
       lines.push('');
     }
 
@@ -2382,7 +2502,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [phaseLogs, getPhaseMetrics, formatTime, formatRawSeconds, formatPourAmount, redLightTime, getCumulativePourAtTime]);
+  }, [phaseLogs, getPhaseMetrics, formatTime, formatRawSeconds, formatPourAmount, redLightTime, getCumulativePourAtTime, effectiveWaterInTotal]);
 
   useEffect(() => {
     if (selectedImage && imageRef.current) {
@@ -2433,20 +2553,30 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
           <p className="text-gray-600">
             Click-based calibration for accurate EC data extraction
           </p>
+          <div className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+            Status (click to jump)
+          </div>
+          {!ultrakokiBrewData && (
+            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Non-Ultrakoki mode active: using estimated water-in behavior until Ultrakoki JSON is loaded.
+            </div>
+          )}
           {/* Status indicators */}
           <div className="mt-3 flex flex-wrap gap-2">
             {/* Screenshot */}
-            <div
+            <button
+              type="button"
+              onClick={() => scrollToSection('upload')}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
                 selectedImage
                   ? 'bg-green-100 text-green-800'
-                  : 'bg-gray-100 text-gray-500'
+                  : 'bg-gray-100 text-gray-600'
               }`}
               title={selectedImage ? `Screenshot loaded: ${selectedImageName}` : 'No screenshot loaded'}
             >
               <span className={`h-2 w-2 rounded-full ${selectedImage ? 'bg-green-500' : 'bg-gray-400'}`} />
-              {selectedImage ? `Screenshot: ${selectedImageName}` : 'No screenshot'}
-            </div>
+              {selectedImage ? `Screenshot upload: ${selectedImageName}` : 'Screenshot upload: missing'}
+            </button>
 
             {/* Calibration */}
             {(() => {
@@ -2459,36 +2589,40 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                 ? 'Calibration done'
                 : 'Not calibrated';
               return (
-                <div
+                <button
+                  type="button"
+                  onClick={() => scrollToSection('calibration')}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
-                    ok ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'
+                    ok ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
                   }`}
-                  title={label}
+                  title={`Calibration status: ${label}`}
                 >
                   <span className={`h-2 w-2 rounded-full ${ok ? 'bg-green-500' : 'bg-gray-400'}`} />
-                  {label}
-                </div>
+                  {`Screenshot calibrated: ${label}`}
+                </button>
               );
             })()}
 
             {/* Ultrakoki JSON (optional) */}
-            <div
+            <button
+              type="button"
+              onClick={() => scrollToSection('ultrakoki')}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
                 ultrakokiBrewData
                   ? 'bg-blue-100 text-blue-800'
-                  : 'bg-gray-100 text-gray-400'
+                  : 'bg-gray-100 text-gray-500'
               }`}
               title={ultrakokiBrewData ? 'Ultrakoki JSON loaded' : 'Ultrakoki JSON not loaded (optional)'}
             >
               <span className={`h-2 w-2 rounded-full ${ultrakokiBrewData ? 'bg-blue-500' : 'bg-gray-300'}`} />
-              {ultrakokiBrewData ? 'Ultrakoki: loaded' : 'Ultrakoki: —'}
-            </div>
+              {ultrakokiBrewData ? 'Ultrakoki status: loaded' : 'Ultrakoki status: not loaded'}
+            </button>
           </div>
         </div>
           <div className="p-6">
             {/* Upload Step */}
           {currentStep === 'upload' && (
-            <div className="mb-6">
+            <div ref={uploadSectionRef} className="mb-6">
               <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Upload className="w-10 h-10 mb-3 text-gray-400" />
@@ -2507,7 +2641,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
             </div>
           )}
 
-          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div ref={ultrakokiSectionRef} className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-sm font-semibold text-amber-900">Ultrakoki Graph Sandbox</div>
@@ -2566,7 +2700,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
 
           {/* Image Display and Calibration */}
           {selectedImage && (
-            <div className="space-y-6">
+            <div ref={calibrationSectionRef} className="space-y-6">
               {/* Instructions */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center">
@@ -3459,19 +3593,40 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                               >
                                 Export Phase CSV
                               </button>
+                              <div className="ml-1 inline-flex items-center gap-1.5 rounded border border-indigo-200 bg-white px-2 py-1">
+                                <span className="text-[11px] font-semibold text-indigo-600">Zoom</span>
+                                <button
+                                  onClick={() => setPhaseSummaryZoom((z) => Math.max(0.8, Number((z - 0.1).toFixed(2))))}
+                                  className="h-5 w-5 rounded border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:bg-slate-100"
+                                  title="Zoom out"
+                                >
+                                  -
+                                </button>
+                                <span className="w-10 text-center text-[11px] font-semibold text-slate-700">{Math.round(phaseSummaryZoom * 100)}%</span>
+                                <button
+                                  onClick={() => setPhaseSummaryZoom((z) => Math.min(1.8, Number((z + 0.1).toFixed(2))))}
+                                  className="h-5 w-5 rounded border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:bg-slate-100"
+                                  title="Zoom in"
+                                >
+                                  +
+                                </button>
+                              </div>
                             </div>
                           </div>
                           {redLightTime !== null && (
                             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
                               <div className="text-xs font-semibold uppercase tracking-[0.16em] text-red-500">Red Light Stop</div>
                               <div className="mt-1 text-base font-semibold">Stop at {formatPourAmount(getCumulativePourAtTime(redLightTime))}</div>
+                              {effectiveWaterInTotal != null && getCumulativePourAtTime(redLightTime) != null && effectiveWaterInTotal > 0 && (
+                                <div className="mt-1 text-xs text-red-700">{((getCumulativePourAtTime(redLightTime) as number) / effectiveWaterInTotal * 100).toFixed(1)}% of total water-in</div>
+                              )}
                               <div className="mt-1 text-xs text-red-700">Time {formatTime(redLightTime)} ({formatRawSeconds(redLightTime)}s)</div>
                             </div>
                           )}
                         </div>
                       </div>
 
-                      <div className="overflow-x-auto px-4 py-4">
+                      <div className="overflow-x-auto px-4 py-4" style={{ zoom: phaseSummaryZoom }}>
                         <table className="min-w-full text-sm">
                           <thead>
                             <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -3515,6 +3670,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                                     <td className="py-3 pl-4 pr-0 text-right text-slate-700">
                                       <div className="font-medium text-slate-900">{formatPourAmount(metrics.pouredAmount)}</div>
                                       <div className="mt-1 text-xs text-slate-500">{formatPourAmount(metrics.startPour)} - {formatPourAmount(metrics.endPour)}</div>
+                                      {metrics.startPourPercent !== null && metrics.endPourPercent !== null && (
+                                        <div className="mt-1 text-xs text-indigo-600">{metrics.startPourPercent.toFixed(1)}% - {metrics.endPourPercent.toFixed(1)}% ({metrics.pouredPercent !== null ? `+${metrics.pouredPercent.toFixed(1)}%` : 'n/a'})</div>
+                                      )}
                                     </td>
                                   </tr>
                                 );
@@ -3528,7 +3686,12 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                                 </td>
                                 <td className="py-3 pr-4 text-red-700">Stop water</td>
                                 <td className="py-3 pr-4 text-red-700">Target hand-off point</td>
-                                <td className="py-3 pl-4 pr-0 text-right font-semibold text-red-800">{formatPourAmount(getCumulativePourAtTime(redLightTime))}</td>
+                                <td className="py-3 pl-4 pr-0 text-right font-semibold text-red-800">
+                                  {formatPourAmount(getCumulativePourAtTime(redLightTime))}
+                                  {effectiveWaterInTotal != null && getCumulativePourAtTime(redLightTime) != null && effectiveWaterInTotal > 0 && (
+                                    <div className="mt-1 text-xs font-normal text-red-700">{((getCumulativePourAtTime(redLightTime) as number) / effectiveWaterInTotal * 100).toFixed(1)}%</div>
+                                  )}
+                                </td>
                               </tr>
                             )}
                           </tbody>
@@ -3734,14 +3897,28 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                 <div className="space-y-3">
                   <TDSAnalysisGraph
                     ecPoints={getCurrentData()}
-                    brewData={ultrakokiBrewData}
+                    brewData={effectivePourData ? {
+                      cumulativePour: effectivePourData.values,
+                      intervalSeconds: effectivePourData.intervalSeconds,
+                    } : null}
                     phaseLogs={phaseLogs}
                     doseWeight={doseWeight}
+                    brewRatio={brewRatio}
+                    totalWaterIn={totalWaterIn}
+                    waterInSource={effectivePourData?.source ?? 'estimated'}
                     conversionFactor={conversionFactor}
                     refractometerTDSInput={refractometerTDSInput}
                     onDoseWeightChange={(value) => {
                       setDoseWeight(value);
                       localStorage.setItem('belkaDoseWeight', String(value));
+                    }}
+                    onBrewRatioChange={(value) => {
+                      setBrewRatio(value);
+                      localStorage.setItem('belkaBrewRatio', String(value));
+                    }}
+                    onTotalWaterInChange={(value) => {
+                      setTotalWaterIn(value);
+                      localStorage.setItem('belkaTotalWaterIn', String(value));
                     }}
                     onConversionFactorChange={(value) => {
                       setConversionFactor(value);
@@ -3779,10 +3956,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                   redLightTime={redLightTime}
                   showRedLight={showRedLight}
                   phaseLogs={phaseLogs}
-                  cumulativePourData={ultrakokiBrewData ? {
-                    values: ultrakokiBrewData.cumulativePour,
-                    intervalSeconds: ultrakokiBrewData.intervalSeconds,
-                    label: importedJsonLabel || ultrakokiBrewData.label,
+                  cumulativePourData={effectivePourData ? {
+                    values: effectivePourData.values,
+                    intervalSeconds: effectivePourData.intervalSeconds,
+                    label: effectivePourData.label,
                   } : undefined}
                 />
               )}

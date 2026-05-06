@@ -161,7 +161,13 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   const [showTempPrompt, setShowTempPrompt] = useState<boolean>(false);
   const [showECPrompt, setShowECPrompt] = useState<boolean>(false);
   const [eraserMode, setEraserMode] = useState<boolean>(false);
+  const [eraserDeleteMode, setEraserDeleteMode] = useState<'tap' | 'sweep'>('tap');
+  const [drawTraceMode, setDrawTraceMode] = useState<boolean>(false);
   const [eraserSizePx, setEraserSizePx] = useState<number>(14);
+  const [pointsLocked, setPointsLocked] = useState<boolean>(false);
+  const [screenshotEditLocked, setScreenshotEditLocked] = useState<boolean>(true);
+  const [screenshotZoom, setScreenshotZoom] = useState<number>(1);
+  const [calibrationFinalizedInSession, setCalibrationFinalizedInSession] = useState<boolean>(false);
   const [eraserCursor, setEraserCursor] = useState<{ x: number; y: number; visible: boolean }>({
     x: 0,
     y: 0,
@@ -238,6 +244,8 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const suppressNextCanvasClickRef = useRef<boolean>(false);
+  const isToolStrokeActiveRef = useRef<boolean>(false);
+  const lastTracePointRef = useRef<{ x: number; y: number } | null>(null);
   const uploadSectionRef = useRef<HTMLDivElement>(null);
   const calibrationSectionRef = useRef<HTMLDivElement>(null);
   const ultrakokiSectionRef = useRef<HTMLDivElement>(null);
@@ -339,6 +347,11 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   }, []);
 
   const commitEditableBoxCalibration = useCallback(() => {
+    if (calibrationFinalizedInSession) {
+      setError('Calibration is already finalized for this screenshot. Reset calibration to recalibrate.');
+      return;
+    }
+
     if (!editableCalibrationBox) {
       setError('Draw or adjust the EC box first, then confirm it.');
       return;
@@ -354,7 +367,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     syncCalibrationPointsFromBox(editableCalibrationBox);
     setCurrentStep('calibrate-highest');
     setError(null);
-  }, [editableCalibrationBox, syncCalibrationPointsFromBox]);
+  }, [editableCalibrationBox, syncCalibrationPointsFromBox, calibrationFinalizedInSession]);
 
   
   // Save auto-detect preference to localStorage
@@ -513,6 +526,43 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     }
     return null;
   }, [effectivePourData]);
+
+  const hybridUltrakokiGraphData = useMemo<UltrakokiBrewData | null>(() => {
+    if (ultrakokiBrewData) {
+      return ultrakokiBrewData;
+    }
+
+    if (!effectivePourData || effectivePourData.values.length < 2 || effectivePourData.intervalSeconds <= 0) {
+      return null;
+    }
+
+    const cumulativePour = [...effectivePourData.values];
+    const intervalSeconds = effectivePourData.intervalSeconds;
+    const pointCount = cumulativePour.length;
+    const pourFlow: number[] = new Array(pointCount).fill(0);
+    const dripFlow: number[] = new Array(pointCount).fill(0);
+
+    for (let index = 1; index < pointCount; index += 1) {
+      const prev = cumulativePour[index - 1];
+      const curr = cumulativePour[index];
+      const delta = Number.isFinite(prev) && Number.isFinite(curr) ? Math.max(0, curr - prev) : 0;
+      const flow = delta / intervalSeconds;
+      pourFlow[index] = Number(flow.toFixed(3));
+      // Estimated drip flow follows pour flow shape, lightly damped for readability.
+      dripFlow[index] = Number((flow * 0.85).toFixed(3));
+    }
+
+    return {
+      period: Math.max(0, Math.round((pointCount - 1) * intervalSeconds)),
+      label: effectivePourData.source === 'estimated'
+        ? 'Hybrid mode (estimated water-in)'
+        : effectivePourData.label,
+      intervalSeconds,
+      pourFlow,
+      dripFlow,
+      cumulativePour,
+    };
+  }, [ultrakokiBrewData, effectivePourData]);
 
   const getCumulativePourAtTime = useCallback((time: number): number | null => {
     if (!effectivePourData || effectivePourData.values.length === 0 || effectivePourData.intervalSeconds <= 0) {
@@ -740,6 +790,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
 
   const beginPhasePinning = useCallback((logId: string, boundary: 'startTime' | 'endTime') => {
     setEraserMode(false);
+    setDrawTraceMode(false);
     setEraserCursor(cursor => ({ ...cursor, visible: false }));
     setPhasePinSequenceLogId(null);
     setPhasePinTarget({ logId, boundary });
@@ -749,6 +800,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
 
   const beginPhasePinningSequence = useCallback((logId: string) => {
     setEraserMode(false);
+    setDrawTraceMode(false);
     setEraserCursor(cursor => ({ ...cursor, visible: false }));
     setPhasePinSequenceLogId(logId);
     setPhasePinTarget({ logId, boundary: 'startTime' });
@@ -779,6 +831,14 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       setLoadedCalibrationProfileName(null);
       setLoadedPhaseProfileName(null);
       setImportedJsonLabel(null);
+      setEraserMode(false);
+      setDrawTraceMode(false);
+      setEraserCursor(cursor => ({ ...cursor, visible: false }));
+      isToolStrokeActiveRef.current = false;
+      lastTracePointRef.current = null;
+      setScreenshotEditLocked(true);
+      setScreenshotZoom(1);
+      setCalibrationFinalizedInSession(false);
       setError(null);
       setCurrentStep('calibrate-origin');
     };
@@ -1092,6 +1152,31 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     return -1;
   }, [getCurrentData]);
 
+  const deletePointsInRadius = useCallback((canvasX: number, canvasY: number, radius: number) => {
+    const currentData = getCurrentData();
+    const radiusSq = radius * radius;
+    const updatedData = currentData.filter(point => {
+      const dx = point.x - canvasX;
+      const dy = point.y - canvasY;
+      return (dx * dx + dy * dy) > radiusSq;
+    });
+
+    const removedCount = currentData.length - updatedData.length;
+    if (removedCount <= 0) {
+      return 0;
+    }
+
+    switch (viewMode) {
+      case 'fine':
+        setFineGeneratedCurve(updatedData);
+        break;
+      default:
+        setExtractedPoints(updatedData);
+    }
+
+    return removedCount;
+  }, [getCurrentData, viewMode]);
+
   const handleCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     if (suppressNextCanvasClickRef.current) {
       suppressNextCanvasClickRef.current = false;
@@ -1152,6 +1237,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     }
 
     if (currentStep === 'calibrate-origin') {
+      if (calibrationFinalizedInSession) {
+        setError('Calibration is already finalized for this screenshot. Reset calibration to recalibrate.');
+        return;
+      }
       // First click: Origin point (0,0) - shared for both axes
       const newPoint: CalibrationPoint = {
         x: x * (canvas.width / rect.width),
@@ -1166,6 +1255,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       setCurrentStep('calibrate-x');
       
     } else if (currentStep === 'calibrate-x') {
+      if (calibrationFinalizedInSession) {
+        setError('Calibration is already finalized for this screenshot. Reset calibration to recalibrate.');
+        return;
+      }
       // Second click: X-axis end point at user-specified seconds (last visible mark)
       const newPoint: CalibrationPoint = {
         x: x * (canvas.width / rect.width),
@@ -1181,6 +1274,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       setCurrentStep('calibrate-y');
       
     } else if (currentStep === 'calibrate-y') {
+      if (calibrationFinalizedInSession) {
+        setError('Calibration is already finalized for this screenshot. Reset calibration to recalibrate.');
+        return;
+      }
       // Third click: Y-axis end point at user-specified EC (last visible mark)
       const newPoint: CalibrationPoint = {
         x: x * (canvas.width / rect.width),
@@ -1195,6 +1292,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       setCalibrationPoints(updated);
       setCurrentStep('calibrate-highest');
     } else if (currentStep === 'calibrate-highest') {
+      if (calibrationFinalizedInSession) {
+        setError('Calibration is already finalized for this screenshot. Reset calibration to recalibrate.');
+        return;
+      }
       // Fourth click: Highest visible EC point on the curve
       const dataCoords = pixelToData(canvasX, canvasY);
       const newPoint: CalibrationPoint = {
@@ -1210,6 +1311,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       setCalibrationPoints(updated);
       setManualHighestEC(dataCoords.ecValue.toFixed(2)); // Pre-fill with detected value
       setCurrentStep('extract');
+      setCalibrationFinalizedInSession(true);
     } else if (currentStep === 'calibrate-temp-min') {
       // Fifth click: Temperature minimum point (from phone reading)
       const minTemp = tempCalibration?.min || 60;
@@ -1242,30 +1344,52 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       setShowTempPrompt(true);
       setCurrentStep('extract');
     } else if (currentStep === 'extract') {
+      if (screenshotEditLocked) {
+        setError('Screenshot editing is locked. Unlock it first to add/move/delete points.');
+        return;
+      }
+
+      if (drawTraceMode) {
+        return;
+      }
+
       // Check if clicking on existing point
       const pointIndex = findPointAtPosition(canvasX, canvasY, eraserMode ? eraserSizePx : 10);
       console.log('Point detection result:', pointIndex);
-      
-      if (eraserMode && pointIndex >= 0) {
-        // Eraser mode - delete the point
-        console.log('Deleting point:', pointIndex);
-        const currentData = getCurrentData();
-        const updatedData = currentData.filter((_, index) => index !== pointIndex);
-        
-        // Update the correct data array
-        switch (viewMode) {
-          case 'fine':
-            setFineGeneratedCurve(updatedData);
-            break;
-          default:
-            setExtractedPoints(updatedData);
+
+      if (eraserMode) {
+        if (eraserDeleteMode === 'sweep') {
+          deletePointsInRadius(canvasX, canvasY, eraserSizePx);
+          return;
         }
-      } else if (!eraserMode && pointIndex >= 0) {
+
+        if (pointIndex >= 0) {
+          // Tap delete mode removes the nearest point only.
+          console.log('Deleting point:', pointIndex);
+          const currentData = getCurrentData();
+          const updatedData = currentData.filter((_, index) => index !== pointIndex);
+
+          switch (viewMode) {
+            case 'fine':
+              setFineGeneratedCurve(updatedData);
+              break;
+            default:
+              setExtractedPoints(updatedData);
+          }
+        }
+        return;
+      }
+
+      if (pointIndex >= 0) {
+        if (pointsLocked) {
+          setError('Points are locked. Unlock points before moving a dot.');
+          return;
+        }
         console.log('Starting to drag point:', pointIndex);
         // Start dragging existing point
         setIsDragging(true);
         setDraggedPointIndex(pointIndex);
-      } else if (!eraserMode) {
+      } else {
         console.log('Adding new manual point');
         // Add new manual point
         const newPoint: DataPoint = {
@@ -1296,7 +1420,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         }
       }
     }
-  }, [currentStep, calibrationPoints, extractedPoints, findPointAtPosition, eraserMode, eraserSizePx, phasePinTarget, phasePinSequenceLogId, updatePhaseLog, calibrateXValue, calibrateYValue, useBoxCalibrationMode]);
+  }, [currentStep, calibrationPoints, findPointAtPosition, eraserMode, eraserDeleteMode, eraserSizePx, phasePinTarget, phasePinSequenceLogId, updatePhaseLog, calibrateXValue, calibrateYValue, useBoxCalibrationMode, deletePointsInRadius, getCurrentData, viewMode, pointsLocked, drawTraceMode, screenshotEditLocked, calibrationFinalizedInSession]);
 
   const getCanvasCoordinatesFromClient = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
@@ -1308,17 +1432,48 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   }, []);
 
   const handleCanvasPointerDown = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (currentStep === 'extract' && ((eraserMode && eraserDeleteMode === 'sweep') || drawTraceMode)) {
+      if (screenshotEditLocked) {
+        return;
+      }
+
+      const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
+      if (!coords) return;
+
+      event.preventDefault();
+      coords.canvas.setPointerCapture(event.pointerId);
+      isToolStrokeActiveRef.current = true;
+      lastTracePointRef.current = null;
+      suppressNextCanvasClickRef.current = true;
+
+      if (eraserMode && eraserDeleteMode === 'sweep') {
+        setEraserCursor({ x: coords.canvasX, y: coords.canvasY, visible: true });
+        deletePointsInRadius(coords.canvasX, coords.canvasY, eraserSizePx);
+      } else if (drawTraceMode) {
+        appendTracePointAt(coords.canvasX, coords.canvasY);
+      }
+      return;
+    }
+
     if (!(useBoxCalibrationMode && (currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y'))) {
       return;
     }
 
     const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
     if (!coords) return;
-    event.preventDefault();
-    coords.canvas.setPointerCapture(event.pointerId);
+
     const hitTarget = editableCalibrationBox
       ? getCalibrationBoxHitTarget(coords.canvasX, coords.canvasY, editableCalibrationBox)
       : null;
+
+    // When a box already exists, only allow move/resize to avoid accidental redraws.
+    if (editableCalibrationBox && !hitTarget) {
+      suppressNextCanvasClickRef.current = true;
+      return;
+    }
+
+    event.preventDefault();
+    coords.canvas.setPointerCapture(event.pointerId);
 
     setCalibrationBoxDragOrigin({ x: coords.canvasX, y: coords.canvasY });
     setCalibrationBoxInitialRect(editableCalibrationBox);
@@ -1335,9 +1490,30 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     setCalibrationBoxDragMode('draw');
     setCalibrationBoxInitialRect(freshRect);
     setEditableCalibrationBox(freshRect);
-  }, [useBoxCalibrationMode, currentStep, getCanvasCoordinatesFromClient, editableCalibrationBox, getCalibrationBoxHitTarget, createCalibrationBoxRect]);
+  }, [useBoxCalibrationMode, currentStep, getCanvasCoordinatesFromClient, editableCalibrationBox, getCalibrationBoxHitTarget, createCalibrationBoxRect, eraserMode, eraserDeleteMode, drawTraceMode, deletePointsInRadius, eraserSizePx, appendTracePointAt, screenshotEditLocked]);
 
   const handleCanvasPointerMove = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (currentStep === 'extract' && ((eraserMode && eraserDeleteMode === 'sweep') || drawTraceMode)) {
+      const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
+      if (!coords) return;
+
+      if (eraserMode) {
+        setEraserCursor({ x: coords.canvasX, y: coords.canvasY, visible: true });
+      }
+
+      if (!isToolStrokeActiveRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+      if (eraserMode && eraserDeleteMode === 'sweep') {
+        deletePointsInRadius(coords.canvasX, coords.canvasY, eraserSizePx);
+      } else if (drawTraceMode) {
+        appendTracePointAt(coords.canvasX, coords.canvasY);
+      }
+      return;
+    }
+
     if (!calibrationBoxDragMode || !calibrationBoxDragOrigin) return;
     const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
     if (!coords) return;
@@ -1387,9 +1563,24 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       syncCalibrationPointsFromBox(nextRect);
       setError(null);
     }
-  }, [calibrationBoxDragMode, calibrationBoxDragOrigin, getCanvasCoordinatesFromClient, calibrationBoxInitialRect, createCalibrationBoxRect, clampValue, syncCalibrationPointsFromBox]);
+  }, [calibrationBoxDragMode, calibrationBoxDragOrigin, getCanvasCoordinatesFromClient, calibrationBoxInitialRect, createCalibrationBoxRect, clampValue, syncCalibrationPointsFromBox, currentStep, eraserMode, eraserDeleteMode, drawTraceMode, deletePointsInRadius, eraserSizePx, appendTracePointAt]);
 
   const handleCanvasPointerUp = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (isToolStrokeActiveRef.current) {
+      const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
+      if (coords) {
+        try {
+          coords.canvas.releasePointerCapture(event.pointerId);
+        } catch {
+          // no-op
+        }
+      }
+      isToolStrokeActiveRef.current = false;
+      lastTracePointRef.current = null;
+      suppressNextCanvasClickRef.current = true;
+      return;
+    }
+
     if (!calibrationBoxDragMode) return;
 
     const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
@@ -1508,6 +1699,44 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     return { x: pixelX, y: pixelY };
   }, [calibrationPoints, calibrateXValue, calibrateYValue]);
 
+  function appendTracePointAt(canvasX: number, canvasY: number) {
+    if (currentStep !== 'extract') return;
+
+    const lastPoint = lastTracePointRef.current;
+    if (lastPoint && Math.hypot(canvasX - lastPoint.x, canvasY - lastPoint.y) < 4) {
+      return;
+    }
+
+    const dataCoords = pixelToData(canvasX, canvasY);
+    const newPoint: DataPoint = {
+      x: canvasX,
+      y: canvasY,
+      time: dataCoords.time,
+      ecValue: dataCoords.ecValue,
+      temperature: dataCoords.temperature,
+      isAutoDetected: false,
+      id: `trace-manual-${Date.now()}-${Math.round(canvasX)}-${Math.round(canvasY)}`
+    };
+
+    const currentData = getCurrentData();
+    const nearExistingPoint = currentData.some(point => Math.hypot(point.x - canvasX, point.y - canvasY) < 3);
+    if (nearExistingPoint) {
+      lastTracePointRef.current = { x: canvasX, y: canvasY };
+      return;
+    }
+
+    const updated = [...currentData, newPoint].sort((a, b) => a.time - b.time);
+    switch (viewMode) {
+      case 'fine':
+        setFineGeneratedCurve(updated);
+        break;
+      default:
+        setExtractedPoints(updated);
+    }
+
+    lastTracePointRef.current = { x: canvasX, y: canvasY };
+  }
+
   const handleCanvasMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1556,6 +1785,8 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   }, [isDragging, draggedPointIndex, getCurrentData, viewMode, eraserMode, phasePinTarget, pixelToData]);
 
   const handleCanvasMouseUp = useCallback(() => {
+    isToolStrokeActiveRef.current = false;
+    lastTracePointRef.current = null;
     setIsDragging(false);
     setDraggedPointIndex(null);
   }, []);
@@ -1568,6 +1799,8 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     setCalibrationBoxDragMode(null);
     setCalibrationBoxDragOrigin(null);
     setCalibrationBoxInitialRect(null);
+    isToolStrokeActiveRef.current = false;
+    lastTracePointRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -1605,6 +1838,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   }, [calibrationPoints]);
 
   const autoPlaceHighestPoint = useCallback(() => {
+    if (calibrationFinalizedInSession) {
+      setError('Calibration is already finalized for this screenshot. Reset calibration to recalibrate.');
+      return;
+    }
     const highestEC = parseFloat(manualHighestEC);
     if (!isFinite(highestEC) || highestEC <= 0 || calibrationPoints.length < 3) return;
     const origin = calibrationPoints[0];
@@ -1623,9 +1860,15 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     };
     setCalibrationPoints([...calibrationPoints.slice(0, 3), newPoint]);
     setCurrentStep('extract');
-  }, [calibrationPoints, manualHighestEC]);
+    setCalibrationFinalizedInSession(true);
+  }, [calibrationPoints, manualHighestEC, calibrationFinalizedInSession]);
 
   const completeHighestCalibration = useCallback(() => {
+    if (calibrationFinalizedInSession) {
+      setError('Calibration was already finalized for this screenshot.');
+      return;
+    }
+
     if (calibrationPoints.length >= 4) {
       // Add the highest calibration point to extracted points
       const highestPoint = calibrationPoints[3];
@@ -1638,11 +1881,16 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
         id: `highest-calibration-${Date.now()}`
       };
       
-      // Add to extracted points and sort by time
-      setExtractedPoints(prev => [...prev, extractedHighest].sort((a, b) => a.time - b.time));
+      // Keep only one highest calibration point per session to avoid duplicate spam.
+      setExtractedPoints(prev => {
+        const withoutOldHighest = prev.filter(point => !point.id?.startsWith('highest-calibration-'));
+        return [...withoutOldHighest, extractedHighest].sort((a, b) => a.time - b.time);
+      });
       setCurrentStep('extract');
+      setCalibrationFinalizedInSession(true);
+      setError(null);
     }
-  }, [calibrationPoints]);
+  }, [calibrationPoints, calibrationFinalizedInSession]);
 
   const detectBlueCurve = useCallback(() => {
     const canvas = canvasRef.current;
@@ -1657,11 +1905,30 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
     
+    // Limit scanning to the calibrated graph area so auto-detection avoids unrelated blue UI/text.
+    let leftBound = 0;
+    let rightBound = canvas.width - 1;
+    let topBound = 0;
+    let bottomBound = canvas.height - 1;
+
+    if (calibrationPoints.length >= 3) {
+      const origin = calibrationPoints[0];
+      const xEnd = calibrationPoints[1];
+      const yEnd = calibrationPoints[2];
+      const boxWidth = Math.max(1, Math.abs(xEnd.x - origin.x));
+      const boxHeight = Math.max(1, Math.abs(origin.y - yEnd.y));
+
+      leftBound = Math.max(0, Math.floor(Math.min(origin.x, xEnd.x, yEnd.x) - boxWidth * 0.05));
+      rightBound = Math.min(canvas.width - 1, Math.ceil(Math.max(origin.x, xEnd.x, yEnd.x) + boxWidth * 0.35));
+      topBound = Math.max(0, Math.floor(Math.min(origin.y, xEnd.y, yEnd.y) - boxHeight * 0.6));
+      bottomBound = Math.min(canvas.height - 1, Math.ceil(Math.max(origin.y, xEnd.y, yEnd.y) + boxHeight * 0.05));
+    }
+
     // Find blue pixels (simplified color detection)
     const bluePixels: Array<{x: number, y: number}> = [];
     
-    for (let y = 0; y < canvas.height; y++) {
-      for (let x = 0; x < canvas.width; x++) {
+    for (let y = topBound; y <= bottomBound; y++) {
+      for (let x = leftBound; x <= rightBound; x++) {
         const idx = (y * canvas.width + x) * 4;
         const r = data[idx];
         const g = data[idx + 1];
@@ -2023,8 +2290,27 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     setCalibrationBoxDragOrigin(null);
     setCalibrationBoxInitialRect(null);
     setUseBoxCalibrationMode(false);
+    setEraserMode(false);
+    setDrawTraceMode(false);
+    setEraserCursor(cursor => ({ ...cursor, visible: false }));
+    isToolStrokeActiveRef.current = false;
+    lastTracePointRef.current = null;
+    setScreenshotEditLocked(true);
+    setScreenshotZoom(1);
+    setCalibrationFinalizedInSession(false);
     setCurrentStep('calibrate-origin');
   }, []);
+
+  useEffect(() => {
+    if (!screenshotEditLocked) return;
+    setEraserMode(false);
+    setDrawTraceMode(false);
+    setIsDragging(false);
+    setDraggedPointIndex(null);
+    setEraserCursor(cursor => ({ ...cursor, visible: false }));
+    isToolStrokeActiveRef.current = false;
+    lastTracePointRef.current = null;
+  }, [screenshotEditLocked]);
 
   const importJsonPayload = useCallback((inputText: string, closePromptOnSuccess: boolean = true) => {
     try {
@@ -2646,7 +2932,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
               <div>
                 <div className="text-sm font-semibold text-amber-900">Ultrakoki Graph Sandbox</div>
                 <p className="text-sm text-amber-800">
-                  Open Ultrakoki brew first so we can iterate on the custom graph layout in-app without touching calibration or JSON import.
+                  Graph now works in hybrid mode too: if no Ultrakoki JSON is loaded, it will use estimated water-in data so you can still preview and iterate.
                 </p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -2682,10 +2968,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
             </div>
           </div>
 
-          {ultrakokiBrewData && (
+          {hybridUltrakokiGraphData && (
             <div className="mb-6">
               <UltrakokiGraph
-                data={ultrakokiBrewData}
+                data={hybridUltrakokiGraphData}
                 comparisonCurve={getCurrentData().map(point => ({
                   time: point.time,
                   ecValue: point.ecValue,
@@ -2926,9 +3212,23 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <div className="flex flex-wrap items-center gap-3">
                     <button
+                      type="button"
+                      onClick={() => setScreenshotEditLocked(prev => !prev)}
+                      className={`px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base border ${screenshotEditLocked ? 'bg-slate-800 text-white border-slate-800' : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'}`}
+                    >
+                      {screenshotEditLocked ? 'Unlock Screenshot Edit' : 'Lock Screenshot Edit'}
+                    </button>
+                    <button
                       onClick={() => {
+                        if (screenshotEditLocked) {
+                          setError('Unlock screenshot edit first to use eraser.');
+                          return;
+                        }
                         setEraserMode(prev => {
                           const next = !prev;
+                          if (next) {
+                            setDrawTraceMode(false);
+                          }
                           if (!next) {
                             setEraserCursor(cursor => ({ ...cursor, visible: false }));
                           }
@@ -2964,15 +3264,92 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                       />
                       <span className="text-sm text-red-700">px</span>
                     </div>
+                    <div className="flex items-center gap-1 rounded-md border border-red-300 bg-white p-1">
+                      <button
+                        type="button"
+                        onClick={() => setEraserDeleteMode('tap')}
+                        className={`px-2 py-1 text-xs rounded ${eraserDeleteMode === 'tap' ? 'bg-red-600 text-white' : 'text-red-700 hover:bg-red-100'}`}
+                      >
+                        Tap Delete
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEraserDeleteMode('sweep')}
+                        className={`px-2 py-1 text-xs rounded ${eraserDeleteMode === 'sweep' ? 'bg-red-600 text-white' : 'text-red-700 hover:bg-red-100'}`}
+                      >
+                        Sweep Delete
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPointsLocked(prev => !prev)}
+                      className={`px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base border ${pointsLocked ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'}`}
+                    >
+                      {pointsLocked ? 'Unlock Points' : 'Lock Points'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (screenshotEditLocked) {
+                          setError('Unlock screenshot edit first to draw trace.');
+                          return;
+                        }
+                        setDrawTraceMode(prev => {
+                          const next = !prev;
+                          if (next) {
+                            setEraserMode(false);
+                            setEraserCursor(cursor => ({ ...cursor, visible: false }));
+                          }
+                          return next;
+                        });
+                      }}
+                      className={`px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base border ${drawTraceMode ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-100'}`}
+                    >
+                      {drawTraceMode ? 'Exit Draw Trace' : 'Draw Trace'}
+                    </button>
                   </div>
                   <div className="text-xs text-red-600 mt-1">
-                    Click near a point to delete it within the selected pixel radius.
+                    {screenshotEditLocked
+                      ? 'Screenshot edit is locked by default to prevent accidental taps.'
+                      : ''}
+                    {screenshotEditLocked ? ' ' : ''}
+                    {eraserDeleteMode === 'tap'
+                      ? 'Tap Delete: click near a point to remove one dot.'
+                      : 'Sweep Delete: press and drag to erase continuously. Hover alone will not delete.'}
+                    {' '}Point lock prevents accidental drag while still allowing manual point additions.
+                    {drawTraceMode && ' Draw Trace: press and drag to add points continuously for finger/mouse tracing.'}
                   </div>
                 </div>
               )}
 
               {/* Canvas */}
-              <div className="relative">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-slate-700">Screenshot zoom:</span>
+                <button
+                  type="button"
+                  onClick={() => setScreenshotZoom(prev => Math.max(0.5, Number((prev - 0.1).toFixed(2))))}
+                  className="px-2 py-1 text-sm rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                >
+                  -
+                </button>
+                <span className="w-14 text-center text-sm font-semibold text-slate-800">{Math.round(screenshotZoom * 100)}%</span>
+                <button
+                  type="button"
+                  onClick={() => setScreenshotZoom(prev => Math.min(2.5, Number((prev + 0.1).toFixed(2))))}
+                  className="px-2 py-1 text-sm rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScreenshotZoom(1)}
+                  className="px-2 py-1 text-sm rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                >
+                  Reset
+                </button>
+              </div>
+
+              <div className="relative overflow-auto max-h-[75vh] rounded-lg border border-gray-300 bg-white">
                 <img
                   ref={imageRef}
                   src={selectedImage || ''}
@@ -2982,7 +3359,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                 />
                 <canvas
                   ref={canvasRef}
-                  className="border border-gray-300 rounded-lg"
+                  className="block"
                   onClick={handleCanvasClick}
                   onPointerDown={handleCanvasPointerDown}
                   onPointerMove={handleCanvasPointerMove}
@@ -2993,18 +3370,29 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                   style={{ 
                     cursor: useBoxCalibrationMode && (currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y')
                       ? 'crosshair'
-                      : eraserMode
+                      : (eraserMode || drawTraceMode)
                         ? 'crosshair'
                         : 'default',
                     display: 'block',
-                    maxWidth: '100%',
+                    width: `${Math.round(screenshotZoom * 100)}%`,
+                    maxWidth: 'none',
                     height: 'auto',
                     touchAction: 'none'
                   }}
                 />
                 {eraserMode && (
                   <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
-                    Eraser Mode - Radius: {eraserSizePx}px
+                    Eraser Mode ({eraserDeleteMode === 'tap' ? 'Tap' : 'Sweep'}) - Radius: {eraserSizePx}px
+                  </div>
+                )}
+                {drawTraceMode && (
+                  <div className="absolute top-2 left-2 bg-emerald-600 text-white px-2 py-1 rounded text-sm">
+                    Draw Trace Mode - press and drag to draw points
+                  </div>
+                )}
+                {screenshotEditLocked && currentStep === 'extract' && (
+                  <div className="absolute top-2 right-2 bg-slate-900/95 text-white px-3 py-1.5 rounded text-xs font-semibold tracking-wide shadow">
+                    LOCKED - Unlock Screenshot Edit to modify points
                   </div>
                 )}
                 {useBoxCalibrationMode && (currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y') && (

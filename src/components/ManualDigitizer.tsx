@@ -527,43 +527,6 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     return null;
   }, [effectivePourData]);
 
-  const hybridUltrakokiGraphData = useMemo<UltrakokiBrewData | null>(() => {
-    if (ultrakokiBrewData) {
-      return ultrakokiBrewData;
-    }
-
-    if (!effectivePourData || effectivePourData.values.length < 2 || effectivePourData.intervalSeconds <= 0) {
-      return null;
-    }
-
-    const cumulativePour = [...effectivePourData.values];
-    const intervalSeconds = effectivePourData.intervalSeconds;
-    const pointCount = cumulativePour.length;
-    const pourFlow: number[] = new Array(pointCount).fill(0);
-    const dripFlow: number[] = new Array(pointCount).fill(0);
-
-    for (let index = 1; index < pointCount; index += 1) {
-      const prev = cumulativePour[index - 1];
-      const curr = cumulativePour[index];
-      const delta = Number.isFinite(prev) && Number.isFinite(curr) ? Math.max(0, curr - prev) : 0;
-      const flow = delta / intervalSeconds;
-      pourFlow[index] = Number(flow.toFixed(3));
-      // Estimated drip flow follows pour flow shape, lightly damped for readability.
-      dripFlow[index] = Number((flow * 0.85).toFixed(3));
-    }
-
-    return {
-      period: Math.max(0, Math.round((pointCount - 1) * intervalSeconds)),
-      label: effectivePourData.source === 'estimated'
-        ? 'Hybrid mode (estimated water-in)'
-        : effectivePourData.label,
-      intervalSeconds,
-      pourFlow,
-      dripFlow,
-      cumulativePour,
-    };
-  }, [ultrakokiBrewData, effectivePourData]);
-
   const getCumulativePourAtTime = useCallback((time: number): number | null => {
     if (!effectivePourData || effectivePourData.values.length === 0 || effectivePourData.intervalSeconds <= 0) {
       return null;
@@ -2932,7 +2895,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
               <div>
                 <div className="text-sm font-semibold text-amber-900">Ultrakoki Graph Sandbox</div>
                 <p className="text-sm text-amber-800">
-                  Graph now works in hybrid mode too: if no Ultrakoki JSON is loaded, it will use estimated water-in data so you can still preview and iterate.
+                  Open Ultrakoki brew first so we can iterate on the custom graph layout in-app without touching calibration or JSON import.
                 </p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -2968,10 +2931,10 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
             </div>
           </div>
 
-          {hybridUltrakokiGraphData && (
+          {ultrakokiBrewData && (
             <div className="mb-6">
               <UltrakokiGraph
-                data={hybridUltrakokiGraphData}
+                data={ultrakokiBrewData}
                 comparisonCurve={getCurrentData().map(point => ({
                   time: point.time,
                   ecValue: point.ecValue,
@@ -4290,6 +4253,8 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                       intervalSeconds: effectivePourData.intervalSeconds,
                     } : null}
                     phaseLogs={phaseLogs}
+                    redLightTime={redLightTime}
+                    showRedLight={showRedLight}
                     doseWeight={doseWeight}
                     brewRatio={brewRatio}
                     totalWaterIn={totalWaterIn}
@@ -4320,6 +4285,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                         localStorage.removeItem('belkaRefractometerTDS');
                       }
                     }}
+                    onShowRedLightChange={(value) => setShowRedLight(value)}
                     refractometerTDS={(() => {
                       const n = parseFloat(refractometerTDSInput);
                       return Number.isFinite(n) && n > 0 ? n : null;

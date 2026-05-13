@@ -35,6 +35,8 @@ export interface TDSAnalysisGraphProps {
   ecPoints: ECPoint[];
   brewData?: BrewData | null;
   phaseLogs?: PhaseLog[];
+  redLightTime?: number | null;
+  showRedLight?: boolean;
   doseWeight: number;       // g of coffee grounds
   brewRatio?: number;       // 1:x
   totalWaterIn?: number;    // grams
@@ -47,6 +49,7 @@ export interface TDSAnalysisGraphProps {
   onTotalWaterInChange?: (value: number) => void;
   onConversionFactorChange?: (value: number) => void;
   onRefractometerTDSInputChange?: (value: string) => void;
+  onShowRedLightChange?: (value: boolean) => void;
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -126,6 +129,8 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   ecPoints,
   brewData,
   phaseLogs = [],
+  redLightTime = null,
+  showRedLight = false,
   doseWeight,
   brewRatio = 15,
   totalWaterIn = 225,
@@ -138,6 +143,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   onTotalWaterInChange,
   onConversionFactorChange,
   onRefractometerTDSInputChange,
+  onShowRedLightChange,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -504,6 +510,26 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       ctx.fillText(`Pour max ${(pourMax / 1.1).toFixed(0)} g`, PAD.left - 6, PAD.top + 8);
     }
 
+    // ── Red Light vertical marker ─────────────────────────────────────────
+    if (showRedLight && redLightTime != null && redLightTime >= 0 && redLightTime <= timeMax) {
+      const redX = toX(redLightTime);
+      ctx.save();
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([7, 5]);
+      ctx.beginPath();
+      ctx.moveTo(redX, PAD.top);
+      ctx.lineTo(redX, PAD.top + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ef4444';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'left';
+      const labelX = Math.min(PAD.left + plotW - 84, redX + 6);
+      ctx.fillText(`Red Light ${formatClock(redLightTime)}`, labelX, PAD.top + 12);
+      ctx.restore();
+    }
+
     // ── Hover marker ─────────────────────────────────────────────────────
     if (hoverIndex != null && hoverIndex >= 0 && hoverIndex < series.length) {
       const pt = series[hoverIndex];
@@ -560,6 +586,9 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     if (showTargetAssistant && targetMode === 'ey' && targetEY != null) {
       legend.push({ color: '#b45309', label: `Target EY ${targetEY.toFixed(1)}%`, dash: [4, 4] });
     }
+    if (showRedLight && redLightTime != null) {
+      legend.push({ color: '#ef4444', label: `Red Light ${formatClock(redLightTime)}`, dash: [7, 5] });
+    }
     if (showECOverlay) legend.push({ color: '#7c3aed', label: 'EC (mS/cm)', dash: [6, 3] });
     if (showPourOverlay && brewData) legend.push({ color: '#2563eb', label: 'Water-in (g)', dash: [3, 3] });
     let lx = PAD.left;
@@ -576,7 +605,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       lx += ctx.measureText(label).width + 52;
     });
 
-  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showECOverlay, showPourOverlay, showPhaseLog, showTargetAssistant, targetMode, targetTDS, targetEY, ecPoints, brewData, waterInPercentBase]);
+  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showECOverlay, showPourOverlay, showPhaseLog, showTargetAssistant, targetMode, targetTDS, targetEY, ecPoints, brewData, waterInPercentBase, showRedLight, redLightTime]);
 
   // ── Hover handler ────────────────────────────────────────────────────────
 
@@ -958,6 +987,13 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             >
               Phase Log {showPhaseLog ? '✓' : '–'}
             </button>
+            <button
+              onClick={() => onShowRedLightChange?.(!showRedLight)}
+              disabled={redLightTime == null}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showRedLight && redLightTime != null ? 'bg-red-200 text-red-900' : 'bg-white/20 text-white/60'} ${redLightTime == null ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              Red Light {showRedLight && redLightTime != null ? '✓' : '–'}
+            </button>
           </div>
         </div>
       </div>
@@ -1271,6 +1307,14 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                   </button>
                 );
               })}
+              <button
+                onClick={() => onShowRedLightChange?.(!showRedLight)}
+                disabled={redLightTime == null}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${showRedLight && redLightTime != null ? 'border-red-300 bg-red-100 text-red-800' : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'} ${redLightTime == null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                title={redLightTime == null ? 'Red light time is not available yet' : 'Toggle red light marker on graph'}
+              >
+                Red line {showRedLight && redLightTime != null ? 'ON' : 'OFF'}
+              </button>
             </div>
           </div>
           <div ref={phaseSummaryWrapRef} className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm" style={{ zoom: phaseSummaryZoom }}>

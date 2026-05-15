@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Upload, Target, AlertCircle } from 'lucide-react';
 import { InteractiveDataGraph } from './InteractiveDataGraph';
 import { UltrakokiGraph, type UltrakokiBrewData } from './UltrakokiGraph';
@@ -40,6 +40,64 @@ interface PhasePinTarget {
 interface ManualDigitizerProps {
   onDataExtracted: (data: DataPoint[]) => void;
 }
+
+export interface ManualDigitizerSessionProfile {
+  version: 1;
+  selectedImage: string | null;
+  selectedImageName: string;
+  currentStep: Step;
+  calibrationPoints: CalibrationPoint[];
+  extractedPoints: DataPoint[];
+  showMinSec: boolean;
+  manualHighestEC: string;
+  fineGeneratedCurve: DataPoint[];
+  viewMode: 'original' | 'fine';
+  intervalMs: number;
+  tempCalibration: { min: number; max: number } | null;
+  manualTempMin: string;
+  manualTempMax: string;
+  pointsLocked: boolean;
+  screenshotEditLocked: boolean;
+  screenshotZoom: number;
+  calibrationFinalizedInSession: boolean;
+  redLightTime: number | null;
+  showRedLight: boolean;
+  redLightTimeThreshold: number;
+  redLightECThreshold: number;
+  autoDetectPreference: boolean;
+  autoGenerateAfterDetectPreference: boolean;
+  phaseLogs: PhaseLog[];
+  phaseSummaryZoom: number;
+  calibrateXValue: number;
+  calibrateYValue: number;
+  useBoxCalibrationMode: boolean;
+  editableCalibrationBox: CalibrationBoxRect | null;
+  importedJsonText: string;
+  importedJsonLabel: string | null;
+  ultrakokiBrewData: UltrakokiBrewData | null;
+  doseWeight: number;
+  brewRatio: number;
+  totalWaterIn: number;
+  conversionFactor: number;
+  refractometerTDSInput: string;
+}
+
+export interface ManualDigitizerHandle {
+  exportProfile: () => ManualDigitizerSessionProfile;
+  importProfile: (profile: ManualDigitizerSessionProfile) => void;
+}
+
+const MIN_SCREENSHOT_ZOOM = 0.5;
+const MAX_SCREENSHOT_ZOOM = 2.5;
+
+const normalizeImportedScreenshotZoom = (value: unknown): number => {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numeric)) return 1;
+
+  // Backward compatibility: older/edited profiles may store zoom as percent (e.g. 80 for 80%).
+  const normalized = numeric > 10 ? numeric / 100 : numeric;
+  return Math.min(MAX_SCREENSHOT_ZOOM, Math.max(MIN_SCREENSHOT_ZOOM, normalized));
+};
 
 interface SavedCalibrationProfile {
   version: number;
@@ -139,7 +197,7 @@ const buildPreviewUltrakokiBrewData = (): UltrakokiBrewData => {
 
 type Step = 'upload' | 'calibrate-origin' | 'calibrate-x' | 'calibrate-y' | 'calibrate-highest' | 'calibrate-temp-min' | 'calibrate-temp-max' | 'extract' | 'complete';
 
-export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracted }) => {
+export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizerProps>(({ onDataExtracted }, ref) => {
   const PHASE_COLORS = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#14b8a6'];
   const DEFAULT_PHASE_NAMES = ['Blooming', 'Acidity', 'Body', 'Sweetness', 'Aftertaste', 'Finish'];
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -241,9 +299,156 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     return localStorage.getItem('belkaRefractometerTDS') || '';
   });
 
+  useImperativeHandle(ref, () => ({
+    exportProfile: () => ({
+      version: 1,
+      selectedImage,
+      selectedImageName,
+      currentStep,
+      calibrationPoints,
+      extractedPoints,
+      showMinSec,
+      manualHighestEC,
+      fineGeneratedCurve,
+      viewMode,
+      intervalMs,
+      tempCalibration,
+      manualTempMin,
+      manualTempMax,
+      pointsLocked,
+      screenshotEditLocked,
+      screenshotZoom,
+      calibrationFinalizedInSession,
+      redLightTime,
+      showRedLight,
+      redLightTimeThreshold,
+      redLightECThreshold,
+      autoDetectPreference,
+      autoGenerateAfterDetectPreference,
+      phaseLogs,
+      phaseSummaryZoom,
+      calibrateXValue,
+      calibrateYValue,
+      useBoxCalibrationMode,
+      editableCalibrationBox,
+      importedJsonText,
+      importedJsonLabel,
+      ultrakokiBrewData,
+      doseWeight,
+      brewRatio,
+      totalWaterIn,
+      conversionFactor,
+      refractometerTDSInput,
+    }),
+    importProfile: (profile) => {
+      // Prevent restore-time auto-detect from reprocessing and scrambling restored points.
+      skipNextAutoDetectRef.current = true;
+
+      setSelectedImage(profile.selectedImage ?? null);
+      setSelectedImageName(profile.selectedImageName ?? '');
+      setCurrentStep(profile.currentStep ?? 'upload');
+      setCalibrationPoints(Array.isArray(profile.calibrationPoints) ? profile.calibrationPoints : []);
+      setExtractedPoints(Array.isArray(profile.extractedPoints) ? profile.extractedPoints : []);
+      setShowMinSec(Boolean(profile.showMinSec));
+      setManualHighestEC(profile.manualHighestEC ?? '');
+      setFineGeneratedCurve(Array.isArray(profile.fineGeneratedCurve) ? profile.fineGeneratedCurve : []);
+      setViewMode(profile.viewMode === 'fine' ? 'fine' : 'original');
+      setIntervalMs(Number.isFinite(profile.intervalMs) ? profile.intervalMs : 100);
+      setTempCalibration(profile.tempCalibration ?? null);
+      setManualTempMin(profile.manualTempMin ?? '60');
+      setManualTempMax(profile.manualTempMax ?? '88');
+      setPointsLocked(Boolean(profile.pointsLocked));
+      setScreenshotEditLocked(Boolean(profile.screenshotEditLocked));
+      setScreenshotZoom(normalizeImportedScreenshotZoom(profile.screenshotZoom));
+      setCalibrationFinalizedInSession(Boolean(profile.calibrationFinalizedInSession));
+      setRedLightTime(typeof profile.redLightTime === 'number' ? profile.redLightTime : null);
+      setShowRedLight(Boolean(profile.showRedLight));
+      setRedLightTimeThreshold(Number.isFinite(profile.redLightTimeThreshold) ? profile.redLightTimeThreshold : 60);
+      setRedLightECThreshold(Number.isFinite(profile.redLightECThreshold) ? profile.redLightECThreshold : 3);
+      setAutoDetectPreference(Boolean(profile.autoDetectPreference));
+      setAutoGenerateAfterDetectPreference(Boolean(profile.autoGenerateAfterDetectPreference));
+      setPhaseLogs(Array.isArray(profile.phaseLogs) ? profile.phaseLogs : []);
+      setPhaseSummaryZoom(Number.isFinite(profile.phaseSummaryZoom) ? profile.phaseSummaryZoom : 1);
+      setCalibrateXValue(Number.isFinite(profile.calibrateXValue) ? profile.calibrateXValue : 150);
+      setCalibrateYValue(Number.isFinite(profile.calibrateYValue) ? profile.calibrateYValue : 20);
+      setUseBoxCalibrationMode(Boolean(profile.useBoxCalibrationMode));
+      setEditableCalibrationBox(profile.editableCalibrationBox ?? null);
+      setImportedJsonText(profile.importedJsonText ?? '');
+      setImportedJsonLabel(profile.importedJsonLabel ?? null);
+      setUltrakokiBrewData(profile.ultrakokiBrewData ?? null);
+      setDoseWeight(Number.isFinite(profile.doseWeight) ? profile.doseWeight : 15);
+      setBrewRatio(Number.isFinite(profile.brewRatio) ? profile.brewRatio : 15);
+      setTotalWaterIn(Number.isFinite(profile.totalWaterIn) ? profile.totalWaterIn : 225);
+      setConversionFactor(Number.isFinite(profile.conversionFactor) ? profile.conversionFactor : 0.5);
+      setRefractometerTDSInput(profile.refractometerTDSInput ?? '');
+
+      setError(null);
+      setShowTempPrompt(false);
+      setShowECPrompt(false);
+      setShowSaveProfileForm(false);
+      setShowSavePhaseProfileForm(false);
+      setNewProfileName('');
+      setNewPhaseProfileName('');
+      setPhasePinTarget(null);
+      setPhasePinSequenceLogId(null);
+      setPhasePinCursor({ x: 0, time: 0, visible: false });
+      setEraserMode(false);
+      setDrawTraceMode(false);
+      setIsDragging(false);
+      setDraggedPointIndex(null);
+      setEraserCursor({ x: 0, y: 0, visible: false });
+      setLoadedCalibrationProfileName(null);
+      setLoadedPhaseProfileName(null);
+      setShowJsonImportPrompt(false);
+      setPendingAutoGenerate(false);
+      suppressNextCanvasClickRef.current = false;
+      isToolStrokeActiveRef.current = false;
+      lastTracePointRef.current = null;
+    },
+  }), [
+    selectedImage,
+    selectedImageName,
+    currentStep,
+    calibrationPoints,
+    extractedPoints,
+    showMinSec,
+    manualHighestEC,
+    fineGeneratedCurve,
+    viewMode,
+    intervalMs,
+    tempCalibration,
+    manualTempMin,
+    manualTempMax,
+    pointsLocked,
+    screenshotEditLocked,
+    screenshotZoom,
+    calibrationFinalizedInSession,
+    redLightTime,
+    showRedLight,
+    redLightTimeThreshold,
+    redLightECThreshold,
+    autoDetectPreference,
+    autoGenerateAfterDetectPreference,
+    phaseLogs,
+    phaseSummaryZoom,
+    calibrateXValue,
+    calibrateYValue,
+    useBoxCalibrationMode,
+    editableCalibrationBox,
+    importedJsonText,
+    importedJsonLabel,
+    ultrakokiBrewData,
+    doseWeight,
+    brewRatio,
+    totalWaterIn,
+    conversionFactor,
+    refractometerTDSInput,
+  ]);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const suppressNextCanvasClickRef = useRef<boolean>(false);
+  const skipNextAutoDetectRef = useRef<boolean>(false);
   const isToolStrokeActiveRef = useRef<boolean>(false);
   const lastTracePointRef = useRef<{ x: number; y: number } | null>(null);
   const uploadSectionRef = useRef<HTMLDivElement>(null);
@@ -464,6 +669,61 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     }
     return extractedPoints;
   }, [viewMode, fineGeneratedCurve, extractedPoints]);
+
+  const redLightDataStats = useMemo(() => {
+    const sorted = [...getCurrentData()].sort((a, b) => a.time - b.time);
+    if (sorted.length === 0) {
+      return {
+        totalPoints: 0,
+        minEC: null as number | null,
+        maxEC: null as number | null,
+        minAfterTimeThreshold: null as number | null,
+        pointsAfterTimeThreshold: 0,
+      };
+    }
+
+    const minEC = sorted.reduce((min, point) => Math.min(min, point.ecValue), sorted[0].ecValue);
+    const maxEC = sorted.reduce((max, point) => Math.max(max, point.ecValue), sorted[0].ecValue);
+    const pointsAfterTimeThreshold = sorted.filter(point => point.time >= redLightTimeThreshold);
+    const minAfterTimeThreshold = pointsAfterTimeThreshold.length > 0
+      ? pointsAfterTimeThreshold.reduce((min, point) => Math.min(min, point.ecValue), pointsAfterTimeThreshold[0].ecValue)
+      : null;
+
+    return {
+      totalPoints: sorted.length,
+      minEC,
+      maxEC,
+      minAfterTimeThreshold,
+      pointsAfterTimeThreshold: pointsAfterTimeThreshold.length,
+    };
+  }, [getCurrentData, redLightTimeThreshold]);
+
+  const redLightThresholdTooLow = redLightDataStats.minAfterTimeThreshold !== null
+    && redLightECThreshold < redLightDataStats.minAfterTimeThreshold;
+
+  const applyMinimumDetectableRedLightThreshold = useCallback(() => {
+    if (redLightDataStats.minAfterTimeThreshold === null) return;
+    setRedLightECThreshold(Number(redLightDataStats.minAfterTimeThreshold.toFixed(2)));
+  }, [redLightDataStats.minAfterTimeThreshold]);
+
+  const setSafeRedLightECThreshold = useCallback((rawValue: number) => {
+    const clamped = Number.isFinite(rawValue) ? Math.max(0, Math.min(50, rawValue)) : 0;
+    const minDetectable = redLightDataStats.minAfterTimeThreshold;
+    const minSafe = minDetectable !== null ? Number(minDetectable.toFixed(2)) : null;
+    const safeValue = minSafe !== null ? Math.max(clamped, minSafe) : clamped;
+    setRedLightECThreshold(Number(safeValue.toFixed(2)));
+  }, [redLightDataStats.minAfterTimeThreshold]);
+
+  useEffect(() => {
+    if (currentStep !== 'extract') return;
+    const minDetectable = redLightDataStats.minAfterTimeThreshold;
+    if (minDetectable === null) return;
+
+    const minSafe = Number(minDetectable.toFixed(2));
+    if (redLightECThreshold < minSafe) {
+      setRedLightECThreshold(minSafe);
+    }
+  }, [currentStep, redLightDataStats.minAfterTimeThreshold, redLightECThreshold]);
 
   const getSortedCurrentData = useCallback((): DataPoint[] => {
     return [...getCurrentData()].sort((a, b) => a.time - b.time);
@@ -836,38 +1096,6 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     ctx.drawImage(img, 0, 0);
     console.log('Canvas drawn with image:', canvas.width, 'x', canvas.height);
 
-    // Draw Red Light line if enabled and time is calculated
-    if (showRedLight && redLightTime !== null && calibrationPoints.length >= 3) {
-      console.log('Drawing Red Light line:', { showRedLight, redLightTime, calibrationPointsLength: calibrationPoints.length });
-      
-      const origin = calibrationPoints[0];
-      const xEnd = calibrationPoints[1]; // calibrated time end point
-      const xAxisMax = xEnd.dataX || 150;
-      const xScale = xAxisMax !== 0 ? (xEnd.x - origin.x) / xAxisMax : 0;
-      
-      const redLineX = origin.x + redLightTime * xScale;
-      
-      console.log('Red Light calculations:', { origin: { x: origin.x, y: origin.y }, xEnd: { x: xEnd.x, y: xEnd.y }, xScale, redLineX, redLightTime });
-      
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([5, 5]);
-      ctx.beginPath();
-      ctx.moveTo(redLineX, 0);
-      ctx.lineTo(redLineX, canvas.height);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      
-      // Add Red Light label with time
-      ctx.fillStyle = '#ef4444';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.textAlign = 'center';
-      const redMins = Math.floor(redLightTime / 60);
-      const redSecs = Math.floor(redLightTime % 60);
-      const redLabel = `${redMins}:${redSecs.toString().padStart(2, '0')}`;
-      ctx.fillText(`Red Light (${redLabel})`, redLineX, 30);
-    }
-
     // Draw phase logs as colored duration bands and boundary lines.
     if (phaseLogs.length > 0 && calibrationPoints.length >= 3) {
       const origin = calibrationPoints[0];
@@ -1072,6 +1300,62 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       ctx.stroke();
       ctx.restore();
     }
+
+    // Draw Red Light line on top of EVERYTHING (last, so it's always visible)
+    if (showRedLight && redLightTime !== null && calibrationPoints.length >= 3) {
+      try {
+        console.log('Drawing Red Light line (on top):', { showRedLight, redLightTime, calibPointLen: calibrationPoints.length });
+        
+        const origin = calibrationPoints[0];
+        const xEnd = calibrationPoints[1];
+        const originTime = origin.dataX || 0;
+        const xAxisMax = xEnd.dataX || calibrateXValue || 150;
+        const xSpan = xEnd.x - origin.x;
+        const timeSpan = xAxisMax - originTime;
+        let redLineX = origin.x;
+
+        if (timeSpan !== 0) {
+          redLineX = origin.x + ((redLightTime - originTime) / timeSpan) * xSpan;
+        } else {
+          redLineX = origin.x;
+        }
+
+        if (redLightTime > xAxisMax) {
+          const beyondRatio = (redLightTime - xAxisMax) / 50;
+          redLineX = xEnd.x + beyondRatio * xSpan;
+        }
+
+        ctx.save();
+        // Draw bright red line - THICK so it's definitely visible
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 5;
+        ctx.setLineDash([8, 4]);
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(redLineX, 0);
+        ctx.lineTo(redLineX, canvas.height);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Draw RED LIGHT text label - BOLD and visible
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#ff0000';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 4;
+        const redMins = Math.floor(redLightTime / 60);
+        const redSecs = Math.floor(redLightTime % 60);
+        const redLabel = `🔴 ${redMins}:${redSecs.toString().padStart(2, '0')}`;
+        ctx.fillText(redLabel, redLineX, 40);
+        ctx.fillText('RED LIGHT', redLineX, 65);
+        
+        ctx.restore();
+        console.log('✅ Red Light line drawn at x =', redLineX);
+      } catch (error) {
+        console.error('❌ Error drawing red light line:', error);
+      }
+    }
   }, [
     calibrationPoints,
     getCurrentData,
@@ -1096,6 +1380,8 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       drawCanvas();
     }
   }, [showRedLight, redLightTime, selectedImage, drawCanvas]);
+
+  // Auto-calculate red light when data changes in extract mode - moved after calculateRedLight definition
 
   const findPointAtPosition = useCallback((canvasX: number, canvasY: number, hitRadius: number = 10) => {
     const currentData = getCurrentData();
@@ -1662,6 +1948,26 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     return { x: pixelX, y: pixelY };
   }, [calibrationPoints, calibrateXValue, calibrateYValue]);
 
+  useEffect(() => {
+    if (!calibrationFinalizedInSession || calibrationPoints.length < 4) {
+      return;
+    }
+
+    setExtractedPoints(prev => prev.map(point => {
+      if (point.id?.startsWith('highest-calibration-')) {
+        return point;
+      }
+      const recalibrated = pixelToData(point.x, point.y);
+      return {
+        ...point,
+        time: recalibrated.time,
+        ecValue: recalibrated.ecValue,
+        temperature: point.temperature,
+      };
+    }).sort((a, b) => a.time - b.time));
+    setFineGeneratedCurve([]);
+  }, [calibrationFinalizedInSession, calibrationPoints, pixelToData]);
+
   function appendTracePointAt(canvasX: number, canvasY: number) {
     if (currentStep !== 'extract') return;
 
@@ -2006,8 +2312,22 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
   const calculateRedLight = useCallback(() => {
     const currentData = getCurrentData();
     
+    if (!currentData || currentData.length === 0) {
+      console.log('No data available for red light calculation');
+      setRedLightTime(null);
+      setShowRedLight(false);
+      return null;
+    }
+    
     // Filter points based on time threshold
     const filteredData = currentData.filter(point => point.time >= redLightTimeThreshold);
+    
+    if (filteredData.length === 0) {
+      console.log('No data points after time threshold filter');
+      setRedLightTime(null);
+      setShowRedLight(false);
+      return null;
+    }
     
     // Sort only the filtered data (much smaller dataset)
     const sortedData = filteredData.sort((a, b) => a.time - b.time);
@@ -2020,9 +2340,9 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       filteredLength: sortedData.length 
     });
     
-    // Find first point where EC < threshold (already filtered for time)
+    // Find first point where EC <= threshold (already filtered for time)
     for (const point of sortedData) {
-      if (point.ecValue < redLightECThreshold) {
+      if (point.ecValue <= redLightECThreshold) {
         console.log('Found Red Light point:', point);
         setRedLightTime(point.time);
         setShowRedLight(true); // Always show when calculated
@@ -2030,11 +2350,42 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       }
     }
     
-    console.log('No Red Light point found');
+    console.log('No Red Light point found - threshold not met');
     setRedLightTime(null);
-    setShowRedLight(false); // Hide when no result
+    // Don't hide it - keep previous result visible to user
+    // setShowRedLight(false);
     return null;
   }, [getCurrentData, viewMode, redLightTimeThreshold, redLightECThreshold]);
+
+  // Auto-calculate red light when data changes in extract mode
+  useEffect(() => {
+    if (currentStep !== 'extract') return;
+    
+    const data = getCurrentData();
+    if (!data || data.length === 0) return;
+    
+    console.log('🔴 AUTO-TRIGGER: Calculating red light with', data.length, 'data points');
+    
+    // Find first point where EC <= threshold after time threshold
+    const filtered = data.filter(p => p.time >= redLightTimeThreshold);
+    if (filtered.length === 0) {
+      console.log('No points after time threshold');
+      setRedLightTime(null);
+      return;
+    }
+    
+    for (const point of filtered) {
+      if (point.ecValue <= redLightECThreshold) {
+        console.log('✅ Found red light at', point.time, 'EC:', point.ecValue);
+        setRedLightTime(point.time);
+        setShowRedLight(true);
+        return;
+      }
+    }
+    
+    console.log('No points below EC threshold');
+    setRedLightTime(null);
+  }, [currentStep, extractedPoints, fineGeneratedCurve, viewMode, redLightTimeThreshold, redLightECThreshold, getCurrentData]);
 
   const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -2261,6 +2612,26 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
     setScreenshotEditLocked(true);
     setScreenshotZoom(1);
     setCalibrationFinalizedInSession(false);
+    setCurrentStep('calibrate-origin');
+  }, []);
+
+  const startECRecalibration = useCallback(() => {
+    setCalibrationPoints([]);
+    setExtractedPoints(prev => prev.filter(point => !point.id?.startsWith('highest-calibration-')));
+    setFineGeneratedCurve([]);
+    setPhasePinTarget(null);
+    setPhasePinSequenceLogId(null);
+    setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
+    setLoadedCalibrationProfileName(null);
+    setManualHighestEC('');
+    setEditableCalibrationBox(null);
+    setCalibrationBoxDragMode(null);
+    setCalibrationBoxDragOrigin(null);
+    setCalibrationBoxInitialRect(null);
+    setUseBoxCalibrationMode(false);
+    setCalibrationFinalizedInSession(false);
+    setShowECPrompt(false);
+    setError(null);
     setCurrentStep('calibrate-origin');
   }, []);
 
@@ -2542,6 +2913,11 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
 
   // Auto-detect when preference is enabled and calibration is complete.
   useEffect(() => {
+    if (skipNextAutoDetectRef.current) {
+      skipNextAutoDetectRef.current = false;
+      return;
+    }
+
     if (autoDetectPreference && currentStep === 'extract' && calibrationPoints.length >= 3 && selectedImage) {
       // Auto-detect after a short delay to ensure canvas is ready
       const timer = window.setTimeout(() => {
@@ -2554,6 +2930,11 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
 
   // If enabled, generate curve right after auto-detect has populated extracted points.
   useEffect(() => {
+    if (skipNextAutoDetectRef.current) {
+      setPendingAutoGenerate(false);
+      return;
+    }
+
     if (!pendingAutoGenerate) return;
     if (currentStep !== 'extract') {
       setPendingAutoGenerate(false);
@@ -3310,6 +3691,11 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                 >
                   Reset
                 </button>
+                {eraserMode && (
+                  <div className="ml-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
+                    Eraser Mode ({eraserDeleteMode === 'tap' ? 'Tap' : 'Sweep'}) - Radius: {eraserSizePx}px
+                  </div>
+                )}
               </div>
 
               <div className="relative overflow-auto max-h-[75vh] rounded-lg border border-gray-300 bg-white">
@@ -3343,11 +3729,6 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                     touchAction: 'none'
                   }}
                 />
-                {eraserMode && (
-                  <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
-                    Eraser Mode ({eraserDeleteMode === 'tap' ? 'Tap' : 'Sweep'}) - Radius: {eraserSizePx}px
-                  </div>
-                )}
                 {drawTraceMode && (
                   <div className="absolute top-2 left-2 bg-emerald-600 text-white px-2 py-1 rounded text-sm">
                     Draw Trace Mode - press and drag to draw points
@@ -3595,62 +3976,107 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
 
               {/* Red Light Control */}
               {currentStep === 'extract' && getCurrentData().length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center gap-4 mb-3">
+                <div className="mb-4 rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-rose-50 p-4 shadow-sm">
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold uppercase tracking-wide text-red-700">Red Light Detection</div>
+                      <div className="mt-1 text-xs text-red-800">
+                        Auto-detects the first point after your time threshold where EC falls below the selected threshold.
+                      </div>
+                    </div>
                     <button
                       onClick={calculateRedLight}
-                      className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                      className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
                     >
-                      Recalculate Red Light
+                      Recalculate
                     </button>
-                    {redLightTime !== null && (
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={showRedLight}
-                          onChange={(e) => setShowRedLight(e.target.checked)}
-                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                        />
-                        Show Red Light Line
-                      </label>
-                    )}
-                    {redLightTime !== null && (
-                      <div className="text-sm font-medium text-gray-700">
-                        Red Light: {formatTime(redLightTime)} ({formatRawSeconds(redLightTime)}s)
-                      </div>
-                    )}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+
+                  <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div className="rounded-lg border border-red-200 bg-white/80 p-3">
+                      <div className="text-xs font-medium text-gray-500">Detected Red Light</div>
+                      <div className="mt-1 text-base font-semibold text-gray-900">
+                        {redLightTime !== null ? `${formatTime(redLightTime)} (${formatRawSeconds(redLightTime)}s)` : 'Not found'}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-red-200 bg-white/80 p-3">
+                      <div className="text-xs font-medium text-gray-500">Lowest EC (profile)</div>
+                      <div className="mt-1 text-base font-semibold text-gray-900">
+                        {redLightDataStats.minEC !== null ? redLightDataStats.minEC.toFixed(2) : 'n/a'}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-red-200 bg-white/80 p-3">
+                      <div className="text-xs font-medium text-gray-500">Lowest EC after {redLightTimeThreshold}s</div>
+                      <div className="mt-1 text-base font-semibold text-gray-900">
+                        {redLightDataStats.minAfterTimeThreshold !== null ? redLightDataStats.minAfterTimeThreshold.toFixed(2) : 'n/a'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-3 flex flex-wrap items-center gap-4">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={showRedLight}
+                        onChange={(e) => setShowRedLight(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      Show Red Light line
+                    </label>
+                    <button
+                      type="button"
+                      onClick={applyMinimumDetectableRedLightThreshold}
+                      disabled={redLightDataStats.minAfterTimeThreshold === null}
+                      className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Use lowest detectable EC ({redLightDataStats.minAfterTimeThreshold !== null ? redLightDataStats.minAfterTimeThreshold.toFixed(2) : 'n/a'})
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
                         Time Threshold (seconds)
                       </label>
                       <input
                         type="number"
                         value={redLightTimeThreshold}
-                        onChange={(e) => setRedLightTimeThreshold(Number(e.target.value))}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                        onChange={(e) => {
+                          const next = Number(e.target.value);
+                          setRedLightTimeThreshold(Number.isFinite(next) ? Math.max(0, Math.min(200, next)) : 0);
+                        }}
+                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                         min="0"
                         max="200"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
                         EC Threshold
                       </label>
                       <input
                         type="number"
                         value={redLightECThreshold}
-                        onChange={(e) => setRedLightECThreshold(Number(e.target.value))}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                        onChange={(e) => {
+                          const next = Number(e.target.value);
+                          setSafeRedLightECThreshold(next);
+                        }}
+                        className={`w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${redLightThresholdTooLow ? 'border-amber-400 focus:ring-amber-500' : 'border-gray-300 focus:ring-red-500'}`}
                         min="0"
                         max="50"
                         step="0.1"
                       />
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600 mt-2">
-                    Finds when time &gt; {redLightTimeThreshold}s AND EC &lt; {redLightECThreshold} - automatically shows result below graph
+
+                  {redLightThresholdTooLow && (
+                    <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                      Current EC threshold ({redLightECThreshold.toFixed(2)}) is below the lowest EC after {redLightTimeThreshold}s ({redLightDataStats.minAfterTimeThreshold?.toFixed(2)}). Red Light cannot appear with this setting.
+                    </div>
+                  )}
+
+                  <div className="mt-3 text-xs text-gray-600">
+                    Rule: first point where time &gt;= {redLightTimeThreshold}s and EC &lt;= {redLightECThreshold}.
                   </div>
                 </div>
               )}
@@ -4093,8 +4519,7 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
                     <div className="space-y-3">
                       <button
                         onClick={() => {
-                          setCurrentStep('calibrate-origin');
-                          setShowECPrompt(false);
+                          startECRecalibration();
                         }}
                         className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                       >
@@ -4512,4 +4937,6 @@ export const ManualDigitizer: React.FC<ManualDigitizerProps> = ({ onDataExtracte
       </div>
     </div>
   );
-};
+});
+
+ManualDigitizer.displayName = 'ManualDigitizer';

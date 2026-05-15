@@ -1,13 +1,90 @@
-import { useState } from 'react';
-import { ManualDigitizer } from './components/ManualDigitizer';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { ManualDigitizer, type ManualDigitizerHandle, type ManualDigitizerSessionProfile } from './components/ManualDigitizer';
 import { InfoModal } from './components/InfoModal';
-import { UltrakokiParserPage } from './components/UltrakokiParserPage';
+import { UltrakokiParserPage, type UltrakokiParserPageHandle, type UltrakokiParserSessionProfile } from './components/UltrakokiParserPage';
 
 type AppPage = 'digitizer' | 'ultrakoki-parser';
 
+const ACTIVE_PAGE_STORAGE_KEY = 'belka.activePage';
+
+interface BelkaWorkspaceProfile {
+  version: 1;
+  savedAt: string;
+  activePage: AppPage;
+  digitizer: ManualDigitizerSessionProfile;
+  ultrakokiParser: UltrakokiParserSessionProfile;
+}
+
 function App() {
   const [showInfo, setShowInfo] = useState(false);
-  const [activePage, setActivePage] = useState<AppPage>('digitizer');
+  const [showProfileBar, setShowProfileBar] = useState(false);
+  const digitizerRef = useRef<ManualDigitizerHandle>(null);
+  const ultrakokiParserRef = useRef<UltrakokiParserPageHandle>(null);
+  const profileInputRef = useRef<HTMLInputElement>(null);
+  const [activePage, setActivePage] = useState<AppPage>(() => {
+    try {
+      const savedPage = localStorage.getItem(ACTIVE_PAGE_STORAGE_KEY);
+      return savedPage === 'ultrakoki-parser' ? 'ultrakoki-parser' : 'digitizer';
+    } catch {
+      return 'digitizer';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ACTIVE_PAGE_STORAGE_KEY, activePage);
+    } catch {
+      // Ignore browser storage errors.
+    }
+  }, [activePage]);
+
+  const saveWorkspaceProfile = () => {
+    const digitizer = digitizerRef.current?.exportProfile();
+    const ultrakokiParser = ultrakokiParserRef.current?.exportProfile();
+    if (!digitizer || !ultrakokiParser) {
+      window.alert('Profile save is not ready yet. Try again in a moment.');
+      return;
+    }
+
+    const payload: BelkaWorkspaceProfile = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      activePage,
+      digitizer,
+      ultrakokiParser,
+    };
+
+    const timestamp = payload.savedAt.replace(/[:.]/g, '-');
+    const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `belka-workspace-profile-${timestamp}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const loadWorkspaceProfile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text) as Partial<BelkaWorkspaceProfile>;
+      if (parsed.version !== 1 || !parsed.digitizer || !parsed.ultrakokiParser) {
+        throw new Error('Unsupported profile format.');
+      }
+
+      digitizerRef.current?.importProfile(parsed.digitizer);
+      ultrakokiParserRef.current?.importProfile(parsed.ultrakokiParser);
+      setActivePage(parsed.activePage === 'ultrakoki-parser' ? 'ultrakoki-parser' : 'digitizer');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load workspace profile.';
+      window.alert(message);
+    } finally {
+      event.target.value = '';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -22,6 +99,13 @@ function App() {
               </h1>
             </div>
             <div className="flex items-center gap-2">
+              <input
+                ref={profileInputRef}
+                type="file"
+                accept="application/json,.json"
+                onChange={loadWorkspaceProfile}
+                className="hidden"
+              />
               <button
                 onClick={() => setActivePage('digitizer')}
                 className={`px-3 py-2 text-sm font-semibold rounded-lg border transition-colors ${activePage === 'digitizer' ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
@@ -44,17 +128,54 @@ function App() {
                 <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-500 text-white text-[10px] font-bold leading-none">i</span>
                 About
               </button>
+              <button
+                onClick={() => setShowProfileBar((value) => !value)}
+                className={`px-3 py-2 text-sm font-semibold rounded-lg border transition-colors ${showProfileBar ? 'border-sky-300 bg-sky-100 text-sky-900' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                title="Show or hide profile save/load tools"
+              >
+                {showProfileBar ? 'Hide Profiles' : 'Profiles'}
+              </button>
             </div>
           </div>
         </div>
       </header>
 
+      {showProfileBar && (
+        <section className="border-b border-slate-200 bg-white/95">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-semibold text-slate-900">Workspace Profiles</div>
+                <p className="text-xs text-slate-500">Save the full main app + parser session into one portable file, or restore it later.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={saveWorkspaceProfile}
+                  className="px-3 py-2 text-sm font-semibold rounded-lg border border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100"
+                  title="Save the full workspace session as a portable JSON profile"
+                >
+                  Save Profile
+                </button>
+                <button
+                  onClick={() => profileInputRef.current?.click()}
+                  className="px-3 py-2 text-sm font-semibold rounded-lg border border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                  title="Load a previously saved workspace profile"
+                >
+                  Load Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       <main>
-        {activePage === 'digitizer' ? (
-          <ManualDigitizer onDataExtracted={(data) => console.log('Extracted data:', data)} />
-        ) : (
-          <UltrakokiParserPage />
-        )}
+        <div className={activePage === 'digitizer' ? 'block' : 'hidden'} aria-hidden={activePage !== 'digitizer'}>
+          <ManualDigitizer ref={digitizerRef} onDataExtracted={(data) => console.log('Extracted data:', data)} />
+        </div>
+        <div className={activePage === 'ultrakoki-parser' ? 'block' : 'hidden'} aria-hidden={activePage !== 'ultrakoki-parser'}>
+          <UltrakokiParserPage ref={ultrakokiParserRef} />
+        </div>
       </main>
     </div>
   );

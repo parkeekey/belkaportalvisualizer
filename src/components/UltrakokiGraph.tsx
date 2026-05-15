@@ -71,6 +71,18 @@ const maxOf = (values: number[]) => {
   return finite.length > 0 ? Math.max(...finite) : 0;
 };
 
+const percentileOf = (values: number[], percentile: number) => {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const p = Math.max(0, Math.min(1, percentile));
+  const idx = p * (sorted.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  const mix = idx - lo;
+  return sorted[lo] * (1 - mix) + sorted[hi] * mix;
+};
+
 export const UltrakokiGraph: React.FC<Props> = ({
   data,
   comparisonCurve = [],
@@ -85,6 +97,10 @@ export const UltrakokiGraph: React.FC<Props> = ({
   const [canvasWidth, setCanvasWidth] = useState(800);
   const [canvasHeight, setCanvasHeight] = useState(380);
   const [zoomLevel, setZoomLevel] = useState(1.0);
+  const [flowVisibilityZoom, setFlowVisibilityZoom] = useState(1.0);
+  const [flowRestrictMax, setFlowRestrictMax] = useState(10);
+  const [cleanShortOverCapSpikes, setCleanShortOverCapSpikes] = useState(false);
+  const [spikeMaxDurationSeconds, setSpikeMaxDurationSeconds] = useState(3);
   const [preset, setPreset] = useState<PresetKey>('brew');
   const [enabled, setEnabled] = useState<Set<SeriesKey>>(() => new Set(PRESET_SERIES.brew));
   const [showFlowPanel, setShowFlowPanel] = useState<boolean>(true);
@@ -116,13 +132,74 @@ export const UltrakokiGraph: React.FC<Props> = ({
     setEnabled(new Set(PRESET_SERIES[nextPreset]));
   }, []);
 
-  const getSeries = useCallback((key: SeriesKey): number[] => {
+  const processedFlowSeries = useMemo(() => {
+    const cap = Number.isFinite(flowRestrictMax) ? Math.max(0, flowRestrictMax) : 0;
+    const maxDuration = Math.max(1, Math.min(3, Math.round(spikeMaxDurationSeconds)));
+    const minDuration = 1;
+
+    const processSeries = (series: number[]) => {
+      const raw = series.map(value => (Number.isFinite(value) ? value : 0));
+      if (cap <= 0) return raw;
+
+      const working = [...raw];
+      if (cleanShortOverCapSpikes) {
+        let index = 0;
+        while (index < working.length) {
+          if (working[index] <= cap) {
+            index += 1;
+            continue;
+          }
+
+          const start = index;
+          let end = index;
+          while (end < working.length && working[end] > cap) {
+            end += 1;
+          }
+
+          const runLength = end - start;
+          const runDurationSeconds = runLength * Math.max(0.001, data.intervalSeconds);
+
+          if (runDurationSeconds >= minDuration && runDurationSeconds <= maxDuration) {
+            const left = start > 0 ? Math.min(working[start - 1], cap) : null;
+            const right = end < working.length ? Math.min(working[end], cap) : null;
+
+            for (let i = start; i < end; i += 1) {
+              let replacement = cap;
+              if (left !== null && right !== null) {
+                const t = (i - start + 1) / (runLength + 1);
+                replacement = left * (1 - t) + right * t;
+              } else if (left !== null) {
+                replacement = left;
+              } else if (right !== null) {
+                replacement = right;
+              }
+              working[i] = replacement;
+            }
+          }
+
+          index = end;
+        }
+      }
+
+      return working.map(value => Math.min(value, cap));
+    };
+
+    return {
+      pourFlow: processSeries(data.pourFlow),
+      dripFlow: processSeries(data.dripFlow),
+    };
+  }, [data.pourFlow, data.dripFlow, data.intervalSeconds, flowRestrictMax, cleanShortOverCapSpikes, spikeMaxDurationSeconds]);
+
+  const getDisplaySeries = useCallback((key: SeriesKey): number[] => {
     switch (key) {
-      case 'cumulativePour': return data.cumulativePour;
-      case 'pourFlow': return data.pourFlow;
-      case 'dripFlow': return data.dripFlow;
+      case 'cumulativePour':
+        return data.cumulativePour;
+      case 'pourFlow':
+        return processedFlowSeries.pourFlow;
+      case 'dripFlow':
+        return processedFlowSeries.dripFlow;
     }
-  }, [data]);
+  }, [data.cumulativePour, processedFlowSeries]);
 
   const sortedComparisonCurve = useMemo(
     () => [...comparisonCurve].filter(point => Number.isFinite(point.time) && Number.isFinite(point.ecValue)).sort((a, b) => a.time - b.time),
@@ -199,24 +276,41 @@ export const UltrakokiGraph: React.FC<Props> = ({
 
     // ── Axis max values ───────────────────────────────────────────────────
     let mainLeftMax = 0;
-    let flowMax = 0;
+    let flowDataMax = 0;
     let rightMax = 0;
+    const flowValues: number[] = [];
 
     for (const cfg of SERIES_CFG) {
       if (!enabled.has(cfg.key)) continue;
-      const maxValue = maxOf(getSeries(cfg.key));
+      const displaySeries = getDisplaySeries(cfg.key);
+      const maxValue = maxOf(displaySeries);
       if (cfg.key === 'cumulativePour') mainLeftMax = Math.max(mainLeftMax, maxValue);
-      else if (cfg.key === 'pourFlow' || cfg.key === 'dripFlow') flowMax = Math.max(flowMax, maxValue);
+      else if (cfg.key === 'pourFlow' || cfg.key === 'dripFlow') {
+        flowDataMax = Math.max(flowDataMax, maxValue);
+        for (const value of displaySeries) {
+          if (Number.isFinite(value) && value > 0) flowValues.push(value);
+        }
+      }
     }
     if (showComparison) rightMax = Math.max(rightMax, maxOf(sortedComparisonCurve.map(p => p.ecValue)));
 
+    const flowP92 = percentileOf(flowValues, 0.92);
+    const flowRobustCap = Math.max(0.35, flowP92 * 1.2);
+    const flowVisualMax = flowDataMax > 0 ? Math.min(flowDataMax, flowRobustCap) : 1;
+    const safeFlowVisibilityZoom = Math.max(0.5, Math.min(2.5, flowVisibilityZoom));
+
     mainLeftMax = mainLeftMax > 0 ? mainLeftMax * 1.12 : 1;
-    flowMax     = flowMax     > 0 ? flowMax     * 1.15 : 1;
+    const flowScaleMax = flowVisualMax > 0 ? (flowVisualMax * 1.08) / safeFlowVisibilityZoom : 1;
+    const flowExponent = Math.max(0.55, Math.min(0.9, 0.82 - (safeFlowVisibilityZoom - 1) * 0.18));
     rightMax    = rightMax    > 0 ? rightMax    * 1.12 : 1;
 
     const toYmain = (value: number) => PAD.top    + mainH - (value / mainLeftMax) * mainH;
     const toYec   = (value: number) => PAD.top    + mainH - (value / rightMax)    * mainH;
-    const toYflow = (value: number) => flowPanelTop + flowH  - (value / flowMax)    * flowH;
+    const toYflow = (value: number) => {
+      const normalized = Math.max(0, Math.min(1, value / flowScaleMax));
+      const boosted = Math.pow(normalized, flowExponent);
+      return flowPanelTop + flowH - boosted * flowH;
+    };
 
     // ── Draw main panel ───────────────────────────────────────────────────
     // Grid
@@ -300,7 +394,7 @@ export const UltrakokiGraph: React.FC<Props> = ({
       // Flow y-axis ticks (right side in teal)
       ctx.fillStyle = '#0f766e'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
       for (let i = 0; i <= 4; i++) {
-        const value = (flowMax / 1.15) * (i / 4);
+        const value = flowScaleMax * (i / 4);
         const y = flowPanelTop + flowH - (i / 4) * flowH;
         ctx.fillText(value.toFixed(2), PAD.left + plotWidth + 6, y + 3);
       }
@@ -372,7 +466,7 @@ export const UltrakokiGraph: React.FC<Props> = ({
     if (activeFlowPanel && flowH > 0) {
       for (const cfg of SERIES_CFG.filter(item => item.drawAs === 'bar' && enabled.has(item.key))) {
         const barWidth = Math.max(2, xStep * 0.58);
-        const values = getSeries(cfg.key);
+        const values = getDisplaySeries(cfg.key);
         const hex = cfg.color;
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
@@ -399,7 +493,7 @@ export const UltrakokiGraph: React.FC<Props> = ({
 
     // ── Cumulative pour line (main panel) ─────────────────────────────────
     for (const cfg of SERIES_CFG.filter(item => item.drawAs === 'line' && enabled.has(item.key))) {
-      const values = getSeries(cfg.key);
+      const values = getDisplaySeries(cfg.key);
       ctx.strokeStyle = cfg.color;
       ctx.lineWidth = 2.8;
       ctx.beginPath();
@@ -457,7 +551,7 @@ export const UltrakokiGraph: React.FC<Props> = ({
       if (activeFlowPanel && flowH > 0) {
         for (const key of ['pourFlow', 'dripFlow'] as SeriesKey[]) {
           if (!enabled.has(key)) continue;
-          const v = getSeries(key)[hoverIdx];
+          const v = getDisplaySeries(key)[hoverIdx];
           if (!Number.isFinite(v)) continue;
           const cfg = SERIES_CFG.find(c => c.key === key)!;
           ctx.fillStyle = cfg.color;
@@ -466,7 +560,7 @@ export const UltrakokiGraph: React.FC<Props> = ({
         }
       }
     }
-  }, [canvasWidth, canvasHeight, data, enabled, showFlowPanel, getSeries, hoverIdx, showComparison, sortedComparisonCurve, compareAtTime, timelinePointCount, phaseLogs, showRedLight, redLightTime]);
+  }, [canvasWidth, canvasHeight, data, enabled, showFlowPanel, getDisplaySeries, hoverIdx, showComparison, sortedComparisonCurve, compareAtTime, timelinePointCount, phaseLogs, showRedLight, redLightTime, flowVisibilityZoom]);
 
   useEffect(() => {
     drawGraph();
@@ -502,11 +596,13 @@ export const UltrakokiGraph: React.FC<Props> = ({
 
   const hoverTime = hoverIdx !== null ? hoverIdx * data.intervalSeconds : null;
   const hoverComparison = hoverTime !== null && showComparison ? compareAtTime(hoverTime) : null;
+  const cappedPourFlow = processedFlowSeries.pourFlow;
+  const cappedDripFlow = processedFlowSeries.dripFlow;
   const presets = ['brew'] as PresetKey[];
   const summaryCards = [
     { label: 'Total Pour', value: `${maxOf(data.cumulativePour).toFixed(1)} g`, tone: 'bg-blue-50 text-blue-900 border-blue-100' },
-    { label: 'Peak Flow', value: `${maxOf(data.pourFlow).toFixed(1)} g/s`, tone: 'bg-cyan-50 text-cyan-900 border-cyan-100' },
-    { label: 'Peak Drip', value: `${maxOf(data.dripFlow).toFixed(1)} g/s`, tone: 'bg-teal-50 text-teal-900 border-teal-100' },
+    { label: 'Peak Flow', value: `${maxOf(cappedPourFlow).toFixed(1)} g/s`, tone: 'bg-cyan-50 text-cyan-900 border-cyan-100' },
+    { label: 'Peak Drip', value: `${maxOf(cappedDripFlow).toFixed(1)} g/s`, tone: 'bg-teal-50 text-teal-900 border-teal-100' },
     { label: 'EC Overlay', value: hasComparisonCurve ? `${sortedComparisonCurve.length} pts` : 'Not loaded', tone: 'bg-slate-50 text-slate-900 border-slate-200' },
   ];
 
@@ -591,17 +687,75 @@ export const UltrakokiGraph: React.FC<Props> = ({
         )}
 
         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/40 p-2 sm:p-3">
-          <div className="flex items-center justify-end gap-2 pb-2">
-            <span className="text-xs text-slate-500">Zoom</span>
-            <button
-              onClick={() => setZoomLevel(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}
-              className="w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-100 flex items-center justify-center"
-            >−</button>
-            <span className="text-xs font-semibold text-slate-700 w-8 text-center">{zoomLevel === 1 ? '1×' : `${zoomLevel}×`}</span>
-            <button
-              onClick={() => setZoomLevel(z => Math.min(4, parseFloat((z + 0.25).toFixed(2))))}
-              className="w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-100 flex items-center justify-center"
-            >+</button>
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">Zoom</span>
+              <button
+                onClick={() => setZoomLevel(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}
+                className="w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-100 flex items-center justify-center"
+              >−</button>
+              <span className="text-xs font-semibold text-slate-700 w-8 text-center">{zoomLevel === 1 ? '1×' : `${zoomLevel}×`}</span>
+              <button
+                onClick={() => setZoomLevel(z => Math.min(4, parseFloat((z + 0.25).toFixed(2))))}
+                className="w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-100 flex items-center justify-center"
+              >+</button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">Flow visibility</span>
+              <input
+                type="range"
+                min={0.5}
+                max={2.5}
+                step={0.1}
+                value={flowVisibilityZoom}
+                onChange={(event) => setFlowVisibilityZoom(Number(event.target.value))}
+                className="w-28 accent-teal-600"
+              />
+              <span className="w-9 text-right text-xs font-semibold text-slate-700">{flowVisibilityZoom.toFixed(1)}×</span>
+              <button
+                onClick={() => setFlowVisibilityZoom(1)}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+              >Reset</button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">Flow cap (g/s)</span>
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                value={flowRestrictMax}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setFlowRestrictMax(Number.isFinite(next) ? Math.max(0, next) : 0);
+                }}
+                className="w-20 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+              />
+              <span className="text-[11px] text-slate-500">0 = no cap</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={cleanShortOverCapSpikes}
+                  onChange={(event) => setCleanShortOverCapSpikes(event.target.checked)}
+                  className="h-3.5 w-3.5"
+                />
+                Clean short spikes &gt; cap
+              </label>
+              <select
+                value={spikeMaxDurationSeconds}
+                onChange={(event) => setSpikeMaxDurationSeconds(Number(event.target.value))}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+                title="Remove above-cap spikes up to this duration"
+              >
+                <option value={1}>1s</option>
+                <option value={2}>2s</option>
+                <option value={3}>3s</option>
+              </select>
+            </div>
           </div>
           <div className="relative rounded-xl bg-white overflow-x-auto">
             <canvas
@@ -625,7 +779,7 @@ export const UltrakokiGraph: React.FC<Props> = ({
                         <span>{series.shortLabel}</span>
                       </div>
                       <span className="font-semibold text-slate-900">
-                        {(getSeries(series.key)[hoverIdx] ?? 0).toFixed(series.key === 'cumulativePour' ? 1 : 3)}
+                        {(getDisplaySeries(series.key)[hoverIdx] ?? 0).toFixed(series.key === 'cumulativePour' ? 1 : 3)}
                         <span className="ml-0.5 font-normal text-slate-400">{series.key === 'cumulativePour' ? 'g' : 'g/s'}</span>
                       </span>
                     </div>

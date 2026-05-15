@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { UltrakokiGraph, type ComparisonCurvePoint, type UltrakokiBrewData } from './UltrakokiGraph';
 
 type JsonRecord = Record<string, unknown>;
@@ -32,6 +32,13 @@ type ParseResult = {
   brewingData: BrewingData | null;
 };
 
+type EcCurveSource = 'none' | 'main-profile' | 'point-array' | 'text-extract';
+
+type ComparisonCurveBuildResult = {
+  curve: ComparisonCurvePoint[];
+  source: EcCurveSource;
+};
+
 type FlowSample = {
   sample_index: number;
   time_s: number;
@@ -45,6 +52,42 @@ type MetadataRow = {
   value: string;
   source: 'json' | 'text';
 };
+
+export interface UltrakokiParserSessionProfile {
+  version: 1;
+  rawJson: string;
+  ecRawJson: string;
+  mode: ParseMode;
+  threshold: number;
+  minChange: number;
+  minPour: number;
+  noiseMinWaterAdded: number;
+  flowNoiseFloor: number;
+  flowSpikeThreshold: number;
+  flowMaxThreshold: number;
+  flowDisplayMax: number;
+  flowSmoothingWindow: number;
+  coffeeDoseG: number;
+  fileName: string;
+  ecFileName: string;
+  showImportedEc: boolean;
+  zoomLevel: number;
+  showToggleW1CumPour: boolean;
+  showToggleW1CumBrew: boolean;
+  showToggleW1PourRatio: boolean;
+  showToggleW1BrewRatio: boolean;
+  showToggleW2PourFlow: boolean;
+  showToggleW2BrewFlow: boolean;
+  showToggleW2Dripper: boolean;
+  showToggleW2Temp: boolean;
+  showWindow2InWindow1: boolean;
+  showWindow1InWindow2: boolean;
+}
+
+export interface UltrakokiParserPageHandle {
+  exportProfile: () => UltrakokiParserSessionProfile;
+  importProfile: (profile: UltrakokiParserSessionProfile) => void;
+}
 
 type LegacyPour = {
   pour_index: number;
@@ -76,15 +119,39 @@ const LEGACY_FIELDS: LegacyFieldKey[] = [
 
 const STORAGE_KEYS = {
   rawJson: 'ultrakoki.parser.rawJson',
+  ecRawJson: 'ultrakoki.parser.ecRawJson',
   mode: 'ultrakoki.parser.mode',
   threshold: 'ultrakoki.parser.threshold',
   minChange: 'ultrakoki.parser.minChange',
   minPour: 'ultrakoki.parser.minPour',
   noiseMinWaterAdded: 'ultrakoki.parser.noiseMinWaterAdded',
+  flowNoiseFloor: 'ultrakoki.parser.flowNoiseFloor',
   flowSpikeThreshold: 'ultrakoki.parser.flowSpikeThreshold',
   flowMaxThreshold: 'ultrakoki.parser.flowMaxThreshold',
   flowDisplayMax: 'ultrakoki.parser.flowDisplayMax',
+  flowSmoothingWindow: 'ultrakoki.parser.flowSmoothingWindow',
+  coffeeDoseG: 'ultrakoki.parser.coffeeDoseG',
+  showImportedEc: 'ultrakoki.parser.showImportedEc',
+  zoomLevel: 'ultrakoki.parser.zoomLevel',
+  showToggleW1CumPour: 'ultrakoki.parser.showToggleW1CumPour',
+  showToggleW1CumBrew: 'ultrakoki.parser.showToggleW1CumBrew',
+  showToggleW1PourRatio: 'ultrakoki.parser.showToggleW1PourRatio',
+  showToggleW1BrewRatio: 'ultrakoki.parser.showToggleW1BrewRatio',
+  showToggleW2PourFlow: 'ultrakoki.parser.showToggleW2PourFlow',
+  showToggleW2BrewFlow: 'ultrakoki.parser.showToggleW2BrewFlow',
+  showToggleW2Dripper: 'ultrakoki.parser.showToggleW2Dripper',
+  showToggleW2Temp: 'ultrakoki.parser.showToggleW2Temp',
+  showWindow2InWindow1: 'ultrakoki.parser.showWindow2InWindow1',
+  showWindow1InWindow2: 'ultrakoki.parser.showWindow1InWindow2',
 } as const;
+
+function parseStoredBoolean(value: string | null, fallback: boolean): boolean {
+  if (value == null) return fallback;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true;
+  if (normalized === 'false' || normalized === '0' || normalized === 'no') return false;
+  return fallback;
+}
 
 function isObject(value: unknown): value is JsonRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -92,11 +159,27 @@ function isObject(value: unknown): value is JsonRecord {
 
 function isPointLike(value: unknown): value is JsonRecord {
   if (!isObject(value)) return false;
+  const hasExplicitEc = Object.prototype.hasOwnProperty.call(value, 'ecValue') || Object.prototype.hasOwnProperty.call(value, 'ec');
+  if (hasExplicitEc) return true;
+
+  // If only `y` is present, require a time-like field to avoid matching calibration/image pixel points.
+  const hasYLike = Object.prototype.hasOwnProperty.call(value, 'value') || Object.prototype.hasOwnProperty.call(value, 'y');
+  const hasTimeLike =
+    Object.prototype.hasOwnProperty.call(value, 'time') ||
+    Object.prototype.hasOwnProperty.call(value, 'timeMs') ||
+    Object.prototype.hasOwnProperty.call(value, 'time_s') ||
+    Object.prototype.hasOwnProperty.call(value, 'x');
+
+  if (hasYLike && hasTimeLike) {
+    const looksLikeCalibration =
+      Object.prototype.hasOwnProperty.call(value, 'dataX') ||
+      Object.prototype.hasOwnProperty.call(value, 'dataY') ||
+      Object.prototype.hasOwnProperty.call(value, 'label');
+    return !looksLikeCalibration;
+  }
+
   return (
-    Object.prototype.hasOwnProperty.call(value, 'ecValue') ||
-    Object.prototype.hasOwnProperty.call(value, 'ec') ||
-    Object.prototype.hasOwnProperty.call(value, 'value') ||
-    Object.prototype.hasOwnProperty.call(value, 'y')
+    false
   );
 }
 
@@ -786,6 +869,18 @@ function medianValue(values: number[]): number {
     : sorted[middle];
 }
 
+function percentileValue(values: number[], percentile: number): number {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((left, right) => left - right);
+  const clamped = Math.max(0, Math.min(1, percentile));
+  const index = clamped * (sorted.length - 1);
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) return sorted[lower];
+  const fraction = index - lower;
+  return sorted[lower] * (1 - fraction) + sorted[upper] * fraction;
+}
+
 function sanitizeFlowSeries(
   values: number[],
   noiseFloor: number,
@@ -925,7 +1020,7 @@ function parseUltrakokiJson(
   };
 }
 
-function buildComparisonCurve(rawInput: string): ComparisonCurvePoint[] {
+function buildComparisonCurve(rawInput: string): ComparisonCurveBuildResult {
   const normalizePoints = (points: PointRow[]) => points
     .map((point, index) => {
       const time = Number.isFinite(point.time_s) ? Number(point.time_s) : index;
@@ -939,24 +1034,64 @@ function buildComparisonCurve(rawInput: string): ComparisonCurvePoint[] {
     .filter((point): point is ComparisonCurvePoint => point !== null)
     .sort((left, right) => left.time - right.time);
 
+  const normalizeDigitizerPoints = (points: unknown[]): ComparisonCurvePoint[] => points
+    .map((item, index) => {
+      if (!isObject(item)) return null;
+
+      const rawTime = Number(item.time ?? item.time_s ?? item.x ?? index);
+      const rawEc = Number(item.ecValue ?? item.ec ?? item.value ?? item.y);
+      if (!Number.isFinite(rawTime) || !Number.isFinite(rawEc)) return null;
+
+      return {
+        time: Number(rawTime.toFixed(3)),
+        ecValue: Number(rawEc.toFixed(3)),
+      };
+    })
+    .filter((point): point is ComparisonCurvePoint => point !== null)
+    .sort((left, right) => left.time - right.time);
+
+  const extractDigitizerCurveFromWorkspaceProfile = (parsed: unknown): ComparisonCurvePoint[] => {
+    if (!isObject(parsed)) return [];
+    const digitizer = isObject(parsed.digitizer) ? parsed.digitizer : null;
+    if (!digitizer) return [];
+
+    const preferredCurves = [
+      Array.isArray(digitizer.fineGeneratedCurve) ? digitizer.fineGeneratedCurve : [],
+      Array.isArray(digitizer.extractedPoints) ? digitizer.extractedPoints : [],
+    ];
+
+    for (const candidate of preferredCurves) {
+      const normalized = normalizeDigitizerPoints(candidate);
+      if (normalized.length >= 2) return normalized;
+    }
+
+    return [];
+  };
+
   const trimmed = rawInput.trim();
-  if (!trimmed) return [];
+  if (!trimmed) return { curve: [], source: 'none' };
 
   try {
     const parsed = parseJsonLenient(trimmed);
+    const profileCurve = extractDigitizerCurveFromWorkspaceProfile(parsed);
+    if (profileCurve.length >= 2) {
+      return { curve: profileCurve, source: 'main-profile' };
+    }
+
     const pointArray = findPointArray(parsed);
     if (pointArray && pointArray.points.length >= 2) {
-      return normalizePoints(pointArray.points);
+      return { curve: normalizePoints(pointArray.points), source: 'point-array' };
     }
   } catch {
     // Fall through to text-based extraction.
   }
 
   const values = extractEcValuesFromText(trimmed);
-  return values.map((value, index) => ({
+  const curve = values.map((value, index) => ({
     time: index,
     ecValue: Number(value.toFixed(3)),
   }));
+  return { curve, source: curve.length >= 2 ? 'text-extract' : 'none' };
 }
 
 function downloadCsv(csvText: string, name = 'ultrakoki_parsed.csv') {
@@ -969,7 +1104,7 @@ function downloadCsv(csvText: string, name = 'ultrakoki_parsed.csv') {
   URL.revokeObjectURL(url);
 }
 
-export function UltrakokiParserPage() {
+export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref) => {
   const [rawJson, setRawJson] = useState('');
   const [ecRawJson, setEcRawJson] = useState('');
   const [mode, setMode] = useState<ParseMode>('legacy');
@@ -989,6 +1124,7 @@ export function UltrakokiParserPage() {
   const [ecImportError, setEcImportError] = useState<string | null>(null);
   const [result, setResult] = useState<ParseResult | null>(null);
   const [ecComparisonCurve, setEcComparisonCurve] = useState<ComparisonCurvePoint[]>([]);
+  const [ecCurveSource, setEcCurveSource] = useState<EcCurveSource>('none');
   const [showImportedEc, setShowImportedEc] = useState(true);
 
   // Chart toggles and zoom
@@ -1005,6 +1141,136 @@ export function UltrakokiParserPage() {
   const [showWindow2InWindow1, setShowWindow2InWindow1] = useState(false);
   const [showWindow1InWindow2, setShowWindow1InWindow2] = useState(false);
 
+  useImperativeHandle(ref, () => ({
+    exportProfile: () => ({
+      version: 1,
+      rawJson,
+      ecRawJson,
+      mode,
+      threshold,
+      minChange,
+      minPour,
+      noiseMinWaterAdded,
+      flowNoiseFloor,
+      flowSpikeThreshold,
+      flowMaxThreshold,
+      flowDisplayMax,
+      flowSmoothingWindow,
+      coffeeDoseG,
+      fileName,
+      ecFileName,
+      showImportedEc,
+      zoomLevel,
+      showToggleW1CumPour,
+      showToggleW1CumBrew,
+      showToggleW1PourRatio,
+      showToggleW1BrewRatio,
+      showToggleW2PourFlow,
+      showToggleW2BrewFlow,
+      showToggleW2Dripper,
+      showToggleW2Temp,
+      showWindow2InWindow1,
+      showWindow1InWindow2,
+    }),
+    importProfile: (profile) => {
+      const nextRawJson = profile.rawJson ?? '';
+      const nextEcRawJson = profile.ecRawJson ?? '';
+      const nextMode = ['auto', 'phases', 'samples', 'legacy', 'points'].includes(profile.mode)
+        ? profile.mode
+        : 'legacy';
+
+      setRawJson(nextRawJson);
+      setEcRawJson(nextEcRawJson);
+      setMode(nextMode);
+      setThreshold(Number.isFinite(profile.threshold) ? profile.threshold : 0.01);
+      setMinChange(Number.isFinite(profile.minChange) ? profile.minChange : 0.5);
+      setMinPour(Number.isFinite(profile.minPour) ? profile.minPour : 1);
+      setNoiseMinWaterAdded(Number.isFinite(profile.noiseMinWaterAdded) ? profile.noiseMinWaterAdded : 2);
+      setFlowNoiseFloor(Number.isFinite(profile.flowNoiseFloor) ? profile.flowNoiseFloor : 0.15);
+      setFlowSpikeThreshold(Number.isFinite(profile.flowSpikeThreshold) ? profile.flowSpikeThreshold : 4.5);
+      setFlowMaxThreshold(Number.isFinite(profile.flowMaxThreshold) ? profile.flowMaxThreshold : 12);
+      setFlowDisplayMax(Number.isFinite(profile.flowDisplayMax) ? profile.flowDisplayMax : 0);
+      setFlowSmoothingWindow(Number.isFinite(profile.flowSmoothingWindow) ? profile.flowSmoothingWindow : 3);
+      setCoffeeDoseG(Number.isFinite(profile.coffeeDoseG) ? profile.coffeeDoseG : 15);
+      setFileName(profile.fileName ?? '');
+      setEcFileName(profile.ecFileName ?? '');
+      setShowImportedEc(Boolean(profile.showImportedEc));
+      setZoomLevel(Number.isFinite(profile.zoomLevel) ? profile.zoomLevel : 1);
+      setShowToggleW1CumPour(Boolean(profile.showToggleW1CumPour));
+      setShowToggleW1CumBrew(Boolean(profile.showToggleW1CumBrew));
+      setShowToggleW1PourRatio(Boolean(profile.showToggleW1PourRatio));
+      setShowToggleW1BrewRatio(Boolean(profile.showToggleW1BrewRatio));
+      setShowToggleW2PourFlow(Boolean(profile.showToggleW2PourFlow));
+      setShowToggleW2BrewFlow(Boolean(profile.showToggleW2BrewFlow));
+      setShowToggleW2Dripper(Boolean(profile.showToggleW2Dripper));
+      setShowToggleW2Temp(Boolean(profile.showToggleW2Temp));
+      setShowWindow2InWindow1(Boolean(profile.showWindow2InWindow1));
+      setShowWindow1InWindow2(Boolean(profile.showWindow1InWindow2));
+      setChartMouseX(null);
+
+      if (nextRawJson.trim()) {
+        try {
+          const nextResult = parseUltrakokiJson(nextRawJson, nextMode, profile.threshold ?? 0.01, profile.minChange ?? 0.5, profile.minPour ?? 1);
+          setResult(nextResult);
+          setError(null);
+        } catch (parseError) {
+          const message = parseError instanceof Error ? parseError.message : 'Failed to parse restored parser JSON.';
+          setResult(null);
+          setError(message);
+        }
+      } else {
+        setResult(null);
+        setError(null);
+      }
+
+      if (nextEcRawJson.trim()) {
+        const comparisonResult = buildComparisonCurve(nextEcRawJson);
+        const curve = comparisonResult.curve;
+        if (curve.length >= 2) {
+          setEcComparisonCurve(curve);
+          setEcCurveSource(comparisonResult.source);
+          setEcImportError(null);
+        } else {
+          setEcComparisonCurve([]);
+          setEcCurveSource('none');
+          setEcImportError('Could not restore EC overlay from the saved profile.');
+        }
+      } else {
+        setEcComparisonCurve([]);
+        setEcCurveSource('none');
+        setEcImportError(null);
+      }
+    },
+  }), [
+    rawJson,
+    ecRawJson,
+    mode,
+    threshold,
+    minChange,
+    minPour,
+    noiseMinWaterAdded,
+    flowNoiseFloor,
+    flowSpikeThreshold,
+    flowMaxThreshold,
+    flowDisplayMax,
+    flowSmoothingWindow,
+    coffeeDoseG,
+    fileName,
+    ecFileName,
+    showImportedEc,
+    zoomLevel,
+    showToggleW1CumPour,
+    showToggleW1CumBrew,
+    showToggleW1PourRatio,
+    showToggleW1BrewRatio,
+    showToggleW2PourFlow,
+    showToggleW2BrewFlow,
+    showToggleW2Dripper,
+    showToggleW2Temp,
+    showWindow2InWindow1,
+    showWindow1InWindow2,
+  ]);
+
   useEffect(() => {
     try {
       const savedRawJson = localStorage.getItem(STORAGE_KEYS.rawJson);
@@ -1012,12 +1278,29 @@ export function UltrakokiParserPage() {
       const savedThreshold = localStorage.getItem(STORAGE_KEYS.threshold);
       const savedMinChange = localStorage.getItem(STORAGE_KEYS.minChange);
       const savedMinPour = localStorage.getItem(STORAGE_KEYS.minPour);
+      const savedEcRawJson = localStorage.getItem(STORAGE_KEYS.ecRawJson);
       const savedNoiseMinWaterAdded = localStorage.getItem(STORAGE_KEYS.noiseMinWaterAdded);
+      const savedFlowNoiseFloor = localStorage.getItem(STORAGE_KEYS.flowNoiseFloor);
       const savedFlowSpikeThreshold = localStorage.getItem(STORAGE_KEYS.flowSpikeThreshold);
       const savedFlowMaxThreshold = localStorage.getItem(STORAGE_KEYS.flowMaxThreshold);
       const savedFlowDisplayMax = localStorage.getItem(STORAGE_KEYS.flowDisplayMax);
+      const savedFlowSmoothingWindow = localStorage.getItem(STORAGE_KEYS.flowSmoothingWindow);
+      const savedCoffeeDoseG = localStorage.getItem(STORAGE_KEYS.coffeeDoseG);
+      const savedShowImportedEc = localStorage.getItem(STORAGE_KEYS.showImportedEc);
+      const savedZoomLevel = localStorage.getItem(STORAGE_KEYS.zoomLevel);
+      const savedShowToggleW1CumPour = localStorage.getItem(STORAGE_KEYS.showToggleW1CumPour);
+      const savedShowToggleW1CumBrew = localStorage.getItem(STORAGE_KEYS.showToggleW1CumBrew);
+      const savedShowToggleW1PourRatio = localStorage.getItem(STORAGE_KEYS.showToggleW1PourRatio);
+      const savedShowToggleW1BrewRatio = localStorage.getItem(STORAGE_KEYS.showToggleW1BrewRatio);
+      const savedShowToggleW2PourFlow = localStorage.getItem(STORAGE_KEYS.showToggleW2PourFlow);
+      const savedShowToggleW2BrewFlow = localStorage.getItem(STORAGE_KEYS.showToggleW2BrewFlow);
+      const savedShowToggleW2Dripper = localStorage.getItem(STORAGE_KEYS.showToggleW2Dripper);
+      const savedShowToggleW2Temp = localStorage.getItem(STORAGE_KEYS.showToggleW2Temp);
+      const savedShowWindow2InWindow1 = localStorage.getItem(STORAGE_KEYS.showWindow2InWindow1);
+      const savedShowWindow1InWindow2 = localStorage.getItem(STORAGE_KEYS.showWindow1InWindow2);
 
       if (savedRawJson) setRawJson(savedRawJson);
+      if (savedEcRawJson) setEcRawJson(savedEcRawJson);
       if (savedMode && ['auto', 'phases', 'samples', 'legacy', 'points'].includes(savedMode)) {
         setMode(savedMode as ParseMode);
       }
@@ -1026,6 +1309,9 @@ export function UltrakokiParserPage() {
       if (savedMinPour && Number.isFinite(Number(savedMinPour))) setMinPour(Number(savedMinPour));
       if (savedNoiseMinWaterAdded && Number.isFinite(Number(savedNoiseMinWaterAdded))) {
         setNoiseMinWaterAdded(Number(savedNoiseMinWaterAdded));
+      }
+      if (savedFlowNoiseFloor && Number.isFinite(Number(savedFlowNoiseFloor))) {
+        setFlowNoiseFloor(Number(savedFlowNoiseFloor));
       }
       if (savedFlowSpikeThreshold && Number.isFinite(Number(savedFlowSpikeThreshold))) {
         setFlowSpikeThreshold(Number(savedFlowSpikeThreshold));
@@ -1036,6 +1322,26 @@ export function UltrakokiParserPage() {
       if (savedFlowDisplayMax && Number.isFinite(Number(savedFlowDisplayMax))) {
         setFlowDisplayMax(Number(savedFlowDisplayMax));
       }
+      if (savedFlowSmoothingWindow && Number.isFinite(Number(savedFlowSmoothingWindow))) {
+        setFlowSmoothingWindow(Number(savedFlowSmoothingWindow));
+      }
+      if (savedCoffeeDoseG && Number.isFinite(Number(savedCoffeeDoseG))) {
+        setCoffeeDoseG(Math.max(0.1, Number(savedCoffeeDoseG)));
+      }
+      if (savedZoomLevel && Number.isFinite(Number(savedZoomLevel))) {
+        setZoomLevel(Math.max(0.5, Number(savedZoomLevel)));
+      }
+      setShowImportedEc(parseStoredBoolean(savedShowImportedEc, true));
+      setShowToggleW1CumPour(parseStoredBoolean(savedShowToggleW1CumPour, true));
+      setShowToggleW1CumBrew(parseStoredBoolean(savedShowToggleW1CumBrew, true));
+      setShowToggleW1PourRatio(parseStoredBoolean(savedShowToggleW1PourRatio, true));
+      setShowToggleW1BrewRatio(parseStoredBoolean(savedShowToggleW1BrewRatio, true));
+      setShowToggleW2PourFlow(parseStoredBoolean(savedShowToggleW2PourFlow, true));
+      setShowToggleW2BrewFlow(parseStoredBoolean(savedShowToggleW2BrewFlow, true));
+      setShowToggleW2Dripper(parseStoredBoolean(savedShowToggleW2Dripper, true));
+      setShowToggleW2Temp(parseStoredBoolean(savedShowToggleW2Temp, true));
+      setShowWindow2InWindow1(parseStoredBoolean(savedShowWindow2InWindow1, false));
+      setShowWindow1InWindow2(parseStoredBoolean(savedShowWindow1InWindow2, false));
     } catch {
       // Ignore browser storage errors.
     }
@@ -1044,18 +1350,60 @@ export function UltrakokiParserPage() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.rawJson, rawJson);
+      localStorage.setItem(STORAGE_KEYS.ecRawJson, ecRawJson);
       localStorage.setItem(STORAGE_KEYS.mode, mode);
       localStorage.setItem(STORAGE_KEYS.threshold, String(threshold));
       localStorage.setItem(STORAGE_KEYS.minChange, String(minChange));
       localStorage.setItem(STORAGE_KEYS.minPour, String(minPour));
       localStorage.setItem(STORAGE_KEYS.noiseMinWaterAdded, String(noiseMinWaterAdded));
+      localStorage.setItem(STORAGE_KEYS.flowNoiseFloor, String(flowNoiseFloor));
       localStorage.setItem(STORAGE_KEYS.flowSpikeThreshold, String(flowSpikeThreshold));
       localStorage.setItem(STORAGE_KEYS.flowMaxThreshold, String(flowMaxThreshold));
       localStorage.setItem(STORAGE_KEYS.flowDisplayMax, String(flowDisplayMax));
+      localStorage.setItem(STORAGE_KEYS.flowSmoothingWindow, String(flowSmoothingWindow));
+      localStorage.setItem(STORAGE_KEYS.coffeeDoseG, String(coffeeDoseG));
+      localStorage.setItem(STORAGE_KEYS.showImportedEc, String(showImportedEc));
+      localStorage.setItem(STORAGE_KEYS.zoomLevel, String(zoomLevel));
+      localStorage.setItem(STORAGE_KEYS.showToggleW1CumPour, String(showToggleW1CumPour));
+      localStorage.setItem(STORAGE_KEYS.showToggleW1CumBrew, String(showToggleW1CumBrew));
+      localStorage.setItem(STORAGE_KEYS.showToggleW1PourRatio, String(showToggleW1PourRatio));
+      localStorage.setItem(STORAGE_KEYS.showToggleW1BrewRatio, String(showToggleW1BrewRatio));
+      localStorage.setItem(STORAGE_KEYS.showToggleW2PourFlow, String(showToggleW2PourFlow));
+      localStorage.setItem(STORAGE_KEYS.showToggleW2BrewFlow, String(showToggleW2BrewFlow));
+      localStorage.setItem(STORAGE_KEYS.showToggleW2Dripper, String(showToggleW2Dripper));
+      localStorage.setItem(STORAGE_KEYS.showToggleW2Temp, String(showToggleW2Temp));
+      localStorage.setItem(STORAGE_KEYS.showWindow2InWindow1, String(showWindow2InWindow1));
+      localStorage.setItem(STORAGE_KEYS.showWindow1InWindow2, String(showWindow1InWindow2));
     } catch {
       // Ignore browser storage errors.
     }
-  }, [rawJson, mode, threshold, minChange, minPour, noiseMinWaterAdded, flowSpikeThreshold, flowMaxThreshold, flowDisplayMax]);
+  }, [
+    rawJson,
+    ecRawJson,
+    mode,
+    threshold,
+    minChange,
+    minPour,
+    noiseMinWaterAdded,
+    flowNoiseFloor,
+    flowSpikeThreshold,
+    flowMaxThreshold,
+    flowDisplayMax,
+    flowSmoothingWindow,
+    coffeeDoseG,
+    showImportedEc,
+    zoomLevel,
+    showToggleW1CumPour,
+    showToggleW1CumBrew,
+    showToggleW1PourRatio,
+    showToggleW1BrewRatio,
+    showToggleW2PourFlow,
+    showToggleW2BrewFlow,
+    showToggleW2Dripper,
+    showToggleW2Temp,
+    showWindow2InWindow1,
+    showWindow1InWindow2,
+  ]);
 
   const effectiveRecipeRows = useMemo(() => {
     if (!result) return [];
@@ -1113,20 +1461,24 @@ export function UltrakokiParserPage() {
   };
 
   const importEcCurve = () => {
-    const curve = buildComparisonCurve(ecRawJson);
+    const comparisonResult = buildComparisonCurve(ecRawJson);
+    const curve = comparisonResult.curve;
     if (curve.length < 2) {
       setEcImportError('Could not find a valid EC curve. Provide JSON with point arrays or ec values.');
       setEcComparisonCurve([]);
+      setEcCurveSource('none');
       return;
     }
     setEcImportError(null);
     setEcComparisonCurve(curve);
+    setEcCurveSource(comparisonResult.source);
   };
 
   const clearEcCurve = () => {
     setEcRawJson('');
     setEcFileName('');
     setEcComparisonCurve([]);
+    setEcCurveSource('none');
     setEcImportError(null);
   };
 
@@ -1428,7 +1780,7 @@ export function UltrakokiParserPage() {
                   onChange={(event) => setFlowDisplayMax(Math.max(0, Number(event.target.value) || 0))}
                   className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">Set flow chart max. Use 0 for auto scaling.</p>
+                <p className="text-[11px] text-slate-500 mt-1">Set flow chart max. Use 0 for auto scaling (robust 92nd percentile so normal flow stays visible).</p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Flow Smoothing Window</label>
@@ -1675,8 +2027,15 @@ export function UltrakokiParserPage() {
                           const domainCount = Math.max(1, n - 1);
                           const weightMax = Math.max(1, ...brewChartData.cumulativePour, ...brewChartData.cumulativeBrew);
                           const ratioMax = Math.max(1, ...brewChartData.pourRatio, ...brewChartData.brewRatio);
-                          const flowMax = Math.max(1, ...brewChartData.pourFlow, ...brewChartData.brewFlow, ...filteredFlowSamples.map((sample) => sample.drip_flow_g_s));
-                          const flowVisualMax = flowDisplayMax > 0 ? flowDisplayMax : Math.max(0.15, flowMax * 0.55);
+                          const positiveFlowValues = [
+                            ...brewChartData.pourFlow,
+                            ...brewChartData.brewFlow,
+                            ...filteredFlowSamples.map((sample) => sample.drip_flow_g_s),
+                          ].filter((value) => Number.isFinite(value) && value > 0);
+                          const flowMax = positiveFlowValues.length ? Math.max(...positiveFlowValues) : 1;
+                          const flowP92 = percentileValue(positiveFlowValues, 0.92);
+                          const robustAutoCeiling = Math.max(0.35, flowP92 * 1.2);
+                          const flowVisualMax = flowDisplayMax > 0 ? flowDisplayMax : Math.min(flowMax, robustAutoCeiling);
                           const tempValues = brewChartData.temperature.filter((value): value is number => value != null && Number.isFinite(value));
                           const tempMin = tempValues.length ? Math.min(...tempValues) : 0;
                           const tempMax = tempValues.length ? Math.max(...tempValues) : 1;
@@ -1742,6 +2101,9 @@ export function UltrakokiParserPage() {
                           const pointsBottomCumBrew = brewChartData.cumulativeBrew.map((value, index) => ({ x: toX(index), y: toBottomWeightY(value) }));
                           const pointsBottomPourRatio = brewChartData.pourRatio.map((value, index) => ({ x: toX(index), y: toBottomRatioY(value) }));
                           const pointsBottomBrewRatio = brewChartData.brewRatio.map((value, index) => ({ x: toX(index), y: toBottomRatioY(value) }));
+                          const sortedImportedEcCurve = [...ecComparisonCurve]
+                            .filter(point => Number.isFinite(point.time) && Number.isFinite(point.ecValue))
+                            .sort((a, b) => a.time - b.time);
                           const makeArea = (points: Array<{ x: number; y: number }>, baselineY: number) => points.length
                             ? `${buildLinePath(points)} L ${points[points.length - 1].x.toFixed(2)} ${baselineY.toFixed(2)} L ${points[0].x.toFixed(2)} ${baselineY.toFixed(2)} Z`
                             : '';
@@ -1753,6 +2115,26 @@ export function UltrakokiParserPage() {
                             const second = arr[nextIndex] ?? 0;
                             return first * (1 - fraction) + second * fraction;
                           };
+                          const interpolateImportedEcAtTime = (timeSeconds: number): number | null => {
+                            if (sortedImportedEcCurve.length === 0) return null;
+                            if (timeSeconds <= sortedImportedEcCurve[0].time) return sortedImportedEcCurve[0].ecValue;
+
+                            const lastPoint = sortedImportedEcCurve[sortedImportedEcCurve.length - 1];
+                            if (timeSeconds >= lastPoint.time) return lastPoint.ecValue;
+
+                            for (let i = 1; i < sortedImportedEcCurve.length; i += 1) {
+                              const left = sortedImportedEcCurve[i - 1];
+                              const right = sortedImportedEcCurve[i];
+                              if (timeSeconds <= right.time) {
+                                const span = right.time - left.time;
+                                if (span <= 0) return right.ecValue;
+                                const ratio = (timeSeconds - left.time) / span;
+                                return left.ecValue + (right.ecValue - left.ecValue) * ratio;
+                              }
+                            }
+
+                            return lastPoint.ecValue;
+                          };
 
                           const crosshairActive = chartMouseX !== null && chartMouseX >= pad.left && chartMouseX <= pad.left + plotW;
                           const hoverIndex = crosshairActive ? fromX(chartMouseX) : null;
@@ -1760,6 +2142,12 @@ export function UltrakokiParserPage() {
                           const hoverTemp = hoverIndex == null
                             ? null
                             : interpValue(brewChartData.temperature.map((value) => (value == null ? tempMin : value)), hoverIndex);
+                          const hoverImportedEc = hoverTime == null || !showImportedEc
+                            ? null
+                            : interpolateImportedEcAtTime(hoverTime);
+                          const hoverEcSourceLabel = ecCurveSource === 'main-profile'
+                            ? 'Main App profile'
+                            : 'Imported EC JSON';
                           const tooltipX = crosshairActive && chartMouseX != null
                             ? Math.min(Math.max(pad.left + 8, chartMouseX + 10), pad.left + plotW - 172)
                             : 0;
@@ -1782,8 +2170,8 @@ export function UltrakokiParserPage() {
 
                               {showToggleW1BrewRatio && <path d={makeArea(pointsBrewRatio, topRatioBand.maxY)} fill="#22c55e" fillOpacity={0.14} />}
                               {showToggleW1PourRatio && <path d={makeArea(pointsPourRatio, topRatioBand.maxY)} fill="#10b981" fillOpacity={0.18} />}
-                              {showToggleW2PourFlow && <path d={makeArea(pointsPourFlow, bottomPlot.y + bottomPlot.h)} fill="#60a5fa" fillOpacity={0.14} />}
-                              {showToggleW2BrewFlow && <path d={makeArea(pointsBrewFlow, bottomPlot.y + bottomPlot.h)} fill="#34d399" fillOpacity={0.14} />}
+                              {showToggleW2PourFlow && <path d={makeArea(pointsPourFlow, bottomPlot.y + bottomPlot.h)} fill="#60a5fa" fillOpacity={0.2} />}
+                              {showToggleW2BrewFlow && <path d={makeArea(pointsBrewFlow, bottomPlot.y + bottomPlot.h)} fill="#34d399" fillOpacity={0.2} />}
 
                               {showToggleW1CumPour && <path d={buildStepPath(pointsCumPour)} fill="none" stroke="#2563eb" strokeWidth={2.2} />}
                               {showToggleW1CumBrew && <path d={buildStepPath(pointsCumBrew)} fill="none" stroke="#0f766e" strokeWidth={2.2} />}
@@ -1807,7 +2195,7 @@ export function UltrakokiParserPage() {
                               {crosshairActive && hoverIndex != null && hoverTime != null && chartMouseX != null && (
                                 <>
                                   <line x1={chartMouseX} y1={topPlot.y} x2={chartMouseX} y2={bottomPlot.y + bottomPlot.h} stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" />
-                                  <rect x={tooltipX} y={topPlot.y + 6} width="164" height="118" fill="#fff" stroke="#ef4444" rx="4" />
+                                  <rect x={tooltipX} y={topPlot.y + 6} width="172" height={hoverImportedEc === null ? 118 : 146} fill="#fff" stroke="#ef4444" rx="4" />
                                   <text x={tooltipX + 8} y={topPlot.y + 22} fontSize="11" fill="#334155" fontWeight="bold">t: {hoverTime.toFixed(1)}s</text>
                                   <text x={tooltipX + 8} y={topPlot.y + 37} fontSize="10" fill="#2563eb">Pour: {interpValue(brewChartData.cumulativePour, hoverIndex).toFixed(2)}g</text>
                                   <text x={tooltipX + 8} y={topPlot.y + 51} fontSize="10" fill="#0f766e">Brew: {interpValue(brewChartData.cumulativeBrew, hoverIndex).toFixed(2)}g</text>
@@ -1815,6 +2203,12 @@ export function UltrakokiParserPage() {
                                   <text x={tooltipX + 8} y={topPlot.y + 79} fontSize="10" fill="#22c55e">Brew ratio: {interpValue(brewChartData.brewRatio, hoverIndex).toFixed(2)}x</text>
                                   <text x={tooltipX + 8} y={topPlot.y + 93} fontSize="10" fill="#059669">Brew flow: {interpValue(brewChartData.brewFlow, hoverIndex).toFixed(2)}g/s</text>
                                   <text x={tooltipX + 8} y={topPlot.y + 107} fontSize="10" fill="#ef4444">Temp: {(hoverTemp ?? tempMin).toFixed(1)}°C</text>
+                                  {hoverImportedEc !== null && (
+                                    <>
+                                      <text x={tooltipX + 8} y={topPlot.y + 121} fontSize="10" fill="#111827">EC: {hoverImportedEc.toFixed(2)} mS/cm</text>
+                                      <text x={tooltipX + 8} y={topPlot.y + 135} fontSize="9" fill="#64748b">Source: {hoverEcSourceLabel}</text>
+                                    </>
+                                  )}
                                 </>
                               )}
 
@@ -1959,4 +2353,6 @@ export function UltrakokiParserPage() {
       )}
     </div>
   );
-}
+});
+
+UltrakokiParserPage.displayName = 'UltrakokiParserPage';

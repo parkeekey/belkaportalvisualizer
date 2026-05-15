@@ -97,7 +97,7 @@ export const UltrakokiGraph: React.FC<Props> = ({
   const [canvasWidth, setCanvasWidth] = useState(800);
   const [canvasHeight, setCanvasHeight] = useState(380);
   const [zoomLevel, setZoomLevel] = useState(1.0);
-  const [flowVisibilityZoom, setFlowVisibilityZoom] = useState(1.0);
+  const [flowVisibilityZoom, setFlowVisibilityZoom] = useState(0.5);
   const [flowRestrictMax, setFlowRestrictMax] = useState(10);
   const [cleanShortOverCapSpikes, setCleanShortOverCapSpikes] = useState(false);
   const [spikeMaxDurationSeconds, setSpikeMaxDurationSeconds] = useState(3);
@@ -297,7 +297,7 @@ export const UltrakokiGraph: React.FC<Props> = ({
     const flowP92 = percentileOf(flowValues, 0.92);
     const flowRobustCap = Math.max(0.35, flowP92 * 1.2);
     const flowVisualMax = flowDataMax > 0 ? Math.min(flowDataMax, flowRobustCap) : 1;
-    const safeFlowVisibilityZoom = Math.max(0.5, Math.min(2.5, flowVisibilityZoom));
+    const safeFlowVisibilityZoom = Math.max(0.2, Math.min(1.2, flowVisibilityZoom));
 
     mainLeftMax = mainLeftMax > 0 ? mainLeftMax * 1.12 : 1;
     const flowScaleMax = flowVisualMax > 0 ? (flowVisualMax * 1.08) / safeFlowVisibilityZoom : 1;
@@ -702,19 +702,19 @@ export const UltrakokiGraph: React.FC<Props> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Flow visibility</span>
+              <span className="text-xs text-slate-500">Flow height</span>
               <input
                 type="range"
-                min={0.5}
-                max={2.5}
+                min={0.2}
+                max={1.2}
                 step={0.1}
                 value={flowVisibilityZoom}
                 onChange={(event) => setFlowVisibilityZoom(Number(event.target.value))}
                 className="w-28 accent-teal-600"
               />
-              <span className="w-9 text-right text-xs font-semibold text-slate-700">{flowVisibilityZoom.toFixed(1)}×</span>
+              <span className="w-10 text-right text-xs font-semibold text-slate-700">{Math.round(flowVisibilityZoom * 100)}%</span>
               <button
-                onClick={() => setFlowVisibilityZoom(1)}
+                onClick={() => setFlowVisibilityZoom(0.5)}
                 className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
               >Reset</button>
             </div>

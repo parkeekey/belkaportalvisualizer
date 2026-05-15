@@ -11,6 +11,8 @@ interface ECPoint {
 interface BrewData {
   intervalSeconds: number;
   cumulativePour: number[]; // grams per index
+  pourFlow?: number[];
+  dripFlow?: number[];
 }
 
 interface PhaseLog {
@@ -155,6 +157,13 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [showECOverlay, setShowECOverlay] = useState<boolean>(true);
   const [showPourOverlay, setShowPourOverlay] = useState<boolean>(true);
+  const [showFlowOverlay, setShowFlowOverlay] = useState<boolean>(false);
+  const [showPourFlowSeries, setShowPourFlowSeries] = useState<boolean>(true);
+  const [showDripFlowSeries, setShowDripFlowSeries] = useState<boolean>(true);
+  const [flowVisibilityZoom, setFlowVisibilityZoom] = useState<number>(0.5);
+  const [flowCap, setFlowCap] = useState<number>(10);
+  const [cleanShortFlowSpikes, setCleanShortFlowSpikes] = useState<boolean>(false);
+  const [flowSpikeDurationSeconds, setFlowSpikeDurationSeconds] = useState<number>(3);
   const [showPhaseLog, setShowPhaseLog] = useState<boolean>(true);
   const [phaseMetricVisibility, setPhaseMetricVisibility] = useState({
     peakTDS: true,
@@ -173,6 +182,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   const [phaseSummaryHasManualZoom, setPhaseSummaryHasManualZoom] = useState<boolean>(false);
   const [screenshotBg, setScreenshotBg] = useState<'white' | 'transparent'>('white');
   const [hiddenTargetWindows, setHiddenTargetWindows] = useState<Set<string>>(new Set());
+  const [hiddenTargetMarkers, setHiddenTargetMarkers] = useState<Set<string>>(new Set());
 
   const refractometerAnchor = useMemo(() => {
     if (refractometerTDS == null || !Number.isFinite(refractometerTDS) || refractometerTDS <= 0) {
@@ -249,6 +259,121 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     });
   }, [ecPoints, brewData, doseWeight, factorToUse]);
 
+  const flowOverlayData = useMemo(() => {
+    if (!brewData || brewData.intervalSeconds <= 0) return null;
+
+    const interval = Math.max(0.001, brewData.intervalSeconds);
+    const sampleCount = Math.max(
+      brewData.dripFlow?.length ?? 0,
+      brewData.pourFlow?.length ?? 0,
+      brewData.cumulativePour.length,
+    );
+
+    if (sampleCount < 2) return null;
+
+    const buildPourSeries = (): number[] => {
+      if (Array.isArray(brewData.pourFlow) && brewData.pourFlow.length >= sampleCount) {
+        const values: number[] = [];
+        for (let i = 0; i < sampleCount; i += 1) values.push(Number.isFinite(brewData.pourFlow[i]) ? brewData.pourFlow[i] : 0);
+        return values;
+      }
+
+      const values: number[] = [];
+      for (let i = 0; i < sampleCount; i += 1) {
+        if (i === 0) {
+          values.push(0);
+          continue;
+        }
+        const current = Number.isFinite(brewData.cumulativePour[i]) ? brewData.cumulativePour[i] : brewData.cumulativePour[i - 1] ?? 0;
+        const prev = Number.isFinite(brewData.cumulativePour[i - 1]) ? brewData.cumulativePour[i - 1] : 0;
+        values.push(Math.max(0, (current - prev) / interval));
+      }
+      return values;
+    };
+
+    const buildDripSeries = (): number[] | null => {
+      if (Array.isArray(brewData.dripFlow) && brewData.dripFlow.length >= sampleCount) {
+        const values: number[] = [];
+        for (let i = 0; i < sampleCount; i += 1) values.push(Number.isFinite(brewData.dripFlow[i]) ? brewData.dripFlow[i] : 0);
+        return values;
+      }
+      return null;
+    };
+
+    const capValue = Number.isFinite(flowCap) ? Math.max(0, flowCap) : 0;
+
+    const processFlowSeries = (input: number[]) => {
+      const processed = [...input];
+      const maxSpikeWindow = Math.max(1, Math.min(3, Math.round(flowSpikeDurationSeconds)));
+
+      if (cleanShortFlowSpikes && capValue > 0) {
+        let i = 0;
+        while (i < processed.length) {
+          if (processed[i] <= capValue) {
+            i += 1;
+            continue;
+          }
+
+          const start = i;
+          let end = i;
+          while (end < processed.length && processed[end] > capValue) end += 1;
+
+          const runSeconds = (end - start) * interval;
+          if (runSeconds >= 1 && runSeconds <= maxSpikeWindow) {
+            const left = start > 0 ? Math.min(processed[start - 1], capValue) : null;
+            const right = end < processed.length ? Math.min(processed[end], capValue) : null;
+            for (let j = start; j < end; j += 1) {
+              if (left !== null && right !== null) {
+                const t = (j - start + 1) / (end - start + 1);
+                processed[j] = left * (1 - t) + right * t;
+              } else if (left !== null) {
+                processed[j] = left;
+              } else if (right !== null) {
+                processed[j] = right;
+              } else {
+                processed[j] = capValue;
+              }
+            }
+          }
+
+          i = end;
+        }
+      }
+
+      return capValue > 0 ? processed.map(v => Math.min(v, capValue)) : processed;
+    };
+
+    const pourValues = processFlowSeries(buildPourSeries());
+    const dripRaw = buildDripSeries();
+    const dripValues = dripRaw ? processFlowSeries(dripRaw) : null;
+    const times = Array.from({ length: sampleCount }, (_, index) => index * interval);
+    const positives = [...pourValues, ...(dripValues ?? [])].filter(v => Number.isFinite(v) && v > 0);
+    const flowDataMax = positives.length > 0 ? Math.max(...positives) : 1;
+    const axisMax = Math.max(0.1, flowDataMax);
+    const safeVisibility = Math.max(0.2, Math.min(1.2, flowVisibilityZoom));
+    const exponent = 0.8;
+
+    const atTime = (values: number[], t: number) => {
+      const clamped = Math.max(0, Math.min(t, times[times.length - 1]));
+      const idx = clamped / interval;
+      const lo = Math.max(0, Math.min(values.length - 1, Math.floor(idx)));
+      const hi = Math.max(0, Math.min(values.length - 1, Math.ceil(idx)));
+      if (lo === hi) return values[lo] ?? 0;
+      return lerp(values[lo] ?? 0, values[hi] ?? 0, idx - lo);
+    };
+
+    return {
+      times,
+      pourValues,
+      dripValues,
+      axisMax,
+      exponent,
+      heightScale: safeVisibility,
+      atTimePour: (t: number) => atTime(pourValues, t),
+      atTimeDrip: (t: number) => (dripValues ? atTime(dripValues, t) : null),
+    };
+  }, [brewData, flowCap, cleanShortFlowSpikes, flowSpikeDurationSeconds, flowVisibilityZoom]);
+
   // ── Axis limits ─────────────────────────────────────────────────────────
 
   const { tdsMax, eyMax, timeMax } = useMemo(() => {
@@ -314,6 +439,62 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     const toX = (t: number) => PAD.left + (t / timeMax) * plotW;
     const toYtds = (v: number) => PAD.top + plotH - (v / tdsMax) * plotH;
     const toYey  = (v: number) => PAD.top + plotH - (v / eyMax)  * plotH;
+    const visibleTargetMarkers = (() => {
+      if (!showTargetAssistant || series.length === 0) return [] as Array<{ key: string; idx: number; window: TargetWindow }>;
+
+      const tone = targetMode === 'tds' ? 'rose' : 'amber';
+      const targetValue = targetMode === 'tds' ? targetTDS : targetEY;
+      if (targetValue == null) return [] as Array<{ key: string; idx: number; window: TargetWindow }>;
+
+      const tolerance = targetMode === 'tds'
+        ? Math.max(0.03, targetValue * 0.02)
+        : Math.max(0.25, targetValue * 0.02);
+      const hitIndices: number[] = [];
+      for (let i = 0; i < series.length; i += 1) {
+        const pt = series[i];
+        const metric = targetMode === 'tds' ? pt.tds : pt.ey;
+        if (pt.time >= targetStartAfter && Math.abs(metric - targetValue) <= tolerance) {
+          hitIndices.push(i);
+        }
+      }
+      if (hitIndices.length === 0) return [] as Array<{ key: string; idx: number; window: TargetWindow }>;
+
+      const windows: TargetWindow[] = [];
+      let start = hitIndices[0];
+      let prev = hitIndices[0];
+      for (let i = 1; i <= hitIndices.length; i += 1) {
+        const current = hitIndices[i];
+        const contiguous = current === prev + 1;
+        if (i < hitIndices.length && contiguous) {
+          prev = current;
+          continue;
+        }
+
+        const windowPts = series.slice(start, prev + 1);
+        windows.push({
+          startTime: windowPts[0].time,
+          endTime: windowPts[windowPts.length - 1].time,
+          minEC: Math.min(...windowPts.map((p) => p.ec25)),
+          maxEC: Math.max(...windowPts.map((p) => p.ec25)),
+          minWaterIn: Math.min(...windowPts.map((p) => p.beverageWeight)),
+          maxWaterIn: Math.max(...windowPts.map((p) => p.beverageWeight)),
+        });
+
+        start = current;
+        prev = current;
+      }
+
+      return windows
+        .slice(0, 3)
+        .map((window, idx) => ({ key: `${tone}-${idx}`, idx, window }))
+        .filter((item) => !hiddenTargetMarkers.has(item.key));
+    })();
+    const toYflow = (v: number) => {
+      if (!flowOverlayData) return PAD.top + plotH;
+      const normalized = Math.max(0, Math.min(1, v / flowOverlayData.axisMax));
+      const boosted = Math.pow(normalized, flowOverlayData.exponent);
+      return PAD.top + plotH - boosted * plotH * flowOverlayData.heightScale;
+    };
 
     // ── Phase bands ──────────────────────────────────────────────────────
     if (showPhaseLog) {
@@ -459,6 +640,44 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       ctx.fillText(`EY target ${targetEY.toFixed(1)}%`, PAD.left + plotW - 6, Math.max(PAD.top + 12, yTargetEY - 6));
     }
 
+    // ── Target markers for selected windows ─────────────────────────────
+    if (showTargetAssistant && visibleTargetMarkers.length > 0) {
+      const markerColor = targetMode === 'tds' ? '#e11d48' : '#b45309';
+      const markerY = targetMode === 'tds'
+        ? toYtds(Math.max(0, Math.min(targetTDS ?? 0, tdsMax)))
+        : toYey(Math.max(0, Math.min(targetEY ?? 0, eyMax)));
+
+      visibleTargetMarkers.forEach((entry) => {
+        const markerX = toX((entry.window.startTime + entry.window.endTime) / 2);
+        const markerRadius = 6;
+
+        ctx.strokeStyle = markerColor;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(markerX, markerY, markerRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(markerX, markerY, markerRadius - 1.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = markerColor;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(markerX - 3, markerY);
+        ctx.lineTo(markerX + 3, markerY);
+        ctx.moveTo(markerX, markerY - 3);
+        ctx.lineTo(markerX, markerY + 3);
+        ctx.stroke();
+
+        ctx.fillStyle = markerColor;
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`T${entry.idx + 1}`, markerX + 8, markerY - 8);
+      });
+    }
+
     // ── EC raw overlay ────────────────────────────────────────────────────
     if (showECOverlay && ecPoints.length > 1) {
       const sortedEC = [...ecPoints].sort((a, b) => a.time - b.time);
@@ -510,6 +729,62 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       ctx.fillText(`Pour max ${(pourMax / 1.1).toFixed(0)} g`, PAD.left - 6, PAD.top + 8);
     }
 
+    // ── Flow overlay (separate from TDS/EY curves) ──────────────────────
+    const canDrawPourFlow = !!flowOverlayData && showPourFlowSeries && flowOverlayData.pourValues.length > 1;
+    const canDrawDripFlow = !!flowOverlayData && showDripFlowSeries && !!flowOverlayData.dripValues && flowOverlayData.dripValues.length > 1;
+    if (showFlowOverlay && flowOverlayData && (canDrawPourFlow || canDrawDripFlow)) {
+      const drawFlowSeries = (values: number[], lineColor: string, barColor: string) => {
+        const points: Array<{ x: number; y: number }> = [];
+        for (let i = 0; i < values.length; i += 1) {
+          const t = flowOverlayData.times[i] ?? 0;
+          if (t > timeMax) break;
+          const x = toX(t);
+          const y = toYflow(values[i] ?? 0);
+          points.push({ x, y });
+        }
+
+        if (points.length <= 1) return;
+
+        const baselineY = PAD.top + plotH;
+        const barWidth = Math.max(2, (plotW / Math.max(1, points.length - 1)) * 0.52);
+
+        ctx.fillStyle = barColor;
+        for (let i = 0; i < points.length; i += 1) {
+          const point = points[i];
+          const flowValue = values[i] ?? 0;
+          if (!Number.isFinite(flowValue) || flowValue <= 0) continue;
+          ctx.fillRect(point.x - barWidth / 2, point.y, barWidth, baselineY - point.y);
+        }
+
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        let started = false;
+        points.forEach(({ x, y }) => {
+          if (!started) {
+            ctx.moveTo(x, y);
+            started = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.stroke();
+      };
+
+      if (canDrawPourFlow) {
+        drawFlowSeries(flowOverlayData.pourValues, '#0ea5e9', 'rgba(14, 165, 233, 0.45)');
+      }
+      if (canDrawDripFlow && flowOverlayData.dripValues) {
+        drawFlowSeries(flowOverlayData.dripValues, '#14b8a6', 'rgba(20, 184, 166, 0.38)');
+      }
+
+      ctx.fillStyle = '#0f766e';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Flow max ${flowOverlayData.axisMax.toFixed(1)} g/s`, PAD.left + plotW + 6, PAD.top + 22);
+    }
+
     // ── Red Light vertical marker ─────────────────────────────────────────
     if (showRedLight && redLightTime != null && redLightTime >= 0 && redLightTime <= timeMax) {
       const redX = toX(redLightTime);
@@ -559,6 +834,17 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
         `Pour = ${pt.beverageWeight.toFixed(1)} g (${waterInPercentBase != null && waterInPercentBase > 0 ? `${((pt.beverageWeight / waterInPercentBase) * 100).toFixed(1)}%` : 'n/a'})`,
         `EY = ${pt.ey.toFixed(1)}%`,
       ];
+      if (showFlowOverlay && flowOverlayData) {
+        const includePourFlow = showPourFlowSeries;
+        const includeDripFlow = showDripFlowSeries;
+        if (includePourFlow) {
+          lines.push(`Pour flow = ${flowOverlayData.atTimePour(pt.time).toFixed(2)} g/s`);
+        }
+        if (includeDripFlow) {
+          const dripValue = flowOverlayData.atTimeDrip(pt.time);
+          if (dripValue != null) lines.push(`Drip rate = ${dripValue.toFixed(2)} g/s`);
+        }
+      }
       const boxW = 162, lineH = 16, boxH = lines.length * lineH + 10;
       let bx = hx + 10;
       if (bx + boxW > PAD.left + plotW) bx = hx - boxW - 10;
@@ -591,6 +877,10 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     }
     if (showECOverlay) legend.push({ color: '#7c3aed', label: 'EC (mS/cm)', dash: [6, 3] });
     if (showPourOverlay && brewData) legend.push({ color: '#2563eb', label: 'Water-in (g)', dash: [3, 3] });
+    if (showFlowOverlay && flowOverlayData) {
+      if (showPourFlowSeries) legend.push({ color: '#0ea5e9', label: 'Pour flow (g/s) overlay' });
+      if (showDripFlowSeries && flowOverlayData.dripValues) legend.push({ color: '#14b8a6', label: 'Drip rate (g/s) overlay' });
+    }
     let lx = PAD.left;
     legend.forEach(({ color, label, dash }) => {
       ctx.strokeStyle = color;
@@ -605,7 +895,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       lx += ctx.measureText(label).width + 52;
     });
 
-  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showECOverlay, showPourOverlay, showPhaseLog, showTargetAssistant, targetMode, targetTDS, targetEY, ecPoints, brewData, waterInPercentBase, showRedLight, redLightTime]);
+  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showECOverlay, showPourOverlay, showFlowOverlay, showPourFlowSeries, showDripFlowSeries, showPhaseLog, showTargetAssistant, targetMode, targetTDS, targetEY, targetStartAfter, ecPoints, brewData, waterInPercentBase, showRedLight, redLightTime, flowOverlayData, hiddenTargetMarkers]);
 
   // ── Hover handler ────────────────────────────────────────────────────────
 
@@ -816,7 +1106,14 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
 
           const windowKey = `${tone}-${idx}`;
           const isHidden = hiddenTargetWindows.has(windowKey);
+          const isMarkerHidden = hiddenTargetMarkers.has(windowKey);
           const toggleHidden = () => setHiddenTargetWindows(prev => {
+            const next = new Set(prev);
+            if (next.has(windowKey)) next.delete(windowKey);
+            else next.add(windowKey);
+            return next;
+          });
+          const toggleMarker = () => setHiddenTargetMarkers(prev => {
             const next = new Set(prev);
             if (next.has(windowKey)) next.delete(windowKey);
             else next.add(windowKey);
@@ -839,6 +1136,18 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <label
+                    className="inline-flex items-center gap-1.5 rounded-md border border-white/80 bg-white/80 px-2 py-1 text-[11px] font-semibold text-slate-700"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!isMarkerHidden}
+                      onChange={toggleMarker}
+                      className="h-3.5 w-3.5"
+                    />
+                    Show on graph
+                  </label>
                   <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${palette.label}`}>
                     Match Range
                   </span>
@@ -976,6 +1285,13 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
               Water-in {showPourOverlay && brewData ? '✓' : '–'}
             </button>
             <button
+              onClick={() => setShowFlowOverlay(v => !v)}
+              disabled={!brewData}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showFlowOverlay && brewData ? 'bg-sky-200 text-sky-900' : 'bg-white/20 text-white/60'}`}
+            >
+              Flow Overlay {showFlowOverlay && brewData ? '✓' : '–'}
+            </button>
+            <button
               onClick={() => setShowTargetAssistant(v => !v)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showTargetAssistant ? 'bg-rose-200 text-rose-900' : 'bg-white/20 text-white/70'}`}
             >
@@ -997,6 +1313,82 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
           </div>
         </div>
       </div>
+
+      {showFlowOverlay && brewData && (
+        <div className="px-4 py-3 border-b border-slate-100 bg-sky-50/50">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1">
+              <button
+                onClick={() => setShowPourFlowSeries((v) => !v)}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showPourFlowSeries ? 'bg-sky-100 text-sky-800' : 'text-slate-500 hover:bg-slate-100'}`}
+                title="Show/hide pour flow overlay"
+              >
+                Pour {showPourFlowSeries ? '✓' : '–'}
+              </button>
+              <button
+                onClick={() => setShowDripFlowSeries((v) => !v)}
+                disabled={!flowOverlayData?.dripValues}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showDripFlowSeries && flowOverlayData?.dripValues ? 'bg-teal-100 text-teal-800' : 'text-slate-500 hover:bg-slate-100'} ${!flowOverlayData?.dripValues ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={flowOverlayData?.dripValues ? 'Show/hide drip rate overlay' : 'No drip data available'}
+              >
+                Drip {showDripFlowSeries && flowOverlayData?.dripValues ? '✓' : '–'}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-600">Flow height</span>
+              <input
+                type="range"
+                min={0.2}
+                max={1.2}
+                step={0.1}
+                value={flowVisibilityZoom}
+                onChange={(event) => setFlowVisibilityZoom(Number(event.target.value))}
+                className="w-28 accent-sky-600"
+              />
+              <span className="w-10 text-right text-xs font-semibold text-slate-700">{Math.round(flowVisibilityZoom * 100)}%</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-600">Flow cap (g/s)</span>
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                value={flowCap}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setFlowCap(Number.isFinite(next) ? Math.max(0, next) : 0);
+                }}
+                className="w-20 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+              />
+              <span className="text-[11px] text-slate-500">0 = no cap</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={cleanShortFlowSpikes}
+                  onChange={(event) => setCleanShortFlowSpikes(event.target.checked)}
+                  className="h-3.5 w-3.5"
+                />
+                Clean short spikes &gt; cap
+              </label>
+              <select
+                value={flowSpikeDurationSeconds}
+                onChange={(event) => setFlowSpikeDurationSeconds(Number(event.target.value))}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+                title="Remove above-cap spikes up to this duration"
+              >
+                <option value={1}>1s</option>
+                <option value={2}>2s</option>
+                <option value={3}>3s</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="px-4 py-3 border-b border-slate-100 bg-white">
         <div className="flex flex-wrap items-center gap-4">

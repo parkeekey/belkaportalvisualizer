@@ -4676,6 +4676,8 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     brewData={effectivePourData ? {
                       cumulativePour: effectivePourData.values,
                       intervalSeconds: effectivePourData.intervalSeconds,
+                      pourFlow: ultrakokiBrewData?.pourFlow,
+                      dripFlow: ultrakokiBrewData?.dripFlow,
                     } : null}
                     phaseLogs={phaseLogs}
                     redLightTime={redLightTime}

@@ -155,6 +155,8 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   const [baseWidth, setBaseWidth] = useState(800);
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [showTDSCurve, setShowTDSCurve] = useState<boolean>(true);
+  const [showEYCurve, setShowEYCurve] = useState<boolean>(true);
   const [showECOverlay, setShowECOverlay] = useState<boolean>(true);
   const [showPourOverlay, setShowPourOverlay] = useState<boolean>(true);
   const [showFlowOverlay, setShowFlowOverlay] = useState<boolean>(false);
@@ -564,50 +566,58 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     ctx.strokeRect(PAD.left, PAD.top, plotW, plotH);
 
     // Axis labels
-    ctx.save();
-    ctx.translate(14, PAD.top + plotH / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillStyle = '#10b981';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('TDS %', 0, 0);
-    ctx.restore();
+    if (showTDSCurve) {
+      ctx.save();
+      ctx.translate(14, PAD.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('TDS %', 0, 0);
+      ctx.restore();
+    }
 
-    ctx.save();
-    ctx.translate(width - 14, PAD.top + plotH / 2);
-    ctx.rotate(Math.PI / 2);
-    ctx.fillStyle = '#d97706';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('EY %', 0, 0);
-    ctx.restore();
+    if (showEYCurve) {
+      ctx.save();
+      ctx.translate(width - 14, PAD.top + plotH / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.fillStyle = '#d97706';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('EY %', 0, 0);
+      ctx.restore();
+    }
 
     // ── EY line ──────────────────────────────────────────────────────────
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    series.forEach((pt, i) => {
-      const x = toX(pt.time);
-      const y = toYey(pt.ey);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+    if (showEYCurve) {
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      series.forEach((pt, i) => {
+        const x = toX(pt.time);
+        const y = toYey(pt.ey);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
 
     // ── TDS line ─────────────────────────────────────────────────────────
-    ctx.strokeStyle = '#10b981';
-    ctx.lineWidth = 2.5;
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    series.forEach((pt, i) => {
-      const x = toX(pt.time);
-      const y = toYtds(pt.tds);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+    if (showTDSCurve) {
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2.5;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      series.forEach((pt, i) => {
+        const x = toX(pt.time);
+        const y = toYtds(pt.tds);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
 
     // ── Target TDS guide line ────────────────────────────────────────────
-    if (showTargetAssistant && targetMode === 'tds' && targetTDS != null) {
+    if (showTargetAssistant && showTDSCurve && targetMode === 'tds' && targetTDS != null) {
       const yTarget = toYtds(Math.max(0, Math.min(targetTDS, tdsMax)));
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 1.5;
@@ -624,7 +634,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     }
 
     // ── Target EY guide line ─────────────────────────────────────────────
-    if (showTargetAssistant && targetMode === 'ey' && targetEY != null) {
+    if (showTargetAssistant && showEYCurve && targetMode === 'ey' && targetEY != null) {
       const yTargetEY = toYey(Math.max(0, Math.min(targetEY, eyMax)));
       ctx.strokeStyle = '#b45309';
       ctx.lineWidth = 1.5;
@@ -641,7 +651,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     }
 
     // ── Target markers for selected windows ─────────────────────────────
-    if (showTargetAssistant && visibleTargetMarkers.length > 0) {
+    if (showTargetAssistant && visibleTargetMarkers.length > 0 && ((targetMode === 'tds' && showTDSCurve) || (targetMode === 'ey' && showEYCurve))) {
       const markerColor = targetMode === 'tds' ? '#e11d48' : '#b45309';
       const markerY = targetMode === 'tds'
         ? toYtds(Math.max(0, Math.min(targetTDS ?? 0, tdsMax)))
@@ -816,24 +826,28 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       ctx.beginPath(); ctx.moveTo(hx, PAD.top); ctx.lineTo(hx, PAD.top + plotH); ctx.stroke();
       ctx.setLineDash([]);
       // TDS dot
-      ctx.fillStyle = '#10b981';
-      ctx.beginPath();
-      ctx.arc(hx, toYtds(pt.tds), 4, 0, Math.PI * 2);
-      ctx.fill();
+      if (showTDSCurve) {
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(hx, toYtds(pt.tds), 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
       // EY dot
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.arc(hx, toYey(pt.ey), 4, 0, Math.PI * 2);
-      ctx.fill();
+      if (showEYCurve) {
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(hx, toYey(pt.ey), 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
       // tooltip box
       const lines = [
         `t = ${formatClock(pt.time)}`,
         `EC = ${pt.ec.toFixed(2)} mS/cm${pt.temperature != null ? ` @ ${pt.temperature.toFixed(1)}°C` : ''}`,
         `EC₂₅ = ${pt.ec25.toFixed(2)} mS/cm`,
-        `TDS = ${pt.tds.toFixed(2)}%`,
         `Pour = ${pt.beverageWeight.toFixed(1)} g (${waterInPercentBase != null && waterInPercentBase > 0 ? `${((pt.beverageWeight / waterInPercentBase) * 100).toFixed(1)}%` : 'n/a'})`,
-        `EY = ${pt.ey.toFixed(1)}%`,
       ];
+      if (showTDSCurve) lines.push(`TDS = ${pt.tds.toFixed(2)}%`);
+      if (showEYCurve) lines.push(`EY = ${pt.ey.toFixed(1)}%`);
       if (showFlowOverlay && flowOverlayData) {
         const includePourFlow = showPourFlowSeries;
         const includeDripFlow = showDripFlowSeries;
@@ -856,20 +870,19 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       ctx.font = '11px monospace';
       ctx.textAlign = 'left';
       lines.forEach((line, i) => {
-        ctx.fillStyle = i === 3 ? '#6ee7b7' : i === 5 ? '#fcd34d' : '#e2e8f0';
+        ctx.fillStyle = line.startsWith('TDS =') ? '#6ee7b7' : line.startsWith('EY =') ? '#fcd34d' : '#e2e8f0';
         ctx.fillText(line, bx + 8, by + 16 + i * lineH);
       });
     }
 
     // ── Legend ───────────────────────────────────────────────────────────
-    const legend: { color: string; label: string; dash?: number[] }[] = [
-      { color: '#10b981', label: 'TDS %' },
-      { color: '#f59e0b', label: `EY % (dose ${doseWeight.toFixed(1)} g)` },
-    ];
-    if (showTargetAssistant && targetMode === 'tds' && targetTDS != null) {
+    const legend: { color: string; label: string; dash?: number[] }[] = [];
+    if (showTDSCurve) legend.push({ color: '#10b981', label: 'TDS %' });
+    if (showEYCurve) legend.push({ color: '#f59e0b', label: `EY % (dose ${doseWeight.toFixed(1)} g)` });
+    if (showTargetAssistant && showTDSCurve && targetMode === 'tds' && targetTDS != null) {
       legend.push({ color: '#ef4444', label: `Target TDS ${targetTDS.toFixed(2)}%`, dash: [8, 4] });
     }
-    if (showTargetAssistant && targetMode === 'ey' && targetEY != null) {
+    if (showTargetAssistant && showEYCurve && targetMode === 'ey' && targetEY != null) {
       legend.push({ color: '#b45309', label: `Target EY ${targetEY.toFixed(1)}%`, dash: [4, 4] });
     }
     if (showRedLight && redLightTime != null) {
@@ -895,7 +908,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       lx += ctx.measureText(label).width + 52;
     });
 
-  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showECOverlay, showPourOverlay, showFlowOverlay, showPourFlowSeries, showDripFlowSeries, showPhaseLog, showTargetAssistant, targetMode, targetTDS, targetEY, targetStartAfter, ecPoints, brewData, waterInPercentBase, showRedLight, redLightTime, flowOverlayData, hiddenTargetMarkers]);
+  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showTDSCurve, showEYCurve, showECOverlay, showPourOverlay, showFlowOverlay, showPourFlowSeries, showDripFlowSeries, showPhaseLog, showTargetAssistant, targetMode, targetTDS, targetEY, targetStartAfter, ecPoints, brewData, waterInPercentBase, showRedLight, redLightTime, flowOverlayData, hiddenTargetMarkers]);
 
   // ── Hover handler ────────────────────────────────────────────────────────
 
@@ -1271,6 +1284,18 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setShowTDSCurve(v => !v)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showTDSCurve ? 'bg-emerald-200 text-emerald-900' : 'bg-white/20 text-white/70'}`}
+            >
+              TDS {showTDSCurve ? '✓' : '–'}
+            </button>
+            <button
+              onClick={() => setShowEYCurve(v => !v)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showEYCurve ? 'bg-amber-200 text-amber-900' : 'bg-white/20 text-white/70'}`}
+            >
+              EY {showEYCurve ? '✓' : '–'}
+            </button>
             <button
               onClick={() => setShowECOverlay(v => !v)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showECOverlay ? 'bg-violet-200 text-violet-900' : 'bg-white/20 text-white/70'}`}

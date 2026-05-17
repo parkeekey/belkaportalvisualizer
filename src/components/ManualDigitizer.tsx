@@ -89,6 +89,7 @@ export interface ManualDigitizerHandle {
 
 const MIN_SCREENSHOT_ZOOM = 0.5;
 const MAX_SCREENSHOT_ZOOM = 2.5;
+const RED_LIGHT_EC_COMPARISON_TOLERANCE = 0.005;
 
 const normalizeImportedScreenshotZoom = (value: unknown): number => {
   const numeric = typeof value === 'number' ? value : Number(value);
@@ -235,6 +236,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
   const [showRedLight, setShowRedLight] = useState<boolean>(false);
   const [redLightTimeThreshold, setRedLightTimeThreshold] = useState<number>(60);
   const [redLightECThreshold, setRedLightECThreshold] = useState<number>(3.0);
+  const [redLightECThresholdInput, setRedLightECThresholdInput] = useState<string>('3.0');
   const [savedCalibrationProfiles, setSavedCalibrationProfiles] = useState<SavedCalibrationProfile[]>([]);
   const [selectedCalibrationProfile, setSelectedCalibrationProfile] = useState<string>('');
   const [showSaveProfileForm, setShowSaveProfileForm] = useState<boolean>(false);
@@ -275,6 +277,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
   const [importedJsonText, setImportedJsonText] = useState<string>('');
   const [importedJsonLabel, setImportedJsonLabel] = useState<string | null>(null);
   const [ultrakokiBrewData, setUltrakokiBrewData] = useState<UltrakokiBrewData | null>(null);
+  const [ultrakokiImportWarning, setUltrakokiImportWarning] = useState<string | null>(null);
   const [doseWeight, setDoseWeight] = useState<number>(() => {
     const saved = localStorage.getItem('belkaDoseWeight');
     return saved ? (parseFloat(saved) || 15) : 15;
@@ -365,6 +368,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       setShowRedLight(Boolean(profile.showRedLight));
       setRedLightTimeThreshold(Number.isFinite(profile.redLightTimeThreshold) ? profile.redLightTimeThreshold : 60);
       setRedLightECThreshold(Number.isFinite(profile.redLightECThreshold) ? profile.redLightECThreshold : 3);
+      setRedLightECThresholdInput(Number.isFinite(profile.redLightECThreshold) ? String(profile.redLightECThreshold) : '3');
       setAutoDetectPreference(Boolean(profile.autoDetectPreference));
       setAutoGenerateAfterDetectPreference(Boolean(profile.autoGenerateAfterDetectPreference));
       setPhaseLogs(Array.isArray(profile.phaseLogs) ? profile.phaseLogs : []);
@@ -376,6 +380,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       setImportedJsonText(profile.importedJsonText ?? '');
       setImportedJsonLabel(profile.importedJsonLabel ?? null);
       setUltrakokiBrewData(profile.ultrakokiBrewData ?? null);
+      setUltrakokiImportWarning(null);
       setDoseWeight(Number.isFinite(profile.doseWeight) ? profile.doseWeight : 15);
       setBrewRatio(Number.isFinite(profile.brewRatio) ? profile.brewRatio : 15);
       setTotalWaterIn(Number.isFinite(profile.totalWaterIn) ? profile.totalWaterIn : 225);
@@ -699,31 +704,21 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
   }, [getCurrentData, redLightTimeThreshold]);
 
   const redLightThresholdTooLow = redLightDataStats.minAfterTimeThreshold !== null
-    && redLightECThreshold < redLightDataStats.minAfterTimeThreshold;
+    && (redLightECThreshold + RED_LIGHT_EC_COMPARISON_TOLERANCE) < redLightDataStats.minAfterTimeThreshold;
 
   const applyMinimumDetectableRedLightThreshold = useCallback(() => {
     if (redLightDataStats.minAfterTimeThreshold === null) return;
-    setRedLightECThreshold(Number(redLightDataStats.minAfterTimeThreshold.toFixed(2)));
+    setRedLightECThreshold(redLightDataStats.minAfterTimeThreshold);
+    setRedLightECThresholdInput(redLightDataStats.minAfterTimeThreshold.toFixed(2));
   }, [redLightDataStats.minAfterTimeThreshold]);
 
-  const setSafeRedLightECThreshold = useCallback((rawValue: number) => {
-    const clamped = Number.isFinite(rawValue) ? Math.max(0, Math.min(50, rawValue)) : 0;
-    const minDetectable = redLightDataStats.minAfterTimeThreshold;
-    const minSafe = minDetectable !== null ? Number(minDetectable.toFixed(2)) : null;
-    const safeValue = minSafe !== null ? Math.max(clamped, minSafe) : clamped;
-    setRedLightECThreshold(Number(safeValue.toFixed(2)));
-  }, [redLightDataStats.minAfterTimeThreshold]);
-
-  useEffect(() => {
-    if (currentStep !== 'extract') return;
-    const minDetectable = redLightDataStats.minAfterTimeThreshold;
-    if (minDetectable === null) return;
-
-    const minSafe = Number(minDetectable.toFixed(2));
-    if (redLightECThreshold < minSafe) {
-      setRedLightECThreshold(minSafe);
+  const handleRedLightECThresholdChange = useCallback((rawValue: string) => {
+    setRedLightECThresholdInput(rawValue);
+    const parsed = Number(rawValue);
+    if (Number.isFinite(parsed)) {
+      setRedLightECThreshold(parsed);
     }
-  }, [currentStep, redLightDataStats.minAfterTimeThreshold, redLightECThreshold]);
+  }, []);
 
   const getSortedCurrentData = useCallback((): DataPoint[] => {
     return [...getCurrentData()].sort((a, b) => a.time - b.time);
@@ -2342,7 +2337,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     
     // Find first point where EC <= threshold (already filtered for time)
     for (const point of sortedData) {
-      if (point.ecValue <= redLightECThreshold) {
+      if (point.ecValue <= redLightECThreshold + RED_LIGHT_EC_COMPARISON_TOLERANCE) {
         console.log('Found Red Light point:', point);
         setRedLightTime(point.time);
         setShowRedLight(true); // Always show when calculated
@@ -2375,7 +2370,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     }
     
     for (const point of filtered) {
-      if (point.ecValue <= redLightECThreshold) {
+      if (point.ecValue <= redLightECThreshold + RED_LIGHT_EC_COMPARISON_TOLERANCE) {
         console.log('✅ Found red light at', point.time, 'EC:', point.ecValue);
         setRedLightTime(point.time);
         setShowRedLight(true);
@@ -2684,6 +2679,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       let importedPoints: DataPoint[] = [];
       let importedLabel = 'Imported JSON';
       let importedBrewData: UltrakokiBrewData | null = null;
+      let ultrakokiImportWarning: string | null = null;
 
       if (Array.isArray(parsed)) {
         importedPoints = parsed
@@ -2797,6 +2793,10 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
             dripFlow,
             cumulativePour,
           };
+
+          if (candidate !== outer) {
+            ultrakokiImportWarning = 'Warning: The Ultrakoki JSON file may be incomplete or corrupt. It was loaded from a nested wrapper payload.';
+          }
           break;
         }
       }
@@ -2804,6 +2804,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       if (importedBrewData) {
         setUltrakokiBrewData(importedBrewData);
         setImportedJsonLabel(importedLabel);
+        setUltrakokiImportWarning(ultrakokiImportWarning);
         if (closePromptOnSuccess) setShowJsonImportPrompt(false);
         setImportedJsonText('');
         setError(null);
@@ -2811,7 +2812,8 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       }
 
       if (importedPoints.length < 2) {
-        setError('Could not find a supported import in this JSON. Expected either an EC point array or an Ultrakoki brewingLog with pour data.');
+        setUltrakokiImportWarning('Import file warning: Could not find a supported import in this JSON. Expected either an EC point array or an Ultrakoki brewingLog with pour data.');
+        setError(null);
         return;
       }
 
@@ -2827,6 +2829,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       setFineGeneratedCurve([]);
       setViewMode('original');
       setImportedJsonLabel(importedLabel);
+      setUltrakokiImportWarning(null);
       setCurrentStep('extract');
       if (closePromptOnSuccess) setShowJsonImportPrompt(false);
       setImportedJsonText('');
@@ -2834,11 +2837,17 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       onDataExtracted(mappedPoints);
     } catch (err) {
       console.error('Failed to import JSON:', err);
-      setError('Invalid JSON. Paste a full JSON object or point-array export.');
+      setUltrakokiImportWarning('Import file warning: Invalid JSON. Paste a full JSON object or point-array export.');
+      setError(null);
     }
   }, [onDataExtracted, calibrationPoints, dataToCanvas]);
 
   const importJsonData = useCallback(() => {
+    if (importedJsonText.trim().length === 0) {
+      setUltrakokiImportWarning('Import file warning: Choose a .json file or paste JSON before importing.');
+      setError(null);
+      return;
+    }
     importJsonPayload(importedJsonText, true);
   }, [importJsonPayload, importedJsonText]);
 
@@ -3271,27 +3280,29 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
             </div>
           )}
 
-          <div ref={ultrakokiSectionRef} className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div ref={ultrakokiSectionRef} className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-sm font-semibold text-amber-900">Ultrakoki Graph Sandbox</div>
-                <p className="text-sm text-amber-800">
+                <div className="text-xs font-semibold uppercase tracking-wide text-amber-900">Ultrakoki Graph Sandbox</div>
+                <p className="text-xs text-amber-800">
                   Open Ultrakoki brew first so we can iterate on the custom graph layout in-app without touching calibration or JSON import.
                 </p>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 <button
                   onClick={() => {
                     setUltrakokiBrewData(buildPreviewUltrakokiBrewData());
                     setImportedJsonLabel('Preview brew / mock Ultrakoki data');
+                    setUltrakokiImportWarning(null);
                   }}
-                  className={`rounded-lg border px-4 py-2 text-sm font-medium ${ultrakokiBrewData ? 'border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700' : 'border-amber-300 bg-white text-amber-900 hover:bg-amber-100'}`}
+                  className={`rounded-md border px-3 py-2 text-sm font-medium ${ultrakokiBrewData ? 'border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700' : 'border-amber-300 bg-white text-amber-900 hover:bg-amber-100'}`}
                 >
                   {ultrakokiBrewData ? 'Ultrakoki Graph Loaded' : 'Load Ultrakoki Graph'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setShowJsonImportPrompt(true)}
-                  className="rounded-lg border border-slate-300 bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-950"
+                  className="rounded-md border border-slate-300 bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-950"
                 >
                   Import Ultrakoki JSON
                 </button>
@@ -3299,21 +3310,28 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                   <button
                     onClick={() => {
                       setUltrakokiBrewData(null);
+                      setUltrakokiImportWarning(null);
                       if (importedJsonLabel === 'Preview brew / mock Ultrakoki data') {
                         setImportedJsonLabel(null);
                       }
                     }}
-                    className="rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                    className="rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                   >
                     Hide Graph
                   </button>
                 )}
               </div>
             </div>
+            {ultrakokiImportWarning && (
+              <div className="mt-2 rounded-md border border-amber-300 bg-amber-100 px-3 py-2 text-xs text-amber-900">
+                <div className="font-semibold">Import file warning</div>
+                <div className="mt-0.5">{ultrakokiImportWarning}</div>
+              </div>
+            )}
           </div>
 
           {ultrakokiBrewData && (
-            <div className="mb-6">
+            <div className="mb-4">
               <UltrakokiGraph
                 data={ultrakokiBrewData}
                 comparisonCurve={getCurrentData().map(point => ({
@@ -3504,6 +3522,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                   <div className="mt-3 pt-3 border-t border-green-200">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <button
+                        type="button"
                         onClick={() => {
                           setUltrakokiBrewData(buildPreviewUltrakokiBrewData());
                           setImportedJsonLabel('Preview brew / mock Ultrakoki data');
@@ -3513,6 +3532,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                         {ultrakokiBrewData ? 'Ultrakoki Graph Loaded' : 'Load Ultrakoki Graph'}
                       </button>
                       <button
+                        type="button"
                         onClick={() => setShowJsonImportPrompt(true)}
                         className="py-2.5 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-900 text-sm flex items-center justify-center gap-2"
                       >
@@ -3976,44 +3996,44 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
               {/* Red Light Control */}
               {currentStep === 'extract' && getCurrentData().length > 0 && (
-                <div className="mb-4 rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-rose-50 p-4 shadow-sm">
-                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                <div className="mb-3 rounded-lg border border-red-200 bg-gradient-to-br from-red-50 to-rose-50 p-3 shadow-sm">
+                  <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <div className="text-sm font-semibold uppercase tracking-wide text-red-700">Red Light Detection</div>
-                      <div className="mt-1 text-xs text-red-800">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-red-700">Red Light Detection</div>
+                      <div className="mt-0.5 text-xs text-red-800">
                         Auto-detects the first point after your time threshold where EC falls below the selected threshold.
                       </div>
                     </div>
                     <button
                       onClick={calculateRedLight}
-                      className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                      className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
                     >
                       Recalculate
                     </button>
                   </div>
 
-                  <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div className="rounded-lg border border-red-200 bg-white/80 p-3">
+                  <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-3">
+                    <div className="rounded-md border border-red-200 bg-white/80 p-2.5">
                       <div className="text-xs font-medium text-gray-500">Detected Red Light</div>
-                      <div className="mt-1 text-base font-semibold text-gray-900">
+                      <div className="mt-0.5 text-sm font-semibold text-gray-900">
                         {redLightTime !== null ? `${formatTime(redLightTime)} (${formatRawSeconds(redLightTime)}s)` : 'Not found'}
                       </div>
                     </div>
-                    <div className="rounded-lg border border-red-200 bg-white/80 p-3">
+                    <div className="rounded-md border border-red-200 bg-white/80 p-2.5">
                       <div className="text-xs font-medium text-gray-500">Lowest EC (profile)</div>
-                      <div className="mt-1 text-base font-semibold text-gray-900">
+                      <div className="mt-0.5 text-sm font-semibold text-gray-900">
                         {redLightDataStats.minEC !== null ? redLightDataStats.minEC.toFixed(2) : 'n/a'}
                       </div>
                     </div>
-                    <div className="rounded-lg border border-red-200 bg-white/80 p-3">
+                    <div className="rounded-md border border-red-200 bg-white/80 p-2.5">
                       <div className="text-xs font-medium text-gray-500">Lowest EC after {redLightTimeThreshold}s</div>
-                      <div className="mt-1 text-base font-semibold text-gray-900">
+                      <div className="mt-0.5 text-sm font-semibold text-gray-900">
                         {redLightDataStats.minAfterTimeThreshold !== null ? redLightDataStats.minAfterTimeThreshold.toFixed(2) : 'n/a'}
                       </div>
                     </div>
                   </div>
 
-                  <div className="mb-3 flex flex-wrap items-center gap-4">
+                  <div className="mb-2 flex flex-wrap items-center gap-3">
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                       <input
                         type="checkbox"
@@ -4027,13 +4047,13 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       type="button"
                       onClick={applyMinimumDetectableRedLightThreshold}
                       disabled={redLightDataStats.minAfterTimeThreshold === null}
-                      className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-md border border-red-300 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Use lowest detectable EC ({redLightDataStats.minAfterTimeThreshold !== null ? redLightDataStats.minAfterTimeThreshold.toFixed(2) : 'n/a'})
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-700">
                         Time Threshold (seconds)
@@ -4055,16 +4075,11 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                         EC Threshold
                       </label>
                       <input
-                        type="number"
-                        value={redLightECThreshold}
-                        onChange={(e) => {
-                          const next = Number(e.target.value);
-                          setSafeRedLightECThreshold(next);
-                        }}
+                        type="text"
+                        inputMode="decimal"
+                        value={redLightECThresholdInput}
+                        onChange={(e) => handleRedLightECThresholdChange(e.target.value)}
                         className={`w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${redLightThresholdTooLow ? 'border-amber-400 focus:ring-amber-500' : 'border-gray-300 focus:ring-red-500'}`}
-                        min="0"
-                        max="50"
-                        step="0.1"
                       />
                     </div>
                   </div>
@@ -4575,7 +4590,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                 </div>
               )}
 
-              {showJsonImportPrompt && (
+              {showJsonImportPrompt && selectedImage && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
                   <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
                     {/* Header */}
@@ -4612,6 +4627,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                             reader.onload = (ev) => {
                               const text = ev.target?.result as string ?? '';
                               setImportedJsonText(text);
+                              setUltrakokiImportWarning(null);
                             };
                             reader.readAsText(file);
                             e.target.value = '';
@@ -4631,7 +4647,10 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     <div className="px-5">
                       <textarea
                         value={importedJsonText}
-                        onChange={(e) => setImportedJsonText(e.target.value)}
+                        onChange={(e) => {
+                          setImportedJsonText(e.target.value);
+                          setUltrakokiImportWarning(null);
+                        }}
                         placeholder='{ "json": { "brewingLog": { "adc1": [...], "size": [...], "bsize": [...], "period": 127 } } }'
                         rows={8}
                         className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
@@ -4646,20 +4665,27 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                           </button>
                         </div>
                       )}
+                      {ultrakokiImportWarning && (
+                        <div className="mt-2 rounded-md border border-amber-300 bg-amber-100 px-3 py-2 text-xs text-amber-900">
+                          <div className="font-semibold">Import file warning</div>
+                          <div className="mt-0.5">{ultrakokiImportWarning}</div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Footer */}
                     <div className="px-5 py-4 flex gap-2 justify-end">
                       <button
+                        type="button"
                         onClick={() => { setShowJsonImportPrompt(false); setImportedJsonText(''); }}
                         className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                       >
                         Cancel
                       </button>
                       <button
+                        type="button"
                         onClick={importJsonData}
-                        disabled={importedJsonText.trim().length === 0}
-                        className="px-5 py-2 text-sm font-semibold bg-slate-800 text-white rounded-lg hover:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="px-5 py-2 text-sm font-semibold bg-slate-800 text-white rounded-lg hover:bg-slate-900"
                       >
                         Import
                       </button>
@@ -4924,6 +4950,107 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     </button>
                   </>
                 )}
+              </div>
+            </div>
+          )}
+
+          {showJsonImportPrompt && !selectedImage && (
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900">Import Ultrakoki JSON</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Load Ultrakoki brew timing/flow now. You can add screenshot calibration later.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setShowJsonImportPrompt(false); setImportedJsonText(''); }}
+                    className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="px-5 pt-4">
+                  <label className="flex items-center gap-3 w-full border-2 border-dashed border-slate-300 rounded-lg px-4 py-3 cursor-pointer hover:border-slate-500 hover:bg-slate-50 transition-colors">
+                    <span className="text-2xl">📂</span>
+                    <div>
+                      <div className="text-sm font-medium text-slate-700">Upload a .json file</div>
+                      <div className="text-xs text-slate-400">Replaces anything pasted below</div>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".json,application/json"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const text = ev.target?.result as string ?? '';
+                          setImportedJsonText(text);
+                          setUltrakokiImportWarning(null);
+                        };
+                        reader.readAsText(file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-3 px-5 py-3">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400 font-medium">or paste</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+
+                <div className="px-5">
+                  <textarea
+                    value={importedJsonText}
+                    onChange={(e) => {
+                      setImportedJsonText(e.target.value);
+                      setUltrakokiImportWarning(null);
+                    }}
+                    placeholder='{ "json": { "brewingLog": { "adc1": [...], "size": [...], "bsize": [...], "period": 127 } } }'
+                    rows={8}
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                  />
+                  {importedJsonText.length > 0 && (
+                    <div className="text-right">
+                      <button
+                        type="button"
+                        onClick={() => setImportedJsonText('')}
+                        className="text-xs text-gray-400 hover:text-gray-600 mt-0.5"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                  {ultrakokiImportWarning && (
+                    <div className="mt-2 rounded-md border border-amber-300 bg-amber-100 px-3 py-2 text-xs text-amber-900">
+                      <div className="font-semibold">Import file warning</div>
+                      <div className="mt-0.5">{ultrakokiImportWarning}</div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="px-5 py-4 flex gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => { setShowJsonImportPrompt(false); setImportedJsonText(''); }}
+                    className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={importJsonData}
+                    className="px-5 py-2 text-sm font-semibold bg-slate-800 text-white rounded-lg hover:bg-slate-900"
+                  >
+                    Import
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -3,6 +3,7 @@ import { Upload, Target, AlertCircle } from 'lucide-react';
 import { InteractiveDataGraph } from './InteractiveDataGraph';
 import { UltrakokiGraph, type UltrakokiBrewData } from './UltrakokiGraph';
 import { TDSAnalysisGraph } from './TDSAnalysisGraph';
+import PourPlanGraph from './PourPlanGraph';
 
 interface CalibrationPoint {
   x: number;
@@ -30,6 +31,7 @@ interface PhaseLog {
   color: string;
   expectedECMin?: number | null;
   expectedECMax?: number | null;
+  pourPlanPercent?: number | null;
 }
 
 interface PhasePinTarget {
@@ -80,11 +82,19 @@ export interface ManualDigitizerSessionProfile {
   totalWaterIn: number;
   conversionFactor: number;
   refractometerTDSInput: string;
+  pourPlan: PourPlanEntry[];
+  grinderName: string;
+  grindSize: number;
+  micron: number;
 }
 
 export interface ManualDigitizerHandle {
   exportProfile: () => ManualDigitizerSessionProfile;
   importProfile: (profile: ManualDigitizerSessionProfile) => void;
+}
+
+interface PourPlanEntry {
+  cumulativePercent: number;
 }
 
 const MIN_SCREENSHOT_ZOOM = 0.5;
@@ -273,6 +283,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
   const [calibrationBoxDragMode, setCalibrationBoxDragMode] = useState<'draw' | 'move' | 'resize-top-left' | 'resize-top-right' | 'resize-bottom-left' | 'resize-bottom-right' | null>(null);
   const [calibrationBoxDragOrigin, setCalibrationBoxDragOrigin] = useState<{ x: number; y: number } | null>(null);
   const [calibrationBoxInitialRect, setCalibrationBoxInitialRect] = useState<CalibrationBoxRect | null>(null);
+  const [panMode, setPanMode] = useState<boolean>(false);
   const [showJsonImportPrompt, setShowJsonImportPrompt] = useState<boolean>(false);
   const [importedJsonText, setImportedJsonText] = useState<string>('');
   const [importedJsonLabel, setImportedJsonLabel] = useState<string | null>(null);
@@ -301,6 +312,10 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
   const [refractometerTDSInput, setRefractometerTDSInput] = useState<string>(() => {
     return localStorage.getItem('belkaRefractometerTDS') || '';
   });
+  const [pourPlan, setPourPlan] = useState<PourPlanEntry[]>([]);
+  const [grinderName, setGrinderName] = useState<string>('');
+  const [grindSize, setGrindSize] = useState<number>(0);
+  const [micron, setMicron] = useState<number>(0);
 
   useImperativeHandle(ref, () => ({
     exportProfile: () => ({
@@ -342,6 +357,10 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       totalWaterIn,
       conversionFactor,
       refractometerTDSInput,
+      pourPlan,
+      grinderName,
+      grindSize,
+      micron,
     }),
     importProfile: (profile) => {
       // Prevent restore-time auto-detect from reprocessing and scrambling restored points.
@@ -386,6 +405,10 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       setTotalWaterIn(Number.isFinite(profile.totalWaterIn) ? profile.totalWaterIn : 225);
       setConversionFactor(Number.isFinite(profile.conversionFactor) ? profile.conversionFactor : 0.5);
       setRefractometerTDSInput(profile.refractometerTDSInput ?? '');
+      setPourPlan(Array.isArray(profile.pourPlan) ? profile.pourPlan : []);
+      setGrinderName(profile.grinderName ?? '');
+      setGrindSize(Number.isFinite(profile.grindSize) ? profile.grindSize : 0);
+      setMicron(Number.isFinite(profile.micron) ? profile.micron : 0);
 
       setError(null);
       setShowTempPrompt(false);
@@ -448,6 +471,10 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     totalWaterIn,
     conversionFactor,
     refractometerTDSInput,
+    pourPlan,
+    grinderName,
+    grindSize,
+    micron,
   ]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -459,6 +486,9 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
   const uploadSectionRef = useRef<HTMLDivElement>(null);
   const calibrationSectionRef = useRef<HTMLDivElement>(null);
   const ultrakokiSectionRef = useRef<HTMLDivElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const isPanningRef = useRef<boolean>(false);
+  const panStartRef = useRef<{ scrollLeft: number; scrollTop: number; x: number; y: number } | null>(null);
 
   const scrollToScreenshotCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -675,6 +705,21 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     return extractedPoints;
   }, [viewMode, fineGeneratedCurve, extractedPoints]);
 
+  const getECAtTime = useCallback((time: number): number | null => {
+    const data = getCurrentData();
+    if (data.length === 0) return null;
+    const sorted = [...data].sort((a, b) => a.time - b.time);
+    if (time <= sorted[0].time) return sorted[0].ecValue;
+    if (time >= sorted[sorted.length - 1].time) return sorted[sorted.length - 1].ecValue;
+    for (let i = 0; i < sorted.length - 1; i++) {
+      if (time >= sorted[i].time && time <= sorted[i + 1].time) {
+        const frac = (time - sorted[i].time) / (sorted[i + 1].time - sorted[i].time);
+        return sorted[i].ecValue + frac * (sorted[i + 1].ecValue - sorted[i].ecValue);
+      }
+    }
+    return null;
+  }, [getCurrentData]);
+
   const redLightDataStats = useMemo(() => {
     const sorted = [...getCurrentData()].sort((a, b) => a.time - b.time);
     if (sorted.length === 0) {
@@ -713,10 +758,14 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
   }, [redLightDataStats.minAfterTimeThreshold]);
 
   const handleRedLightECThresholdChange = useCallback((rawValue: string) => {
+    if (rawValue === '' || rawValue === '-' || rawValue === '.') {
+      setRedLightECThresholdInput(rawValue);
+      return;
+    }
     setRedLightECThresholdInput(rawValue);
     const parsed = Number(rawValue);
     if (Number.isFinite(parsed)) {
-      setRedLightECThreshold(parsed);
+      setRedLightECThreshold(Math.max(0, Math.min(10, parsed)));
     }
   }, []);
 
@@ -781,6 +830,12 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     }
     return null;
   }, [effectivePourData]);
+
+  const totalBrewTime = useMemo(() => {
+    const data = getCurrentData();
+    if (data.length === 0) return 0;
+    return Math.max(...data.map(p => p.time));
+  }, [getCurrentData]);
 
   const getCumulativePourAtTime = useCallback((time: number): number | null => {
     if (!effectivePourData || effectivePourData.values.length === 0 || effectivePourData.intervalSeconds <= 0) {
@@ -1676,6 +1731,22 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
   }, []);
 
   const handleCanvasPointerDown = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (panMode) {
+      const container = canvasContainerRef.current;
+      if (!container) return;
+      event.preventDefault();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      isPanningRef.current = true;
+      panStartRef.current = {
+        scrollLeft: container.scrollLeft,
+        scrollTop: container.scrollTop,
+        x: event.clientX,
+        y: event.clientY,
+      };
+      suppressNextCanvasClickRef.current = true;
+      return;
+    }
+
     if (currentStep === 'extract' && ((eraserMode && eraserDeleteMode === 'sweep') || drawTraceMode)) {
       if (screenshotEditLocked) {
         return;
@@ -1734,9 +1805,20 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     setCalibrationBoxDragMode('draw');
     setCalibrationBoxInitialRect(freshRect);
     setEditableCalibrationBox(freshRect);
-  }, [useBoxCalibrationMode, currentStep, getCanvasCoordinatesFromClient, editableCalibrationBox, getCalibrationBoxHitTarget, createCalibrationBoxRect, eraserMode, eraserDeleteMode, drawTraceMode, deletePointsInRadius, eraserSizePx, appendTracePointAt, screenshotEditLocked]);
+  }, [useBoxCalibrationMode, currentStep, getCanvasCoordinatesFromClient, editableCalibrationBox, getCalibrationBoxHitTarget, createCalibrationBoxRect, eraserMode, eraserDeleteMode, drawTraceMode, deletePointsInRadius, eraserSizePx, appendTracePointAt, screenshotEditLocked, panMode]);
 
   const handleCanvasPointerMove = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (panMode && isPanningRef.current && panStartRef.current) {
+      const container = canvasContainerRef.current;
+      if (!container) return;
+      event.preventDefault();
+      const dx = event.clientX - panStartRef.current.x;
+      const dy = event.clientY - panStartRef.current.y;
+      container.scrollLeft = panStartRef.current.scrollLeft - dx;
+      container.scrollTop = panStartRef.current.scrollTop - dy;
+      return;
+    }
+
     if (currentStep === 'extract' && ((eraserMode && eraserDeleteMode === 'sweep') || drawTraceMode)) {
       const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
       if (!coords) return;
@@ -1807,9 +1889,21 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       syncCalibrationPointsFromBox(nextRect);
       setError(null);
     }
-  }, [calibrationBoxDragMode, calibrationBoxDragOrigin, getCanvasCoordinatesFromClient, calibrationBoxInitialRect, createCalibrationBoxRect, clampValue, syncCalibrationPointsFromBox, currentStep, eraserMode, eraserDeleteMode, drawTraceMode, deletePointsInRadius, eraserSizePx, appendTracePointAt]);
+  }, [calibrationBoxDragMode, calibrationBoxDragOrigin, getCanvasCoordinatesFromClient, calibrationBoxInitialRect, createCalibrationBoxRect, clampValue, syncCalibrationPointsFromBox, currentStep, eraserMode, eraserDeleteMode, drawTraceMode, deletePointsInRadius, eraserSizePx, appendTracePointAt, panMode]);
 
   const handleCanvasPointerUp = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (isPanningRef.current) {
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        // no-op
+      }
+      isPanningRef.current = false;
+      panStartRef.current = null;
+      suppressNextCanvasClickRef.current = true;
+      return;
+    }
+
     if (isToolStrokeActiveRef.current) {
       const coords = getCanvasCoordinatesFromClient(event.clientX, event.clientY);
       if (coords) {
@@ -2507,6 +2601,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
         color: log.color || PHASE_COLORS[index % PHASE_COLORS.length],
         expectedECMin: log.expectedECMin ?? null,
         expectedECMax: log.expectedECMax ?? null,
+        pourPlanPercent: log.pourPlanPercent ?? null,
       }))
       .sort((a, b) => a.startTime - b.startTime);
 
@@ -2547,6 +2642,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
         color: log.color || PHASE_COLORS[index % PHASE_COLORS.length],
         expectedECMin: log.expectedECMin ?? null,
         expectedECMax: log.expectedECMax ?? null,
+        pourPlanPercent: log.pourPlanPercent ?? null,
       }))
       .sort((a, b) => a.startTime - b.startTime);
 
@@ -2632,6 +2728,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
   useEffect(() => {
     if (!screenshotEditLocked) return;
+    setPanMode(false);
     setEraserMode(false);
     setDrawTraceMode(false);
     setIsDragging(false);
@@ -3258,6 +3355,247 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
             </button>
           </div>
         </div>
+
+        {/* Recipe & Pour Planning */}
+        <div className="border-b border-slate-200 bg-gradient-to-r from-emerald-50 to-white">
+          <div className="p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-bold text-emerald-900 uppercase tracking-wider mb-2">Recipe & Pour Planning</h3>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500">
+                <div className="flex items-center gap-1">
+                  <label className="text-slate-400">Dose:</label>
+                  <input
+                    type="number"
+                    min={1}
+                    step={0.5}
+                    value={doseWeight}
+                    onChange={(e) => {
+                      const v = Math.max(0.1, parseFloat(e.target.value) || 15);
+                      setDoseWeight(v);
+                      localStorage.setItem('belkaDoseWeight', String(v));
+                    }}
+                    className="w-16 px-1.5 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
+                  <span>g</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <label className="text-slate-400">Ratio:</label>
+                  <span className="text-slate-300">1:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    step={0.1}
+                    value={brewRatio}
+                    onChange={(e) => {
+                      const v = Math.min(30, Math.max(1, parseFloat(e.target.value) || 15));
+                      setBrewRatio(v);
+                      localStorage.setItem('belkaBrewRatio', String(v));
+                    }}
+                    className="w-14 px-1.5 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const water = doseWeight * brewRatio;
+                    setTotalWaterIn(water);
+                    if (pourPlan.length === 0) {
+                      setPourPlan([
+                        { cumulativePercent: 20 },
+                        { cumulativePercent: 50 },
+                        { cumulativePercent: 80 },
+                        { cumulativePercent: 100 },
+                      ]);
+                    }
+                  }}
+                  className="text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg px-2.5 py-1 transition-colors"
+                >
+                  Calculate
+                </button>
+                <span className="text-slate-400 font-medium tabular-nums">
+                  {(() => {
+                    const w = totalWaterIn > 0 ? totalWaterIn : doseWeight * brewRatio;
+                    return `${w}g water`;
+                  })()}
+                </span>
+                <span className="text-slate-300">|</span>
+                <div className="flex items-center gap-1">
+                  <label className="text-slate-400">Grinder:</label>
+                  <input
+                    type="text"
+                    value={grinderName}
+                    onChange={(e) => setGrinderName(e.target.value)}
+                    placeholder="e.g. Ode Gen 2"
+                    className="w-24 px-1.5 py-0.5 text-xs border border-emerald-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <label className="text-slate-400">#</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={grindSize || ''}
+                    onChange={(e) => setGrindSize(e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0))}
+                    placeholder="5"
+                    className="w-14 px-1.5 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <label className="text-slate-400">µm:</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={micron || ''}
+                    onChange={(e) => setMicron(e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0))}
+                    placeholder="optional"
+                    className="w-16 px-1.5 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs text-slate-400 font-medium px-1">
+                <span className="w-12">Pour #</span>
+                <span className="w-28">Target</span>
+                <span className="w-28 text-right">Cumul. g</span>
+                <span className="w-24 text-right">Delta g</span>
+                <span className="w-16 text-right">Delta %</span>
+                <span className="w-16 text-right">Time</span>
+                <span className="w-16 text-right text-violet-500">EC</span>
+                <span className="w-8" />
+              </div>
+              {pourPlan.map((entry, idx) => {
+                const prevCumul = idx === 0 ? 0 : pourPlan[idx - 1].cumulativePercent;
+                const deltaPct = entry.cumulativePercent - prevCumul;
+                const totalWater = totalWaterIn > 0 ? totalWaterIn : doseWeight * brewRatio;
+                const cumulativeG = Number((totalWater * entry.cumulativePercent / 100).toFixed(1));
+                const deltaG = Number((totalWater * deltaPct / 100).toFixed(1));
+                return (
+                  <div key={idx} className="flex items-center gap-2 text-sm">
+                    <span className="w-12 text-slate-500 font-medium">#{idx + 1}</span>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        value={entry.cumulativePercent}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === '' || raw === '-') {
+                            setPourPlan(prev => {
+                              const next = [...prev];
+                              next[idx] = { ...next[idx], cumulativePercent: 0 };
+                              return next;
+                            });
+                            return;
+                          }
+                          const parsed = parseFloat(raw);
+                          if (Number.isFinite(parsed)) {
+                            setPourPlan(prev => {
+                              const next = [...prev];
+                              next[idx] = { ...next[idx], cumulativePercent: parsed };
+                              return next;
+                            });
+                          }
+                        }}
+                        className="w-20 px-2 py-1 text-sm border border-emerald-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400 text-center"
+                      />
+                      <span className="text-slate-400">%</span>
+                    </div>
+                    <span className="w-28 text-right text-slate-600 font-medium tabular-nums">{cumulativeG}g</span>
+                    <span className="w-24 text-right text-slate-500 tabular-nums">+{deltaG}g</span>
+                    <span className="w-16 text-right text-slate-400 text-xs tabular-nums">({deltaPct > 0 ? '+' : ''}{deltaPct}%)</span>
+                    {(() => {
+                      const pourTime = (entry.cumulativePercent / 100) * totalBrewTime;
+                      const ecVal = getECAtTime(pourTime);
+                      return (
+                        <>
+                          <span className="w-16 text-right text-slate-600 tabular-nums text-xs">{Math.round(pourTime)}s</span>
+                          {ecVal != null && (
+                            <span className="w-16 text-right text-violet-600 tabular-nums text-xs font-medium">{ecVal.toFixed(2)}</span>
+                          )}
+                        </>
+                      );
+                    })()}
+                    <button
+                      type="button"
+                      onClick={() => setPourPlan(prev => prev.filter((_, i) => i !== idx))}
+                      className="ml-1 text-red-400 hover:text-red-600 text-xs font-bold px-1.5"
+                      title="Remove pour"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPourPlan(prev => [...prev, { cumulativePercent: prev.length === 0 ? 100 : 100 }])}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg px-3 py-1.5 transition-colors"
+                >
+                  + Add Pour
+                </button>
+                {pourPlan.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const n = pourPlan.length;
+                      setPourPlan(pourPlan.map((_, i) => ({
+                        cumulativePercent: Math.round((100 * (i + 1)) / n),
+                      })));
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg px-3 py-1.5 transition-colors border border-emerald-200"
+                  >
+                    Distribute Evenly
+                  </button>
+                )}
+              </div>
+
+              {pourPlan.length > 0 && (
+                <div className="mt-2">
+                  {(() => {
+                    const lastPct = pourPlan[pourPlan.length - 1].cumulativePercent;
+                    const ok = lastPct >= 99.5;
+                    return (
+                      <div className="flex items-center gap-3 text-xs">
+                        <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${ok ? 'bg-emerald-400' : 'bg-amber-400'}`}
+                            style={{ width: `${Math.min(100, lastPct)}%` }}
+                          />
+                        </div>
+                        <span className={`font-semibold tabular-nums ${ok ? 'text-emerald-700' : 'text-amber-700'}`}>
+                          {lastPct.toFixed(0)}% cumulative
+                        </span>
+                        {!ok && (
+                          <span className="text-amber-600">{(100 - lastPct).toFixed(0)}% to target</span>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+          {pourPlan.length > 0 && totalBrewTime > 0 && (
+            <div className="px-4 pb-4">
+              <PourPlanGraph
+                pourPlan={pourPlan}
+                totalBrewTime={totalBrewTime}
+                ecPoints={getCurrentData()}
+                brewData={effectivePourData ? {
+                  cumulativePour: effectivePourData.values,
+                  intervalSeconds: effectivePourData.intervalSeconds,
+                } : null}
+              />
+            </div>
+          )}
+        </div>
+
           <div className="p-6">
             {/* Upload Step */}
           {currentStep === 'upload' && (
@@ -3583,6 +3921,22 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       {screenshotEditLocked ? 'Unlock Screenshot Edit' : 'Lock Screenshot Edit'}
                     </button>
                     <button
+                      type="button"
+                      onClick={() => setPanMode(prev => {
+                        const next = !prev;
+                        if (next) {
+    setEraserMode(false);
+    setDrawTraceMode(false);
+    setPanMode(false);
+                          setEraserCursor(cursor => ({ ...cursor, visible: false }));
+                        }
+                        return next;
+                      })}
+                      className={`px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base border ${panMode ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-sky-700 border-sky-300 hover:bg-sky-100'}`}
+                    >
+                      {panMode ? 'Exit Pan' : 'Pan'}
+                    </button>
+                    <button
                       onClick={() => {
                         if (screenshotEditLocked) {
                           setError('Unlock screenshot edit first to use eraser.');
@@ -3591,6 +3945,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                         setEraserMode(prev => {
                           const next = !prev;
                           if (next) {
+                            setPanMode(false);
                             setDrawTraceMode(false);
                           }
                           if (!next) {
@@ -3661,6 +4016,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                         setDrawTraceMode(prev => {
                           const next = !prev;
                           if (next) {
+                            setPanMode(false);
                             setEraserMode(false);
                             setEraserCursor(cursor => ({ ...cursor, visible: false }));
                           }
@@ -3718,7 +4074,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                 )}
               </div>
 
-              <div className="relative overflow-auto max-h-[75vh] rounded-lg border border-gray-300 bg-white">
+              <div ref={canvasContainerRef} className="relative overflow-auto max-h-[75vh] rounded-lg border border-gray-300 bg-white">
                 <img
                   ref={imageRef}
                   src={selectedImage || ''}
@@ -3739,9 +4095,11 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                   style={{ 
                     cursor: useBoxCalibrationMode && (currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y')
                       ? 'crosshair'
-                      : (eraserMode || drawTraceMode)
-                        ? 'crosshair'
-                        : 'default',
+                      : panMode
+                        ? 'grab'
+                        : (eraserMode || drawTraceMode)
+                          ? 'crosshair'
+                          : 'default',
                     display: 'block',
                     width: `${Math.round(screenshotZoom * 100)}%`,
                     maxWidth: 'none',
@@ -3749,9 +4107,22 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     touchAction: 'none'
                   }}
                 />
+                {selectedImage && currentStep === 'extract' && (
+                  <button
+                    onClick={autoDetectCurve}
+                    className="absolute top-2 right-2 z-10 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium shadow-lg transition-colors"
+                  >
+                    Auto-Detect Curve
+                  </button>
+                )}
                 {drawTraceMode && (
                   <div className="absolute top-2 left-2 bg-emerald-600 text-white px-2 py-1 rounded text-sm">
                     Draw Trace Mode - press and drag to draw points
+                  </div>
+                )}
+                {panMode && (
+                  <div className="absolute top-2 left-2 bg-sky-600 text-white px-2 py-1 rounded text-sm">
+                    Pan Mode - drag to move around
                   </div>
                 )}
                 {screenshotEditLocked && currentStep === 'extract' && (
@@ -4074,13 +4445,39 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       <label className="mb-1 block text-xs font-medium text-gray-700">
                         EC Threshold
                       </label>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={redLightECThresholdInput}
-                        onChange={(e) => handleRedLightECThresholdChange(e.target.value)}
-                        className={`w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${redLightThresholdTooLow ? 'border-amber-400 focus:ring-amber-500' : 'border-gray-300 focus:ring-red-500'}`}
-                      />
+                      <div className="flex">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = Number((redLightECThreshold - 0.1).toFixed(2));
+                            setRedLightECThreshold(next);
+                            setRedLightECThresholdInput(String(next));
+                          }}
+                          className="rounded-l border border-r-0 border-gray-300 bg-gray-100 px-2.5 py-2 text-sm hover:bg-gray-200"
+                        >
+                          −
+                        </button>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="10"
+                          value={redLightECThresholdInput}
+                          onChange={(e) => handleRedLightECThresholdChange(e.target.value)}
+                          className={`w-full rounded-none border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-inset ${redLightThresholdTooLow ? 'border-amber-400 focus:ring-amber-500' : 'border-gray-300 focus:ring-red-500'}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = Number((redLightECThreshold + 0.1).toFixed(2));
+                            setRedLightECThreshold(next);
+                            setRedLightECThresholdInput(String(next));
+                          }}
+                          className="rounded-r border border-l-0 border-gray-300 bg-gray-100 px-2.5 py-2 text-sm hover:bg-gray-200"
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -4316,6 +4713,21 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
                               />
                             </div>
+                            {pourPlan.length > 0 && (
+                              <div>
+                                <label className="text-xs text-gray-600">Pour Plan %</label>
+                                <select
+                                  value={log.pourPlanPercent ?? ''}
+                                  onChange={(e) => updatePhaseLog(log.id, { pourPlanPercent: e.target.value === '' ? null : Number(e.target.value) })}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                >
+                                  <option value="">-- none --</option>
+                                  {pourPlan.map((p, i) => (
+                                    <option key={i} value={p.cumulativePercent}>{p.cumulativePercent}% (Pour #{i + 1})</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
                             <button
                               onClick={() => fitPhaseLogToExpectedRange(log.id)}
                               className="px-2 py-2 bg-sky-500 text-white text-xs rounded hover:bg-sky-600"
@@ -4708,6 +5120,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     phaseLogs={phaseLogs}
                     redLightTime={redLightTime}
                     showRedLight={showRedLight}
+                    pourPlan={pourPlan}
                     doseWeight={doseWeight}
                     brewRatio={brewRatio}
                     totalWaterIn={totalWaterIn}

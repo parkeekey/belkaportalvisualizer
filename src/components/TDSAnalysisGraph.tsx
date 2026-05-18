@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import tdsCalculationConfig from '../config/tdsCalculationConfig.json';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -7,10 +6,6 @@ interface ECPoint {
   time: number;        // seconds
   ecValue: number;     // mS/cm
   temperature?: number; // °C, optional
-}
-
-interface PourPlanEntry {
-  cumulativePercent: number;
 }
 
 interface BrewData {
@@ -26,7 +21,6 @@ interface PhaseLog {
   startTime: number;
   endTime: number;
   color: string;
-  pourPlanPercent?: number | null;
 }
 
 interface TDSPoint {
@@ -45,7 +39,6 @@ export interface TDSAnalysisGraphProps {
   phaseLogs?: PhaseLog[];
   redLightTime?: number | null;
   showRedLight?: boolean;
-  pourPlan?: PourPlanEntry[];
   doseWeight: number;       // g of coffee grounds
   brewRatio?: number;       // 1:x
   totalWaterIn?: number;    // grams
@@ -131,8 +124,6 @@ type TargetWindow = {
 };
 
 const PAD = { top: 40, right: 80, bottom: 56, left: 72 };
-const conversionFactorConfig = tdsCalculationConfig.bounds.conversionFactor;
-const axisConfig = tdsCalculationConfig.axis;
 
 // ─── Main Component ────────────────────────────────────────────────────────
 
@@ -142,12 +133,11 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   phaseLogs = [],
   redLightTime = null,
   showRedLight = false,
-  pourPlan = [],
   doseWeight,
   brewRatio = 15,
   totalWaterIn = 225,
   waterInSource = 'estimated',
-  conversionFactor = tdsCalculationConfig.defaults.conversionFactor,
+  conversionFactor = 0.5,
   refractometerTDS = null,
   refractometerTDSInput,
   onDoseWeightChange,
@@ -168,11 +158,6 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   const [showTDSCurve, setShowTDSCurve] = useState<boolean>(true);
   const [showEYCurve, setShowEYCurve] = useState<boolean>(true);
   const [showECOverlay, setShowECOverlay] = useState<boolean>(true);
-  const [ecLineWidth, setEcLineWidth] = useState(2);
-  const [ecDotRadius, setEcDotRadius] = useState(3);
-  const [ecFillOpacity, setEcFillOpacity] = useState(15);
-  const [showBlind, setShowBlind] = useState<boolean>(false);
-  const [blindPercent, setBlindPercent] = useState(20);
   const [showPourOverlay, setShowPourOverlay] = useState<boolean>(true);
   const [showFlowOverlay, setShowFlowOverlay] = useState<boolean>(false);
   const [showPourFlowSeries, setShowPourFlowSeries] = useState<boolean>(true);
@@ -181,7 +166,6 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   const [flowCap, setFlowCap] = useState<number>(10);
   const [cleanShortFlowSpikes, setCleanShortFlowSpikes] = useState<boolean>(false);
   const [flowSpikeDurationSeconds, setFlowSpikeDurationSeconds] = useState<number>(3);
-  const [showPourPlanOverlay, setShowPourPlanOverlay] = useState<boolean>(true);
   const [showPhaseLog, setShowPhaseLog] = useState<boolean>(true);
   const [phaseMetricVisibility, setPhaseMetricVisibility] = useState({
     peakTDS: true,
@@ -395,22 +379,13 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   // ── Axis limits ─────────────────────────────────────────────────────────
 
   const { tdsMax, eyMax, timeMax } = useMemo(() => {
-    if (series.length === 0) {
-      return {
-        tdsMax: axisConfig.empty.tdsMax,
-        eyMax: axisConfig.empty.eyMax,
-        timeMax: axisConfig.empty.timeMax,
-      };
-    }
+    if (series.length === 0) return { tdsMax: 3, eyMax: 30, timeMax: 120 };
     const maxTDS = Math.max(...series.map(p => p.tds));
     const maxEY  = Math.max(...series.map(p => p.ey));
     const maxT   = series[series.length - 1].time;
     return {
-      tdsMax: Math.max(
-        axisConfig.tdsFloor,
-        Math.ceil(maxTDS * axisConfig.paddingMultiplier * (10 ** axisConfig.tdsDecimalPlaces)) / (10 ** axisConfig.tdsDecimalPlaces),
-      ),
-      eyMax:  Math.max(axisConfig.eyFloor, Math.ceil(maxEY * axisConfig.paddingMultiplier)),
+      tdsMax: Math.max(1, Math.ceil(maxTDS * 1.2 * 10) / 10),
+      eyMax:  Math.max(5, Math.ceil(maxEY  * 1.2)),
       timeMax: maxT,
     };
   }, [series]);
@@ -543,11 +518,6 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
         ctx.textAlign = 'left';
         const labelX = Math.max(PAD.left + 2, x0 + 3);
         ctx.fillText(phase.name, labelX, PAD.top + 12);
-        if (phase.pourPlanPercent != null) {
-          ctx.font = '9px sans-serif';
-          ctx.fillStyle = phase.color + 'cc';
-          ctx.fillText(`${phase.pourPlanPercent}%`, labelX, PAD.top + 24);
-        }
       });
     }
 
@@ -722,27 +692,9 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     if (showECOverlay && ecPoints.length > 1) {
       const sortedEC = [...ecPoints].sort((a, b) => a.time - b.time);
       const ecMax = Math.max(...sortedEC.map(p => p.ecValue)) * 1.1 || 1;
-      // filled area under EC curve
-      const fillAlpha = Math.max(0, Math.min(50, ecFillOpacity));
-      ctx.fillStyle = `rgba(124, 58, 237, ${(fillAlpha / 255).toFixed(4)})`;
-      ctx.beginPath();
-      sortedEC.forEach((pt, i) => {
-        if (pt.time > timeMax) return;
-        const x = toX(pt.time);
-        const y = PAD.top + plotH - (pt.ecValue / ecMax) * plotH;
-        if (i === 0) { ctx.moveTo(x, PAD.top + plotH); ctx.lineTo(x, y); }
-        else ctx.lineTo(x, y);
-      });
-      if (sortedEC.length > 0) {
-        const last = sortedEC[sortedEC.length - 1];
-        ctx.lineTo(toX(Math.min(last.time, timeMax)), PAD.top + plotH);
-      }
-      ctx.closePath();
-      ctx.fill();
-      // EC curve (solid, thick)
       ctx.strokeStyle = '#7c3aed';
-      ctx.lineWidth = ecLineWidth;
-      ctx.setLineDash([]);
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 3]);
       ctx.lineJoin = 'round';
       ctx.beginPath();
       sortedEC.forEach((pt, i) => {
@@ -752,16 +704,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       });
       ctx.stroke();
-      // EC data point dots
-      ctx.fillStyle = '#7c3aed';
-      sortedEC.forEach((pt) => {
-        if (pt.time > timeMax) return;
-        const x = toX(pt.time);
-        const y = PAD.top + plotH - (pt.ecValue / ecMax) * plotH;
-        ctx.beginPath();
-        ctx.arc(x, y, ecDotRadius, 0, Math.PI * 2);
-        ctx.fill();
-      });
+      ctx.setLineDash([]);
       // EC axis label (right inner, above EY label)
       ctx.fillStyle = '#7c3aed';
       ctx.font = '9px sans-serif';
@@ -794,75 +737,6 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       ctx.font = '9px sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(`Pour max ${(pourMax / 1.1).toFixed(0)} g`, PAD.left - 6, PAD.top + 8);
-    }
-
-    // ── Pour plan overlay ──────────────────────────────────────────────
-    if (showPourPlanOverlay && pourPlan.length > 0) {
-      const sortedPlan = [...pourPlan].sort((a, b) => a.cumulativePercent - b.cumulativePercent);
-      const toPlanY = (pct: number) => PAD.top + plotH - (pct / 100) * plotH;
-      // fill under step function
-      ctx.fillStyle = '#f9731618';
-      ctx.beginPath();
-      let prevPct = 0;
-      ctx.moveTo(toX(0), PAD.top + plotH);
-      ctx.lineTo(toX(0), toPlanY(0));
-      for (let i = 0; i < sortedPlan.length; i++) {
-        const pct = sortedPlan[i].cumulativePercent;
-        const t = (pct / 100) * timeMax;
-        if (t > timeMax) break;
-        const x = toX(t);
-        ctx.lineTo(x, toPlanY(prevPct));
-        ctx.lineTo(x, toPlanY(pct));
-        prevPct = pct;
-      }
-      ctx.lineTo(toX(timeMax), PAD.top + plotH);
-      ctx.closePath();
-      ctx.fill();
-      // step function line
-      ctx.strokeStyle = '#f97316';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([6, 4]);
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      prevPct = 0;
-      ctx.moveTo(toX(0), toPlanY(0));
-      for (let i = 0; i < sortedPlan.length; i++) {
-        const pct = sortedPlan[i].cumulativePercent;
-        const t = (pct / 100) * timeMax;
-        if (t > timeMax) break;
-        const x = toX(t);
-        ctx.lineTo(x, toPlanY(prevPct));
-        ctx.lineTo(x, toPlanY(pct));
-        prevPct = pct;
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-      // labels
-      ctx.fillStyle = '#f97316';
-      ctx.font = '9px sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText('Pour plan', PAD.left + plotW + 6, PAD.top + 24);
-      // vertical reference lines at each pour plan time
-      ctx.strokeStyle = '#f97316';
-      ctx.lineWidth = 0.8;
-      ctx.setLineDash([3, 5]);
-      for (let i = 0; i < sortedPlan.length; i++) {
-        const pct = sortedPlan[i].cumulativePercent;
-        const t = (pct / 100) * timeMax;
-        if (t <= 0 || t >= timeMax) continue;
-        const x = toX(t);
-        ctx.beginPath();
-        ctx.moveTo(x, PAD.top);
-        ctx.lineTo(x, PAD.top + plotH);
-        ctx.stroke();
-        ctx.fillStyle = '#f97316';
-        ctx.font = '8px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(`${pct}%`, x, PAD.top - 2);
-      }
-      ctx.setLineDash([]);
-      ctx.textBaseline = 'alphabetic';
     }
 
     // ── Flow overlay (separate from TDS/EY curves) ──────────────────────
@@ -1014,8 +888,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     if (showRedLight && redLightTime != null) {
       legend.push({ color: '#ef4444', label: `Red Light ${formatClock(redLightTime)}`, dash: [7, 5] });
     }
-    if (showECOverlay) legend.push({ color: '#7c3aed', label: 'EC (mS/cm)' });
-    if (showPourPlanOverlay && pourPlan.length > 0) legend.push({ color: '#f97316', label: 'Pour plan', dash: [6, 4] });
+    if (showECOverlay) legend.push({ color: '#7c3aed', label: 'EC (mS/cm)', dash: [6, 3] });
     if (showPourOverlay && brewData) legend.push({ color: '#2563eb', label: 'Water-in (g)', dash: [3, 3] });
     if (showFlowOverlay && flowOverlayData) {
       if (showPourFlowSeries) legend.push({ color: '#0ea5e9', label: 'Pour flow (g/s) overlay' });
@@ -1035,29 +908,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       lx += ctx.measureText(label).width + 52;
     });
 
-    // ── Blind overlay ───────────────────────────────────────────────────
-    if (showBlind) {
-      const blindTime = (blindPercent / 100) * timeMax;
-      const blindX = toX(blindTime);
-      ctx.fillStyle = 'rgba(226, 232, 240, 0.7)';
-      ctx.fillRect(blindX, PAD.top, PAD.left + plotW - blindX, plotH);
-      ctx.strokeStyle = '#94a3b8';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 4]);
-      ctx.beginPath();
-      ctx.moveTo(blindX, PAD.top);
-      ctx.lineTo(blindX, PAD.top + plotH);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#64748b';
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(`Blind at ${blindPercent}%`, blindX + 4, PAD.top + plotH - 2);
-      ctx.textBaseline = 'alphabetic';
-    }
-
-  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showTDSCurve, showEYCurve, showECOverlay, ecLineWidth, ecDotRadius, ecFillOpacity, showBlind, blindPercent, showPourOverlay, showFlowOverlay, showPourFlowSeries, showDripFlowSeries, showPhaseLog, showTargetAssistant, targetMode, targetTDS, targetEY, targetStartAfter, ecPoints, brewData, waterInPercentBase, showRedLight, redLightTime, flowOverlayData, hiddenTargetMarkers, showPourPlanOverlay, pourPlan]);
+  }, [series, canvasSize, tdsMax, eyMax, timeMax, phaseLogs, hoverIndex, doseWeight, showTDSCurve, showEYCurve, showECOverlay, showPourOverlay, showFlowOverlay, showPourFlowSeries, showDripFlowSeries, showPhaseLog, showTargetAssistant, targetMode, targetTDS, targetEY, targetStartAfter, ecPoints, brewData, waterInPercentBase, showRedLight, redLightTime, flowOverlayData, hiddenTargetMarkers]);
 
   // ── Hover handler ────────────────────────────────────────────────────────
 
@@ -1452,13 +1303,6 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
               EC curve {showECOverlay ? '✓' : '–'}
             </button>
             <button
-              onClick={() => setShowPourPlanOverlay(v => !v)}
-              disabled={pourPlan.length === 0}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showPourPlanOverlay && pourPlan.length > 0 ? 'bg-indigo-200 text-indigo-900' : 'bg-white/20 text-white/60'}`}
-            >
-              Pour Plan {showPourPlanOverlay && pourPlan.length > 0 ? '✓' : '–'}
-            </button>
-            <button
               onClick={() => setShowPourOverlay(v => !v)}
               disabled={!brewData}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showPourOverlay && brewData ? 'bg-blue-200 text-blue-900' : 'bg-white/20 text-white/60'}`}
@@ -1491,98 +1335,9 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             >
               Red Light {showRedLight && redLightTime != null ? '✓' : '–'}
             </button>
-            <button
-              onClick={() => setShowBlind(v => !v)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showBlind ? 'bg-slate-400 text-white' : 'bg-white/20 text-white/70'}`}
-            >
-              Blind {showBlind ? '✓' : '–'}
-            </button>
           </div>
         </div>
       </div>
-
-      {showECOverlay && (
-        <div className="px-4 py-2 border-b border-slate-100 bg-violet-50/50">
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-medium">EC line:</span>
-              <input
-                type="range"
-                min={0.5}
-                max={4}
-                step={0.25}
-                value={ecLineWidth}
-                onChange={(e) => setEcLineWidth(Number(e.target.value))}
-                className="w-20"
-              />
-              <span className="text-slate-600 tabular-nums w-8">{ecLineWidth.toFixed(1)}px</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-medium">Dots:</span>
-              <input
-                type="range"
-                min={0}
-                max={6}
-                step={0.5}
-                value={ecDotRadius}
-                onChange={(e) => setEcDotRadius(Number(e.target.value))}
-                className="w-20"
-              />
-              <span className="text-slate-600 tabular-nums w-8">{ecDotRadius.toFixed(1)}px</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-medium">Fill:</span>
-              <input
-                type="range"
-                min={0}
-                max={50}
-                step={1}
-                value={ecFillOpacity}
-                onChange={(e) => setEcFillOpacity(Number(e.target.value))}
-                className="w-20"
-              />
-              <span className="text-slate-600 tabular-nums w-8">{ecFillOpacity}%</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showBlind && (
-        <div className="px-4 py-2 border-b border-slate-100 bg-slate-100/70">
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-medium">Blind at:</span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={blindPercent}
-                onChange={(e) => setBlindPercent(Number(e.target.value))}
-                className="w-32"
-              />
-              <span className="text-slate-600 font-semibold tabular-nums w-10">{blindPercent}%</span>
-            </div>
-            <div className="text-slate-400">
-              Shows 0–{blindPercent}% &nbsp;|&nbsp; greys out {blindPercent}–100%
-            </div>
-            {pourPlan.length > 0 && (
-              <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-slate-400 mr-1">From pour plan:</span>
-                {pourPlan.map((entry, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setBlindPercent(entry.cumulativePercent)}
-                    className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${blindPercent === entry.cumulativePercent ? 'bg-indigo-200 text-indigo-900 ring-1 ring-indigo-400' : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-300'}`}
-                  >
-                    {entry.cumulativePercent}%
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {showFlowOverlay && brewData && (
         <div className="px-4 py-3 border-b border-slate-100 bg-sky-50/50">
@@ -1710,17 +1465,12 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             <label className="text-sm font-medium text-slate-700 whitespace-nowrap">EC→TDS factor:</label>
             <input
               type="number"
-              min={conversionFactorConfig.min}
-              max={conversionFactorConfig.max}
-              step={conversionFactorConfig.step}
+              min={0.1}
+              max={1}
+              step={0.01}
               value={conversionFactor}
               onChange={(e) => {
-                const parsed = parseFloat(e.target.value);
-                const fallback = tdsCalculationConfig.defaults.conversionFactor;
-                const v = Math.min(
-                  conversionFactorConfig.max,
-                  Math.max(conversionFactorConfig.min, Number.isFinite(parsed) ? parsed : fallback),
-                );
+                const v = Math.min(1, Math.max(0.1, parseFloat(e.target.value) || 0.5));
                 onConversionFactorChange?.(v);
               }}
               className="w-20 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"

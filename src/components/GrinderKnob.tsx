@@ -1,5 +1,20 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 
+function useHoldRepeat(onStep: () => void, ms = 100) {
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onStepRef = useRef(onStep);
+  onStepRef.current = onStep;
+  const start = useCallback(() => {
+    onStepRef.current();
+    intervalRef.current = setInterval(() => onStepRef.current(), ms);
+  }, [ms]);
+  const stop = useCallback(() => {
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+  }, []);
+  useEffect(() => () => stop(), [stop]);
+  return { start, stop };
+}
+
 interface GrinderEntry {
   id: string;
   clicks: number;
@@ -53,6 +68,8 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
   const [focusFrom, setFocusFrom] = useState(0);
   const [focusTo, setFocusTo] = useState(totalClicks);
   const knobRef = useRef<HTMLDivElement>(null);
+  const holdMinus = useHoldRepeat(() => handleClickChange(-step), 100);
+  const holdPlus = useHoldRepeat(() => handleClickChange(step), 100);
   const [turnSpeed, setTurnSpeed] = useState(0.0005);
   const [dragTransStyle, setDragTransStyle] = useState('transform 0.1s ease');
   const dialRef = useRef<HTMLDivElement>(null);
@@ -353,7 +370,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
 
         <div className="flex flex-col gap-2 min-w-[180px] flex-1">
           <div className="inline-flex items-center self-start border border-emerald-300 rounded-lg bg-white shadow-sm overflow-hidden">
-            <button onClick={() => handleClickChange(-step)} className="w-8 h-9 text-emerald-700 font-bold text-sm hover:bg-emerald-100 flex items-center justify-center border-r border-emerald-200">−</button>
+            <button onPointerDown={holdMinus.start} onPointerUp={holdMinus.stop} onPointerLeave={holdMinus.stop} className="w-8 h-9 text-emerald-700 font-bold text-sm hover:bg-emerald-100 flex items-center justify-center border-r border-emerald-200 select-none" style={{ touchAction: 'none' }}>−</button>
             <input type="text" inputMode="decimal" value={clickInput}
               onChange={(e) => setClickInput(e.target.value)}
               onBlur={() => {
@@ -368,7 +385,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               className="w-16 text-center text-sm font-bold text-emerald-800 tabular-nums bg-transparent border-none outline-none"
             />
-            <button onClick={() => handleClickChange(step)} className="w-8 h-9 text-emerald-700 font-bold text-sm hover:bg-emerald-100 flex items-center justify-center border-l border-emerald-200">+</button>
+            <button onPointerDown={holdPlus.start} onPointerUp={holdPlus.stop} onPointerLeave={holdPlus.stop} className="w-8 h-9 text-emerald-700 font-bold text-sm hover:bg-emerald-100 flex items-center justify-center border-l border-emerald-200 select-none" style={{ touchAction: 'none' }}>+</button>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
             <div className="text-[10px] text-slate-400 tabular-nums">#{grindSize > 0 ? grindSize : '—'}  |  {micron > 0 ? `${micron}µm` : '—'}</div>

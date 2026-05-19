@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import RecipePourPlanning, { type RecipePourPlanningHandle, type RecipePourPlanningProfile } from './RecipePourPlanning';
 import TDSHUD from './TDSHUD';
 import AttemptLog from './AttemptLog';
@@ -18,7 +18,11 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
   const [equipmentName, setEquipmentName] = useState('');
   const [brewerType, setBrewerType] = useState('V60');
-  const [flowCharacter, setFlowCharacter] = useState('medium');
+  const [flowSpeed, setFlowSpeed] = useState(50);
+  const flowSuggestion = useMemo(() => {
+    const finePct = Math.round((flowSpeed - 50) * 0.6);
+    return finePct;
+  }, [flowSpeed]);
   const [burrSize, setBurrSize] = useState('');
   const [rpm, setRpm] = useState('');
 
@@ -90,13 +94,16 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               <option value="Other">Other</option>
             </select>
           </div>
-          <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Flow Character</label>
-            <select value={flowCharacter} onChange={(e) => setFlowCharacter(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-sky-400">
-              <option value="slow">Slow</option>
-              <option value="medium">Medium</option>
-              <option value="fast">Fast</option>
-            </select>
+          <div className="flex flex-col gap-0.5 col-span-2 md:col-span-3">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Flow Speed</label>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-slate-400 font-medium w-16 text-right">Very Slow</span>
+              <input type="range" min={0} max={100} value={flowSpeed} onChange={(e) => { const v = parseInt(e.target.value); setFlowSpeed(v); setGrindAdjustPct(50 + Math.round((v - 50) * 0.4)); }} className="flex-1 h-1.5 accent-sky-500 max-w-48" />
+              <span className="text-[10px] text-slate-400 font-medium w-16">Very Fast</span>
+              <div className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${flowSuggestion > 0 ? 'text-emerald-700 bg-emerald-100 border-emerald-300' : flowSuggestion < 0 ? 'text-amber-700 bg-amber-100 border-amber-300' : 'text-slate-500 bg-slate-100 border-slate-200'}`}>
+                {flowSuggestion > 0 ? `Suggest ${flowSuggestion}% finer` : flowSuggestion < 0 ? `Suggest ${Math.abs(flowSuggestion)}% coarser` : 'Neutral'}
+              </div>
+            </div>
           </div>
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Burr Size</label>
@@ -156,24 +163,12 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
         </div>
       </section>
 
-      {/* Attempt Log */}
-      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Attempt Log</h3>
-        <AttemptLog
-          currentGrindSize={0}
-          currentDose={recipeValues.dose}
-          currentRatio={recipeValues.ratio}
-          currentTotalWater={recipeValues.water}
-          tdsMin={parseFloat(targetTDSMin) || 0}
-          tdsMax={parseFloat(targetTDSMax) || 0}
-          currentTDS={currentTDS}
-        />
-      </section>
-
       {/* Grind Adjustment Calculator */}
       <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-3">Grind Adjustment Calculator</h3>
-        <p className="text-xs text-slate-500 mb-3">How much coarser or finer should you go for this bean on this setup?</p>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Grind Adjustment</h3>
+          <span className="text-[9px] text-sky-500 font-medium">Auto-suggested from flow speed</span>
+        </div>
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500 font-medium w-14">Finer</span>
@@ -214,6 +209,20 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       {/* Recipe & Pour Planning */}
       <section className="border border-emerald-200 rounded-xl overflow-hidden">
         <RecipePourPlanning ref={recipePlanRef} />
+      </section>
+
+      {/* Attempt Log */}
+      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Attempt Log</h3>
+        <AttemptLog
+          currentGrindSize={0}
+          currentDose={recipeValues.dose}
+          currentRatio={recipeValues.ratio}
+          currentTotalWater={recipeValues.water}
+          tdsMin={parseFloat(targetTDSMin) || 0}
+          tdsMax={parseFloat(targetTDSMax) || 0}
+          currentTDS={currentTDS}
+        />
       </section>
     </div>
   );

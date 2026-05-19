@@ -86,6 +86,7 @@ export interface ManualDigitizerSessionProfile {
   grinderName: string;
   grindSize: number;
   micron: number;
+  recipeFinishTimeSec?: number;
 }
 
 export interface ManualDigitizerHandle {
@@ -95,6 +96,7 @@ export interface ManualDigitizerHandle {
 
 interface PourPlanEntry {
   cumulativePercent: number;
+  duration?: number;
 }
 
 const MIN_SCREENSHOT_ZOOM = 0.5;
@@ -313,6 +315,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     return localStorage.getItem('belkaRefractometerTDS') || '';
   });
   const [pourPlan, setPourPlan] = useState<PourPlanEntry[]>([]);
+  const [recipeFinishTimeSec, setRecipeFinishTimeSec] = useState<number>(0);
   const [grinderName, setGrinderName] = useState<string>('');
   const [grindSize, setGrindSize] = useState<number>(0);
   const [micron, setMicron] = useState<number>(0);
@@ -361,6 +364,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       grinderName,
       grindSize,
       micron,
+      recipeFinishTimeSec,
     }),
     importProfile: (profile) => {
       // Prevent restore-time auto-detect from reprocessing and scrambling restored points.
@@ -409,6 +413,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       setGrinderName(profile.grinderName ?? '');
       setGrindSize(Number.isFinite(profile.grindSize) ? profile.grindSize : 0);
       setMicron(Number.isFinite(profile.micron) ? profile.micron : 0);
+      setRecipeFinishTimeSec(Number.isFinite(profile.recipeFinishTimeSec) ? profile.recipeFinishTimeSec! : 0);
 
       setError(null);
       setShowTempPrompt(false);
@@ -475,10 +480,12 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     grinderName,
     grindSize,
     micron,
+    recipeFinishTimeSec,
   ]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const pourPlanCanvasRef = useRef<HTMLCanvasElement>(null);
   const suppressNextCanvasClickRef = useRef<boolean>(false);
   const skipNextAutoDetectRef = useRef<boolean>(false);
   const isToolStrokeActiveRef = useRef<boolean>(false);
@@ -836,6 +843,85 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     if (data.length === 0) return 0;
     return Math.max(...data.map(p => p.time));
   }, [getCurrentData]);
+
+  const downloadRecipeReport = useCallback(() => {
+    const pourCanvas = pourPlanCanvasRef.current;
+    if (!pourCanvas) return;
+    const rowH = 13;
+    const headerH = 80;
+    const tableH = pourPlan.length > 0 ? (28 + pourPlan.length * rowH) : 0;
+    const graphH = pourCanvas.height;
+    const graphW = pourCanvas.width;
+    const w = Math.max(600, graphW);
+    const totalH = headerH + tableH + graphH + 20;
+    const tmp = document.createElement('canvas');
+    tmp.width = w * 2;
+    tmp.height = totalH * 2;
+    const ctx = tmp.getContext('2d')!;
+    ctx.scale(2, 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, totalH);
+
+    let ly = 10;
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Recipe', 12, ly); ly += 22;
+    ctx.font = '13px sans-serif';
+    ctx.fillStyle = '#475569';
+    ctx.fillText(`Dose: ${Number.isFinite(doseWeight) ? doseWeight.toFixed(1) : '—'} g  |  Ratio: 1:${Number.isFinite(brewRatio) ? brewRatio.toFixed(1) : '—'}  |  Water: ${Number.isFinite(totalWaterIn) ? totalWaterIn.toFixed(0) : '—'} g`, 12, ly); ly += 18;
+    if (grinderName || (grindSize != null && grindSize > 0) || (micron != null && micron > 0)) {
+      ctx.fillText(`Grinder: ${grinderName || '—'}  |  Size: ${(grindSize != null && grindSize > 0) ? `#${grindSize}` : '—'}  |  Micron: ${(micron != null && micron > 0) ? `${micron}µm` : '—'}`, 12, ly);
+    }
+
+    if (pourPlan.length > 0) {
+      ly += 24;
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText('Pour Plan', 12, ly); ly += 18;
+      const cols = ['#', 'Cum.%', 'EC', 'Cum.g', 'Δg', 'Δ%', 'Dur.', 'Time'];
+      const colW = [24, 56, 48, 60, 60, 56, 44, 64];
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#64748b';
+      let cx = 12;
+      cols.forEach((c, i) => { ctx.fillText(c, cx, ly); cx += colW[i]; });
+      ly += 15;
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(12, ly - 2); ctx.lineTo(12 + colW.reduce((a,b) => a + b, 0), ly - 2); ctx.stroke();
+      ctx.fillStyle = '#334155';
+      const totalG = Number.isFinite(totalWaterIn) && totalWaterIn > 0 ? totalWaterIn : 0;
+      const dt = Number.isFinite(totalBrewTime) && totalBrewTime > 0 ? totalBrewTime : 1;
+      const ecData = getCurrentData();
+      const sortedEC = [...ecData].sort((a, b) => a.time - b.time);
+      let prevPct = 0;
+      pourPlan.forEach((entry, i) => {
+        const pct = entry.cumulativePercent;
+        const cumG = totalG * pct / 100;
+        const deltaG = cumG - totalG * prevPct / 100;
+        const deltaPct = pct - prevPct;
+        const tSec = (pct / 100) * dt;
+        const ecVal = sortedEC.length > 0 ? getECAtTime(tSec) ?? 0 : 0;
+        const durStr = entry.duration != null ? `${entry.duration}s` : '—';
+        const vals = [String(i + 1), pct.toFixed(1) + '%', ecVal.toFixed(2), cumG.toFixed(0), deltaG.toFixed(0), deltaPct.toFixed(1) + '%', durStr, `${Math.floor(tSec / 60)}:${(Math.floor(tSec) % 60).toString().padStart(2, '0')}`];
+        cx = 12;
+        vals.forEach((v, j) => { ctx.fillText(v, cx, ly); cx += colW[j]; });
+        ly += rowH;
+        prevPct = pct;
+      });
+    }
+
+    ly += 10;
+    ctx.drawImage(pourCanvas, 0, ly, graphW, graphH);
+
+    const link = document.createElement('a');
+    link.href = tmp.toDataURL('image/png');
+    link.download = `belka_recipe_${new Date().toISOString().slice(0, 10)}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [pourPlan, pourPlanCanvasRef, doseWeight, brewRatio, totalWaterIn, grinderName, grindSize, micron, totalBrewTime, getECAtTime, getCurrentData]);
 
   const getCumulativePourAtTime = useCallback((time: number): number | null => {
     if (!effectivePourData || effectivePourData.values.length === 0 || effectivePourData.intervalSeconds <= 0) {
@@ -3454,6 +3540,36 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     className="w-16 px-1.5 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
                   />
                 </div>
+                <span className="text-slate-300">|</span>
+                <div className="flex items-center gap-1">
+                  <label className="text-slate-400">Finish:</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={recipeFinishTimeSec > 0 ? Math.floor(recipeFinishTimeSec / 60) : ''}
+                    onChange={(e) => {
+                      const m = Math.max(0, parseInt(e.target.value) || 0);
+                      setRecipeFinishTimeSec(m * 60 + (recipeFinishTimeSec % 60));
+                    }}
+                    placeholder={totalBrewTime > 0 ? String(Math.floor(totalBrewTime / 60)) : 'mm'}
+                    className="w-12 px-1 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
+                  <span className="text-slate-400">:</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={59}
+                    step={1}
+                    value={recipeFinishTimeSec > 0 ? (recipeFinishTimeSec % 60) : ''}
+                    onChange={(e) => {
+                      const s = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
+                      setRecipeFinishTimeSec(Math.floor(recipeFinishTimeSec / 60) * 60 + s);
+                    }}
+                    placeholder={totalBrewTime > 0 ? String(totalBrewTime % 60).padStart(2, '0') : 'ss'}
+                    className="w-12 px-1 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
+                </div>
               </div>
             </div>
 
@@ -3464,6 +3580,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                 <span className="w-28 text-right">Cumul. g</span>
                 <span className="w-24 text-right">Delta g</span>
                 <span className="w-16 text-right">Delta %</span>
+                <span className="w-14 text-right">Dur.s</span>
                 <span className="w-16 text-right">Time</span>
                 <span className="w-16 text-right text-violet-500">EC</span>
                 <span className="w-8" />
@@ -3507,12 +3624,29 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     <span className="w-28 text-right text-slate-600 font-medium tabular-nums">{cumulativeG}g</span>
                     <span className="w-24 text-right text-slate-500 tabular-nums">+{deltaG}g</span>
                     <span className="w-16 text-right text-slate-400 text-xs tabular-nums">({deltaPct > 0 ? '+' : ''}{deltaPct}%)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={entry.duration ?? ''}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setPourPlan(prev => {
+                          const next = [...prev];
+                          next[idx] = { ...next[idx], duration: raw === '' ? undefined : Math.max(0, parseFloat(raw) || 0) };
+                          return next;
+                        });
+                      }}
+                      placeholder="s"
+                      className="w-14 px-1 py-0.5 text-xs border border-slate-200 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    />
                     {(() => {
-                      const pourTime = (entry.cumulativePercent / 100) * totalBrewTime;
-                      const ecVal = getECAtTime(pourTime);
+                      const useTime = recipeFinishTimeSec > 0 ? recipeFinishTimeSec : totalBrewTime;
+                      const pourTime = useTime > 0 ? (entry.cumulativePercent / 100) * useTime : 0;
+                      const ecVal = pourTime > 0 ? getECAtTime(pourTime) : null;
                       return (
                         <>
-                          <span className="w-16 text-right text-slate-600 tabular-nums text-xs">{Math.round(pourTime)}s</span>
+                          <span className="w-16 text-right text-slate-600 tabular-nums text-xs">{Math.floor(pourTime / 60)}:{Math.round(pourTime % 60).toString().padStart(2, '0')}</span>
                           {ecVal != null && (
                             <span className="w-16 text-right text-violet-600 tabular-nums text-xs font-medium">{ecVal.toFixed(2)}</span>
                           )}
@@ -3583,7 +3717,16 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
           </div>
           {pourPlan.length > 0 && totalBrewTime > 0 && (
             <div className="px-4 pb-4">
+              <div className="flex items-center justify-end mb-1 gap-2">
+                <button
+                  onClick={downloadRecipeReport}
+                  className="px-3 py-1 rounded-lg border border-amber-300 bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700"
+                >
+                  Recipe Report
+                </button>
+              </div>
               <PourPlanGraph
+                ref={pourPlanCanvasRef}
                 pourPlan={pourPlan}
                 totalBrewTime={totalBrewTime}
                 ecPoints={getCurrentData()}
@@ -5156,6 +5299,9 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       const n = parseFloat(refractometerTDSInput);
                       return Number.isFinite(n) && n > 0 ? n : null;
                     })()}
+                    grinderName={grinderName}
+                    grindSize={grindSize}
+                    micron={micron}
                   />
                 </div>
               )}

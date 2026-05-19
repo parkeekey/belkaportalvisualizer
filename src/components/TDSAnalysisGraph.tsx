@@ -11,6 +11,7 @@ interface ECPoint {
 
 interface PourPlanEntry {
   cumulativePercent: number;
+  duration?: number;
 }
 
 interface BrewData {
@@ -59,6 +60,9 @@ export interface TDSAnalysisGraphProps {
   onConversionFactorChange?: (value: number) => void;
   onRefractometerTDSInputChange?: (value: string) => void;
   onShowRedLightChange?: (value: boolean) => void;
+  grinderName?: string;
+  grindSize?: number;
+  micron?: number;
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -156,6 +160,9 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   onConversionFactorChange,
   onRefractometerTDSInputChange,
   onShowRedLightChange,
+  grinderName,
+  grindSize,
+  micron,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -199,6 +206,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   const [phaseSummaryZoom, setPhaseSummaryZoom] = useState<number>(1);
   const [phaseSummaryHasManualZoom, setPhaseSummaryHasManualZoom] = useState<boolean>(false);
   const [screenshotBg, setScreenshotBg] = useState<'white' | 'transparent'>('white');
+  const [showRecipeInScreenshot, setShowRecipeInScreenshot] = useState<boolean>(false);
   const [hiddenTargetWindows, setHiddenTargetWindows] = useState<Set<string>>(new Set());
   const [hiddenTargetMarkers, setHiddenTargetMarkers] = useState<Set<string>>(new Set());
 
@@ -1377,7 +1385,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let exportCanvas = canvas;
+    let sourceCanvas = canvas;
     if (screenshotBg === 'white') {
       const tmp = document.createElement('canvas');
       tmp.width = canvas.width;
@@ -1386,6 +1394,75 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       tmpCtx.fillStyle = '#ffffff';
       tmpCtx.fillRect(0, 0, tmp.width, tmp.height);
       tmpCtx.drawImage(canvas, 0, 0);
+      sourceCanvas = tmp;
+    }
+
+    let exportCanvas = sourceCanvas;
+    if (showRecipeInScreenshot) {
+      const dpr = window.devicePixelRatio || 1;
+      const rowH = 13;
+      const cssW = sourceCanvas.width / dpr;
+      const cssH = sourceCanvas.height / dpr;
+      const recipeH = grinderName || (grindSize != null && grindSize > 0) || (micron != null && micron > 0) ? 62 : 46;
+      const planH = pourPlan.length > 0 ? (32 + pourPlan.length * rowH) : 0;
+      const headerH = recipeH + planH;
+      const tmp = document.createElement('canvas');
+      tmp.width = cssW * dpr;
+      tmp.height = (cssH + headerH) * dpr;
+      const ctx = tmp.getContext('2d')!;
+      ctx.scale(dpr, dpr);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cssW, cssH + headerH);
+
+      let ly = 10;
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('Recipe', 12, ly); ly += 18;
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.fillText(`Dose: ${Number.isFinite(doseWeight) ? doseWeight.toFixed(1) : '—'} g  |  Ratio: 1:${Number.isFinite(brewRatio) ? brewRatio.toFixed(1) : '—'}  |  Water: ${Number.isFinite(totalWaterIn) ? totalWaterIn.toFixed(0) : '—'} g`, 12, ly); ly += 16;
+      if (grinderName || (grindSize != null && grindSize > 0) || (micron != null && micron > 0)) {
+        ctx.fillText(`Grinder: ${grinderName || '—'}  |  Size: ${(grindSize != null && grindSize > 0) ? `#${grindSize}` : '—'}  |  Micron: ${(micron != null && micron > 0) ? `${micron}µm` : '—'}`, 12, ly); ly += 18;
+      } else { ly += 2; }
+
+      if (pourPlan.length > 0) {
+        ly += 8;
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('Pour Plan', 12, ly); ly += 16;
+        const cols = ['#', 'Cum.%', 'EC', 'Cum.g', 'Δg', 'Δ%', 'Dur.', 'Time'];
+        const colW = [24, 52, 44, 56, 56, 52, 40, 60];
+        ctx.font = '11px sans-serif';
+        ctx.fillStyle = '#64748b';
+        let cx = 12;
+        cols.forEach((c, i) => { ctx.fillText(c, cx, ly); cx += colW[i]; });
+        ly += 14;
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.beginPath(); ctx.moveTo(12, ly - 2); ctx.lineTo(12 + colW.reduce((a,b) => a + b, 0), ly - 2); ctx.stroke();
+        ctx.fillStyle = '#334155';
+        const totalG = Number.isFinite(totalWaterIn) && totalWaterIn > 0 ? totalWaterIn : 0;
+        const dt = Number.isFinite(timeMax) && timeMax > 0 ? timeMax : 1;
+        const sortedEC = [...ecPoints].sort((a, b) => a.time - b.time);
+        let prevPct = 0;
+        pourPlan.forEach((entry, i) => {
+          const pct = entry.cumulativePercent;
+          const cumG = totalG * pct / 100;
+          const deltaG = cumG - totalG * prevPct / 100;
+          const deltaPct = pct - prevPct;
+          const tSec = (pct / 100) * dt;
+          const ecVal = sortedEC.length > 0 ? interpolateEC(sortedEC, tSec).ec : 0;
+          const durStr = entry.duration != null ? `${entry.duration}s` : '—';
+          const vals = [String(i + 1), pct.toFixed(1) + '%', ecVal.toFixed(2), cumG.toFixed(0), deltaG.toFixed(0), deltaPct.toFixed(1) + '%', durStr, `${Math.floor(tSec / 60)}:${(Math.floor(tSec) % 60).toString().padStart(2, '0')}`];
+          cx = 12;
+          vals.forEach((v, j) => { ctx.fillText(v, cx, ly); cx += colW[j]; });
+          ly += rowH;
+          prevPct = pct;
+        });
+      }
+
+      ctx.drawImage(sourceCanvas, 0, 0, sourceCanvas.width, sourceCanvas.height, 0, headerH, cssW, cssH);
       exportCanvas = tmp;
     }
 
@@ -1887,6 +1964,17 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             }`}
           >
             {screenshotBg === 'white' ? 'BG: White' : 'BG: Alpha'}
+          </button>
+          <button
+            onClick={() => setShowRecipeInScreenshot(v => !v)}
+            className={`h-7 px-2 rounded-lg border text-xs font-medium ${
+              showRecipeInScreenshot
+                ? 'bg-amber-100 border-amber-400 text-amber-800'
+                : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+            }`}
+            title="Toggle recipe info on graph screenshot"
+          >
+            {showRecipeInScreenshot ? 'Recipe: On' : 'Recipe: Off'}
           </button>
         </div>
         <div className="flex items-center gap-2">

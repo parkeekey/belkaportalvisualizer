@@ -1,7 +1,8 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { forwardRef, useRef, useEffect, useState, useCallback } from 'react';
 
 interface PourPlanEntry {
   cumulativePercent: number;
+  duration?: number;
 }
 
 interface ECPoint {
@@ -25,7 +26,7 @@ interface PourPlanGraphProps {
 
 const PAD = { top: 24, right: 24, bottom: 32, left: 48 };
 
-const PourPlanGraph: React.FC<PourPlanGraphProps> = ({ pourPlan, totalBrewTime, ecPoints = [], brewData }) => {
+const PourPlanGraph = forwardRef<HTMLCanvasElement, PourPlanGraphProps>(({ pourPlan, totalBrewTime, ecPoints = [], brewData }, forwardedRef) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 500, height: 200 });
@@ -323,7 +324,7 @@ const PourPlanGraph: React.FC<PourPlanGraphProps> = ({ pourPlan, totalBrewTime, 
       }
 
       const lines: string[] = [
-        `t = ${Math.round(hoverTime)}s (${(timeFrac * 100).toFixed(0)}%)`,
+        `t = ${Math.floor(hoverTime / 60)}:${Math.round(hoverTime % 60).toString().padStart(2, '0')} (${(timeFrac * 100).toFixed(0)}%)`,
         `Pour plan = ${planPctAtTime.toFixed(0)}%`,
       ];
       if (realPourPct != null) lines.push(`Real pour = ${realPourPct.toFixed(1)}%`);
@@ -354,7 +355,7 @@ const PourPlanGraph: React.FC<PourPlanGraphProps> = ({ pourPlan, totalBrewTime, 
     <div ref={wrapRef} className="w-full" style={{ minHeight: 200 }}>
       <div className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Pour Plan Visualization</div>
       <canvas
-        ref={canvasRef}
+        ref={(el) => { (canvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = el; if (typeof forwardedRef === 'function') forwardedRef(el); else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLCanvasElement | null>).current = el; }}
         className="w-full rounded-lg border border-slate-200 bg-white shadow-sm"
         style={{ height: 200 }}
         onMouseMove={handleMouseMove}
@@ -362,6 +363,6 @@ const PourPlanGraph: React.FC<PourPlanGraphProps> = ({ pourPlan, totalBrewTime, 
       />
     </div>
   );
-};
+});
 
 export default PourPlanGraph;

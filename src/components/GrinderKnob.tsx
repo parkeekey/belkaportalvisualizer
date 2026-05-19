@@ -53,10 +53,13 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
   const [focusFrom, setFocusFrom] = useState(0);
   const [focusTo, setFocusTo] = useState(totalClicks);
   const knobRef = useRef<HTMLDivElement>(null);
+  const [turnSpeed, setTurnSpeed] = useState(0.0005);
+  const [dragTransStyle, setDragTransStyle] = useState('transform 0.1s ease');
   const dialRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef(false);
-  const dragBaseAngle = useRef(0);
-  const dragBaseClicks = useRef(0);
+  const dragLastRef = useRef<{ x: number; y: number } | null>(null);
+  const dragAccRef = useRef(0);
+  const dragBaseRef = useRef(0);
+  const isDraggingRef = useRef(false);
 
   const step = microStep === 1 ? 1 : 1 / microStep;
   const decimals = step < 1 ? (String(step).split('.')[1]?.length || 1) : 0;
@@ -108,6 +111,41 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
     });
   }, [totalClicks, onGrindSizeChange, decimals]);
 
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    dragLastRef.current = { x: e.clientX, y: e.clientY };
+    dragAccRef.current = 0;
+    dragBaseRef.current = clicks;
+    isDraggingRef.current = true;
+    setDragTransStyle('none');
+  }, [clicks]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingRef.current || !dragLastRef.current) return;
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const odx = e.clientX - cx;
+    const ody = e.clientY - cy;
+    const ddx = odx - (dragLastRef.current.x - cx);
+    const ddy = ody - (dragLastRef.current.y - cy);
+    const tang = ddx * ody - ddy * odx;
+    dragAccRef.current += -tang;
+    dragLastRef.current = { x: e.clientX, y: e.clientY };
+    const newVal = precise(Math.max(0, Math.min(totalClicks, dragBaseRef.current + dragAccRef.current * turnSpeed)));
+    setClicks(newVal);
+    onGrindSizeChange(newVal);
+    setClickInput(newVal.toFixed(decimals));
+  }, [totalClicks, onGrindSizeChange, decimals, turnSpeed]);
+
+  const handlePointerUp = useCallback((_e: React.PointerEvent) => {
+    isDraggingRef.current = false;
+    dragLastRef.current = null;
+    setDragTransStyle('transform 0.1s ease');
+  }, []);
+
   const makeEntry = (like: boolean | null): GrinderEntry => ({
     id: Date.now().toString(),
     clicks,
@@ -154,26 +192,6 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
 
   const tickAngle = (v: number) => posToAngle(v);
 
-  const angleFromPoint = (clientX: number, clientY: number) => {
-    const rect = dialRef.current?.getBoundingClientRect();
-    if (!rect) return 0;
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    return Math.atan2(clientX - cx, clientY - cy) * 180 / Math.PI;
-  };
-
-  const applyDrag = (clientX: number, clientY: number) => {
-    const currentAngle = angleFromPoint(clientX, clientY);
-    let delta = currentAngle - dragBaseAngle.current;
-    if (delta > 180) delta -= 360;
-    if (delta < -180) delta += 360;
-    const clickDelta = delta / 270 * rangeSpan;
-    const newValue = parseFloat(Math.max(0, Math.min(totalClicks, dragBaseClicks.current + clickDelta)).toFixed(decimals));
-    setClicks(newValue);
-    onGrindSizeChange(newValue);
-    setClickInput(newValue.toFixed(decimals));
-  };
-
   return (
     <div className="border border-emerald-200 rounded-lg bg-emerald-50/50 p-3 space-y-2">
       <div className="flex items-center gap-2 text-xs flex-wrap">
@@ -196,20 +214,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
       {electricInputs}
 
       <div className="flex items-start gap-3 flex-wrap">
-        <div ref={dialRef} className="relative flex-shrink-0 cursor-pointer select-none touch-none" style={{ width: outerPx, height: outerPx }}
-          onPointerDown={(e) => {
-            dragRef.current = true;
-            dialRef.current?.setPointerCapture?.(e.pointerId);
-            dragBaseAngle.current = angleFromPoint(e.clientX, e.clientY);
-            dragBaseClicks.current = clicks;
-          }}
-          onPointerMove={(e) => {
-            if (!dragRef.current) return;
-            applyDrag(e.clientX, e.clientY);
-          }}
-          onPointerUp={() => { dragRef.current = false; }}
-          onPointerCancel={() => { dragRef.current = false; }}
-        >
+        <div ref={dialRef} className="relative flex-shrink-0" style={{ width: outerPx, height: outerPx, touchAction: 'none' }} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp}>
           {microPositions.filter(p => !focusMode || (p >= rangeMin && p <= rangeMax)).map((p) => {
             const a = tickAngle(p);
             return focusMode ? (
@@ -337,7 +342,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
               left: (outerPx - knobPx) / 2,
               top: (outerPx - knobPx) / 2,
               transform: `rotate(${knobAngle}deg)`,
-              transition: 'transform 0.1s ease',
+              transition: dragTransStyle,
             }}
           >
             <div className="absolute top-1 left-1/2 -translate-x-1/2 w-0.5 bg-slate-600 rounded-full"
@@ -409,6 +414,11 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
               </span>
             </div>
           )}
+          <div className="flex items-center gap-2 text-[10px] flex-wrap">
+            <label className="text-slate-400">Turn Speed</label>
+            <input type="range" min={0} max={0.003} step={0.0001} value={turnSpeed} onChange={(e) => setTurnSpeed(parseFloat(e.target.value))} className="w-16 h-1 accent-emerald-500" />
+            <span className="text-slate-500 tabular-nums w-5">{(turnSpeed * 10000).toFixed(0)}</span>
+          </div>
           <div className="flex items-center gap-1">
             <button onClick={() => setZoom(z => Math.max(0.5, z - 0.25))} className="w-5 h-5 rounded border border-slate-300 bg-white text-slate-500 text-[9px] font-bold hover:bg-slate-100 flex items-center justify-center">−</button>
             <span className="text-[9px] text-slate-400 tabular-nums w-6 text-center">{(zoom * 100).toFixed(0)}%</span>

@@ -55,6 +55,8 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
   const knobRef = useRef<HTMLDivElement>(null);
   const dialRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef(false);
+  const dragBaseAngle = useRef(0);
+  const dragBaseClicks = useRef(0);
 
   const step = microStep === 1 ? 1 : 1 / microStep;
   const decimals = step < 1 ? (String(step).split('.')[1]?.length || 1) : 0;
@@ -152,19 +154,24 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
 
   const tickAngle = (v: number) => posToAngle(v);
 
-  const updateFromPointer = (clientX: number, clientY: number) => {
+  const angleFromPoint = (clientX: number, clientY: number) => {
     const rect = dialRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    if (!rect) return 0;
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    const dx = clientX - cx;
-    const dy = clientY - cy;
-    let rawAngle = Math.atan2(dx, dy) * 180 / Math.PI;
-    rawAngle = Math.max(-135, Math.min(135, rawAngle));
-    const pos = parseFloat(((rawAngle + 135) / 270 * rangeSpan + rangeMin).toFixed(decimals));
-    setClicks(pos);
-    onGrindSizeChange(pos);
-    setClickInput(pos.toFixed(decimals));
+    return Math.atan2(clientX - cx, clientY - cy) * 180 / Math.PI;
+  };
+
+  const applyDrag = (clientX: number, clientY: number) => {
+    const currentAngle = angleFromPoint(clientX, clientY);
+    let delta = currentAngle - dragBaseAngle.current;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    const clickDelta = delta / 270 * rangeSpan;
+    const newValue = parseFloat(Math.max(0, Math.min(totalClicks, dragBaseClicks.current + clickDelta)).toFixed(decimals));
+    setClicks(newValue);
+    onGrindSizeChange(newValue);
+    setClickInput(newValue.toFixed(decimals));
   };
 
   return (
@@ -193,11 +200,12 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
           onPointerDown={(e) => {
             dragRef.current = true;
             dialRef.current?.setPointerCapture?.(e.pointerId);
-            updateFromPointer(e.clientX, e.clientY);
+            dragBaseAngle.current = angleFromPoint(e.clientX, e.clientY);
+            dragBaseClicks.current = clicks;
           }}
           onPointerMove={(e) => {
             if (!dragRef.current) return;
-            updateFromPointer(e.clientX, e.clientY);
+            applyDrag(e.clientX, e.clientY);
           }}
           onPointerUp={() => { dragRef.current = false; }}
           onPointerCancel={() => { dragRef.current = false; }}

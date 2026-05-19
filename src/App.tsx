@@ -1,9 +1,10 @@
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { ManualDigitizer, type ManualDigitizerHandle, type ManualDigitizerSessionProfile } from './components/ManualDigitizer';
 import { InfoModal } from './components/InfoModal';
 import { UltrakokiParserPage, type UltrakokiParserPageHandle, type UltrakokiParserSessionProfile } from './components/UltrakokiParserPage';
+import SetupProfile, { type SetupProfileHandle } from './components/SetupProfile';
 
-type AppPage = 'digitizer' | 'ultrakoki-parser';
+type AppPage = 'digitizer' | 'ultrakoki-parser' | 'setup-profile';
 
 const ACTIVE_PAGE_STORAGE_KEY = 'belka.activePage';
 
@@ -13,6 +14,7 @@ interface BelkaWorkspaceProfile {
   activePage: AppPage;
   digitizer: ManualDigitizerSessionProfile;
   ultrakokiParser: UltrakokiParserSessionProfile;
+  setupProfile?: Record<string, unknown>;
 }
 
 function App() {
@@ -20,6 +22,7 @@ function App() {
   const [showProfileBar, setShowProfileBar] = useState(false);
   const digitizerRef = useRef<ManualDigitizerHandle>(null);
   const ultrakokiParserRef = useRef<UltrakokiParserPageHandle>(null);
+  const setupProfileRef = useRef<SetupProfileHandle>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
   const [activePage, setActivePage] = useState<AppPage>(() => {
     try {
@@ -46,12 +49,15 @@ function App() {
       return;
     }
 
+    const setupProfile = setupProfileRef.current?.exportProfile();
+
     const payload: BelkaWorkspaceProfile = {
       version: 1,
       savedAt: new Date().toISOString(),
       activePage,
       digitizer,
       ultrakokiParser,
+      setupProfile: setupProfile ? (setupProfile as unknown as Record<string, unknown>) : undefined,
     };
 
     const timestamp = payload.savedAt.replace(/[:.]/g, '-');
@@ -79,7 +85,10 @@ function App() {
 
       digitizerRef.current?.importProfile(parsed.digitizer);
       ultrakokiParserRef.current?.importProfile(parsed.ultrakokiParser);
-      setActivePage(parsed.activePage === 'ultrakoki-parser' ? 'ultrakoki-parser' : 'digitizer');
+      if (parsed.setupProfile) {
+        setupProfileRef.current?.importProfile(parsed.setupProfile as unknown as Parameters<typeof setupProfileRef.current.importProfile>[0]);
+      }
+      setActivePage(parsed.activePage === 'ultrakoki-parser' || parsed.activePage === 'setup-profile' ? parsed.activePage : 'digitizer');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load workspace profile.';
       window.alert(message);
@@ -121,6 +130,13 @@ function App() {
                 title="Go to Ultrakoki parser"
               >
                 Ultrakoki Parser
+              </button>
+              <button
+                onClick={() => setActivePage('setup-profile')}
+                className={`px-3 py-2 text-sm font-semibold rounded-lg border transition-colors ${activePage === 'setup-profile' ? 'bg-sky-600 border-sky-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                title="Go to Setup Profile"
+              >
+                Setup Profile
               </button>
               <button
                 onClick={() => setShowInfo(true)}
@@ -173,10 +189,13 @@ function App() {
 
       <main>
         <div className={activePage === 'digitizer' ? 'block' : 'hidden'} aria-hidden={activePage !== 'digitizer'}>
-          <ManualDigitizer ref={digitizerRef} onDataExtracted={(data) => console.log('Extracted data:', data)} />
+          <ManualDigitizer ref={digitizerRef} onDataExtracted={(data) => console.log('Extracted data:', data)} onNavigateToSetupProfile={useCallback(() => setActivePage('setup-profile'), [])} />
         </div>
         <div className={activePage === 'ultrakoki-parser' ? 'block' : 'hidden'} aria-hidden={activePage !== 'ultrakoki-parser'}>
           <UltrakokiParserPage ref={ultrakokiParserRef} />
+        </div>
+        <div className={activePage === 'setup-profile' ? 'block' : 'hidden'} aria-hidden={activePage !== 'setup-profile'}>
+          <SetupProfile ref={setupProfileRef} />
         </div>
       </main>
     </div>

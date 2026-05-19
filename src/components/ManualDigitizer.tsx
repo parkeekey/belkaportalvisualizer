@@ -4,6 +4,7 @@ import { InteractiveDataGraph } from './InteractiveDataGraph';
 import { UltrakokiGraph, type UltrakokiBrewData } from './UltrakokiGraph';
 import { TDSAnalysisGraph } from './TDSAnalysisGraph';
 import PourPlanGraph from './PourPlanGraph';
+import GrinderKnob from './GrinderKnob';
 
 interface CalibrationPoint {
   x: number;
@@ -3447,39 +3448,43 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
           <div className="p-4">
             <div className="mb-3">
               <h3 className="text-sm font-bold text-emerald-900 uppercase tracking-wider mb-2">Recipe & Pour Planning</h3>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500">
-                <div className="flex items-center gap-1">
-                  <label className="text-slate-400">Dose:</label>
-                  <input
-                    type="number"
-                    min={1}
-                    step={0.5}
-                    value={doseWeight}
-                    onChange={(e) => {
-                      const v = Math.max(0.1, parseFloat(e.target.value) || 15);
-                      setDoseWeight(v);
-                      localStorage.setItem('belkaDoseWeight', String(v));
-                    }}
-                    className="w-16 px-1.5 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
-                  <span>g</span>
+              <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Dose</label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min={0.1}
+                      step={0.5}
+                      value={doseWeight}
+                      onChange={(e) => {
+                        const v = Math.max(0.1, parseFloat(e.target.value) || 15);
+                        setDoseWeight(v);
+                        localStorage.setItem('belkaDoseWeight', String(v));
+                      }}
+                      className="w-20 px-2 py-1.5 text-sm font-bold text-emerald-800 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm"
+                    />
+                    <span className="text-xs font-medium text-slate-400">g</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <label className="text-slate-400">Ratio:</label>
-                  <span className="text-slate-300">1:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={30}
-                    step={0.1}
-                    value={brewRatio}
-                    onChange={(e) => {
-                      const v = Math.min(30, Math.max(1, parseFloat(e.target.value) || 15));
-                      setBrewRatio(v);
-                      localStorage.setItem('belkaBrewRatio', String(v));
-                    }}
-                    className="w-14 px-1.5 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Ratio</label>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-bold text-slate-400">1:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      step={0.1}
+                      value={brewRatio}
+                      onChange={(e) => {
+                        const v = Math.min(30, Math.max(1, parseFloat(e.target.value) || 15));
+                        setBrewRatio(v);
+                        localStorage.setItem('belkaBrewRatio', String(v));
+                      }}
+                      className="w-16 px-2 py-1.5 text-sm font-bold text-emerald-800 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm"
+                    />
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -3495,82 +3500,58 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       ]);
                     }
                   }}
-                  className="text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg px-2.5 py-1 transition-colors"
+                  className="text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg px-5 py-2 shadow-sm transition-colors"
                 >
                   Calculate
                 </button>
-                <span className="text-slate-400 font-medium tabular-nums">
+                <span className="text-sm font-bold text-emerald-700 tabular-nums px-1">
                   {(() => {
                     const w = totalWaterIn > 0 ? totalWaterIn : doseWeight * brewRatio;
                     return `${w}g water`;
                   })()}
                 </span>
-                <span className="text-slate-300">|</span>
-                <div className="flex items-center gap-1">
-                  <label className="text-slate-400">Grinder:</label>
-                  <input
-                    type="text"
-                    value={grinderName}
-                    onChange={(e) => setGrinderName(e.target.value)}
-                    placeholder="e.g. Ode Gen 2"
-                    className="w-24 px-1.5 py-0.5 text-xs border border-emerald-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <label className="text-slate-400">#</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={grindSize || ''}
-                    onChange={(e) => setGrindSize(e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0))}
-                    placeholder="5"
-                    className="w-14 px-1.5 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <label className="text-slate-400">µm:</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={micron || ''}
-                    onChange={(e) => setMicron(e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0))}
-                    placeholder="optional"
-                    className="w-16 px-1.5 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
-                </div>
-                <span className="text-slate-300">|</span>
-                <div className="flex items-center gap-1">
-                  <label className="text-slate-400">Finish:</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={recipeFinishTimeSec > 0 ? Math.floor(recipeFinishTimeSec / 60) : ''}
-                    onChange={(e) => {
-                      const m = Math.max(0, parseInt(e.target.value) || 0);
-                      setRecipeFinishTimeSec(m * 60 + (recipeFinishTimeSec % 60));
-                    }}
-                    placeholder={totalBrewTime > 0 ? String(Math.floor(totalBrewTime / 60)) : 'mm'}
-                    className="w-12 px-1 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
-                  <span className="text-slate-400">:</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={59}
-                    step={1}
-                    value={recipeFinishTimeSec > 0 ? (recipeFinishTimeSec % 60) : ''}
-                    onChange={(e) => {
-                      const s = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
-                      setRecipeFinishTimeSec(Math.floor(recipeFinishTimeSec / 60) * 60 + s);
-                    }}
-                    placeholder={totalBrewTime > 0 ? String(totalBrewTime % 60).padStart(2, '0') : 'ss'}
-                    className="w-12 px-1 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Finish Time</label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={recipeFinishTimeSec > 0 ? Math.floor(recipeFinishTimeSec / 60) : ''}
+                      onChange={(e) => {
+                        const m = Math.max(0, parseInt(e.target.value) || 0);
+                        setRecipeFinishTimeSec(m * 60 + (recipeFinishTimeSec % 60));
+                      }}
+                      placeholder={totalBrewTime > 0 ? String(Math.floor(totalBrewTime / 60)) : 'mm'}
+                      className="w-14 px-2 py-1.5 text-sm font-bold text-emerald-800 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm"
+                    />
+                    <span className="text-sm font-bold text-slate-400">:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={59}
+                      step={1}
+                      value={recipeFinishTimeSec > 0 ? (recipeFinishTimeSec % 60) : ''}
+                      onChange={(e) => {
+                        const s = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
+                        setRecipeFinishTimeSec(Math.floor(recipeFinishTimeSec / 60) * 60 + s);
+                      }}
+                      placeholder={totalBrewTime > 0 ? String(totalBrewTime % 60).padStart(2, '0') : 'ss'}
+                      className="w-14 px-2 py-1.5 text-sm font-bold text-emerald-800 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm"
+                    />
+                  </div>
                 </div>
               </div>
+            </div>
+
+            <div className="px-1">
+              <GrinderKnob
+                grinderName={grinderName}
+                onGrinderNameChange={setGrinderName}
+                grindSize={grindSize}
+                onGrindSizeChange={setGrindSize}
+                micron={micron}
+              />
             </div>
 
             <div className="space-y-2">

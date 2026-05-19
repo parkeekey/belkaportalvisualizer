@@ -55,7 +55,9 @@ function App() {
     };
 
     const timestamp = payload.savedAt.replace(/[:.]/g, '-');
-    const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: 'application/json;charset=utf-8' });
+    const json = `${JSON.stringify(payload, null, 2)}\n`;
+    fetch('/api/save-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json }).catch(() => {});
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

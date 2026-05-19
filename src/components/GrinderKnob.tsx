@@ -53,6 +53,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
   const [focusFrom, setFocusFrom] = useState(0);
   const [focusTo, setFocusTo] = useState(totalClicks);
   const knobRef = useRef<HTMLDivElement>(null);
+  const dialRef = useRef<HTMLDivElement>(null);
 
   const step = microStep === 1 ? 1 : 1 / microStep;
   const decimals = step < 1 ? (String(step).split('.')[1]?.length || 1) : 0;
@@ -150,6 +151,21 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
 
   const tickAngle = (v: number) => posToAngle(v);
 
+  const handleDialClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = dialRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    let rawAngle = Math.atan2(dx, dy) * 180 / Math.PI;
+    rawAngle = Math.max(-135, Math.min(135, rawAngle));
+    const pos = precise((rawAngle + 135) / 270 * rangeSpan + rangeMin);
+    setClicks(pos);
+    onGrindSizeChange(pos);
+    setClickInput(pos.toFixed(decimals));
+  }, [rangeMin, rangeSpan, precise, onGrindSizeChange, decimals]);
+
   return (
     <div className="border border-emerald-200 rounded-lg bg-emerald-50/50 p-3 space-y-2">
       <div className="flex items-center gap-2 text-xs flex-wrap">
@@ -172,7 +188,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
       {electricInputs}
 
       <div className="flex items-start gap-3 flex-wrap">
-        <div className="relative flex-shrink-0" style={{ width: outerPx, height: outerPx }}>
+        <div ref={dialRef} className="relative flex-shrink-0 cursor-pointer select-none" style={{ width: outerPx, height: outerPx }} onClick={handleDialClick}>
           {microPositions.filter(p => !focusMode || (p >= rangeMin && p <= rangeMax)).map((p) => {
             const a = tickAngle(p);
             return focusMode ? (

@@ -54,6 +54,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
   const [focusTo, setFocusTo] = useState(totalClicks);
   const knobRef = useRef<HTMLDivElement>(null);
   const dialRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef(false);
 
   const step = microStep === 1 ? 1 : 1 / microStep;
   const decimals = step < 1 ? (String(step).split('.')[1]?.length || 1) : 0;
@@ -151,20 +152,20 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
 
   const tickAngle = (v: number) => posToAngle(v);
 
-  const handleDialClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const updateFromPointer = (clientX: number, clientY: number) => {
     const rect = dialRef.current?.getBoundingClientRect();
     if (!rect) return;
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    const dx = e.clientX - cx;
-    const dy = e.clientY - cy;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
     let rawAngle = Math.atan2(dx, dy) * 180 / Math.PI;
     rawAngle = Math.max(-135, Math.min(135, rawAngle));
-    const pos = precise((rawAngle + 135) / 270 * rangeSpan + rangeMin);
+    const pos = parseFloat(((rawAngle + 135) / 270 * rangeSpan + rangeMin).toFixed(decimals));
     setClicks(pos);
     onGrindSizeChange(pos);
     setClickInput(pos.toFixed(decimals));
-  }, [rangeMin, rangeSpan, precise, onGrindSizeChange, decimals]);
+  };
 
   return (
     <div className="border border-emerald-200 rounded-lg bg-emerald-50/50 p-3 space-y-2">
@@ -188,7 +189,19 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
       {electricInputs}
 
       <div className="flex items-start gap-3 flex-wrap">
-        <div ref={dialRef} className="relative flex-shrink-0 cursor-pointer select-none" style={{ width: outerPx, height: outerPx }} onClick={handleDialClick}>
+        <div ref={dialRef} className="relative flex-shrink-0 cursor-pointer select-none touch-none" style={{ width: outerPx, height: outerPx }}
+          onPointerDown={(e) => {
+            dragRef.current = true;
+            dialRef.current?.setPointerCapture?.(e.pointerId);
+            updateFromPointer(e.clientX, e.clientY);
+          }}
+          onPointerMove={(e) => {
+            if (!dragRef.current) return;
+            updateFromPointer(e.clientX, e.clientY);
+          }}
+          onPointerUp={() => { dragRef.current = false; }}
+          onPointerCancel={() => { dragRef.current = false; }}
+        >
           {microPositions.filter(p => !focusMode || (p >= rangeMin && p <= rangeMax)).map((p) => {
             const a = tickAngle(p);
             return focusMode ? (

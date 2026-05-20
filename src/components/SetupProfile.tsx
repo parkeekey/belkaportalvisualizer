@@ -487,18 +487,18 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       </section>
 
       {/* Grinder Setup */}
-      <section id="grinder-setup" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <section id="grinder-setup" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm overflow-x-hidden">
         <h3 className="text-sm font-bold text-amber-800 uppercase tracking-wider mb-3">Grinder Setup</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
-          <div className="flex flex-col gap-0.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+          <div className="flex flex-col gap-0.5 min-w-0">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Grinder</label>
             <div className="flex items-center gap-1.5">
               <input type="text" value={grinderName} onChange={(e) => setGrinderName(e.target.value)} placeholder="e.g. Comandante C40" className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400" />
             </div>
           </div>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5 min-w-0">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Power</label>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap">
               {(['hand', 'electric'] as const).map((p) => (
                 <button key={p} type="button" onClick={() => setGrinderPower(p)} className={`flex-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${grinderPower === p ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-500 border-slate-200 hover:border-amber-200'}`}>
                   {p === 'hand' ? '🖐 Hand' : '⚡ Electric'}
@@ -506,9 +506,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               ))}
             </div>
           </div>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5 min-w-0">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Burr Type</label>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap">
               {(['conical', 'flat', 'blade'] as const).map((b) => (
                 <button key={b} type="button" onClick={() => setGrinderBurr(b)} className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${grinderBurr === b ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-500 border-slate-200 hover:border-amber-200'}`}>
                   {b === 'conical' ? 'Conical' : b === 'flat' ? 'Flat' : 'Blade'}
@@ -516,7 +516,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               ))}
             </div>
           </div>
-          <div className="flex flex-col gap-0.5 col-span-1">
+          <div className="flex flex-col gap-0.5 col-span-1 min-w-0">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Fines Tendency</label>
             <div className="flex items-center gap-2">
               {(['low', 'medium', 'high'] as const).map((f) => (
@@ -526,7 +526,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               ))}
             </div>
           </div>
-          <div className="col-span-2 md:col-span-3">
+          <div className="col-span-1 sm:col-span-2 md:col-span-3">
             <div className={`p-2 rounded-lg text-[10px] leading-relaxed border ${
               finesTendency === 'low' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
               finesTendency === 'medium' ? 'bg-amber-50 border-amber-200 text-amber-700' :
@@ -539,7 +539,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               {grinderBurr === 'blade' && ' Blade grinders produce very uneven particle sizes. Consistent dosing is difficult.'}
             </div>
           </div>
-          <div className="col-span-2 md:col-span-3 flex flex-col gap-1.5">
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center justify-between">
               <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Particle Size</label>
               <div className="flex items-center gap-2">
@@ -601,7 +601,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </div>
           </div>
           {/* Calibration: grind # ↔ micron */}
-          <div className="col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1">
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Calibration</span>
               <div className="flex items-center gap-1">
@@ -648,7 +648,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             )}
           </div>
           {/* Dialing Range */}
-          <div className="col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1">
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Dialing Range</span>
               <div className="flex items-center gap-0.5">
@@ -672,23 +672,25 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               const total = dialRangeMax - dialRangeMin;
               const steps = Array.from({ length: total + 1 }, (_, i) => dialRangeMin + i);
               return (
-                <div className="mt-2 flex items-center gap-0.5">
-                  {steps.map(s => {
+                <div className="mt-2 overflow-x-auto">
+                  <div className="flex items-center gap-0.5 min-w-[560px]">
+                    {steps.map(s => {
                       return (
-                      <div key={s} className="flex-1 flex flex-col items-center gap-0.5">
-                        <div className={`w-full h-2 rounded-sm ${s === 14 || s === 16 ? 'bg-emerald-400' : s >= 14 && s <= 16 ? 'bg-emerald-300' : s < 14 ? 'bg-sky-300' : 'bg-amber-300'}`} />
-                        <span className={`text-[8px] font-bold tabular-nums ${s >= 14 && s <= 16 ? 'text-emerald-700' : 'text-slate-400'}`}>#{s}</span>
-                        {s === 14 && <span className="text-[7px] text-emerald-600 font-bold">◀ finest</span>}
-                        {s === 16 && <span className="text-[7px] text-emerald-600 font-bold">coarsest ▶</span>}
-                      </div>
-                    );
-                  })}
+                        <div key={s} className="flex-1 flex flex-col items-center gap-0.5">
+                          <div className={`w-full h-2 rounded-sm ${s === 14 || s === 16 ? 'bg-emerald-400' : s >= 14 && s <= 16 ? 'bg-emerald-300' : s < 14 ? 'bg-sky-300' : 'bg-amber-300'}`} />
+                          <span className={`text-[8px] font-bold tabular-nums ${s >= 14 && s <= 16 ? 'text-emerald-700' : 'text-slate-400'}`}>#{s}</span>
+                          {s === 14 && <span className="text-[7px] text-emerald-600 font-bold">◀ finest</span>}
+                          {s === 16 && <span className="text-[7px] text-emerald-600 font-bold">coarsest ▶</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })()}
           </div>
           {/* Save / Load profiles */}
-          <div className="col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1">
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <input type="text" value={profileNameInput} onChange={(e) => setProfileNameInput(e.target.value)} placeholder="Profile name..." className="flex-1 max-w-40 px-2 py-1 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" />
               <button type="button" onClick={() => {

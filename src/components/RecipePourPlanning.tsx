@@ -22,6 +22,7 @@ export interface RecipePourPlanningHandle {
   exportProfile: () => RecipePourPlanningProfile;
   importProfile: (profile: RecipePourPlanningProfile) => void;
   setFinishTime: (sec: number) => void;
+  setGrindCalibration: (grindNum: number, micronVal: number) => void;
 }
 
 interface ECPoint {
@@ -52,9 +53,11 @@ interface RecipePourPlanningProps {
   profile?: ProfileData;
   onProfileChange?: (profile: ProfileData) => void;
   brewTargetSec?: number;
+  expectedTDSMin?: number;
+  expectedTDSMax?: number;
 }
 
-const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanningProps>(({ ecProps, profile: controlledProfile, onProfileChange, brewTargetSec }, ref) => {
+const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanningProps>(({ ecProps, profile: controlledProfile, onProfileChange, brewTargetSec, expectedTDSMin, expectedTDSMax }, ref) => {
   const isControlled = controlledProfile !== undefined;
   const [internalDoseWeight, setInternalDoseWeight] = useState<number>(() => {
     const saved = localStorage.getItem('belkaDoseWeight');
@@ -139,6 +142,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
     }
   }, [isControlled, onProfileChange, doseWeight, brewRatio, totalWaterIn, pourPlan, recipeFinishTimeSec, grindSize, micron]);
   const setGrindSize = useCallback((v: number) => {
+    localStorage.setItem('belkaGrindSize', String(v));
     if (isControlled) {
       onProfileChange?.({ doseWeight, brewRatio, totalWaterIn, pourPlan, recipeFinishTimeSec, grinderName, grindSize: v, micron });
     } else {
@@ -205,6 +209,15 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
         onProfileChange?.({ doseWeight, brewRatio, totalWaterIn, pourPlan, recipeFinishTimeSec: sec, grinderName, grindSize, micron });
       } else {
         setInternalRecipeFinishTimeSec(sec);
+      }
+    },
+    setGrindCalibration: (grindNum: number, micronVal: number) => {
+      localStorage.setItem('belkaGrindSize', String(grindNum));
+      if (isControlled) {
+        onProfileChange?.({ doseWeight, brewRatio, totalWaterIn, pourPlan, recipeFinishTimeSec, grinderName, grindSize: grindNum, micron: micronVal });
+      } else {
+        setInternalGrindSize(grindNum);
+        setInternalMicron(micronVal);
       }
     },
   }), [doseWeight, brewRatio, totalWaterIn, pourPlan, recipeFinishTimeSec, grinderName, grindSize, micron, isControlled, onProfileChange]);
@@ -415,6 +428,8 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
             grindSize={grindSize}
             onGrindSizeChange={setGrindSize}
             micron={micron}
+            expectedTDSMin={expectedTDSMin}
+            expectedTDSMax={expectedTDSMax}
           />
         </div>
 

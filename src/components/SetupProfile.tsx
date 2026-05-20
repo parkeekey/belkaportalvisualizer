@@ -58,6 +58,38 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const [icedEYmin, setIcedEYmin] = useState(18);
   const [icedEYmax, setIcedEYmax] = useState(22);
 
+  const [finesTendency, setFinesTendency] = useState<'low' | 'medium' | 'high'>('medium');
+  const [grinderBurr, setGrinderBurr] = useState<'conical' | 'flat' | 'blade'>('conical');
+  const [grinderPower, setGrinderPower] = useState<'hand' | 'electric'>('hand');
+  const [grinderName, setGrinderName] = useState('');
+  const [grinderMicron, setGrinderMicron] = useState(800);
+  const [grinderProfiles, setGrinderProfiles] = useState<Record<string, { name: string; power: string; burr: string; fines: string; micron: number }>>(() => {
+    try { return JSON.parse(localStorage.getItem('belkaGrinderProfiles') || '{}'); } catch { return {}; }
+  });
+  const [profileNameInput, setProfileNameInput] = useState('');
+  const [grinderCalibration, setGrinderCalibration] = useState<{ grindNum: number; micron: number }[]>(() => {
+    try { return JSON.parse(localStorage.getItem('belkaGrinderCal') || '[]'); } catch { return []; }
+  });
+  const [calGrindDraft, setCalGrindDraft] = useState('0');
+  const [calMicronDraft, setCalMicronDraft] = useState('800');
+  const MICRON_RANGES = [
+    { id: 'turkish', label: 'Turkish / Ibrik', min: 200, max: 300, mid: 250, color: 'text-purple-700 bg-purple-50 border-purple-200', note: 'Ultra-fine, powder-like.' },
+    { id: 'espresso', label: 'Espresso', min: 300, max: 400, mid: 350, color: 'text-red-700 bg-red-50 border-red-200', note: 'Fine, high pressure required.' },
+    { id: 'moka', label: 'Moka Pot / Fine Aeropress', min: 400, max: 500, mid: 450, color: 'text-orange-700 bg-orange-50 border-orange-200', note: 'Between espresso and pour-over.' },
+    { id: 'pourover', label: 'Pour-Over / V60 / Drip', min: 500, max: 700, mid: 600, color: 'text-emerald-700 bg-emerald-50 border-emerald-200', note: 'Standard pour-over range.' },
+    { id: 'chemex', label: 'Chemex / Kalita / Flat Bottom', min: 700, max: 900, mid: 800, color: 'text-teal-700 bg-teal-50 border-teal-200', note: 'Clean cup, faster flow.' },
+    { id: 'frenchpress', label: 'French Press / Coarse Aeropress', min: 900, max: 1100, mid: 1000, color: 'text-amber-700 bg-amber-50 border-amber-200', note: 'Full immersion, heavy body.' },
+    { id: 'coldbrew', label: 'Cold Brew / Cupping', min: 1100, max: 1400, mid: 1250, color: 'text-stone-700 bg-stone-50 border-stone-200', note: 'Very coarse, long steep.' },
+  ];
+  const [targetMethod, setTargetMethod] = useState<string | null>(null);
+  const micronGuide = useMemo(() => {
+    const r = MICRON_RANGES.find(r => grinderMicron >= r.min && grinderMicron < r.max) ?? MICRON_RANGES[MICRON_RANGES.length - 1];
+    return r;
+  }, [grinderMicron]);
+  const targetRange = useMemo(() => {
+    if (!targetMethod) return null;
+    return MICRON_RANGES.find(r => r.id === targetMethod) ?? null;
+  }, [targetMethod]);
   const [waterTemp, setWaterTemp] = useState(93);
   const [waterQuality, setWaterQuality] = useState<'soft' | 'medium' | 'hard'>('medium');
   const [turbulenceLevel, setTurbulenceLevel] = useState(2);
@@ -115,8 +147,8 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
   const [targetTDSMin, setTargetTDSMin] = useState('1.30');
   const [targetTDSMax, setTargetTDSMax] = useState('1.45');
-  const [currentTDS, setCurrentTDS] = useState(1.35);
   const [targetEY, setTargetEY] = useState('20');
+  const [currentTDS, setCurrentTDS] = useState(1.35);
   const [tdsPlanRatio, setTdsPlanRatio] = useState(() => {
     const saved = localStorage.getItem('belkaBrewRatio');
     return saved ? (parseFloat(saved) || 16) : 16;
@@ -128,11 +160,20 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     grindSize: 0,
   }));
   useEffect(() => {
+    const ey = parseFloat(targetEY) || 20;
+    if (tdsPlanRatio > 0) {
+      const t = ey / tdsPlanRatio;
+      setTargetTDSMin((t - 0.05).toFixed(2));
+      setTargetTDSMax((t + 0.05).toFixed(2));
+    }
+  }, [targetEY, tdsPlanRatio]);
+  useEffect(() => {
     const id = setInterval(() => {
       const dose = parseFloat(localStorage.getItem('belkaDoseWeight') || '0') || 18;
       const ratio = parseFloat(localStorage.getItem('belkaBrewRatio') || '0') || 16;
       const water = parseFloat(localStorage.getItem('belkaTotalWaterIn') || '0') || 288;
-      setRecipeValues(r => r.dose !== dose || r.ratio !== ratio || r.water !== water ? { ...r, dose, ratio, water } : r);
+      const grindSize = parseFloat(localStorage.getItem('belkaGrindSize') || '0') || 0;
+      setRecipeValues(r => r.dose !== dose || r.ratio !== ratio || r.water !== water || r.grindSize !== grindSize ? { ...r, dose, ratio, water, grindSize } : r);
     }, 1000);
     return () => clearInterval(id);
   }, []);
@@ -247,6 +288,208 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             )}
           </div>
 
+        </div>
+      </section>
+
+      {/* Grinder Setup */}
+      <section id="grinder-setup" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <h3 className="text-sm font-bold text-amber-800 uppercase tracking-wider mb-3">Grinder Setup</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Grinder</label>
+            <div className="flex items-center gap-1.5">
+              <input type="text" value={grinderName} onChange={(e) => setGrinderName(e.target.value)} placeholder="e.g. Comandante C40" className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Power</label>
+            <div className="flex gap-1">
+              {(['hand', 'electric'] as const).map((p) => (
+                <button key={p} type="button" onClick={() => setGrinderPower(p)} className={`flex-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${grinderPower === p ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-500 border-slate-200 hover:border-amber-200'}`}>
+                  {p === 'hand' ? '🖐 Hand' : '⚡ Electric'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Burr Type</label>
+            <div className="flex gap-1">
+              {(['conical', 'flat', 'blade'] as const).map((b) => (
+                <button key={b} type="button" onClick={() => setGrinderBurr(b)} className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${grinderBurr === b ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-500 border-slate-200 hover:border-amber-200'}`}>
+                  {b === 'conical' ? 'Conical' : b === 'flat' ? 'Flat' : 'Blade'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-0.5 col-span-1">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Fines Tendency</label>
+            <div className="flex items-center gap-2">
+              {(['low', 'medium', 'high'] as const).map((f) => (
+                <button key={f} type="button" onClick={() => setFinesTendency(f)} className={`flex-1 px-2 py-1.5 text-[11px] font-bold rounded-lg border transition-colors ${finesTendency === f ? f === 'low' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : f === 'medium' ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-red-100 text-red-700 border-red-300' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}>
+                  {f === 'low' ? '↘ Low' : f === 'medium' ? '→ Med' : '↗ High'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="col-span-2 md:col-span-3">
+            <div className={`p-2 rounded-lg text-[10px] leading-relaxed border ${
+              finesTendency === 'low' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+              finesTendency === 'medium' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+              'bg-red-50 border-red-200 text-red-700'
+            }`}>
+              {finesTendency === 'low' && '⚫ Low fines — clean bed, predictable flow, consistent extractions.'}
+              {finesTendency === 'medium' && '⚫ Moderate fines — slight channeling risk on fast pours. Keep agitation moderate.'}
+              {finesTendency === 'high' && '⚫ High fines — clogging risk, stalled brews, uneven extraction. Coarsen or reduce agitation.'}
+              {grinderBurr === 'flat' && finesTendency === 'high' && ' Worn flat burrs may cause this — consider replacement.'}
+              {grinderBurr === 'blade' && ' Blade grinders produce very uneven particle sizes. Consistent dosing is difficult.'}
+            </div>
+          </div>
+          <div className="col-span-2 md:col-span-3 flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Particle Size</label>
+              <div className="flex items-center gap-2">
+                {targetRange && (
+                  <span className="text-[9px] text-slate-400 font-medium">
+                    {targetRange.min}–{targetRange.max}µm
+                  </span>
+                )}
+                <span className="text-xs font-bold text-amber-700 tabular-nums">{grinderMicron} µm</span>
+              </div>
+            </div>
+            {/* Slider with target zone overlay */}
+            <div className="relative">
+              <input type="range" min={200} max={1400} step={25} value={grinderMicron} onChange={(e) => setGrinderMicron(parseInt(e.target.value))} className="w-full h-1.5 accent-amber-500 relative z-10" />
+              {targetRange && (
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none" style={{ height: '6px' }}>
+                  <div
+                    className="absolute h-full rounded-full bg-emerald-300/40 border-x border-emerald-400/50"
+                    style={{ left: `${((targetRange.min - 200) / 1200) * 100}%`, width: `${((targetRange.max - targetRange.min) / 1200) * 100}%` }}
+                  />
+                </div>
+              )}
+            </div>
+            {/* Target method pills */}
+            <div className="flex flex-wrap gap-1">
+              {MICRON_RANGES.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => {
+                    setTargetMethod(targetMethod === r.id ? null : r.id);
+                    setGrinderMicron(r.mid);
+                  }}
+                  className={`text-[9px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+                    targetMethod === r.id
+                      ? 'bg-amber-100 text-amber-700 border-amber-300'
+                      : micronGuide.id === r.id
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                      : 'bg-white text-slate-400 border-slate-200 hover:border-amber-200'
+                  }`}
+                >
+                  {r.label} <span className="text-[8px] opacity-70">{r.min}–{r.max}</span>
+                </button>
+              ))}
+            </div>
+            {/* Current guide + target info */}
+            <div className="flex items-start gap-2">
+              <div className={`flex-1 px-2 py-1 rounded-lg text-[10px] font-semibold border ${micronGuide.color}`}>
+                Current: {micronGuide.label} — {micronGuide.note}
+              </div>
+              {targetRange && (
+                <div className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-amber-50 border border-amber-200 text-amber-700 whitespace-nowrap">
+                  Target: {targetRange.min}–{targetRange.max}µm
+                  {grinderMicron < targetRange.min && ` (${targetRange.min - grinderMicron}µm finer)`}
+                  {grinderMicron > targetRange.max && ` (${grinderMicron - targetRange.max}µm coarser)`}
+                  {grinderMicron >= targetRange.min && grinderMicron <= targetRange.max && ' ✓ in range'}
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Calibration: grind # ↔ micron */}
+          <div className="col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Calibration</span>
+              <div className="flex items-center gap-1">
+                <label className="text-[9px] text-slate-400">Grind #</label>
+                <input type="number" min={0} max={100} value={calGrindDraft} onChange={(e) => setCalGrindDraft(e.target.value)} onBlur={() => { const v = parseInt(calGrindDraft); if (isNaN(v) || v < 0) setCalGrindDraft('0'); else setCalGrindDraft(String(v)); }} className="w-12 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+              <div className="flex items-center gap-1">
+                <label className="text-[9px] text-slate-400">µm</label>
+                <input type="number" min={200} max={1400} step={25} value={calMicronDraft} onChange={(e) => setCalMicronDraft(e.target.value)} onBlur={() => { const v = parseInt(calMicronDraft); if (isNaN(v) || v < 200) setCalMicronDraft('800'); else if (v > 1400) setCalMicronDraft('1400'); else setCalMicronDraft(String(v)); }} className="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+              <button type="button" onClick={() => {
+                const g = parseInt(calGrindDraft);
+                const m = parseInt(calMicronDraft);
+                if (isNaN(g) || isNaN(m) || g < 0 || m < 200) return;
+                const updated = [...grinderCalibration, { grindNum: g, micron: m }];
+                setGrinderCalibration(updated);
+                localStorage.setItem('belkaGrinderCal', JSON.stringify(updated));
+                setCalGrindDraft('0');
+                setCalMicronDraft('800');
+              }} className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100">Record</button>
+            </div>
+            {grinderCalibration.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {[...grinderCalibration].reverse().map((c, i) => {
+                  const range = MICRON_RANGES.find(r => c.micron >= r.min && c.micron < r.max) ?? MICRON_RANGES[MICRON_RANGES.length - 1];
+                  return (
+                    <div key={i} className="flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 rounded text-[10px] tabular-nums">
+                      <span className="font-semibold text-slate-600">#{c.grindNum}</span>
+                      <span className="text-slate-400">→</span>
+                      <span className="text-amber-700 font-bold">{c.micron}µm</span>
+                      <span className="text-slate-300">|</span>
+                      <span className="text-[9px] text-slate-500">{range.label}</span>
+                      <button type="button" onClick={() => { recipePlanRef.current?.setGrindCalibration(c.grindNum, c.micron); document.getElementById('recipe-pour-planning')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-1.5 py-0.5 rounded text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100" title="Send to Recipe">→ Recipe</button>
+                      <button type="button" onClick={() => {
+                        const idx = grinderCalibration.length - 1 - i;
+                        const updated = grinderCalibration.filter((_, j) => j !== idx);
+                        setGrinderCalibration(updated);
+                        localStorage.setItem('belkaGrinderCal', JSON.stringify(updated));
+                      }} className="text-red-400 hover:text-red-600 text-[9px] font-bold px-0.5">✕</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          {/* Save / Load profiles */}
+          <div className="col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1">
+            <div className="flex items-center gap-2 mb-2">
+              <input type="text" value={profileNameInput} onChange={(e) => setProfileNameInput(e.target.value)} placeholder="Profile name..." className="flex-1 max-w-40 px-2 py-1 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              <button type="button" onClick={() => {
+                const name = profileNameInput.trim();
+                if (!name) return;
+                const updated = { ...grinderProfiles, [name]: { name: grinderName, power: grinderPower, burr: grinderBurr, fines: finesTendency, micron: grinderMicron } };
+                setGrinderProfiles(updated);
+                localStorage.setItem('belkaGrinderProfiles', JSON.stringify(updated));
+                setProfileNameInput('');
+              }} disabled={!profileNameInput.trim()} className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 disabled:opacity-40">Save</button>
+              {Object.keys(grinderProfiles).length > 0 && (
+                <span className="text-[9px] text-slate-400 ml-1">{Object.keys(grinderProfiles).length} saved</span>
+              )}
+            </div>
+            {Object.keys(grinderProfiles).length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {Object.entries(grinderProfiles).map(([key, p]) => (
+                  <div key={key} className="flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px]">
+                    <button type="button" onClick={() => {
+                      setGrinderName(p.name);
+                      setGrinderPower(p.power as 'hand' | 'electric');
+                      setGrinderBurr(p.burr as 'conical' | 'flat' | 'blade');
+                      setFinesTendency(p.fines as 'low' | 'medium' | 'high');
+                      setGrinderMicron(p.micron);
+                    }} className="font-semibold text-slate-700 hover:text-amber-600">{key}</button>
+                    <button type="button" onClick={() => {
+                      const updated = { ...grinderProfiles };
+                      delete updated[key];
+                      setGrinderProfiles(updated);
+                      localStorage.setItem('belkaGrinderProfiles', JSON.stringify(updated));
+                    }} className="text-red-400 hover:text-red-600 text-[9px] font-bold px-1">✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -478,6 +721,23 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                process === 'lactic' ? 'Bright fermentation — coarser grind recommended' :
                process === 'thermal-shock' ? 'Delicate processing — handle with care' :
                'Unknown profile — start standard and adjust'}
+            </p>
+          </div>
+
+          {/* Fines perk */}
+          <div className={`flex-1 min-w-[140px] bg-gradient-to-br rounded-lg p-2.5 border ${
+            finesTendency === 'low' ? 'from-emerald-50 to-green-50 border-emerald-200' :
+            finesTendency === 'medium' ? 'from-amber-50 to-yellow-50 border-amber-200' :
+            'from-red-50 to-rose-50 border-red-200'
+          }`}>
+            <div className="flex items-center gap-1 mb-0.5">
+              <span className="text-xs">⚫</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">Fines</span>
+            </div>
+            <p className="text-[9px] text-slate-500 leading-tight">
+              {finesTendency === 'low' ? 'Clean particle distribution — predictable flow, even extraction.' :
+               finesTendency === 'medium' ? 'Moderate fines — watch for slow drawdown on light roasts.' :
+               'High fines — significant clogging risk, grind coarser or use slower pour.'}
             </p>
           </div>
 
@@ -1015,7 +1275,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       </section>
 
       {/* TDS Target */}
-      <section className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <section id="tds-target" className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <TDSHUD
           tdsMin={parseFloat(targetTDSMin) || 0}
           tdsMax={parseFloat(targetTDSMax) || 0}
@@ -1115,6 +1375,21 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 <span className="text-sm font-bold text-slate-400">%</span>
               </div>
             </div>
+            <div className="flex items-center gap-1 ml-auto">
+              {tdsPlanRatio > 0 && (() => {
+                const ey = parseFloat(targetEY) || 20;
+                const tdsFromEY = ey / tdsPlanRatio;
+                const tdsLo = (tdsFromEY - 0.05).toFixed(2);
+                const tdsHi = (tdsFromEY + 0.05).toFixed(2);
+                return (
+                  <>
+                    <span className="text-[10px] text-slate-400">→ TDS</span>
+                    <span className="text-[10px] font-bold text-emerald-700 tabular-nums">{tdsLo}–{tdsHi}%</span>
+                    <button type="button" onClick={() => { setTargetTDSMin(tdsLo); setTargetTDSMax(tdsHi); document.getElementById('recipe-pour-planning')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100">→ Pour Plan</button>
+                  </>
+                );
+              })()}
+            </div>
             {tdsPlanRatio > 0 && (() => {
               const scaLo = 18 / tdsPlanRatio;
               const scaHi = 22 / tdsPlanRatio;
@@ -1169,13 +1444,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                     )}
                     <button
                       type="button"
-                      onClick={() => {
-                        setTargetTDSMin((18 / tdsPlanRatio).toFixed(2));
-                        setTargetTDSMax((22 / tdsPlanRatio).toFixed(2));
-                      }}
+                      onClick={() => { const ey = parseFloat(targetEY) || 20; const t = ey / tdsPlanRatio; setTargetTDSMin((t - 0.05).toFixed(2)); setTargetTDSMax((t + 0.05).toFixed(2)); }}
                       className="px-2 py-0.5 rounded text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100"
                     >
-                      Set target
+                      Apply to TDS
                     </button>
                   </div>
                 </div>
@@ -1438,21 +1710,89 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       </section>
 
       {/* Recipe & Pour Planning */}
-      <section className="border border-emerald-200 rounded-xl overflow-hidden">
-        <RecipePourPlanning ref={recipePlanRef} brewTargetSec={brewTimeSec} />
+      <section id="recipe-pour-planning" className="border border-emerald-200 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+          <div className="flex items-center gap-3 text-[10px]">
+            <span className="text-slate-400 font-semibold uppercase tracking-wider">Expecting</span>
+            <span className="text-sky-700 font-bold tabular-nums">TDS {parseFloat(targetTDSMin).toFixed(2)}–{parseFloat(targetTDSMax).toFixed(2)}%</span>
+            <span className="text-slate-300">|</span>
+            <span className="text-emerald-700 font-bold tabular-nums">EY {parseFloat(targetEY).toFixed(1)}%</span>
+            <span className="text-slate-300">|</span>
+            <span className="text-amber-700 font-bold tabular-nums">1:{tdsPlanRatio}</span>
+          </div>
+          <button type="button" onClick={() => document.getElementById('grinder-setup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100">↑ Grinder Setup</button>
+        </div>
+        <RecipePourPlanning ref={recipePlanRef} brewTargetSec={brewTimeSec} expectedTDSMin={parseFloat(targetTDSMin) || undefined} expectedTDSMax={parseFloat(targetTDSMax) || undefined} />
       </section>
 
       {/* Attempt Log */}
       <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Attempt Log</h3>
         <AttemptLog
-          currentGrindSize={0}
+          currentGrindSize={recipeValues.grindSize}
           currentDose={recipeValues.dose}
           currentRatio={recipeValues.ratio}
           currentTotalWater={recipeValues.water}
           tdsMin={parseFloat(targetTDSMin) || 0}
           tdsMax={parseFloat(targetTDSMax) || 0}
           currentTDS={currentTDS}
+          currentEY={parseFloat(targetEY) || 0}
+          brewTimeTarget={brewTimeSec}
+          brewTimeActual={brewActualSec}
+          planSnapshot={{
+            equipment: {
+              name: equipmentName,
+              brewer: brewerType,
+              filterName,
+              filterType,
+              flowSpeed,
+              drawdownRate,
+            },
+            grinder: {
+              name: grinderName,
+              power: grinderPower,
+              burr: grinderBurr,
+              fines: finesTendency,
+              micron: grinderMicron,
+              grindSize: recipeValues.grindSize,
+            },
+            bean: {
+              roastLevel,
+              density,
+              altitude,
+              process,
+              origin,
+              defects: [...defects],
+            },
+            brewTime: {
+              targetSec: brewTimeSec,
+              actualSec: brewActualSec,
+              liked: brewLiked,
+            },
+            brewImpact: {
+              temp: waterTemp,
+              waterQuality,
+              turbulence: turbulenceLevel,
+              activeFactor,
+              symptom,
+            },
+            tdsPlan: {
+              ratio: tdsPlanRatio,
+              ey: targetEY,
+              tdsMin: targetTDSMin,
+              tdsMax: targetTDSMax,
+            },
+            grinding: {
+              grindAdjustPct,
+              beanAdviceLabel: beanAdvice.label,
+              beanAdviceScore: beanAdvice.overall,
+            },
+            recipe: {
+              dose: recipeValues.dose,
+              ratio: recipeValues.ratio,
+              water: recipeValues.water,
+            },
+          }}
         />
       </section>
     </div>

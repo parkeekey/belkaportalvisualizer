@@ -28,6 +28,7 @@ interface GrinderEntry {
   burrSize: number;
   expectedTDSMin: number;
   expectedTDSMax: number;
+  tdsIsPlan: boolean;
   date: string;
   notes: string;
 }
@@ -38,6 +39,8 @@ interface GrinderKnobProps {
   grindSize: number;
   onGrindSizeChange: (v: number) => void;
   micron: number;
+  expectedTDSMin?: number;
+  expectedTDSMax?: number;
 }
 
 const STORAGE_KEY = 'belkaGrinderHistory';
@@ -45,12 +48,13 @@ const loadHistory = (): GrinderEntry[] => {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
 };
 
-const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameChange, grindSize, onGrindSizeChange, micron }) => {
+const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameChange, grindSize, onGrindSizeChange, micron, expectedTDSMin, expectedTDSMax }) => {
   const [totalClicks, setTotalClicks] = useState(40);
   const [microStep, setMicroStep] = useState(1);
   const [history, setHistory] = useState<GrinderEntry[]>(loadHistory);
   const [tdsMin, setTdsMin] = useState('');
   const [tdsMax, setTdsMax] = useState('');
+  const [tdsAutoFilled, setTdsAutoFilled] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newEntryId, setNewEntryId] = useState<string | null>(null);
@@ -116,6 +120,27 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
   }
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(history)); }, [history]);
+  useEffect(() => {
+    if (grindSize > 0) {
+      const v = parseFloat(grindSize.toFixed(Math.max(2, decimals)));
+      setClicks(v);
+      setClickInput(v.toFixed(decimals));
+    }
+  }, [grindSize]);
+
+  useEffect(() => {
+    if (expectedTDSMin != null && expectedTDSMin > 0) {
+      setTdsMin(String(expectedTDSMin));
+      setTdsAutoFilled(true);
+    }
+  }, [expectedTDSMin]);
+
+  useEffect(() => {
+    if (expectedTDSMax != null && expectedTDSMax > 0) {
+      setTdsMax(String(expectedTDSMax));
+      setTdsAutoFilled(true);
+    }
+  }, [expectedTDSMax]);
 
   const precise = (v: number) => parseFloat(v.toFixed(decimals));
 
@@ -176,6 +201,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
     burrSize: parseFloat(burrSize) || 0,
     expectedTDSMin: parseFloat(tdsMin) || 0,
     expectedTDSMax: parseFloat(tdsMax) || 0,
+    tdsIsPlan: tdsAutoFilled,
     date: new Date().toLocaleString(),
     notes: '',
   });
@@ -345,7 +371,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
                   #{hoveredEntry.clicks}{hoveredEntry.micron > 0 ? `  ${hoveredEntry.micron}µm` : ''}
                 </div>
                 <div>
-                  TDS {hoveredEntry.expectedTDSMin > 0 ? hoveredEntry.expectedTDSMin.toFixed(2) : '?'}–{hoveredEntry.expectedTDSMax > 0 ? hoveredEntry.expectedTDSMax.toFixed(2) : '?'}%
+                  TDS {hoveredEntry.expectedTDSMin > 0 ? hoveredEntry.expectedTDSMin.toFixed(2) : '?'}–{hoveredEntry.expectedTDSMax > 0 ? hoveredEntry.expectedTDSMax.toFixed(2) : '?'}%{hoveredEntry.tdsIsPlan ? ' (plan)' : ' (manual)'}
                   {hoveredEntry.rpm > 0 ? `  ${hoveredEntry.rpm}rpm` : ''}
                 </div>
                 <div className="text-[9px] opacity-70">{hoveredEntry.date}</div>
@@ -463,10 +489,12 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
       </div>
 
       <div className="flex items-center gap-2 text-xs">
-        <label className="text-slate-400">Expect TDS:</label>
-        <input type="number" step="0.01" value={tdsMin} onChange={(e) => setTdsMin(e.target.value)} placeholder="min" className="w-14 px-1 py-0.5 text-xs border border-emerald-200 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <label className={`${tdsAutoFilled ? 'text-amber-500' : 'text-slate-400'}`}>
+          {tdsAutoFilled ? 'Expect TDS (from plan)' : 'Expect TDS:'}
+        </label>
+        <input type="number" step="0.01" value={tdsMin} onChange={(e) => { setTdsMin(e.target.value); setTdsAutoFilled(false); }} placeholder="min" className={`w-14 px-1 py-0.5 text-xs border rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 ${tdsAutoFilled ? 'border-amber-300 bg-amber-50' : 'border-emerald-200'}`} />
         <span className="text-slate-300">~</span>
-        <input type="number" step="0.01" value={tdsMax} onChange={(e) => setTdsMax(e.target.value)} placeholder="max" className="w-14 px-1 py-0.5 text-xs border border-emerald-200 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <input type="number" step="0.01" value={tdsMax} onChange={(e) => { setTdsMax(e.target.value); setTdsAutoFilled(false); }} placeholder="max" className={`w-14 px-1 py-0.5 text-xs border rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 ${tdsAutoFilled ? 'border-amber-300 bg-amber-50' : 'border-emerald-200'}`} />
         <button onClick={() => setShowHistory(v => !v)} className="ml-auto text-xs text-emerald-600 hover:text-emerald-800 font-medium">{showHistory ? 'Hide' : 'History'} ({history.length})</button>
       </div>
 
@@ -500,7 +528,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
                 {e.micron > 0 && <span className="tabular-nums text-slate-400">{e.micron}µm</span>}
                 {e.rpm > 0 && <span className="tabular-nums text-slate-400">{e.rpm}rpm</span>}
                 <span className="text-slate-300">|</span>
-                <span className="tabular-nums text-slate-500">{e.expectedTDSMin > 0 ? e.expectedTDSMin.toFixed(2) : '?'}–{e.expectedTDSMax > 0 ? e.expectedTDSMax.toFixed(2) : '?'}%</span>
+                <span className={`tabular-nums ${e.tdsIsPlan ? 'text-amber-600' : 'text-slate-500'}`}>{e.expectedTDSMin > 0 ? e.expectedTDSMin.toFixed(2) : '?'}–{e.expectedTDSMax > 0 ? e.expectedTDSMax.toFixed(2) : '?'}%{e.tdsIsPlan ? ' (plan)' : ' (manual)'}</span>
                 <span className="ml-auto text-slate-300">{e.date}</span>
                 <button onClick={() => setEditingId(e.id)} className="text-slate-400 hover:text-slate-600 px-0.5">✎</button>
                 <button onClick={() => deleteEntry(e.id)} className="text-red-300 hover:text-red-500 font-bold px-0.5">×</button>

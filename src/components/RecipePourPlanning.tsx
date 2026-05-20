@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import PourPlanGraph from './PourPlanGraph';
 import GrinderKnob from './GrinderKnob';
 
@@ -21,6 +21,7 @@ export interface RecipePourPlanningProfile {
 export interface RecipePourPlanningHandle {
   exportProfile: () => RecipePourPlanningProfile;
   importProfile: (profile: RecipePourPlanningProfile) => void;
+  setFinishTime: (sec: number) => void;
 }
 
 interface ECPoint {
@@ -50,9 +51,10 @@ interface RecipePourPlanningProps {
   ecProps?: ECProps;
   profile?: ProfileData;
   onProfileChange?: (profile: ProfileData) => void;
+  brewTargetSec?: number;
 }
 
-const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanningProps>(({ ecProps, profile: controlledProfile, onProfileChange }, ref) => {
+const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanningProps>(({ ecProps, profile: controlledProfile, onProfileChange, brewTargetSec }, ref) => {
   const isControlled = controlledProfile !== undefined;
   const [internalDoseWeight, setInternalDoseWeight] = useState<number>(() => {
     const saved = localStorage.getItem('belkaDoseWeight');
@@ -75,6 +77,11 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
   const [internalGrinderName, setInternalGrinderName] = useState<string>('');
   const [internalGrindSize, setInternalGrindSize] = useState<number>(0);
   const [internalMicron, setInternalMicron] = useState<number>(0);
+  const [swRunning, setSwRunning] = useState(false);
+  const [swTime, setSwTime] = useState(0);
+  const [swLaps, setSwLaps] = useState<{ time: number; pourIdx: number }[]>([]);
+  const swStartRef = useRef<number>(0);
+  const swTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const doseWeight = isControlled ? controlledProfile.doseWeight : internalDoseWeight;
   const brewRatio = isControlled ? controlledProfile.brewRatio : internalBrewRatio;
@@ -140,6 +147,19 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
   }, [isControlled, onProfileChange, doseWeight, brewRatio, totalWaterIn, pourPlan, recipeFinishTimeSec, grinderName, micron]);
   // setMicron is handled by GrinderKnob internally
 
+  useEffect(() => {
+    if (swRunning) {
+      swStartRef.current = Date.now() - swTime * 1000;
+      swTimerRef.current = setInterval(() => {
+        setSwTime(Math.floor((Date.now() - swStartRef.current) / 1000));
+      }, 200);
+    } else if (swTimerRef.current) {
+      clearInterval(swTimerRef.current);
+      swTimerRef.current = null;
+    }
+    return () => { if (swTimerRef.current) clearInterval(swTimerRef.current); };
+  }, [swRunning]);
+
   const pourPlanCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useImperativeHandle(ref, () => ({
@@ -179,6 +199,13 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
       localStorage.setItem('belkaDoseWeight', String(p.doseWeight));
       localStorage.setItem('belkaBrewRatio', String(p.brewRatio));
       localStorage.setItem('belkaTotalWaterIn', String(p.totalWaterIn));
+    },
+    setFinishTime: (sec) => {
+      if (isControlled) {
+        onProfileChange?.({ doseWeight, brewRatio, totalWaterIn, pourPlan, recipeFinishTimeSec: sec, grinderName, grindSize, micron });
+      } else {
+        setInternalRecipeFinishTimeSec(sec);
+      }
     },
   }), [doseWeight, brewRatio, totalWaterIn, pourPlan, recipeFinishTimeSec, grinderName, grindSize, micron, isControlled, onProfileChange]);
 
@@ -366,6 +393,16 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                   placeholder={totalBrewTime > 0 ? String(totalBrewTime % 60).padStart(2, '0') : 'ss'}
                   className="w-14 px-2 py-1.5 text-sm font-bold text-emerald-800 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm"
                 />
+                {brewTargetSec != null && (
+                  <button
+                    type="button"
+                    onClick={() => setRecipeFinishTimeSec(brewTargetSec)}
+                    title={`Import plan time (${Math.floor(brewTargetSec / 60)}:${String(brewTargetSec % 60).padStart(2, '0')})`}
+                    className="px-2 py-1.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-200 shadow-sm"
+                  >
+                    ← Plan
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -515,6 +552,39 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
               })()}
             </div>
           )}
+
+          {/* Stopwatch */}
+          <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xl font-bold text-slate-700 tabular-nums font-mono tracking-wider">
+                {String(Math.floor(swTime / 60)).padStart(2, '0')}:{String(swTime % 60).padStart(2, '0')}
+              </span>
+              <div className="flex items-center gap-2">
+                {!swRunning ? (
+                  <button type="button" onClick={() => { setSwRunning(true); setSwLaps([]); setSwTime(0); }} className="px-4 py-1.5 rounded-lg text-sm font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-200 shadow-sm">▶ Start</button>
+                ) : (
+                  <>
+                    <button type="button" onClick={() => {
+                      const idx = swLaps.length;
+                      setSwLaps(prev => [...prev, { time: swTime, pourIdx: idx }]);
+                      if (idx + 1 >= pourPlan.length) {
+                        setSwRunning(false);
+                        setRecipeFinishTimeSec(swTime);
+                      }
+                    }} className="px-4 py-1.5 rounded-lg text-sm font-bold bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200 shadow-sm">⏱ Lap {swLaps.length + 1}</button>
+                    <button type="button" onClick={() => setSwRunning(false)} className="px-4 py-1.5 rounded-lg text-sm font-bold bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 shadow-sm">⏹ Stop</button>
+                  </>
+                )}
+              </div>
+            </div>
+            {swLaps.length > 0 && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                {swLaps.map((lap, i) => (
+                  <span key={i} className="tabular-nums font-medium">#{i + 1} {String(Math.floor(lap.time / 60)).padStart(2, '0')}:{String(lap.time % 60).padStart(2, '0')}</span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       {pourPlan.length > 0 && totalBrewTime > 0 && ecProps && (

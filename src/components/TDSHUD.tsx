@@ -6,9 +6,11 @@ interface TDSHUDProps {
   currentTDS: number;
   eyTarget: number;
   onTDSChange: (v: number) => void;
+  scaTdsMin?: number;
+  scaTdsMax?: number;
 }
 
-export default function TDSHUD({ tdsMin, tdsMax, currentTDS, eyTarget, onTDSChange }: TDSHUDProps) {
+export default function TDSHUD({ tdsMin, tdsMax, currentTDS, eyTarget, onTDSChange, scaTdsMin, scaTdsMax }: TDSHUDProps) {
   const barRef = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(String(currentTDS));
@@ -73,6 +75,23 @@ export default function TDSHUD({ tdsMin, tdsMax, currentTDS, eyTarget, onTDSChan
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #1e3a5f, #1e4a3a, #3a1a1a)' }} />
           <div className="absolute inset-0" style={{ background: `linear-gradient(to right, #38bdf8 0%, #38bdf8 ${idealStart}%, #22d65e ${idealStart}%, #22d65e ${idealEnd}%, #ef4444 ${idealEnd}%, #ef4444 100%)`, opacity: 0.25 }} />
         </div>
+
+        {/* SCA ideal zone overlay */}
+        {scaTdsMin != null && scaTdsMax != null && (() => {
+          const left = Math.max(0, (scaTdsMin - 0.7) / 1.4 * 100);
+          const right = Math.min(100, (scaTdsMax - 0.7) / 1.4 * 100);
+          return (
+            <div
+              className="absolute top-0 bottom-0 z-[5] pointer-events-none transition-all duration-300"
+              style={{
+                left: `${left}%`,
+                width: `${right - left}%`,
+                background: 'rgba(52, 211, 153, 0.12)',
+                boxShadow: 'inset 0 0 12px rgba(52, 211, 153, 0.15), 0 0 8px rgba(52, 211, 153, 0.08)',
+              }}
+            />
+          );
+        })()}
 
         {/* Tick marks */}
         {[0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0].map((v) => {

@@ -18,17 +18,6 @@
   -webkit-text-size-adjust: 100%;
 }
 
-.dark {
-  color-scheme: dark;
-  color: #f3f4f6;
-  background-color: #030712;
-}
-
-.dark body {
-  color: #f3f4f6;
-  background-color: #030712;
-}
-
 body {
   margin: 0;
   display: flex;
@@ -51,14 +40,6 @@ textarea {
   background-color: #ffffff;
   -webkit-text-fill-color: #111827;
   opacity: 1;
-}
-
-.dark input,
-.dark select,
-.dark textarea {
-  color: #f3f4f6;
-  background-color: #1f2937;
-  -webkit-text-fill-color: #f3f4f6;
 }
 
 /* Custom styles for graph visualization */

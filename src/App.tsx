@@ -189,7 +189,7 @@ function App() {
 
       <main>
         <div className={activePage === 'digitizer' ? 'block' : 'hidden'} aria-hidden={activePage !== 'digitizer'}>
-          <ManualDigitizer ref={digitizerRef} onDataExtracted={(data) => console.log('Extracted data:', data)} onNavigateToSetupProfile={useCallback(() => setActivePage('setup-profile'), [])} />
+          <ManualDigitizer ref={digitizerRef} isActive={activePage === 'digitizer'} onDataExtracted={(data) => console.log('Extracted data:', data)} onNavigateToSetupProfile={useCallback(() => setActivePage('setup-profile'), [])} />
         </div>
         <div className={activePage === 'ultrakoki-parser' ? 'block' : 'hidden'} aria-hidden={activePage !== 'ultrakoki-parser'}>
           <UltrakokiParserPage ref={ultrakokiParserRef} />

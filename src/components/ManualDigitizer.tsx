@@ -42,6 +42,7 @@ interface PhasePinTarget {
 interface ManualDigitizerProps {
   onDataExtracted: (data: DataPoint[]) => void;
   onNavigateToSetupProfile?: () => void;
+  isActive?: boolean;
 }
 
 export interface ManualDigitizerSessionProfile {
@@ -211,7 +212,7 @@ const buildPreviewUltrakokiBrewData = (): UltrakokiBrewData => {
 
 type Step = 'upload' | 'calibrate-origin' | 'calibrate-x' | 'calibrate-y' | 'calibrate-highest' | 'calibrate-temp-min' | 'calibrate-temp-max' | 'extract' | 'complete';
 
-export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizerProps>(({ onDataExtracted }, ref) => {
+export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizerProps>(({ onDataExtracted, isActive }, ref) => {
   const PHASE_COLORS = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#14b8a6'];
   const DEFAULT_PHASE_NAMES = ['Blooming', 'Acidity', 'Body', 'Sweetness', 'Aftertaste', 'Finish'];
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -258,6 +259,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
   const [savedPhaseLogProfiles, setSavedPhaseLogProfiles] = useState<SavedPhaseLogProfile[]>([]);
   const [selectedPhaseLogProfile, setSelectedPhaseLogProfile] = useState<string>('');
   const [showSavePhaseProfileForm, setShowSavePhaseProfileForm] = useState<boolean>(false);
+  const [recipeCollapsed, setRecipeCollapsed] = useState<boolean>(false);
   const [newPhaseProfileName, setNewPhaseProfileName] = useState<string>('');
   const [loadedPhaseProfileName, setLoadedPhaseProfileName] = useState<string | null>(null);
   const [autoDetectPreference, setAutoDetectPreference] = useState<boolean>(() => {
@@ -279,6 +281,10 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     time: 0,
     visible: false
   });
+  const [planTargets, setPlanTargets] = useState<{ tdsMin: number; tdsMax: number; ey: number } | null>(null);
+  const [attemptProfile, setAttemptProfile] = useState<{ doseWeight: number; brewRatio: number; totalWater: number; tdsMin: number; tdsMax: number; ey: number; grindSize: number; waterMix?: { ratio: string; measuredPpm: number; totalMl: number; mineralMl: number; plainWaterMl: number; estimatedFinalPpm?: number | null } | null } | null>(null);
+  const [teleportTargets, setTeleportTargets] = useState<{ tds: number; ey: number; nonce: number } | null>(null);
+  const [pourPlanFromAttempt, setPourPlanFromAttempt] = useState(false);
   const [calibrateXValue, setCalibrateXValue] = useState<number>(150);
   const [calibrateYValue, setCalibrateYValue] = useState<number>(20);
   const [useBoxCalibrationMode, setUseBoxCalibrationMode] = useState<boolean>(false);
@@ -508,6 +514,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
   const uploadSectionRef = useRef<HTMLDivElement>(null);
   const calibrationSectionRef = useRef<HTMLDivElement>(null);
   const ultrakokiSectionRef = useRef<HTMLDivElement>(null);
+  const graphSectionRef = useRef<HTMLDivElement>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const isPanningRef = useRef<boolean>(false);
   const panStartRef = useRef<{ scrollLeft: number; scrollTop: number; x: number; y: number } | null>(null);
@@ -518,12 +525,14 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     canvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
 
-  const scrollToSection = useCallback((target: 'upload' | 'calibration' | 'ultrakoki') => {
+  const scrollToSection = useCallback((target: 'upload' | 'calibration' | 'ultrakoki' | 'graph') => {
     const section =
       target === 'upload'
         ? uploadSectionRef.current
         : target === 'calibration'
         ? calibrationSectionRef.current
+        : target === 'graph'
+        ? graphSectionRef.current
         : ultrakokiSectionRef.current;
 
     if (section) {
@@ -691,6 +700,60 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       console.error('Failed to load calibration profiles:', err);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isActive) return;
+    try {
+      const raw = localStorage.getItem('belka.attemptToGraph');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      localStorage.removeItem('belka.attemptToGraph');
+      if (data.doseWeight > 0) setDoseWeight(data.doseWeight);
+      if (data.brewRatio > 0) setBrewRatio(data.brewRatio);
+      if (data.totalWater > 0) setTotalWaterIn(data.totalWater);
+      if (data.grindSize > 0) setGrindSize(data.grindSize);
+      if (Array.isArray(data.pourPlan) && data.pourPlan.length > 0) {
+        setPourPlan(data.pourPlan);
+        setPourPlanFromAttempt(true);
+      }
+      const tdsMin = data.tdsMin ?? 0;
+      const tdsMax = data.tdsMax ?? 0;
+      const ey = data.ey ?? data.eyTarget ?? 0;
+      if (tdsMin > 0 || tdsMax > 0 || ey > 0) {
+        setPlanTargets({ tdsMin, tdsMax, ey });
+      }
+      setAttemptProfile({
+        doseWeight: data.doseWeight ?? 0,
+        brewRatio: data.brewRatio ?? 0,
+        totalWater: data.totalWater ?? 0,
+        tdsMin, tdsMax, ey,
+        grindSize: data.grindSize ?? 0,
+        waterMix: data.waterMix ?? null,
+      });
+    } catch (err) {
+      console.error('Failed to apply attempt to graph:', err);
+    }
+  }, [isActive]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    try {
+      const raw = localStorage.getItem('belka.planToGraph');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      localStorage.removeItem('belka.planToGraph');
+      if (data.doseWeight > 0) setDoseWeight(data.doseWeight);
+      if (data.brewRatio > 0) setBrewRatio(data.brewRatio);
+      if (data.totalWaterIn > 0) setTotalWaterIn(data.totalWaterIn);
+      if (data.grindSize > 0) setGrindSize(data.grindSize);
+      if (data.grinderName) setGrinderName(data.grinderName);
+      if (data.micron > 0) setMicron(data.micron);
+      if (Array.isArray(data.pourPlan) && data.pourPlan.length > 0) setPourPlan(data.pourPlan);
+      if (data.recipeFinishTimeSec > 0) setRecipeFinishTimeSec(data.recipeFinishTimeSec);
+    } catch (err) {
+      console.error('Failed to apply plan to graph:', err);
+    }
+  }, [isActive]);
 
   useEffect(() => {
     try {
@@ -3303,6 +3366,18 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
   };
 
+  const handleRecipeProfileChange = useCallback((p: ProfileData) => {
+    setDoseWeight(p.doseWeight);
+    setBrewRatio(p.brewRatio);
+    setTotalWaterIn(p.totalWaterIn);
+    setPourPlan(p.pourPlan);
+    setRecipeFinishTimeSec(p.recipeFinishTimeSec);
+    setGrinderName(p.grinderName);
+    setGrindSize(p.grindSize);
+    setMicron(p.micron);
+    setPourPlanFromAttempt(false);
+  }, []);
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-lg">
@@ -3378,9 +3453,67 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
               {ultrakokiBrewData ? 'Ultrakoki status: loaded' : 'Ultrakoki status: not loaded'}
             </button>
           </div>
+
+          {/* Attempt profile imported from Setup */}
+          {attemptProfile && (
+            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-emerald-700 font-semibold text-sm">Attempt profile loaded</span>
+                  <span className="text-[10px] text-emerald-500 font-medium">from Setup → ↗ Graph</span>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-emerald-800">
+                  <span>{attemptProfile.doseWeight.toFixed(1)}g dose</span>
+                  <span>1:{attemptProfile.brewRatio.toFixed(0)} ratio</span>
+                  <span>{attemptProfile.totalWater.toFixed(0)}g water</span>
+                  {attemptProfile.grindSize > 0 && <span>#{attemptProfile.grindSize} grind</span>}
+                  {attemptProfile.tdsMin > 0 && attemptProfile.tdsMax > 0 && (
+                    <span className="font-semibold">TDS {attemptProfile.tdsMin.toFixed(2)}–{attemptProfile.tdsMax.toFixed(2)}%</span>
+                  )}
+                  {attemptProfile.ey > 0 && (
+                    <span className="font-semibold">EY {attemptProfile.ey.toFixed(1)}%</span>
+                  )}
+                  {attemptProfile.waterMix && (
+                    <span className="font-semibold">H2O {attemptProfile.waterMix.ratio} ({attemptProfile.waterMix.totalMl.toFixed(0)}ml)</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => { scrollToSection('graph'); }}
+                  className="px-2 py-1 text-xs font-semibold text-emerald-700 bg-emerald-100 border border-emerald-300 rounded hover:bg-emerald-200"
+                >View on graph</button>
+                <button
+                  onClick={() => {
+                    setTeleportTargets({ tds: attemptProfile.tdsMin || attemptProfile.tdsMax, ey: attemptProfile.ey, nonce: Date.now() });
+                    scrollToSection('graph');
+                  }}
+                  className="px-2 py-1 text-xs font-semibold text-violet-700 bg-violet-100 border border-violet-300 rounded hover:bg-violet-200"
+                >Teleport</button>
+                <button
+                  onClick={() => { setAttemptProfile(null); setPlanTargets(null); setTeleportTargets(null); setPourPlanFromAttempt(false); }}
+                  className="text-emerald-400 hover:text-emerald-600 text-lg leading-none font-bold px-1"
+                  title="Dismiss"
+                >×</button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Recipe & Pour Planning — rendered with EC data overlay */}
+        {recipeCollapsed && (
+          <button onClick={() => setRecipeCollapsed(false)}
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-emerald-700 bg-gradient-to-r from-emerald-50 to-white border border-slate-200 rounded-lg hover:bg-emerald-100 transition-colors mb-2"
+          >
+            <span className="text-emerald-500">▶</span> Recipe & Pour Planning (collapsed)
+          </button>
+        )}
+        {!recipeCollapsed && (<>
+          <button onClick={() => setRecipeCollapsed(true)}
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-emerald-700 bg-gradient-to-r from-emerald-50 to-white border border-slate-200 rounded-lg hover:bg-emerald-100 transition-colors mb-2"
+          >
+            <span className="text-emerald-500">▼</span> Recipe &amp; Pour Planning <span className="ml-auto text-slate-400">click to collapse</span>
+          </button>
         <RecipePourPlanning ref={recipePlanRef} ecProps={{
           getECAtTime,
           getCurrentData,
@@ -3395,16 +3528,8 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
           grinderName,
           grindSize,
           micron,
-        }} onProfileChange={useCallback((p: ProfileData) => {
-          setDoseWeight(p.doseWeight);
-          setBrewRatio(p.brewRatio);
-          setTotalWaterIn(p.totalWaterIn);
-          setPourPlan(p.pourPlan);
-          setRecipeFinishTimeSec(p.recipeFinishTimeSec);
-          setGrinderName(p.grinderName);
-          setGrindSize(p.grindSize);
-          setMicron(p.micron);
-        }, [])} />
+        }} onProfileChange={handleRecipeProfileChange} pourPlanImportBadge={pourPlanFromAttempt ? 'From attempt' : undefined} />
+        </>)}
 
           <div className="p-6">
             {/* Upload Step */}
@@ -4917,8 +5042,8 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
               )}
 
               {/* TDS & EY Analysis */}
-              {(extractedPoints.length > 0 || fineGeneratedCurve.length > 0) && (
-                <div className="space-y-3">
+              {(extractedPoints.length > 0 || fineGeneratedCurve.length > 0 || planTargets) && (
+                <div ref={graphSectionRef} className="space-y-3">
                   <TDSAnalysisGraph
                     ecPoints={getCurrentData()}
                     brewData={effectivePourData ? {
@@ -4969,6 +5094,12 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     grinderName={grinderName}
                     grindSize={grindSize}
                     micron={micron}
+                    planTDSMin={planTargets?.tdsMin}
+                    planTDSMax={planTargets?.tdsMax}
+                    planEY={planTargets?.ey}
+                    teleportTargetTDS={teleportTargets?.tds ?? null}
+                    teleportTargetEY={teleportTargets?.ey ?? null}
+                    teleportNonce={teleportTargets?.nonce ?? 0}
                   />
                 </div>
               )}

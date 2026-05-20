@@ -63,6 +63,12 @@ export interface TDSAnalysisGraphProps {
   grinderName?: string;
   grindSize?: number;
   micron?: number;
+  planTDSMin?: number;
+  planTDSMax?: number;
+  planEY?: number;
+  teleportTargetTDS?: number | null;
+  teleportTargetEY?: number | null;
+  teleportNonce?: number;
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -163,6 +169,12 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
   grinderName,
   grindSize,
   micron,
+  planTDSMin,
+  planTDSMax,
+  planEY,
+  teleportTargetTDS,
+  teleportTargetEY,
+  teleportNonce,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -199,6 +211,17 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     pourPercent: true,
   });
   const [showTargetAssistant, setShowTargetAssistant] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (teleportTargetTDS != null && teleportTargetTDS > 0) {
+      setTargetTDSInput(teleportTargetTDS.toFixed(2));
+      setTargetMode('tds');
+      setShowTargetAssistant(true);
+    }
+    if (teleportTargetEY != null && teleportTargetEY > 0) {
+      setTargetEYInput(teleportTargetEY.toFixed(1));
+    }
+  }, [teleportNonce]); // eslint-disable-line react-hooks/exhaustive-deps
   const [targetMode, setTargetMode] = useState<'tds' | 'ey'>('tds');
   const [targetTDSInput, setTargetTDSInput] = useState<string>('1.36');
   const [targetEYInput, setTargetEYInput] = useState<string>('20.0');
@@ -404,9 +427,14 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
 
   const { tdsMax, eyMax, timeMax } = useMemo(() => {
     if (series.length === 0) {
+      const planTDS = (planTDSMax ?? 0) > 0 ? planTDSMax! : null;
       return {
-        tdsMax: axisConfig.empty.tdsMax,
-        eyMax: axisConfig.empty.eyMax,
+        tdsMax: planTDS
+          ? Math.max(axisConfig.tdsFloor, Math.ceil(planTDS * 1.2 * (10 ** axisConfig.tdsDecimalPlaces)) / (10 ** axisConfig.tdsDecimalPlaces))
+          : axisConfig.empty.tdsMax,
+        eyMax: (planEY ?? 0) > 0
+          ? Math.ceil(planEY! * 1.2)
+          : axisConfig.empty.eyMax,
         timeMax: axisConfig.empty.timeMax,
       };
     }
@@ -421,7 +449,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       eyMax:  Math.max(axisConfig.eyFloor, Math.ceil(maxEY * axisConfig.paddingMultiplier)),
       timeMax: maxT,
     };
-  }, [series]);
+  }, [series, planTDSMin, planTDSMax, planEY]);
 
   // ── Resize observer ─────────────────────────────────────────────────────
 
@@ -459,7 +487,8 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
 
     const plotW = width  - PAD.left - PAD.right;
     const plotH = height - PAD.top  - PAD.bottom;
-    if (plotW < 1 || plotH < 1 || series.length < 2) {
+    const hasPlan = (planTDSMin != null && planTDSMax != null && planTDSMax > planTDSMin) || (planEY != null && planEY > 0);
+    if (plotW < 1 || plotH < 1 || (series.length < 2 && !hasPlan)) {
       ctx.fillStyle = '#94a3b8';
       ctx.font = '14px sans-serif';
       ctx.textAlign = 'center';
@@ -654,6 +683,28 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       ctx.stroke();
     }
 
+    // ── Plan TDS target band ────────────────────────────────────────────
+    if (showTDSCurve && planTDSMin != null && planTDSMax != null && planTDSMax > planTDSMin) {
+      const yLo = toYtds(Math.max(0, Math.min(planTDSMin, tdsMax)));
+      const yHi = toYtds(Math.max(0, Math.min(planTDSMax, tdsMax)));
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.10)';
+      ctx.fillRect(PAD.left, yHi, plotW, yLo - yHi);
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(PAD.left, yLo);
+      ctx.lineTo(PAD.left + plotW, yLo);
+      ctx.moveTo(PAD.left, yHi);
+      ctx.lineTo(PAD.left + plotW, yHi);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.8)';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Plan ${planTDSMin.toFixed(2)}–${planTDSMax.toFixed(2)}%`, PAD.left + 6, Math.max(PAD.top + 12, yLo - 4));
+    }
+
     // ── Target TDS guide line ────────────────────────────────────────────
     if (showTargetAssistant && showTDSCurve && targetMode === 'tds' && targetTDS != null) {
       const yTarget = toYtds(Math.max(0, Math.min(targetTDS, tdsMax)));
@@ -686,6 +737,23 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       ctx.font = '10px sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(`EY target ${targetEY.toFixed(1)}%`, PAD.left + plotW - 6, Math.max(PAD.top + 12, yTargetEY - 6));
+    }
+
+    // ── Plan EY target line ──────────────────────────────────────────────
+    if (showEYCurve && planEY != null && planEY > 0) {
+      const yPlanEY = toYey(Math.max(0, Math.min(planEY, eyMax)));
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 3]);
+      ctx.beginPath();
+      ctx.moveTo(PAD.left, yPlanEY);
+      ctx.lineTo(PAD.left + plotW, yPlanEY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.8)';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`Plan EY ${planEY.toFixed(1)}%`, PAD.left + plotW - 6, Math.max(PAD.top + 12, yPlanEY - 6));
     }
 
     // ── Target markers for selected windows ─────────────────────────────
@@ -1018,6 +1086,12 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
     }
     if (showTargetAssistant && showEYCurve && targetMode === 'ey' && targetEY != null) {
       legend.push({ color: '#b45309', label: `Target EY ${targetEY.toFixed(1)}%`, dash: [4, 4] });
+    }
+    if (planTDSMin != null && planTDSMax != null) {
+      legend.push({ color: '#10b981', label: `Plan TDS ${planTDSMin.toFixed(2)}–${planTDSMax.toFixed(2)}%`, dash: [3, 3] });
+    }
+    if (planEY != null && planEY > 0) {
+      legend.push({ color: '#10b981', label: `Plan EY ${planEY.toFixed(1)}%`, dash: [6, 3] });
     }
     if (showRedLight && redLightTime != null) {
       legend.push({ color: '#ef4444', label: `Red Light ${formatClock(redLightTime)}`, dash: [7, 5] });

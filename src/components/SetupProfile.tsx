@@ -1,7 +1,8 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import RecipePourPlanning, { type RecipePourPlanningHandle, type RecipePourPlanningProfile } from './RecipePourPlanning';
 import TDSHUD from './TDSHUD';
-import AttemptLog from './AttemptLog';
+import AttemptLog, { type WaterMixSnapshot } from './AttemptLog';
+import { getReferenceTDS, getReferenceEY } from '../utils/tdsReference';
 
 export interface SetupProfileProfile {
   version: 1;
@@ -67,10 +68,27 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     const saved = localStorage.getItem('belkaDialRangeMin');
     return saved ? parseInt(saved) || 0 : 0;
   });
+  const [dialRangeMinStr, setDialRangeMinStr] = useState(() => String(dialRangeMin > 0 ? dialRangeMin : ''));
   const [dialRangeMax, setDialRangeMax] = useState(() => {
     const saved = localStorage.getItem('belkaDialRangeMax');
     return saved ? parseInt(saved) || 0 : 0;
   });
+  const [dialRangeMaxStr, setDialRangeMaxStr] = useState(() => String(dialRangeMax > 0 ? dialRangeMax : ''));
+
+  const commitDialMin = useCallback((raw: string) => {
+    const v = parseInt(raw);
+    const n = isNaN(v) ? 0 : Math.max(0, v);
+    setDialRangeMin(n);
+    setDialRangeMinStr(n > 0 ? String(n) : '');
+    localStorage.setItem('belkaDialRangeMin', String(n));
+  }, []);
+  const commitDialMax = useCallback((raw: string) => {
+    const v = parseInt(raw);
+    const n = isNaN(v) ? 0 : Math.max(0, v);
+    setDialRangeMax(n);
+    setDialRangeMaxStr(n > 0 ? String(n) : '');
+    localStorage.setItem('belkaDialRangeMax', String(n));
+  }, []);
   const [grinderProfiles, setGrinderProfiles] = useState<Record<string, { name: string; power: string; burr: string; fines: string; micron: number }>>(() => {
     try { return JSON.parse(localStorage.getItem('belkaGrinderProfiles') || '{}'); } catch { return {}; }
   });
@@ -100,9 +118,43 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   }, [targetMethod]);
   const [waterTemp, setWaterTemp] = useState(93);
   const [waterQuality, setWaterQuality] = useState<'soft' | 'medium' | 'hard'>('medium');
+  const [waterMineralRatio, setWaterMineralRatio] = useState(() => localStorage.getItem('belkaWaterMineralRatio') || '1:2');
+  const [waterPpmInput, setWaterPpmInput] = useState(() => localStorage.getItem('belkaWaterPPM') || '');
+  const [waterMixTotalMl, setWaterMixTotalMl] = useState(() => localStorage.getItem('belkaWaterMixTotalMl') || '300');
+  const [waterMixStandby, setWaterMixStandby] = useState<WaterMixSnapshot | null>(null);
+  const [waterMixSentFeedback, setWaterMixSentFeedback] = useState(false);
   const [turbulenceLevel, setTurbulenceLevel] = useState(2);
   const [activeFactor, setActiveFactor] = useState<number | null>(null);
   const [symptom, setSymptom] = useState<string | null>(null);
+
+  const waterMixCalc = useMemo(() => {
+    const m = waterMineralRatio.trim().match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
+    const totalMl = parseFloat(waterMixTotalMl);
+    const basePpm = parseFloat(waterPpmInput);
+    if (!m || !Number.isFinite(totalMl) || totalMl <= 0) {
+      return { valid: false as const };
+    }
+    const mineralPart = parseFloat(m[1]);
+    const waterPart = parseFloat(m[2]);
+    if (!Number.isFinite(mineralPart) || !Number.isFinite(waterPart) || mineralPart < 0 || waterPart < 0 || mineralPart + waterPart <= 0) {
+      return { valid: false as const };
+    }
+    const totalPart = mineralPart + waterPart;
+    const mineralMl = (totalMl * mineralPart) / totalPart;
+    const plainWaterMl = (totalMl * waterPart) / totalPart;
+    const mineralPct = (mineralPart / totalPart) * 100;
+    const estimatedFinalPpm = Number.isFinite(basePpm) && basePpm >= 0 ? (basePpm * mineralPart) / totalPart : null;
+    return {
+      valid: true as const,
+      mineralPart,
+      waterPart,
+      totalMl,
+      mineralMl,
+      plainWaterMl,
+      mineralPct,
+      estimatedFinalPpm,
+    };
+  }, [waterMineralRatio, waterMixTotalMl, waterPpmInput]);
 
   const symptomGuide: Record<string, { factor: number; rankLabel: string; direction: string; magnitude: string; advice: string }> = {
     bitter: { factor: 2, rankLabel: 'Grind', direction: 'coarser', magnitude: '3 clicks', advice: 'Grind coarser 3 clicks. If still bitter next brew, lower water temp 2°C.' },
@@ -167,10 +219,17 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     water: parseFloat(localStorage.getItem('belkaTotalWaterIn') || '0') || 288,
     grindSize: 0,
   }));
+  const [currentPourPlan, setCurrentPourPlan] = useState<{ cumulativePercent: number; duration?: number }[]>([]);
+  const [pourPlanStandby, setPourPlanStandby] = useState<{ cumulativePercent: number; duration?: number }[] | null>(null);
+  const [pourPlanSentFeedback, setPourPlanSentFeedback] = useState(false);
+  useEffect(() => {
+    const plan = recipePlanRef.current?.exportProfile()?.pourPlan;
+    if (plan && plan.length > 0) setCurrentPourPlan(plan);
+  }, []);
   useEffect(() => {
     const ey = parseFloat(targetEY) || 20;
     if (tdsPlanRatio > 0) {
-      const t = ey / tdsPlanRatio;
+      const t = getReferenceTDS(tdsPlanRatio, ey);
       setTargetTDSMin((t - 0.05).toFixed(2));
       setTargetTDSMax((t + 0.05).toFixed(2));
     }
@@ -296,6 +355,134 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             )}
           </div>
 
+        </div>
+      </section>
+
+      {/* Water PPM */}
+      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <h3 className="text-sm font-bold text-cyan-800 uppercase tracking-wider mb-3">Water PPM</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Water : Mineral Ratio</label>
+            <input
+              type="text"
+              value={waterMineralRatio}
+              onChange={(e) => {
+                const next = e.target.value;
+                setWaterMineralRatio(next);
+                localStorage.setItem('belkaWaterMineralRatio', next);
+              }}
+              placeholder="e.g. 1:2"
+              className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
+            />
+            <div className="flex items-center gap-1 mt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setWaterMineralRatio('1:10');
+                  localStorage.setItem('belkaWaterMineralRatio', '1:10');
+                }}
+                className="px-2 py-0.5 text-[10px] font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 rounded hover:bg-cyan-100"
+              >
+                1:10
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setWaterMineralRatio('2:10');
+                  localStorage.setItem('belkaWaterMineralRatio', '2:10');
+                }}
+                className="px-2 py-0.5 text-[10px] font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 rounded hover:bg-cyan-100"
+              >
+                2:10
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Measured Water PPM</label>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={waterPpmInput}
+              onChange={(e) => {
+                const next = e.target.value;
+                setWaterPpmInput(next);
+                localStorage.setItem('belkaWaterPPM', next);
+              }}
+              placeholder="PPM from pen"
+              className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
+            />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Total Mix Water (ml)</label>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={waterMixTotalMl}
+              onChange={(e) => {
+                const next = e.target.value;
+                setWaterMixTotalMl(next);
+                localStorage.setItem('belkaWaterMixTotalMl', next);
+              }}
+              placeholder="e.g. 300"
+              className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
+            />
+          </div>
+          {!waterMixCalc.valid ? (
+            <div className="md:col-span-3 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+              Enter ratio as mineral:water (example 1:10 or 2:10) and set total ml.
+            </div>
+          ) : (
+            <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
+              <div className="rounded border border-cyan-200 bg-cyan-50 px-2 py-1.5">
+                <div className="text-cyan-700 font-semibold uppercase tracking-wider">Mineral Water</div>
+                <div className="text-slate-700 font-bold tabular-nums text-xs">{waterMixCalc.mineralMl.toFixed(1)} ml</div>
+              </div>
+              <div className="rounded border border-sky-200 bg-sky-50 px-2 py-1.5">
+                <div className="text-sky-700 font-semibold uppercase tracking-wider">Plain Water</div>
+                <div className="text-slate-700 font-bold tabular-nums text-xs">{waterMixCalc.plainWaterMl.toFixed(1)} ml</div>
+              </div>
+              <div className="rounded border border-indigo-200 bg-indigo-50 px-2 py-1.5">
+                <div className="text-indigo-700 font-semibold uppercase tracking-wider">Mineral %</div>
+                <div className="text-slate-700 font-bold tabular-nums text-xs">{waterMixCalc.mineralPct.toFixed(1)}%</div>
+              </div>
+              <div className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1.5">
+                <div className="text-emerald-700 font-semibold uppercase tracking-wider">Est. Final PPM</div>
+                <div className="text-slate-700 font-bold tabular-nums text-xs">{waterMixCalc.estimatedFinalPpm != null ? waterMixCalc.estimatedFinalPpm.toFixed(1) : '—'}</div>
+              </div>
+            </div>
+          )}
+          <div className="md:col-span-3 flex items-center gap-2">
+            <button
+              type="button"
+              disabled={!waterMixCalc.valid}
+              onClick={() => {
+                if (!waterMixCalc.valid) return;
+                setWaterMixStandby({
+                  ratio: `${waterMixCalc.mineralPart}:${waterMixCalc.waterPart}`,
+                  measuredPpm: parseFloat(waterPpmInput) || 0,
+                  totalMl: waterMixCalc.totalMl,
+                  mineralMl: waterMixCalc.mineralMl,
+                  plainWaterMl: waterMixCalc.plainWaterMl,
+                  mineralPct: waterMixCalc.mineralPct,
+                  estimatedFinalPpm: waterMixCalc.estimatedFinalPpm,
+                });
+                setWaterMixSentFeedback(true);
+                setTimeout(() => setWaterMixSentFeedback(false), 2000);
+              }}
+              className="px-3 py-1 text-[10px] font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 rounded hover:bg-cyan-100 disabled:opacity-40"
+            >
+              Send Water Mix to Attempt Log Standby
+            </button>
+            {waterMixSentFeedback && (
+              <span className="text-[10px] text-cyan-700 font-semibold">✓ Standby ready</span>
+            )}
+          </div>
+          <p className="md:col-span-3 text-[10px] text-slate-500">
+            Input your meter reading before brewing to keep water setup consistent across brews.
+          </p>
         </div>
       </section>
 
@@ -464,14 +651,18 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <div className="col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Dialing Range</span>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
                 <label className="text-[9px] text-slate-400">#</label>
-                <input type="number" min={0} step={1} value={dialRangeMin > 0 ? dialRangeMin : ''} onChange={(e) => { const v = Math.max(0, parseInt(e.target.value) || 0); setDialRangeMin(v); localStorage.setItem('belkaDialRangeMin', String(v)); }} placeholder="min" className="w-12 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <button type="button" onClick={() => { const v = Math.max(0, dialRangeMin - 1); setDialRangeMin(v); setDialRangeMinStr(String(v > 0 ? v : '')); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">−</button>
+                <input type="number" min={0} step={1} value={dialRangeMinStr} onChange={(e) => setDialRangeMinStr(e.target.value)} onBlur={(e) => commitDialMin(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="min" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <button type="button" onClick={() => { const v = dialRangeMin + 1; setDialRangeMin(v); setDialRangeMinStr(String(v)); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
               </div>
               <span className="text-slate-300 text-[10px]">→</span>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
                 <label className="text-[9px] text-slate-400">#</label>
-                <input type="number" min={0} step={1} value={dialRangeMax > 0 ? dialRangeMax : ''} onChange={(e) => { const v = Math.max(0, parseInt(e.target.value) || 0); setDialRangeMax(v); localStorage.setItem('belkaDialRangeMax', String(v)); }} placeholder="max" className="w-12 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <button type="button" onClick={() => { const v = Math.max(0, dialRangeMax - 1); setDialRangeMax(v); setDialRangeMaxStr(String(v > 0 ? v : '')); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">−</button>
+                <input type="number" min={0} step={1} value={dialRangeMaxStr} onChange={(e) => setDialRangeMaxStr(e.target.value)} onBlur={(e) => commitDialMax(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="max" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <button type="button" onClick={() => { const v = dialRangeMax + 1; setDialRangeMax(v); setDialRangeMaxStr(String(v)); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
               </div>
               {dialRangeMin > 0 && dialRangeMax > 0 && (
                 <span className="text-[9px] text-emerald-600 font-semibold">Active search zone: #{dialRangeMin}–#{dialRangeMax}</span>
@@ -1326,13 +1517,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           currentTDS={currentTDS}
           eyTarget={parseFloat(targetEY) || 0}
           onTDSChange={setCurrentTDS}
-          scaTdsMin={tdsPlanRatio > 0 ? 18 / tdsPlanRatio : undefined}
-          scaTdsMax={tdsPlanRatio > 0 ? 22 / tdsPlanRatio : undefined}
+          scaTdsMin={tdsPlanRatio > 0 ? getReferenceTDS(tdsPlanRatio, 18) : undefined}
+          scaTdsMax={tdsPlanRatio > 0 ? getReferenceTDS(tdsPlanRatio, 22) : undefined}
         />
         {tdsPlanRatio > 0 && (() => {
-          const scaLo = 18 / tdsPlanRatio;
-          const scaHi = 22 / tdsPlanRatio;
-          const actualEY = currentTDS * tdsPlanRatio;
+          const scaLo = getReferenceTDS(tdsPlanRatio, 18);
+          const scaHi = getReferenceTDS(tdsPlanRatio, 22);
+          const actualEY = getReferenceEY(tdsPlanRatio, currentTDS);
           const isUnder = currentTDS < scaLo;
           const isOver = currentTDS > scaHi;
           const tdsDelta = isUnder ? (scaLo - currentTDS) : isOver ? (currentTDS - scaHi) : 0;
@@ -1421,7 +1612,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </div>
             {tdsPlanRatio > 0 && (() => {
               const ey = parseFloat(targetEY) || 20;
-              const tdsFromEY = ey / tdsPlanRatio;
+              const tdsFromEY = getReferenceTDS(tdsPlanRatio, ey);
               const tdsLo = (tdsFromEY - 0.05).toFixed(2);
               const tdsHi = (tdsFromEY + 0.05).toFixed(2);
               return (
@@ -1433,8 +1624,8 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               );
             })()}
             {tdsPlanRatio > 0 && (() => {
-              const scaLo = 18 / tdsPlanRatio;
-              const scaHi = 22 / tdsPlanRatio;
+              const scaLo = getReferenceTDS(tdsPlanRatio, 18);
+              const scaHi = getReferenceTDS(tdsPlanRatio, 22);
               const scaWidth = (scaHi - scaLo) / 1.4 * 100;
               const scaLeft = Math.max(0, (scaLo - 0.7) / 1.4 * 100);
               const markerPct = Math.max(0, Math.min(100, (currentTDS - 0.7) / 1.4 * 100));
@@ -1486,7 +1677,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                     )}
                     <button
                       type="button"
-                      onClick={() => { const ey = parseFloat(targetEY) || 20; const t = ey / tdsPlanRatio; setTargetTDSMin((t - 0.05).toFixed(2)); setTargetTDSMax((t + 0.05).toFixed(2)); }}
+                      onClick={() => { const ey = parseFloat(targetEY) || 20; const t = getReferenceTDS(tdsPlanRatio, ey); setTargetTDSMin((t - 0.05).toFixed(2)); setTargetTDSMax((t + 0.05).toFixed(2)); }}
                       className="px-1.5 py-0.5 rounded text-[8px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100"
                     >
                       Set TDS
@@ -1509,7 +1700,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </div>
 
             {tdsPlanRatio > 0 && (() => {
-              const actualEY = currentTDS * tdsPlanRatio;
+              const actualEY = getReferenceEY(tdsPlanRatio, currentTDS);
               const scaLoEY = 18;
               const scaHiEY = 22;
               const inRange = actualEY >= scaLoEY && actualEY <= scaHiEY;
@@ -1640,34 +1831,61 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               <label className="text-slate-500 col-span-1">Hot TDS</label>
               <div className="col-span-2 flex items-center gap-1">
                 {(() => {
-                  const isUnder = icedHotTDS < 2.8;
-                  const isOver = icedHotTDS > 3.4;
-                  const isOff = isUnder || isOver;
+                  const ratio = icedRatio;
+                  const scaLo = +(getReferenceTDS(ratio, icedEYmin)).toFixed(4);
+                  const scaHi = +(getReferenceTDS(ratio, icedEYmax)).toFixed(4);
+                  const impossible = +(getReferenceTDS(ratio, 31)).toFixed(4);
+                  const isUnder = icedHotTDS < scaLo;
+                  const isAboveIdeal = icedHotTDS > scaHi && icedHotTDS <= impossible;
+                  const isImpossible = icedHotTDS > impossible;
+                  const isHighlighted = isUnder || isAboveIdeal || isImpossible;
+                  let deltaStr = '';
+                  if (isUnder) deltaStr = `↓ ${(scaLo - icedHotTDS).toFixed(2)}%`;
+                  else if (isAboveIdeal) deltaStr = `↑ +${(icedHotTDS - scaHi).toFixed(2)}%`;
+                  else if (isImpossible) deltaStr = `↑ +${(icedHotTDS - impossible).toFixed(2)}%`;
+                  const borderColor = isImpossible ? 'border-red-400 bg-red-50 focus:ring-red-400' :
+                    isAboveIdeal ? 'border-amber-400 bg-amber-50 focus:ring-amber-400' :
+                    isUnder ? 'border-blue-400 bg-blue-50 focus:ring-blue-400' :
+                    'border-emerald-400 focus:ring-emerald-400';
                   return (
                     <>
                       <input type="number" min={0} step={0.05} value={icedHotTDS} onChange={(e) => setIcedHotTDS(Number(e.target.value))}
-                        className={`w-full px-1.5 py-1 text-xs border-2 rounded text-center focus:outline-none focus:ring-2 ${
-                          isOver ? 'border-red-400 bg-red-50 focus:ring-red-400' :
-                          isUnder ? 'border-blue-400 bg-blue-50 focus:ring-blue-400' :
-                          'border-sky-300 focus:ring-sky-400'
-                        }`}
+                        className={`w-full px-1.5 py-1 text-xs border-2 rounded text-center focus:outline-none ${borderColor}`}
                       />
                       <span className="text-[10px] text-slate-400">%</span>
-                      {isOff && (
+                      {isHighlighted && (
                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold whitespace-nowrap ${
-                          isOver ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-blue-100 text-blue-700 border border-blue-300'
+                          isImpossible ? 'bg-red-100 text-red-700 border border-red-300' :
+                          isAboveIdeal ? 'bg-amber-100 text-amber-700 border border-amber-300' :
+                          'bg-blue-100 text-blue-700 border border-blue-300'
                         }`}>
-                          {isOver ? `↑ +${(icedHotTDS - 3.4).toFixed(2)}%` : `↓ ${(2.8 - icedHotTDS).toFixed(2)}%`}
+                          {deltaStr}
                         </span>
                       )}
                     </>
                   );
                 })()}
               </div>
-              <div className={`col-span-3 text-[9px] font-semibold -mt-1 ${icedHotTDS < 2.8 ? 'text-blue-600' : icedHotTDS > 3.4 ? 'text-red-600' : 'text-slate-400'}`}>
-                {icedHotTDS < 2.8 ? `⚠ Under target — aim for 2.8–3.4% (concentrate for dilution)` :
-                 icedHotTDS > 3.4 ? `⚠ Over target — aim for 2.8–3.4% (concentrate for dilution)` :
-                 `✓ Target range: 2.8–3.4% (concentrate for dilution)`}
+              <div className={`col-span-3 text-[9px] font-semibold -mt-1 ${(() => {
+                const ratio = icedRatio;
+                const scaLo = +(getReferenceTDS(ratio, icedEYmin)).toFixed(4);
+                const scaHi = +(getReferenceTDS(ratio, icedEYmax)).toFixed(4);
+                const impossible = +(getReferenceTDS(ratio, 31)).toFixed(4);
+                if (icedHotTDS < scaLo) return 'text-blue-600';
+                if (icedHotTDS > impossible) return 'text-red-600';
+                if (icedHotTDS > scaHi) return 'text-amber-600';
+                return 'text-emerald-600';
+              })()}`}>
+                {(() => {
+                  const ratio = icedRatio;
+                  const scaLo = +(getReferenceTDS(ratio, icedEYmin)).toFixed(4);
+                  const scaHi = +(getReferenceTDS(ratio, icedEYmax)).toFixed(4);
+                  const impossible = +(getReferenceTDS(ratio, 31)).toFixed(4);
+                  if (icedHotTDS < scaLo) return `⚠ Below EY target (${icedEYmin}–${icedEYmax}%). Aim for ${scaLo}–${scaHi}% — grind finer or tighten ratio.`;
+                  if (icedHotTDS > impossible) return `⚠ Exceeds max achievable EY (31%). Loosen ratio or accept lower TDS.`;
+                  if (icedHotTDS > scaHi) return `⚠ Above SCA target — ${scaHi}–${impossible}% possible but high EY, watch for astringency.`;
+                  return `✓ SCA target zone (${icedEYmin}–${icedEYmax}% EY): ${scaLo}–${scaHi}%`;
+                })()}
               </div>
             </div>
             {(() => {
@@ -1707,7 +1925,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 const hotWater = totalWater - Math.round(totalWater * icedIcePct / 100);
                 const dose = icedDose;
                 const lo = Math.max(10, icedEYmin);
-                const hi = Math.min(30, icedEYmax);
+                const hi = Math.min(31, icedEYmax);
                 const eyValues: number[] = [];
                 for (let v = lo; v <= hi; v++) eyValues.push(v);
                 return (
@@ -1781,12 +1999,22 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 <span className="text-[9px] text-indigo-500">EY% is conserved through dilution</span>
               </div>
               {(() => {
-                const isUnder = icedHotTDS < 2.8;
-                const isOver = icedHotTDS > 3.4;
-                if (isUnder || isOver) {
+                const ratio = icedRatio;
+                const scaLo = +(icedEYmin / ratio).toFixed(2);
+                const scaHi = +(icedEYmax / ratio).toFixed(2);
+                const impossible = +(31 / ratio).toFixed(2);
+                const isUnder = icedHotTDS < scaLo;
+                const isAboveIdeal = icedHotTDS > scaHi && icedHotTDS <= impossible;
+                const isImpossible = icedHotTDS > impossible;
+                if (isUnder || isAboveIdeal || isImpossible) {
+                  let msg: string;
+                  let cls: string;
+                  if (isImpossible) { msg = `Exceeds max achievable EY (31%). Loosen ratio or accept lower TDS.`; cls = 'bg-red-100 text-red-700 border-red-300'; }
+                  else if (isAboveIdeal) { msg = `${icedHotTDS.toFixed(2)}% is above SCA zone (${scaLo}–${scaHi}%). Possible but high EY — watch for astringency.`; cls = 'bg-amber-100 text-amber-700 border-amber-300'; }
+                  else { msg = `${icedHotTDS.toFixed(2)}% is below SCA zone (${scaLo}–${scaHi}%). Grind finer or tighten ratio.`; cls = 'bg-blue-100 text-blue-700 border-blue-300'; }
                   return (
-                    <div className={`px-2 py-1 rounded text-[9px] font-bold border ${isOver ? 'bg-red-100 text-red-700 border-red-300' : 'bg-blue-100 text-blue-700 border-blue-300'}`}>
-                      ⚠ Hot TDS {icedHotTDS.toFixed(2)}% is {isOver ? 'above' : 'below'} the 2.8–3.4% target range. {isOver ? 'Grind coarser or loosen ratio.' : 'Grind finer or tighten ratio.'}
+                    <div className={`px-2 py-1 rounded text-[9px] font-bold border ${cls}`}>
+                      ⚠ Hot TDS {msg}
                     </div>
                   );
                 }
@@ -1837,7 +2065,20 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           </div>
           <button type="button" onClick={() => document.getElementById('grinder-setup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100">↑ Grinder Setup</button>
         </div>
-        <RecipePourPlanning ref={recipePlanRef} brewTargetSec={brewTimeSec} expectedTDSMin={parseFloat(targetTDSMin) || undefined} expectedTDSMax={parseFloat(targetTDSMax) || undefined} />
+        <RecipePourPlanning ref={recipePlanRef} brewTargetSec={brewTimeSec} expectedTDSMin={parseFloat(targetTDSMin) || undefined} expectedTDSMax={parseFloat(targetTDSMax) || undefined}
+          onSendToMainApp={(profile) => {
+            localStorage.setItem('belka.planToGraph', JSON.stringify(profile));
+          }}
+          onProfileChange={(p) => setCurrentPourPlan(p.pourPlan)}
+          onSendToAttemptLog={(plan) => {
+            setPourPlanStandby(plan);
+            setPourPlanSentFeedback(true);
+            setTimeout(() => setPourPlanSentFeedback(false), 2000);
+          }}
+        />
+        {pourPlanSentFeedback && (
+          <div className="mt-1 text-[10px] text-sky-600 font-semibold animate-pulse">✓ Pour plan sent — ready for next attempt</div>
+        )}
       </section>
 
       {/* Attempt Log */}
@@ -1891,6 +2132,17 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               activeFactor,
               symptom,
             },
+            waterMix: waterMixCalc.valid
+              ? {
+                  ratio: `${waterMixCalc.mineralPart}:${waterMixCalc.waterPart}`,
+                  measuredPpm: parseFloat(waterPpmInput) || 0,
+                  totalMl: waterMixCalc.totalMl,
+                  mineralMl: waterMixCalc.mineralMl,
+                  plainWaterMl: waterMixCalc.plainWaterMl,
+                  mineralPct: waterMixCalc.mineralPct,
+                  estimatedFinalPpm: waterMixCalc.estimatedFinalPpm,
+                }
+              : null,
             tdsPlan: {
               ratio: tdsPlanRatio,
               ey: targetEY,
@@ -1908,6 +2160,11 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               water: recipeValues.water,
             },
           }}
+          pourPlan={currentPourPlan}
+          pourPlanStandby={pourPlanStandby}
+          waterMixStandby={waterMixStandby}
+          onClearPourPlanStandby={() => setPourPlanStandby(null)}
+          onClearWaterMixStandby={() => setWaterMixStandby(null)}
         />
       </section>
     </div>

@@ -103,13 +103,13 @@ function App() {
 
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex flex-wrap justify-between items-center gap-y-2 py-3">
             <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900">
                 Belka Portal Graph Digitizer
               </h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2">
               <input
                 ref={profileInputRef}
                 type="file"
@@ -119,39 +119,39 @@ function App() {
               />
               <button
                 onClick={() => setActivePage('digitizer')}
-                className={`px-3 py-2 text-sm font-semibold rounded-lg border transition-colors ${activePage === 'digitizer' ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${activePage === 'digitizer' ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
                 title="Go to main digitizer"
               >
                 Main App
               </button>
               <button
                 onClick={() => setActivePage('ultrakoki-parser')}
-                className={`px-3 py-2 text-sm font-semibold rounded-lg border transition-colors ${activePage === 'ultrakoki-parser' ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${activePage === 'ultrakoki-parser' ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
                 title="Go to Ultrakoki parser"
               >
-                Ultrakoki Parser
+                Ultrakoki
               </button>
               <button
                 onClick={() => setActivePage('setup-profile')}
-                className={`px-3 py-2 text-sm font-semibold rounded-lg border transition-colors ${activePage === 'setup-profile' ? 'bg-sky-600 border-sky-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${activePage === 'setup-profile' ? 'bg-sky-600 border-sky-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
                 title="Go to Setup Profile"
               >
-                Setup Profile
+                Setup
               </button>
               <button
                 onClick={() => setShowInfo(true)}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border border-slate-200 text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
                 title="About this app — EC, TDS, use cases, credits"
               >
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-500 text-white text-[10px] font-bold leading-none">i</span>
+                <span className="inline-flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-slate-500 text-white text-[8px] sm:text-[10px] font-bold leading-none">i</span>
                 About
               </button>
               <button
                 onClick={() => setShowProfileBar((value) => !value)}
-                className={`px-3 py-2 text-sm font-semibold rounded-lg border transition-colors ${showProfileBar ? 'border-sky-300 bg-sky-100 text-sky-900' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${showProfileBar ? 'border-sky-300 bg-sky-100 text-sky-900' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
                 title="Show or hide profile save/load tools"
               >
-                {showProfileBar ? 'Hide Profiles' : 'Profiles'}
+                {showProfileBar ? '✕ Profiles' : 'Profiles'}
               </button>
             </div>
           </div>

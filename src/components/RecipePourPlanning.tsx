@@ -434,6 +434,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
         </div>
 
         <div className="space-y-2">
+          <div className="overflow-x-auto">
           <div className="flex items-center gap-2 text-xs text-slate-400 font-medium px-1">
             <span className="w-12">Pour #</span>
             <span className="w-28">Target</span>
@@ -567,6 +568,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
               })()}
             </div>
           )}
+          </div>
 
           {/* Stopwatch */}
           <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">

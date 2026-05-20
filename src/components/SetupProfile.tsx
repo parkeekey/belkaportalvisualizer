@@ -1338,10 +1338,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
         })()}
         <div className="bg-white/80 px-4 py-3 flex flex-col gap-3 text-xs border-t border-slate-200">
           {/* Ratio + EY — prominent focus */}
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Brew Ratio</span>
-              <div className="flex items-center gap-1.5">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Ratio</span>
+              <div className="flex items-center gap-1">
                 <span className="text-sm font-bold text-slate-600">1:</span>
                 <input
                   type="number"
@@ -1350,18 +1350,18 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   step={0.5}
                   value={tdsPlanRatio}
                   onChange={(e) => { const v = Math.min(30, Math.max(1, parseFloat(e.target.value) || 16)); setTdsPlanRatio(v); }}
-                  className="w-16 px-2 py-1.5 text-sm font-bold text-sky-800 border-2 border-sky-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white shadow-sm"
+                  className="w-14 px-1.5 py-1 text-sm font-bold text-sky-800 border-2 border-sky-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white shadow-sm"
                 />
                 <button
                   type="button"
                   onClick={() => { const r = parseFloat(localStorage.getItem('belkaBrewRatio') || '0'); if (r > 0) setTdsPlanRatio(r); }}
-                  className="px-2 py-1.5 rounded-lg text-[10px] font-bold text-sky-600 bg-sky-50 border border-sky-200 hover:bg-sky-100"
+                  className="px-1.5 py-1 rounded-lg text-[9px] font-bold text-sky-600 bg-sky-50 border border-sky-200 hover:bg-sky-100"
                   title="Import from Recipe"
                 >↻ Recipe</button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">EY Target</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">EY</span>
               <div className="flex items-center gap-1">
                 <input
                   type="number"
@@ -1370,26 +1370,24 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   max={30}
                   value={targetEY}
                   onChange={(e) => setTargetEY(e.target.value)}
-                  className="w-16 px-2 py-1.5 text-sm font-bold text-amber-800 border-2 border-amber-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white shadow-sm"
+                  className="w-14 px-1.5 py-1 text-sm font-bold text-amber-800 border-2 border-amber-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white shadow-sm"
                 />
                 <span className="text-sm font-bold text-slate-400">%</span>
               </div>
             </div>
-            <div className="flex items-center gap-1 ml-auto">
-              {tdsPlanRatio > 0 && (() => {
-                const ey = parseFloat(targetEY) || 20;
-                const tdsFromEY = ey / tdsPlanRatio;
-                const tdsLo = (tdsFromEY - 0.05).toFixed(2);
-                const tdsHi = (tdsFromEY + 0.05).toFixed(2);
-                return (
-                  <>
-                    <span className="text-[10px] text-slate-400">→ TDS</span>
-                    <span className="text-[10px] font-bold text-emerald-700 tabular-nums">{tdsLo}–{tdsHi}%</span>
-                    <button type="button" onClick={() => { setTargetTDSMin(tdsLo); setTargetTDSMax(tdsHi); document.getElementById('recipe-pour-planning')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100">→ Pour Plan</button>
-                  </>
-                );
-              })()}
-            </div>
+            {tdsPlanRatio > 0 && (() => {
+              const ey = parseFloat(targetEY) || 20;
+              const tdsFromEY = ey / tdsPlanRatio;
+              const tdsLo = (tdsFromEY - 0.05).toFixed(2);
+              const tdsHi = (tdsFromEY + 0.05).toFixed(2);
+              return (
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-slate-400">TDS</span>
+                  <span className="text-[9px] font-bold text-emerald-700 tabular-nums">{tdsLo}–{tdsHi}%</span>
+                  <button type="button" onClick={() => { setTargetTDSMin(tdsLo); setTargetTDSMax(tdsHi); document.getElementById('recipe-pour-planning')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-1.5 py-0.5 rounded text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100">→ Plan</button>
+                </div>
+              );
+            })()}
             {tdsPlanRatio > 0 && (() => {
               const scaLo = 18 / tdsPlanRatio;
               const scaHi = 22 / tdsPlanRatio;
@@ -1400,9 +1398,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               const isOver = currentTDS > scaHi;
               const delta = isUnder ? (scaLo - currentTDS) : isOver ? (currentTDS - scaHi) : 0;
               return (
-                <div className="flex-1 flex items-center gap-4 ml-2 pl-3 border-l border-slate-200">
+                <div className="flex items-center gap-2">
                   {/* SCA zone mini-gauge */}
-                  <div className="flex-1 relative h-4 max-w-48">
+                  <div className="w-24 sm:w-32 relative h-3">
                     <div className="absolute inset-0 rounded-sm bg-slate-100 overflow-hidden">
                       <div className="absolute inset-0 flex">
                         <div className="h-full flex-1 bg-sky-100/50" />
@@ -1427,27 +1425,27 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       </div>
                     </div>
                     {/* Zone labels */}
-                    <div className="flex justify-between text-[8px] text-slate-400 mt-0.5 px-0.5">
+                    <div className="flex justify-between text-[7px] text-slate-400 mt-px px-0.5">
                       <span>UNDER</span>
                       <span>SCA</span>
                       <span>OVER</span>
                     </div>
                   </div>
                   {/* Status text */}
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
                     {!isUnder && !isOver ? (
-                      <span className="text-emerald-700 font-bold text-[11px]">✓ SCA zone</span>
+                      <span className="text-emerald-700 font-bold text-[9px]">✓ SCA</span>
                     ) : (
-                      <span className={`font-bold text-[11px] ${isUnder ? 'text-sky-600' : 'text-red-600'}`}>
-                        {isUnder ? `${delta.toFixed(2)}% under` : `${delta.toFixed(2)}% over`}
+                      <span className={`font-bold text-[9px] ${isUnder ? 'text-sky-600' : 'text-red-600'}`}>
+                        {isUnder ? `${delta.toFixed(2)}% ↓` : `${delta.toFixed(2)}% ↑`}
                       </span>
                     )}
                     <button
                       type="button"
                       onClick={() => { const ey = parseFloat(targetEY) || 20; const t = ey / tdsPlanRatio; setTargetTDSMin((t - 0.05).toFixed(2)); setTargetTDSMax((t + 0.05).toFixed(2)); }}
-                      className="px-2 py-0.5 rounded text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100"
+                      className="px-1.5 py-0.5 rounded text-[8px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100"
                     >
-                      Apply to TDS
+                      Set TDS
                     </button>
                   </div>
                 </div>
@@ -1456,14 +1454,14 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           </div>
 
           {/* Controls row */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 pt-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-slate-100 pt-2">
             <div className="flex items-center gap-1">
-              <label className="text-slate-400 font-medium">TDS Min</label>
-              <input type="number" step={0.05} value={targetTDSMin} onChange={(e) => setTargetTDSMin(e.target.value)} className="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
+              <label className="text-[9px] text-slate-400 font-medium">TDS Min</label>
+              <input type="number" step={0.05} value={targetTDSMin} onChange={(e) => setTargetTDSMin(e.target.value)} className="w-14 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
             </div>
             <div className="flex items-center gap-1">
-              <label className="text-slate-400 font-medium">TDS Max</label>
-              <input type="number" step={0.05} value={targetTDSMax} onChange={(e) => setTargetTDSMax(e.target.value)} className="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
+              <label className="text-[9px] text-slate-400 font-medium">TDS Max</label>
+              <input type="number" step={0.05} value={targetTDSMax} onChange={(e) => setTargetTDSMax(e.target.value)} className="w-14 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
             </div>
 
             {tdsPlanRatio > 0 && (() => {
@@ -1473,13 +1471,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               const inRange = actualEY >= scaLoEY && actualEY <= scaHiEY;
               const eyDelta = inRange ? 0 : actualEY < scaLoEY ? (scaLoEY - actualEY) : (actualEY - scaHiEY);
               return (
-                <div className="flex items-center gap-2 ml-auto">
-                  <span className="text-sky-700 font-semibold tabular-nums">
-                    {currentTDS.toFixed(2)}% TDS → <strong>{(actualEY).toFixed(1)}% EY</strong>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sky-700 font-semibold tabular-nums text-[10px]">
+                    {currentTDS.toFixed(2)}% → <strong>{(actualEY).toFixed(1)}% EY</strong>
                   </span>
                   {eyDelta > 0 && (
-                    <span className={`text-[10px] font-semibold ${actualEY < scaLoEY ? 'text-sky-600' : 'text-red-600'}`}>
-                      ({eyDelta.toFixed(1)}% {actualEY < scaLoEY ? 'under' : 'over'} SCA)
+                    <span className={`text-[9px] font-semibold ${actualEY < scaLoEY ? 'text-sky-600' : 'text-red-600'}`}>
+                      {eyDelta.toFixed(1)}% {actualEY < scaLoEY ? '↓' : '↑'}
                     </span>
                   )}
                 </div>

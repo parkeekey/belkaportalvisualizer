@@ -51,7 +51,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const [icedDose, setIcedDose] = useState(20);
   const [icedRatio, setIcedRatio] = useState(15);
   const [icedIcePct, setIcedIcePct] = useState(40);
-  const [icedHotTDS, setIcedHotTDS] = useState(1.8);
+  const [icedHotTDS, setIcedHotTDS] = useState(3.0);
   const [icedTargetFinalTDS, setIcedTargetFinalTDS] = useState<number | null>(null);
   const [icedTab, setIcedTab] = useState<'ratio' | 'ey'>('ratio');
   const [icedOpen, setIcedOpen] = useState(false);
@@ -63,6 +63,14 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const [grinderPower, setGrinderPower] = useState<'hand' | 'electric'>('hand');
   const [grinderName, setGrinderName] = useState('');
   const [grinderMicron, setGrinderMicron] = useState(800);
+  const [dialRangeMin, setDialRangeMin] = useState(() => {
+    const saved = localStorage.getItem('belkaDialRangeMin');
+    return saved ? parseInt(saved) || 0 : 0;
+  });
+  const [dialRangeMax, setDialRangeMax] = useState(() => {
+    const saved = localStorage.getItem('belkaDialRangeMax');
+    return saved ? parseInt(saved) || 0 : 0;
+  });
   const [grinderProfiles, setGrinderProfiles] = useState<Record<string, { name: string; power: string; burr: string; fines: string; micron: number }>>(() => {
     try { return JSON.parse(localStorage.getItem('belkaGrinderProfiles') || '{}'); } catch { return {}; }
   });
@@ -451,6 +459,42 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 })}
               </div>
             )}
+          </div>
+          {/* Dialing Range */}
+          <div className="col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Dialing Range</span>
+              <div className="flex items-center gap-1">
+                <label className="text-[9px] text-slate-400">#</label>
+                <input type="number" min={0} step={1} value={dialRangeMin > 0 ? dialRangeMin : ''} onChange={(e) => { const v = Math.max(0, parseInt(e.target.value) || 0); setDialRangeMin(v); localStorage.setItem('belkaDialRangeMin', String(v)); }} placeholder="min" className="w-12 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+              <span className="text-slate-300 text-[10px]">→</span>
+              <div className="flex items-center gap-1">
+                <label className="text-[9px] text-slate-400">#</label>
+                <input type="number" min={0} step={1} value={dialRangeMax > 0 ? dialRangeMax : ''} onChange={(e) => { const v = Math.max(0, parseInt(e.target.value) || 0); setDialRangeMax(v); localStorage.setItem('belkaDialRangeMax', String(v)); }} placeholder="max" className="w-12 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+              {dialRangeMin > 0 && dialRangeMax > 0 && (
+                <span className="text-[9px] text-emerald-600 font-semibold">Active search zone: #{dialRangeMin}–#{dialRangeMax}</span>
+              )}
+            </div>
+            {dialRangeMin > 0 && dialRangeMax > 0 && dialRangeMax > dialRangeMin && (() => {
+              const total = dialRangeMax - dialRangeMin;
+              const steps = Array.from({ length: total + 1 }, (_, i) => dialRangeMin + i);
+              return (
+                <div className="mt-2 flex items-center gap-0.5">
+                  {steps.map(s => {
+                      return (
+                      <div key={s} className="flex-1 flex flex-col items-center gap-0.5">
+                        <div className={`w-full h-2 rounded-sm ${s === 14 || s === 16 ? 'bg-emerald-400' : s >= 14 && s <= 16 ? 'bg-emerald-300' : s < 14 ? 'bg-sky-300' : 'bg-amber-300'}`} />
+                        <span className={`text-[8px] font-bold tabular-nums ${s >= 14 && s <= 16 ? 'text-emerald-700' : 'text-slate-400'}`}>#{s}</span>
+                        {s === 14 && <span className="text-[7px] text-emerald-600 font-bold">◀ finest</span>}
+                        {s === 16 && <span className="text-[7px] text-emerald-600 font-bold">coarsest ▶</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
           {/* Save / Load profiles */}
           <div className="col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1">
@@ -1493,7 +1537,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <h3 className="text-sm font-bold text-sky-800 uppercase tracking-wider">🧊 Iced Drip Calculator</h3>
           <svg className={`w-4 h-4 text-sky-500 transition-transform ${icedOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
         </button>
-        {icedOpen && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {icedOpen && <><div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Brew Calculation */}
           <div className="space-y-2">
             {/* Tabs */}
@@ -1595,13 +1639,35 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             <div className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
               <label className="text-slate-500 col-span-1">Hot TDS</label>
               <div className="col-span-2 flex items-center gap-1">
-                <input type="number" min={0} step={0.05} value={icedHotTDS} onChange={(e) => setIcedHotTDS(Number(e.target.value))} className="w-full px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                <span className="text-[10px] text-slate-400">%</span>
+                {(() => {
+                  const isUnder = icedHotTDS < 2.8;
+                  const isOver = icedHotTDS > 3.4;
+                  const isOff = isUnder || isOver;
+                  return (
+                    <>
+                      <input type="number" min={0} step={0.05} value={icedHotTDS} onChange={(e) => setIcedHotTDS(Number(e.target.value))}
+                        className={`w-full px-1.5 py-1 text-xs border-2 rounded text-center focus:outline-none focus:ring-2 ${
+                          isOver ? 'border-red-400 bg-red-50 focus:ring-red-400' :
+                          isUnder ? 'border-blue-400 bg-blue-50 focus:ring-blue-400' :
+                          'border-sky-300 focus:ring-sky-400'
+                        }`}
+                      />
+                      <span className="text-[10px] text-slate-400">%</span>
+                      {isOff && (
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold whitespace-nowrap ${
+                          isOver ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-blue-100 text-blue-700 border border-blue-300'
+                        }`}>
+                          {isOver ? `↑ +${(icedHotTDS - 3.4).toFixed(2)}%` : `↓ ${(2.8 - icedHotTDS).toFixed(2)}%`}
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
-              <label className="text-slate-500 col-span-1">Target final</label>
-              <div className="col-span-2 flex items-center gap-1">
-                <input type="number" min={0} step={0.05} value={icedTargetFinalTDS ?? ''} onChange={(e) => setIcedTargetFinalTDS(e.target.value ? Number(e.target.value) : null)} placeholder="optional" className="w-full px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400 placeholder:text-slate-300" />
-                <span className="text-[10px] text-slate-400">%</span>
+              <div className={`col-span-3 text-[9px] font-semibold -mt-1 ${icedHotTDS < 2.8 ? 'text-blue-600' : icedHotTDS > 3.4 ? 'text-red-600' : 'text-slate-400'}`}>
+                {icedHotTDS < 2.8 ? `⚠ Under target — aim for 2.8–3.4% (concentrate for dilution)` :
+                 icedHotTDS > 3.4 ? `⚠ Over target — aim for 2.8–3.4% (concentrate for dilution)` :
+                 `✓ Target range: 2.8–3.4% (concentrate for dilution)`}
               </div>
             </div>
             {(() => {
@@ -1609,29 +1675,17 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               const ice = Math.round(totalWater * icedIcePct / 100);
               const hotWater = totalWater - ice;
               const finalTDS = hotWater > 0 ? icedHotTDS * hotWater / totalWater : 0;
-              const reqHotTDS = icedTargetFinalTDS !== null && hotWater > 0 ? icedTargetFinalTDS * totalWater / hotWater : null;
-              const scaStatus = finalTDS < 1.15 ? 'Under' : finalTDS > 1.35 ? 'Over' : 'Ideal';
               return (
                 <div className="p-2 bg-sky-50 border border-sky-200 rounded-lg text-xs space-y-0.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Final TDS</span>
+                    <span className="text-slate-500">Final TDS (diluted)</span>
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold tabular-nums text-emerald-600">{finalTDS.toFixed(2)}%</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                        scaStatus === 'Ideal' ? 'bg-emerald-100 text-emerald-700' :
-                        scaStatus === 'Under' ? 'bg-blue-100 text-blue-700' :
-                        'bg-amber-100 text-amber-700'
-                      }`}>
-                        SCA {scaStatus}
-                      </span>
+                      <span className="text-[8px] text-slate-400">info</span>
                     </div>
                   </div>
-                  {reqHotTDS !== null && (
-                    <div className="flex justify-between"><span className="text-slate-500">Req. hot TDS</span><span className="font-bold tabular-nums text-amber-600">{reqHotTDS.toFixed(2)}%</span></div>
-                  )}
-                  <div className="flex justify-between text-[9px] text-slate-400 pt-0.5 border-t border-sky-200 mt-0.5">
-                    <span>Dilution factor</span>
-                    <span className="tabular-nums">{hotWater > 0 ? (hotWater / totalWater * 100).toFixed(0) : 0}%</span>
+                  <div className="flex items-center justify-between text-[9px] text-slate-400 pt-0.5 border-t border-sky-200 mt-0.5">
+                    <span>Hot TDS <strong className="text-slate-500">{icedHotTDS.toFixed(2)}%</strong> at {hotWater > 0 ? (hotWater / totalWater * 100).toFixed(0) : 0}% dilution</span>
                   </div>
                 </div>
               );
@@ -1704,7 +1758,70 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               })()}
             </div>
           </div>
-        </div>}
+        </div>
+
+        {/* Equilibrium: Hot Concentrate vs Final Beverage */}
+        {(() => {
+          const totalWater = icedDose * icedRatio;
+          const ice = Math.round(totalWater * icedIcePct / 100);
+          const hotWater = totalWater - ice;
+          const hotLiquid = Math.max(0, hotWater - Math.round(icedDose * 2.5)); // ~2.5g water retained per g coffee
+          const finalBev = hotLiquid + ice;
+          const hotTDS = icedHotTDS;
+          const finalTDS = finalBev > 0 ? hotTDS * hotLiquid / finalBev : 0;
+          const extracted = hotLiquid * hotTDS / 100;
+          const ey = icedDose > 0 ? extracted / icedDose * 100 : 0;
+          const finalExtracted = finalBev * finalTDS / 100;
+          const finalEY = icedDose > 0 ? finalExtracted / icedDose * 100 : 0;
+          const matched = Math.abs(ey - finalEY) < 0.01;
+          return (
+            <div className="p-3 bg-gradient-to-r from-indigo-50 to-sky-50 border border-indigo-200 rounded-lg text-xs space-y-2 mt-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-indigo-800 uppercase tracking-wider">⚖️ Equilibrium — EY is the Same</span>
+                <span className="text-[9px] text-indigo-500">EY% is conserved through dilution</span>
+              </div>
+              {(() => {
+                const isUnder = icedHotTDS < 2.8;
+                const isOver = icedHotTDS > 3.4;
+                if (isUnder || isOver) {
+                  return (
+                    <div className={`px-2 py-1 rounded text-[9px] font-bold border ${isOver ? 'bg-red-100 text-red-700 border-red-300' : 'bg-blue-100 text-blue-700 border-blue-300'}`}>
+                      ⚠ Hot TDS {icedHotTDS.toFixed(2)}% is {isOver ? 'above' : 'below'} the 2.8–3.4% target range. {isOver ? 'Grind coarser or loosen ratio.' : 'Grind finer or tighten ratio.'}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Hot concentrate */}
+                <div className="p-2 bg-white/70 border border-amber-200 rounded-lg space-y-1">
+                  <div className="text-[9px] font-bold text-amber-800 uppercase tracking-wider">Hot Concentrate</div>
+                  <div className="text-[9px] text-slate-500">TDS: <strong className="text-amber-700">{hotTDS.toFixed(2)}%</strong></div>
+                  <div className="text-[9px] text-slate-500">Liquid: <strong className="text-slate-700">{hotLiquid.toFixed(0)}g</strong> ({hotWater.toFixed(0)}g water − ~{Math.round(icedDose * 2.5)}g retained)</div>
+                  <div className="text-[9px] text-slate-500">Extracted coffee: <strong className="text-slate-700">{extracted.toFixed(2)}g</strong></div>
+                  <div className="text-[9px] font-bold text-indigo-700 border-t border-amber-200 pt-0.5 mt-0.5">
+                    EY = {hotLiquid.toFixed(0)}g × {hotTDS.toFixed(2)}% ÷ {icedDose}g = <strong>{ey.toFixed(2)}%</strong>
+                  </div>
+                </div>
+                {/* Final beverage */}
+                <div className="p-2 bg-white/70 border border-sky-200 rounded-lg space-y-1">
+                  <div className="text-[9px] font-bold text-sky-800 uppercase tracking-wider">Final Beverage (After Ice)</div>
+                  <div className="text-[9px] text-slate-500">TDS: <strong className="text-sky-700">{finalTDS.toFixed(2)}%</strong></div>
+                  <div className="text-[9px] text-slate-500">Beverage: <strong className="text-slate-700">{finalBev.toFixed(0)}g</strong> ({hotLiquid.toFixed(0)}g hot + {ice}g melted ice)</div>
+                  <div className="text-[9px] text-slate-500">Extracted coffee: <strong className="text-slate-700">{finalExtracted.toFixed(2)}g</strong></div>
+                  <div className={`text-[9px] font-bold border-t pt-0.5 mt-0.5 ${matched ? 'text-emerald-600 border-sky-200' : 'text-amber-600 border-sky-200'}`}>
+                    EY = {finalBev.toFixed(0)}g × {finalTDS.toFixed(2)}% ÷ {icedDose}g = <strong>{finalEY.toFixed(2)}%</strong>
+                    {matched && <span className="ml-1 text-emerald-600">✓ Same!</span>}
+                  </div>
+                </div>
+              </div>
+              <div className="text-[9px] text-indigo-600 bg-indigo-100/60 rounded px-2 py-1">
+                <strong>Key insight:</strong> EY% is the same whether calculated from the hot concentrate or the final beverage — only TDS and volume change. Use the <strong>hot concentrate TDS</strong> (2.5–4.0%) to check your extraction mid-brew.
+              </div>
+            </div>
+          );
+        })()}
+        </>}
       </section>
 
       {/* Recipe & Pour Planning */}

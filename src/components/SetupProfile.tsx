@@ -3,6 +3,7 @@ import RecipePourPlanning, { type RecipePourPlanningHandle, type RecipePourPlann
 import TDSHUD from './TDSHUD';
 import AttemptLog, { type WaterMixSnapshot } from './AttemptLog';
 import { getReferenceTDS, getReferenceEY } from '../utils/tdsReference';
+import TurbulenceModel from './TurbulenceModel';
 
 const PROCESS_GUIDE: {
   id: string; label: string; crease: string; appearance: string; aroma: string; flavor: string;
@@ -291,7 +292,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const [targetTDSMin, setTargetTDSMin] = useState('1.30');
   const [targetTDSMax, setTargetTDSMax] = useState('1.45');
   const [targetEY, setTargetEY] = useState('20');
-  const [currentTDS, setCurrentTDS] = useState(1.35);
+  const [currentTDS, setCurrentTDS] = useState(1.36);
   const [tdsPlanRatio, setTdsPlanRatio] = useState(() => {
     const saved = localStorage.getItem('belkaBrewRatio');
     return saved ? (parseFloat(saved) || 16) : 16;
@@ -1683,6 +1684,12 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
         </div>
       </section>
 
+      {/* Turbulence Model */}
+      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <h3 className="text-sm font-bold text-orange-800 uppercase tracking-wider mb-3">🌊 Turbulence Model</h3>
+        <TurbulenceModel targetBrewTimeSec={brewTimeSec} />
+      </section>
+
       {/* Bean Grind Guidance */}
       <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
         {(() => {
@@ -1883,20 +1890,21 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             currentTDS={currentTDS}
             eyTarget={parseFloat(targetEY) || 0}
             onTDSChange={setCurrentTDS}
-            scaTdsMin={tdsPlanRatio > 0 ? getReferenceTDS(tdsPlanRatio, 18) : undefined}
-            scaTdsMax={tdsPlanRatio > 0 ? getReferenceTDS(tdsPlanRatio, 22) : undefined}
+            scaTdsMin={getReferenceTDS(tdsPlanRatio || 16, 18)}
+            scaTdsMax={getReferenceTDS(tdsPlanRatio || 16, 22)}
           />
-          {tdsPlanRatio > 0 && (() => {
-            const scaLo = getReferenceTDS(tdsPlanRatio, 18);
-            const scaHi = getReferenceTDS(tdsPlanRatio, 22);
-            const actualEY = getReferenceEY(tdsPlanRatio, currentTDS);
+          {(() => {
+            const ratio = tdsPlanRatio || 16;
+            const scaLo = getReferenceTDS(ratio, 18);
+            const scaHi = getReferenceTDS(ratio, 22);
+            const actualEY = getReferenceEY(ratio, currentTDS);
             const isUnder = currentTDS < scaLo;
             const isOver = currentTDS > scaHi;
             const tdsDelta = isUnder ? (scaLo - currentTDS) : isOver ? (currentTDS - scaHi) : 0;
             let advice = '';
             if (!isUnder && !isOver) advice = '✓ Your TDS is in the SCA gold cup zone for this ratio.';
-            else if (isUnder) advice = `TDS is ${tdsDelta.toFixed(2)}% below SCA zone. Tighten ratio to 1:${(tdsPlanRatio - 1).toFixed(0)}, increase dose, or grind finer.`;
-            else advice = `TDS is ${tdsDelta.toFixed(2)}% above SCA zone. Loosen ratio to 1:${(tdsPlanRatio + 1).toFixed(0)}, coarsen grind, or reduce dose.`;
+            else if (isUnder) advice = `TDS is ${tdsDelta.toFixed(2)}% below SCA zone. Tighten ratio to 1:${(ratio - 1).toFixed(0)}, increase dose, or grind finer.`;
+            else advice = `TDS is ${tdsDelta.toFixed(2)}% above SCA zone. Loosen ratio to 1:${(ratio + 1).toFixed(0)}, coarsen grind, or reduce dose.`;
             const statusLabel = isUnder ? 'UNDER' : isOver ? 'OVER' : '✓ IDEAL';
             const statusColor = isUnder ? 'text-sky-600 bg-sky-50 border-sky-200' : isOver ? 'text-red-600 bg-red-50 border-red-200' : 'text-emerald-600 bg-emerald-50 border-emerald-200';
             return (
@@ -1918,11 +1926,14 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   <div className={`px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>
                     {statusLabel} {tdsDelta > 0 && `+${tdsDelta.toFixed(2)}%`}
                   </div>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); const r = tdsPlanRatio || 16; setCurrentTDS(getReferenceTDS(r, 20)); setTargetTDSMin(getReferenceTDS(r, 18).toFixed(2)); setTargetTDSMax(getReferenceTDS(r, 22).toFixed(2)); }} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md px-2 py-1 transition-colors shrink-0">
+                    🎯 Ideal
+                  </button>
                 </div>
                 <div className="flex items-center gap-4 mt-2 text-xs">
                   <span className="text-slate-500 tabular-nums">TDS <strong className={isUnder ? 'text-sky-600' : isOver ? 'text-red-600' : 'text-emerald-600'}>{currentTDS.toFixed(2)}%</strong></span>
                   <span className="text-slate-500 tabular-nums">EY <strong className={isUnder ? 'text-sky-600' : isOver ? 'text-red-600' : 'text-emerald-600'}>{actualEY.toFixed(1)}%</strong></span>
-                  <span className="text-slate-400">at 1:{tdsPlanRatio}</span>
+                  <span className="text-slate-400">at 1:{ratio}</span>
                 </div>
                 <div className="relative h-2 mt-2 mb-1 rounded-full bg-slate-100 overflow-hidden max-w-xs">
                   <div className="absolute inset-y-0 bg-emerald-300/40 border-x border-emerald-400/50" style={{ left: `${Math.max(0, (scaLo - 0.7) / 1.4 * 100)}%`, width: `${Math.min(100, (scaHi - scaLo) / 1.4 * 100)}%` }} />

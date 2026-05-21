@@ -61,7 +61,21 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
   const [isElectric, setIsElectric] = useState(false);
   const [rpm, setRpm] = useState('');
   const [burrSize, setBurrSize] = useState('');
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(() => {
+    const saved = localStorage.getItem('belkaKnobZoom');
+    return saved ? parseFloat(saved) || 1 : 1;
+  });
+  const [zoomLocked, setZoomLocked] = useState(() => {
+    const saved = localStorage.getItem('belkaKnobZoomLocked');
+    return saved === 'true';
+  });
+  const persistedSetZoom = useCallback((fn: number | ((v: number) => number)) => {
+    setZoom(prev => {
+      const next = typeof fn === 'function' ? fn(prev) : fn;
+      localStorage.setItem('belkaKnobZoom', String(next));
+      return next;
+    });
+  }, []);
   const [hoveredEntry, setHoveredEntry] = useState<GrinderEntry | null>(null);
   const [showCalc, setShowCalc] = useState(false);
   const [calcLow, setCalcLow] = useState(0);
@@ -242,7 +256,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
         <input type="text" value={grinderName} onChange={(e) => onGrinderNameChange(e.target.value)} placeholder="e.g. Ode Gen 2" className="w-20 px-1.5 py-0.5 text-xs border border-emerald-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400" />
         <span className="text-slate-300">|</span>
         <label className="text-slate-400">Total clicks:</label>
-        <input type="number" min={1} step={1} value={totalClicks} onChange={(e) => setTotalClicks(Math.max(1, parseInt(e.target.value) || 40))} className="w-12 px-1 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <input type="number" value={totalClicks || ''} max={100} onChange={(e) => setTotalClicks(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="w-12 px-1 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="0" />
         <span className="text-slate-300">|</span>
         <label className="text-slate-400">Micro:</label>
         <input type="number" min={1} max={10} step={1} value={microStep} onChange={(e) => setMicroStep(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))} className="w-10 px-1 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400" />
@@ -463,9 +477,12 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
             <span className="text-slate-500 tabular-nums w-5">{(turnSpeed * 10000).toFixed(0)}</span>
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={() => setZoom(z => Math.max(0.5, z - 0.25))} className="w-5 h-5 rounded border border-slate-300 bg-white text-slate-500 text-[9px] font-bold hover:bg-slate-100 flex items-center justify-center">−</button>
+            <button onClick={() => persistedSetZoom(z => Math.max(0.5, z - 0.25))} disabled={zoomLocked} className="w-5 h-5 rounded border border-slate-300 bg-white text-slate-500 text-[9px] font-bold hover:bg-slate-100 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed">−</button>
             <span className="text-[9px] text-slate-400 tabular-nums w-6 text-center">{(zoom * 100).toFixed(0)}%</span>
-            <button onClick={() => setZoom(z => Math.min(3, z + 0.25))} className="w-5 h-5 rounded border border-slate-300 bg-white text-slate-500 text-[9px] font-bold hover:bg-slate-100 flex items-center justify-center">+</button>
+            <button onClick={() => persistedSetZoom(z => Math.min(3, z + 0.25))} disabled={zoomLocked} className="w-5 h-5 rounded border border-slate-300 bg-white text-slate-500 text-[9px] font-bold hover:bg-slate-100 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+            <button onClick={() => { const next = !zoomLocked; setZoomLocked(next); localStorage.setItem('belkaKnobZoomLocked', String(next)); }} className={`w-5 h-5 rounded border text-[9px] font-bold flex items-center justify-center transition-all ${zoomLocked ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-white border-slate-300 text-slate-400 hover:bg-slate-50'}`} title={zoomLocked ? 'Zoom locked' : 'Lock zoom'}>
+              {zoomLocked ? '🔒' : '🔓'}
+            </button>
           </div>
           {focusMode && (
             <div className="flex items-center gap-2 text-[10px] bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex-wrap">

@@ -78,6 +78,7 @@ export interface ManualDigitizerSessionProfile {
   editableCalibrationBox: CalibrationBoxRect | null;
   importedJsonText: string;
   importedJsonLabel: string | null;
+  importedBean: { coffeeName: string; roastery: string; origin: string; process: string; roastLevel: number; density: number; altitude: number; defects: string[] } | null;
   ultrakokiBrewData: UltrakokiBrewData | null;
   doseWeight: number;
   brewRatio: number;
@@ -296,6 +297,15 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
   const [showJsonImportPrompt, setShowJsonImportPrompt] = useState<boolean>(false);
   const [importedJsonText, setImportedJsonText] = useState<string>('');
   const [importedJsonLabel, setImportedJsonLabel] = useState<string | null>(null);
+  const [importedBean, setImportedBean] = useState<{
+    coffeeName: string; roastery: string; origin: string; process: string;
+    roastLevel: number; density: number; altitude: number; defects: string[];
+  } | null>(null);
+  const [savedBeanProfiles, setSavedBeanProfiles] = useState<Record<string, {
+    coffeeName: string; roastery: string; origin: string; process: string;
+    roastLevel: number; density: number; altitude: number; defects: string[];
+  }>>({});
+  const [showBeanBrowser, setShowBeanBrowser] = useState(false);
   const [ultrakokiBrewData, setUltrakokiBrewData] = useState<UltrakokiBrewData | null>(null);
   const [ultrakokiImportWarning, setUltrakokiImportWarning] = useState<string | null>(null);
   const [doseWeight, setDoseWeight] = useState<number>(() => {
@@ -361,6 +371,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       editableCalibrationBox,
       importedJsonText,
       importedJsonLabel,
+      importedBean,
       ultrakokiBrewData,
       conversionFactor,
       refractometerTDSInput,
@@ -423,6 +434,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       setEditableCalibrationBox(profile.editableCalibrationBox ?? null);
       setImportedJsonText(profile.importedJsonText ?? '');
       setImportedJsonLabel(profile.importedJsonLabel ?? null);
+      setImportedBean(profile.importedBean ?? null);
       setUltrakokiBrewData(profile.ultrakokiBrewData ?? null);
       setUltrakokiImportWarning(null);
       setDoseWeight(Number.isFinite(profile.doseWeight) ? profile.doseWeight : 15);
@@ -754,6 +766,26 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       console.error('Failed to apply plan to graph:', err);
     }
   }, [isActive]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    try {
+      const raw = localStorage.getItem('belkaImportedBean');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      localStorage.removeItem('belkaImportedBean');
+      if (data.coffeeName || data.roastery) setImportedBean(data);
+    } catch (err) {
+      console.error('Failed to apply imported bean:', err);
+    }
+  }, [isActive]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('belkaBeanProfiles');
+      if (raw) setSavedBeanProfiles(JSON.parse(raw));
+    } catch {}
+  }, [isActive, showBeanBrowser]);
 
   useEffect(() => {
     try {
@@ -3394,6 +3426,45 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
           {!ultrakokiBrewData && (
             <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
               Non-Ultrakoki mode active: using estimated water-in behavior until Ultrakoki JSON is loaded.
+            </div>
+          )}
+          {/* Imported Bean display */}
+          {(importedBean || Object.keys(savedBeanProfiles).length > 0) && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {importedBean && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs">
+                  <span className="text-amber-600 font-semibold">☕</span>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-amber-900 leading-tight">{importedBean.coffeeName || 'Untitled'}</span>
+                    <span className="text-[10px] text-amber-700 leading-tight">
+                      {[importedBean.roastery, importedBean.process, importedBean.origin, `${importedBean.altitude}m`, `🫘${importedBean.density}%`, `🔥${importedBean.roastLevel}`].filter(Boolean).join(' · ')}
+                    </span>
+                  </div>
+                  <button type="button" onClick={() => setImportedBean(null)} className="text-amber-400 hover:text-amber-600 ml-1">✕</button>
+                </div>
+              )}
+              {Object.keys(savedBeanProfiles).length > 0 && (
+                <div className="relative">
+                  <button type="button" onClick={() => setShowBeanBrowser(v => !v)} className="text-xs font-medium text-amber-700 bg-white px-3 py-1.5 rounded-lg border border-amber-200 hover:bg-amber-50 shadow-sm">
+                    ☕ Saved ({Object.keys(savedBeanProfiles).length})
+                  </button>
+                  {showBeanBrowser && (
+                    <div className="absolute top-full left-0 mt-1 z-50 w-80 bg-white border border-slate-200 rounded-lg shadow-xl p-2 max-h-72 overflow-y-auto">
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 px-1">Saved Bean Profiles</div>
+                      {Object.entries(savedBeanProfiles).map(([key, bp]) => (
+                        <button key={key} type="button" onClick={() => {
+                          setImportedBean(bp);
+                          setShowBeanBrowser(false);
+                        }} className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-amber-50 flex items-center gap-2 border-b border-slate-100 last:border-0">
+                          <span className="font-bold text-slate-700">{bp.coffeeName || key}</span>
+                          {bp.roastery && <span className="text-slate-400">— {bp.roastery}</span>}
+                          <span className="ml-auto text-[9px] text-slate-400">{bp.process} · {bp.altitude}m · 🫘{bp.density}%</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
           {/* Status indicators */}

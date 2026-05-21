@@ -359,12 +359,9 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                 <span className="text-sm font-bold text-slate-400">1:</span>
                 <input
                   type="number"
-                  min={1}
-                  max={30}
-                  step={0.1}
                   value={brewRatio}
                   onChange={(e) => {
-                    const v = Math.min(30, Math.max(1, parseFloat(e.target.value) || 15));
+                    const v = parseFloat(e.target.value) || 15;
                     setBrewRatio(v);
                     localStorage.setItem('belkaBrewRatio', String(v));
                   }}
@@ -390,11 +387,9 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
               <div className="flex items-center gap-1">
                 <input
                   type="number"
-                  min={0}
-                  step={1}
                   value={recipeFinishTimeSec > 0 ? Math.floor(recipeFinishTimeSec / 60) : ''}
                   onChange={(e) => {
-                    const m = Math.max(0, parseInt(e.target.value) || 0);
+                    const m = parseInt(e.target.value) || 0;
                     setRecipeFinishTimeSec(m * 60 + (recipeFinishTimeSec % 60));
                   }}
                   placeholder={totalBrewTime > 0 ? String(Math.floor(totalBrewTime / 60)) : 'mm'}
@@ -403,12 +398,9 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                 <span className="text-sm font-bold text-slate-400">:</span>
                 <input
                   type="number"
-                  min={0}
-                  max={59}
-                  step={1}
-                  value={recipeFinishTimeSec > 0 ? (recipeFinishTimeSec % 60) : ''}
+                  value={recipeFinishTimeSec > 0 ? (recipeFinishTimeSec % 60) || '' : ''}
                   onChange={(e) => {
-                    const s = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
+                    const s = parseInt(e.target.value) || 0;
                     setRecipeFinishTimeSec(Math.floor(recipeFinishTimeSec / 60) * 60 + s);
                   }}
                   placeholder={totalBrewTime > 0 ? String(totalBrewTime % 60).padStart(2, '0') : 'ss'}
@@ -484,7 +476,8 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                   }} className="w-5 h-5 flex items-center justify-center text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded hover:bg-emerald-100 leading-none">−</button>
                   <input
                     type="number"
-                    value={entry.cumulativePercent}
+                    value={entry.cumulativePercent || ''}
+                    max={100}
                     onChange={(e) => {
                       const raw = e.target.value;
                       if (raw === '' || raw === '-') {
@@ -499,17 +492,18 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                       if (Number.isFinite(parsed)) {
                         setPourPlan(prev => {
                           const next = [...prev];
-                          next[idx] = { ...next[idx], cumulativePercent: parsed };
+                          next[idx] = { ...next[idx], cumulativePercent: Math.min(100, Math.max(0, parsed)) };
                           return next;
                         });
                       }
                     }}
                     className="w-16 h-7 px-1 text-sm font-semibold text-emerald-800 border border-emerald-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400 text-center bg-white"
+                    placeholder="0"
                   />
                   <button type="button" onClick={() => {
                     setPourPlan(prev => {
                       const next = [...prev];
-                      next[idx] = { ...next[idx], cumulativePercent: (next[idx].cumulativePercent ?? 0) + 1 };
+                      next[idx] = { ...next[idx], cumulativePercent: Math.min(100, (next[idx].cumulativePercent ?? 0) + 1) };
                       return next;
                     });
                   }} className="w-5 h-5 flex items-center justify-center text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded hover:bg-emerald-100 leading-none">+</button>

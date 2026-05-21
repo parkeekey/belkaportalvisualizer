@@ -79,6 +79,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const [processFinderOpen, setProcessFinderOpen] = useState(false);
   const processFinderCols = ['Process', 'Crease', 'Appearance', 'Aroma', 'Flavor', 'Water ppm', 'Water Target', 'Density', 'Grind Impact', 'Brew Temp', 'Extraction Strategy'];
   const [processFinderVisibleCols, setProcessFinderVisibleCols] = useState<string[]>(processFinderCols);
+  const processFinderGroups: { label: string; cols: string[] }[] = [
+    { label: '👁️ Visual', cols: ['Process', 'Crease', 'Appearance'] },
+    { label: '👃 Smell', cols: ['Aroma', 'Flavor'] },
+    { label: '💧 Water', cols: ['Water ppm', 'Water Target'] },
+    { label: '🫘 Physical', cols: ['Density', 'Grind Impact'] },
+    { label: '🌡️ Brew', cols: ['Brew Temp', 'Extraction Strategy'] },
+  ];
   const [microClick, setMicroClick] = useState(() => {
     const saved = localStorage.getItem('belkaMicroClick');
     return saved ? parseFloat(saved) || 0 : 0;
@@ -123,6 +130,16 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     const entry = PROCESS_GUIDE.find(p => p.id === process);
     if (entry) setDensity(entry.densityPct);
   }, [process]);
+
+  const [coffeeName, setCoffeeName] = useState('');
+  const [roastery, setRoastery] = useState('');
+  const [beanProfileNameInput, setBeanProfileNameInput] = useState('');
+  const [beanProfiles, setBeanProfiles] = useState<Record<string, {
+    coffeeName: string; roastery: string; origin: string; process: string;
+    roastLevel: number; density: number; altitude: number; defects: string[];
+  }>>(() => {
+    try { return JSON.parse(localStorage.getItem('belkaBeanProfiles') || '{}'); } catch { return {}; }
+  });
 
   const [finesTendency, setFinesTendency] = useState<'low' | 'medium' | 'high'>('medium');
   const [grinderBurr, setGrinderBurr] = useState<'conical' | 'flat' | 'blade'>('conical');
@@ -329,6 +346,176 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
       <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Setup Profile</h2>
+
+      {/* Brew Impact */}
+      <section className="bg-white border border-emerald-200 rounded-xl p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Brew Impact</h3>
+          {!symptom && (
+            <span className="text-[10px] text-emerald-500 italic">{activeFactor ? 'Tap again to clear' : 'Tap a row to see ripple'}</span>
+          )}
+        </div>
+
+        {/* Symptom selector */}
+        <div className="flex flex-wrap gap-1 mb-3">
+          {SYMPTOM_OPTIONS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => {
+                setSymptom(symptom === s.id ? null : s.id);
+                setActiveFactor(null);
+              }}
+              className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all ${
+                symptom === s.id
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                  : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-emerald-600'
+              }`}
+            >
+              {s.label} {symptom === s.id && '✕'}
+            </button>
+          ))}
+        </div>
+
+        {/* Guidance mode */}
+        {symptom && symptomGuide[symptom] && (
+          <div className="mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Fix this</span>
+              <span className="text-xs font-bold text-emerald-800">{SYMPTOM_OPTIONS.find(s => s.id === symptom)?.label}</span>
+            </div>
+            <p className="text-xs text-emerald-700 leading-relaxed">{symptomGuide[symptom].advice}</p>
+            <div className="flex items-center gap-2 mt-2 text-xs">
+              <span className="font-bold text-emerald-700">→ {symptomGuide[symptom].rankLabel}:</span>
+              <span className="font-bold text-emerald-600 bg-white px-2 py-0.5 rounded border border-emerald-200">{symptomGuide[symptom].direction} {symptomGuide[symptom].magnitude}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Factor rows */}
+        <div className="space-y-1">
+          {brewImpactFactors.map((f) => {
+            const isGuided = symptom && symptomGuide[symptom]?.factor === f.rank;
+            const isOther = symptom && !isGuided;
+            const isActive = !symptom && activeFactor === f.rank;
+            const isConnected = !symptom && activeFactor !== null && f.connects.includes(activeFactor);
+            const connections = f.connects.length;
+            return (
+              <button
+                type="button"
+                key={f.rank}
+                onClick={() => { if (!symptom) setActiveFactor(isActive ? null : f.rank); }}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg border text-left transition-all duration-200 ${
+                  isGuided
+                    ? 'border-emerald-400 bg-emerald-50 shadow-[0_0_10px_rgba(52,211,153,0.35)]'
+                    : isActive
+                    ? 'border-emerald-400 bg-emerald-50 shadow-[0_0_8px_rgba(52,211,153,0.3)]'
+                    : isConnected
+                    ? 'border-emerald-300 bg-emerald-50/50 shadow-[0_0_4px_rgba(52,211,153,0.15)]'
+                    : isOther
+                    ? 'border-transparent opacity-30'
+                    : 'border-transparent hover:bg-slate-50'
+                }`}
+                disabled={!!symptom}
+              >
+                <span className={`text-[11px] font-bold w-4 text-center transition-colors ${
+                  isGuided ? 'text-emerald-600' : isActive ? 'text-emerald-600' : isConnected ? 'text-emerald-500' : 'text-slate-400'
+                }`}>
+                  {f.rank}
+                </span>
+                <div className="flex-1 flex items-center gap-2 min-w-0">
+                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${f.color} ${
+                        isGuided ? 'opacity-100' : isActive ? 'opacity-100' : isConnected ? 'opacity-80' : 'opacity-60'
+                      }`}
+                      style={{ width: `${isGuided ? 100 : f.barPct}%` }}
+                    />
+                  </div>
+                  <span className={`text-[11px] font-semibold w-auto shrink-0 transition-colors flex items-center gap-0.5 ${
+                    isGuided ? 'text-emerald-700' : isActive ? 'text-emerald-700' : isConnected ? 'text-emerald-600' : 'text-slate-500'
+                  }`}>
+                    {f.name}
+                    {isGuided && <span className="ml-1 text-[9px] text-emerald-500">←</span>}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {f.rank === 3 ? (
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setWaterTemp(Math.max(80, waterTemp - 1)); }}
+                        className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                      >−</button>
+                      <span className="text-[11px] font-bold text-slate-700 tabular-nums w-7 text-center">{waterTemp}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setWaterTemp(Math.min(100, waterTemp + 1)); }}
+                        className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                      >+</button>
+                    </div>
+                  ) : f.rank === 5 ? (
+                    <div className="flex items-center gap-0.5">
+                      {(['soft', 'medium', 'hard'] as const).map((wq) => (
+                        <button
+                          key={wq}
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setWaterQuality(wq); }}
+                          className={`text-[9px] font-semibold px-1.5 py-0.5 rounded transition-colors ${
+                            waterQuality === wq
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                        >
+                          {wq === 'soft' ? 'S' : wq === 'medium' ? 'M' : 'H'}
+                        </button>
+                      ))}
+                    </div>
+                  ) : f.rank === 6 ? (
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3].map((lv) => (
+                        <button
+                          key={lv}
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setTurbulenceLevel(lv); }}
+                          className={`w-3.5 h-3.5 rounded-full border transition-colors ${
+                            turbulenceLevel >= lv
+                              ? 'bg-amber-400 border-amber-500'
+                              : 'bg-slate-100 border-slate-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <span className={`text-[11px] font-bold tabular-nums ${isGuided ? 'text-emerald-700' : 'text-slate-700'}`}>{f.value}</span>
+                  )}
+                  {!isOther && (
+                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full transition-colors ${
+                      connections > 0
+                        ? isGuided || isActive || isConnected
+                          ? 'bg-emerald-100 text-emerald-600'
+                          : 'bg-slate-100 text-slate-400'
+                        : 'text-slate-300'
+                    }`}>
+                      ↔{connections}
+                    </span>
+                  )}
+                  {isActive && (
+                    <span className="text-[9px] text-white bg-emerald-500 hover:bg-emerald-600 rounded-md px-1.5 py-0.5 font-bold transition-colors shadow-sm cursor-pointer" onClick={(e) => {
+                      e.stopPropagation();
+                      const idMap: Record<string, string> = { 'Ratio': 'tds-target', 'Grind': 'grinder-setup', 'Temp': 'brew-temp', 'Time': 'brew-time', 'Water': 'water-ppm', 'Turb.': 'brew-time', 'Filter': 'equipment-profile' };
+                      const id = idMap[f.name];
+                      if (id) document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}>
+                      Go
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Equipment Profile */}
       <section id="equipment-profile" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
@@ -882,6 +1069,76 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       {/* Bean Profile */}
       <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
         <h3 className="text-sm font-bold text-amber-800 uppercase tracking-wider mb-3">Bean Profile</h3>
+
+        {/* Coffee Name + Roastery */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4 text-sm">
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Coffee Name</label>
+            <input type="text" value={coffeeName} onChange={(e) => setCoffeeName(e.target.value)} placeholder="e.g. Finca El Mirador" className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Roastery</label>
+            <input type="text" value={roastery} onChange={(e) => setRoastery(e.target.value)} placeholder="e.g. Onyx Coffee Lab" className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          </div>
+        </div>
+
+        {/* Save / Load bean profiles + Import */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <input type="text" value={beanProfileNameInput} onChange={(e) => setBeanProfileNameInput(e.target.value)} placeholder="Profile name..." className="flex-1 max-w-36 px-2 py-1 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          <button type="button" onClick={() => {
+            const name = beanProfileNameInput.trim();
+            if (!name) return;
+            const updated = { ...beanProfiles, [name]: { coffeeName, roastery, origin, process, roastLevel, density, altitude, defects } };
+            setBeanProfiles(updated);
+            localStorage.setItem('belkaBeanProfiles', JSON.stringify(updated));
+            setBeanProfileNameInput('');
+          }} disabled={!beanProfileNameInput.trim()} className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 disabled:opacity-40">Save</button>
+          {Object.keys(beanProfiles).length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {Object.entries(beanProfiles).map(([key, bp]) => (
+                <div key={key} className="flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px]">
+                  <button type="button" onClick={() => {
+                    setCoffeeName(bp.coffeeName);
+                    setRoastery(bp.roastery);
+                    setOrigin(bp.origin);
+                    setProcess(bp.process);
+                    setRoastLevel(bp.roastLevel);
+                    setDensity(bp.density);
+                    setAltitude(bp.altitude);
+                    setDefects(bp.defects);
+                  }} className="font-semibold text-slate-700 hover:text-amber-600">{key}</button>
+                  <button type="button" onClick={() => {
+                    const updated = { ...beanProfiles };
+                    delete updated[key];
+                    setBeanProfiles(updated);
+                    localStorage.setItem('belkaBeanProfiles', JSON.stringify(updated));
+                  }} className="text-red-400 hover:text-red-600 text-[9px] font-bold px-1">✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {Object.keys(beanProfiles).length > 0 && (
+            <button type="button" onClick={() => {
+              const data = JSON.stringify(beanProfiles, null, 2);
+              const blob = new Blob([data], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = 'belka-bean-profiles.json'; a.click();
+              URL.revokeObjectURL(url);
+            }} className="px-3 py-1 text-[10px] font-bold text-sky-600 bg-sky-50 border border-sky-200 rounded-lg hover:bg-sky-100">📦 Export</button>
+          )}
+          <button type="button" onClick={() => {
+            const profile = { coffeeName, roastery, origin, process, roastLevel, density, altitude, defects };
+            localStorage.setItem('belkaImportedBean', JSON.stringify(profile));
+            const msg = `Imported "${coffeeName || 'Untitled'}" to main app`;
+            const el = document.createElement('div');
+            el.className = 'fixed bottom-4 right-4 z-50 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-lg animate-pulse';
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 2500);
+          }} className="px-3 py-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100">⬆ Import to App</button>
+        </div>
+
         <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
 
           {/* Roast Level Slider */}
@@ -921,21 +1178,30 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <div className="col-span-2 md:col-span-1 flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Density</label>
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                {density <= 33 ? 'Low' : density <= 66 ? 'Medium' : 'High'}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] text-violet-500 bg-violet-50 px-1.5 py-0.5 rounded-full border border-violet-200 font-semibold">▸{Math.round(tempSuggestion.densityPct - (roastLevel / 100) * 25 + (altitude / 2500) * 10)}% effective</span>
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  {density <= 10 ? 'Brittle' : density <= 25 ? 'Very Soft' : density <= 40 ? 'Soft' : density <= 55 ? 'Medium' : density <= 70 ? 'Firm' : density <= 85 ? 'Dense' : 'Very Dense'}
+                </span>
+              </div>
             </div>
             <div className="relative h-7 flex items-center">
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full" style={{background: 'linear-gradient(to right, #A8D5BA, #6BBF8A, #2D8B57)'}} />
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full overflow-hidden">
                 <div className="h-full bg-white/30" style={{width: `${100 - density}%`, marginLeft: 'auto'}} />
               </div>
+              {/* Combined effective density marker: process base + roast darkens + altitude lifts */}
+              <div className="absolute top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-300" style={{ left: `calc(${Math.min(100, Math.max(0, tempSuggestion.densityPct - (roastLevel / 100) * 25 + (altitude / 2500) * 10))}% - 2px)`, zIndex: 5 }}>
+                <div className="w-1 h-5 bg-violet-500 rounded-sm shadow-sm" />
+              </div>
               <input type="range" min="0" max="100" value={density} onChange={(e) => setDensity(Number(e.target.value))} className="bean-slider absolute inset-x-0 w-full z-10" />
             </div>
             <div className="flex justify-between text-[9px] text-slate-400 px-0.5">
-              <span>Low</span>
-              <span>Medium</span>
-              <span>High</span>
+              <span>Brittle</span>
+              <span>Soft</span>
+              <span>Med</span>
+              <span>Firm</span>
+              <span>Dense</span>
             </div>
           </div>
 
@@ -948,13 +1214,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             <div className="relative h-7 flex items-center">
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full" style={{background: 'linear-gradient(to right, #93C5FD, #3B82F6, #1E3A5F)'}} />
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full overflow-hidden">
-                <div className="h-full bg-white/30" style={{width: `${100 - (altitude / 2500 * 100)}%`, marginLeft: 'auto'}} />
+                <div className="h-full bg-white/30" style={{width: `${100 - ((altitude - 800) / 1700 * 100)}%`, marginLeft: 'auto'}} />
               </div>
-              <input type="range" min="0" max="2500" step="50" value={altitude} onChange={(e) => setAltitude(Number(e.target.value))} className="bean-slider absolute inset-x-0 w-full z-10" />
+              <input type="range" min="800" max="2500" step="50" value={altitude} onChange={(e) => setAltitude(Number(e.target.value))} className="bean-slider absolute inset-x-0 w-full z-10" />
             </div>
             <div className="flex justify-between text-[9px] text-slate-400 px-0.5">
-              <span>0m</span>
-              <span>1250m</span>
+              <span>800m</span>
+              <span>1650m</span>
               <span>2500m</span>
             </div>
           </div>
@@ -993,21 +1259,54 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </button>
             {processFinderOpen && (
               <div className="overflow-x-auto border border-orange-200 rounded-lg bg-orange-50/30 p-2">
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {processFinderCols.map(col => (
-                    <label key={col} className="flex items-center gap-1 text-[9px] text-slate-600 cursor-pointer">
-                      <input type="checkbox" checked={processFinderVisibleCols.includes(col)} onChange={() => {
-                        setProcessFinderVisibleCols(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
-                      }} className="w-2.5 h-2.5 accent-orange-500" />
-                      {col}
-                    </label>
-                  ))}
+                {/* Grouped column visibility checkboxes */}
+                <div className="space-y-1 mb-2">
+                  {processFinderGroups.map(group => {
+                    const hideableCols = group.cols.filter(c => c !== 'Process');
+                    if (hideableCols.length === 0) return null;
+                    const allVisible = hideableCols.every(c => processFinderVisibleCols.includes(c));
+                    return (
+                      <div key={group.label} className="flex items-center gap-1 flex-wrap">
+                        <span className="text-[9px] font-bold text-orange-700 uppercase tracking-wider min-w-[64px]">{group.label}</span>
+                        {hideableCols.length > 1 && (
+                          <label className="flex items-center gap-1 text-[8px] text-slate-400 cursor-pointer hover:text-orange-600">
+                            <input type="checkbox" checked={allVisible} onChange={() => {
+                              if (allVisible) setProcessFinderVisibleCols(prev => prev.filter(c => !hideableCols.includes(c)));
+                              else setProcessFinderVisibleCols(prev => [...new Set([...prev, ...hideableCols])]);
+                            }} className="w-2.5 h-2.5 accent-orange-500" />
+                            all
+                          </label>
+                        )}
+                        {hideableCols.map(col => (
+                          <label key={col} className="flex items-center gap-1 text-[9px] text-slate-600 cursor-pointer">
+                            <input type="checkbox" checked={processFinderVisibleCols.includes(col)} onChange={() => {
+                              setProcessFinderVisibleCols(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
+                            }} className="w-2.5 h-2.5 accent-orange-500" />
+                            {col}
+                          </label>
+                        ))}
+                      </div>
+                    );
+                  })}
                   <button type="button" onClick={() => setProcessFinderVisibleCols(processFinderCols)} className="text-[8px] text-orange-500 hover:text-orange-700 underline ml-1">Reset all</button>
                 </div>
                 <table className="w-full text-[9px] border-collapse">
                   <thead>
+                    {/* Group header row */}
                     <tr className="bg-orange-100 text-orange-800">
-                      {processFinderCols.filter(c => processFinderVisibleCols.includes(c)).map(col => (
+                      {(() => {
+                        const visibleGroups = processFinderGroups.map(g => ({
+                          ...g,
+                          visibleCols: g.cols.filter(c => c === 'Process' || processFinderVisibleCols.includes(c)),
+                        })).filter(g => g.visibleCols.length > 0);
+                        return visibleGroups.map(g => (
+                          <th key={g.label} colSpan={g.visibleCols.length} className="px-1.5 py-0.5 text-center text-[8px] font-bold uppercase tracking-wider border border-orange-200 bg-orange-100/80 whitespace-nowrap">{g.label}</th>
+                        ));
+                      })()}
+                    </tr>
+                    {/* Column header row */}
+                    <tr className="bg-orange-50 text-orange-700">
+                      {['Process', ...processFinderCols.filter(c => c !== 'Process' && processFinderVisibleCols.includes(c))].map(col => (
                         <th key={col} className="px-1.5 py-1 text-left font-bold uppercase tracking-wider border border-orange-200 whitespace-nowrap">{col}</th>
                       ))}
                     </tr>
@@ -1015,7 +1314,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   <tbody>
                     {PROCESS_GUIDE.filter(p => p.id !== 'other').map(p => (
                       <tr key={p.id} className={`${process === p.id ? 'bg-orange-100 font-semibold' : 'hover:bg-orange-50'} cursor-pointer`} onClick={() => { setProcess(p.id); setProcessFinderOpen(false); }}>
-                        {processFinderCols.filter(c => processFinderVisibleCols.includes(c)).map(col => (
+                        {['Process', ...processFinderCols.filter(c => c !== 'Process' && processFinderVisibleCols.includes(c))].map(col => (
                           <td key={col} className="px-1.5 py-1 border border-orange-200 text-slate-700">
                             {col === 'Process' ? p.label :
                              col === 'Crease' ? p.crease :
@@ -1565,172 +1864,6 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <span className="text-xs font-bold text-slate-700 tabular-nums w-16 text-right">
             {grindAdjustPct < 33 ? 'Finer' : grindAdjustPct < 66 ? 'Neutral' : 'Coarser'} ({grindAdjustPct}%)
           </span>
-        </div>
-      </section>
-
-      {/* Brew Impact */}
-      <section className="bg-white border border-emerald-200 rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Brew Impact</h3>
-          {!symptom && (
-            <span className="text-[10px] text-emerald-500 italic">{activeFactor ? 'Tap again to clear' : 'Tap a row to see ripple'}</span>
-          )}
-        </div>
-
-        {/* Symptom selector */}
-        <div className="flex flex-wrap gap-1 mb-3">
-          {SYMPTOM_OPTIONS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => {
-                setSymptom(symptom === s.id ? null : s.id);
-                setActiveFactor(null);
-              }}
-              className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all ${
-                symptom === s.id
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                  : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-emerald-600'
-              }`}
-            >
-              {s.label} {symptom === s.id && '✕'}
-            </button>
-          ))}
-        </div>
-
-        {/* Guidance mode */}
-        {symptom && symptomGuide[symptom] && (
-          <div className="mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Fix this</span>
-              <span className="text-xs font-bold text-emerald-800">{SYMPTOM_OPTIONS.find(s => s.id === symptom)?.label}</span>
-            </div>
-            <p className="text-xs text-emerald-700 leading-relaxed">{symptomGuide[symptom].advice}</p>
-            <div className="flex items-center gap-2 mt-2 text-xs">
-              <span className="font-bold text-emerald-700">→ {symptomGuide[symptom].rankLabel}:</span>
-              <span className="font-bold text-emerald-600 bg-white px-2 py-0.5 rounded border border-emerald-200">{symptomGuide[symptom].direction} {symptomGuide[symptom].magnitude}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Factor rows */}
-        <div className="space-y-1">
-          {brewImpactFactors.map((f) => {
-            const isGuided = symptom && symptomGuide[symptom]?.factor === f.rank;
-            const isOther = symptom && !isGuided;
-            const isActive = !symptom && activeFactor === f.rank;
-            const isConnected = !symptom && activeFactor !== null && f.connects.includes(activeFactor);
-            const connections = f.connects.length;
-            return (
-              <button
-                type="button"
-                key={f.rank}
-                onClick={() => { if (!symptom) setActiveFactor(isActive ? null : f.rank); }}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg border text-left transition-all duration-200 ${
-                  isGuided
-                    ? 'border-emerald-400 bg-emerald-50 shadow-[0_0_10px_rgba(52,211,153,0.35)]'
-                    : isActive
-                    ? 'border-emerald-400 bg-emerald-50 shadow-[0_0_8px_rgba(52,211,153,0.3)]'
-                    : isConnected
-                    ? 'border-emerald-300 bg-emerald-50/50 shadow-[0_0_4px_rgba(52,211,153,0.15)]'
-                    : isOther
-                    ? 'border-transparent opacity-30'
-                    : 'border-transparent hover:bg-slate-50'
-                }`}
-                disabled={!!symptom}
-              >
-                <span className={`text-[11px] font-bold w-4 text-center transition-colors ${
-                  isGuided ? 'text-emerald-600' : isActive ? 'text-emerald-600' : isConnected ? 'text-emerald-500' : 'text-slate-400'
-                }`}>
-                  {f.rank}
-                </span>
-                <div className="flex-1 flex items-center gap-2 min-w-0">
-                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${f.color} ${
-                        isGuided ? 'opacity-100' : isActive ? 'opacity-100' : isConnected ? 'opacity-80' : 'opacity-60'
-                      }`}
-                      style={{ width: `${isGuided ? 100 : f.barPct}%` }}
-                    />
-                  </div>
-                  <span className={`text-[11px] font-semibold w-12 shrink-0 transition-colors flex items-center gap-0.5 ${
-                    isGuided ? 'text-emerald-700' : isActive ? 'text-emerald-700' : isConnected ? 'text-emerald-600' : 'text-slate-500'
-                  }`}>
-                    {f.name}
-                    <span className="text-[7px] text-slate-300 cursor-pointer hover:text-emerald-500 transition-colors" onClick={(e) => {
-                      e.stopPropagation();
-                      const idMap: Record<string, string> = { 'Grind': 'grinder-setup', 'Water': 'water-ppm', 'Temp': 'brew-temp', 'Time': 'brew-time' };
-                      const id = idMap[f.name];
-                      if (id) document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}>→</span>
-                    {isGuided && <span className="ml-1 text-[9px] text-emerald-500">←</span>}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {f.rank === 3 ? (
-                    <div className="flex items-center gap-0.5">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setWaterTemp(Math.max(80, waterTemp - 1)); }}
-                        className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
-                      >−</button>
-                      <span className="text-[11px] font-bold text-slate-700 tabular-nums w-7 text-center">{waterTemp}</span>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setWaterTemp(Math.min(100, waterTemp + 1)); }}
-                        className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
-                      >+</button>
-                    </div>
-                  ) : f.rank === 5 ? (
-                    <div className="flex items-center gap-0.5">
-                      {(['soft', 'medium', 'hard'] as const).map((wq) => (
-                        <button
-                          key={wq}
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setWaterQuality(wq); }}
-                          className={`text-[9px] font-semibold px-1.5 py-0.5 rounded transition-colors ${
-                            waterQuality === wq
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'text-slate-400 hover:text-slate-600'
-                          }`}
-                        >
-                          {wq === 'soft' ? 'S' : wq === 'medium' ? 'M' : 'H'}
-                        </button>
-                      ))}
-                    </div>
-                  ) : f.rank === 6 ? (
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3].map((lv) => (
-                        <button
-                          key={lv}
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setTurbulenceLevel(lv); }}
-                          className={`w-3.5 h-3.5 rounded-full border transition-colors ${
-                            turbulenceLevel >= lv
-                              ? 'bg-amber-400 border-amber-500'
-                              : 'bg-slate-100 border-slate-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <span className={`text-[11px] font-bold tabular-nums ${isGuided ? 'text-emerald-700' : 'text-slate-700'}`}>{f.value}</span>
-                  )}
-                  {!isOther && (
-                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full transition-colors ${
-                      connections > 0
-                        ? isGuided || isActive || isConnected
-                          ? 'bg-emerald-100 text-emerald-600'
-                          : 'bg-slate-100 text-slate-400'
-                        : 'text-slate-300'
-                    }`}>
-                      ↔{connections}
-                    </span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
         </div>
       </section>
 

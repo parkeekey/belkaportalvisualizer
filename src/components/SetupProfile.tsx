@@ -4,6 +4,23 @@ import TDSHUD from './TDSHUD';
 import AttemptLog, { type WaterMixSnapshot } from './AttemptLog';
 import { getReferenceTDS, getReferenceEY } from '../utils/tdsReference';
 
+const PROCESS_GUIDE: {
+  id: string; label: string; crease: string; appearance: string; aroma: string; flavor: string;
+  waterPpmRange: string; waterTarget: string; densityPct: number; grindImpact: string;
+  temp: number; extraction: string;
+}[] = [
+  { id: 'washed', label: 'Washed', crease: 'Distinct, narrow', appearance: 'Clean, even', aroma: 'Clean, floral', flavor: 'Bright, tea-like, high acidity', waterPpmRange: '50–80', waterTarget: 'Moderately soft', densityPct: 65, grindImpact: 'Finer grind to increase extraction', temp: 93, extraction: 'Standard — clarity-focused pour, moderate agitation' },
+  { id: 'natural', label: 'Natural', crease: 'Less defined', appearance: 'Irregular, darker', aroma: 'Fruity, fermented', flavor: 'Berry, winey, heavy body', waterPpmRange: '110–130', waterTarget: 'Medium-hard', densityPct: 45, grindImpact: 'Coarser grind to control extraction', temp: 90, extraction: 'Low agitation — gentle pours, minimal turbulence' },
+  { id: 'honey', label: 'Honey', crease: 'Moderate', appearance: 'Slightly sticky', aroma: 'Sweet, brown sugar', flavor: 'Caramel, medium body, mild acidity', waterPpmRange: '80–110', waterTarget: 'Medium', densityPct: 55, grindImpact: 'Standard grind with slight adjustments', temp: 91, extraction: 'Balanced — medium agitation, consistent pours' },
+  { id: 'anaerobic', label: 'Anaerobic', crease: 'Swollen, thick', appearance: 'Dense, sticky', aroma: 'Pungent, tropical', flavor: 'Intense, funky, complex acids', waterPpmRange: '60–80', waterTarget: 'Soft to medium', densityPct: 40, grindImpact: 'Coarser grind to avoid over-extraction', temp: 88, extraction: 'Low agitation — avoid channeling, gentle swirl only' },
+  { id: 'lactic', label: 'Lactic', crease: 'Slight', appearance: 'Soft, pale', aroma: 'Yogurt, creamy', flavor: 'Smooth, lactic acidity, creamy body', waterPpmRange: '60–80', waterTarget: 'Soft', densityPct: 50, grindImpact: 'Standard to slightly finer grind', temp: 90, extraction: 'Moderate agitation — maintain steady flow rate' },
+  { id: 'carbonic-maceration', label: 'Carbonic Maceration', crease: 'Swollen, glossy', appearance: 'Dense, red-toned', aroma: 'Wine, bubblegum, tropical', flavor: 'Bright, complex fruit, high acidity', waterPpmRange: '60–80', waterTarget: 'Soft', densityPct: 38, grindImpact: 'Coarser grind — very dense, slow flow', temp: 88, extraction: 'Very low agitation — long pre-infusion, gentle pours' },
+  { id: 'co-fermented', label: 'Co-Fermented', crease: 'Variable', appearance: 'Mixed, fruit pieces visible', aroma: 'Fruit-forward, boozy', flavor: 'Strong fruit character, winey', waterPpmRange: '70–90', waterTarget: 'Soft to medium', densityPct: 42, grindImpact: 'Coarser grind — sugar content accelerates extraction', temp: 89, extraction: 'Low agitation — shorter ratio to control extraction' },
+  { id: 'koji', label: 'Koji Fermented', crease: 'Soft, blurred', appearance: 'Pale, enzymatic', aroma: 'Sake, miso, umami', flavor: 'Savory, sweet, complex umami', waterPpmRange: '70–90', waterTarget: 'Soft to medium', densityPct: 48, grindImpact: 'Standard grind — enzymatic breakdown increases solubility', temp: 89, extraction: 'Moderate agitation — watch for rapid extraction' },
+  { id: 'thermal-shock', label: 'Thermal Shock', crease: 'Cracked, brittle', appearance: 'Fractured surface', aroma: 'Clean, intense', flavor: 'Crisp, winey, sharp clarity', waterPpmRange: '60–80', waterTarget: 'Soft to medium', densityPct: 35, grindImpact: 'Finer grind — brittle beans fracture easily, watch fines', temp: 87, extraction: 'Low agitation — thermal stress makes beans fragile' },
+  { id: 'other', label: 'Other', crease: '—', appearance: '—', aroma: '—', flavor: '—', waterPpmRange: '50–130', waterTarget: 'Medium', densityPct: 50, grindImpact: 'Start standard, adjust by taste', temp: 91, extraction: 'Standard approach — adjust based on results' },
+];
+
 export interface SetupProfileProfile {
   version: 1;
   recipePlan: RecipePourPlanningProfile;
@@ -58,6 +75,54 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const [icedOpen, setIcedOpen] = useState(false);
   const [icedEYmin, setIcedEYmin] = useState(18);
   const [icedEYmax, setIcedEYmax] = useState(22);
+  const [brewFilterMode, setBrewFilterMode] = useState<'hot' | 'iced'>('hot');
+  const [processFinderOpen, setProcessFinderOpen] = useState(false);
+  const processFinderCols = ['Process', 'Crease', 'Appearance', 'Aroma', 'Flavor', 'Water ppm', 'Water Target', 'Density', 'Grind Impact', 'Brew Temp', 'Extraction Strategy'];
+  const [processFinderVisibleCols, setProcessFinderVisibleCols] = useState<string[]>(processFinderCols);
+  const [microClick, setMicroClick] = useState(() => {
+    const saved = localStorage.getItem('belkaMicroClick');
+    return saved ? parseFloat(saved) || 0 : 0;
+  });
+  const [microClickStr, setMicroClickStr] = useState(() => String(microClick));
+  const [microClickStep, setMicroClickStep] = useState(() => {
+    const saved = localStorage.getItem('belkaMicroClickStep');
+    return saved === '10' ? 10 : 1;
+  });
+
+  const commitMicroClick = useCallback((raw: string) => {
+    const v = parseFloat(raw);
+    const n = isNaN(v) || v < 0 ? 0 : Math.min(v, microClickStep === 1 ? 9 : 1);
+    setMicroClick(n);
+    setMicroClickStr(n > 0 ? String(n) : '');
+    localStorage.setItem('belkaMicroClick', String(n));
+  }, [microClickStep]);
+
+  const waterSuggestion = useMemo(() => {
+    const map: Record<string, { target: string; range: string }> = {
+      washed: { target: 'Moderately soft', range: '50–80' },
+      natural: { target: 'Medium-hard', range: '110–130' },
+      honey: { target: 'Medium', range: '80–110' },
+      anaerobic: { target: 'Soft to medium', range: '60–80' },
+      lactic: { target: 'Soft', range: '60–80' },
+      'carbonic-maceration': { target: 'Soft', range: '60–80' },
+      'co-fermented': { target: 'Soft to medium', range: '70–90' },
+      koji: { target: 'Soft to medium', range: '70–90' },
+      'thermal-shock': { target: 'Soft to medium', range: '60–80' },
+      other: { target: 'Medium', range: '50–130' },
+    };
+    return map[process] ?? { target: 'Medium', range: '50–130' };
+  }, [process]);
+
+  const tempSuggestion = useMemo(() => {
+    const entry = PROCESS_GUIDE.find(p => p.id === process);
+    if (!entry) return { temp: 91, extraction: 'Standard approach', densityPct: 50, label: 'Standard' };
+    return { temp: entry.temp, extraction: entry.extraction, densityPct: entry.densityPct, label: entry.label };
+  }, [process]);
+
+  useEffect(() => {
+    const entry = PROCESS_GUIDE.find(p => p.id === process);
+    if (entry) setDensity(entry.densityPct);
+  }, [process]);
 
   const [finesTendency, setFinesTendency] = useState<'low' | 'medium' | 'high'>('medium');
   const [grinderBurr, setGrinderBurr] = useState<'conical' | 'flat' | 'blade'>('conical');
@@ -66,25 +131,25 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const [grinderMicron, setGrinderMicron] = useState(800);
   const [dialRangeMin, setDialRangeMin] = useState(() => {
     const saved = localStorage.getItem('belkaDialRangeMin');
-    return saved ? parseInt(saved) || 0 : 0;
+    return saved ? parseFloat(saved) || 0 : 0;
   });
   const [dialRangeMinStr, setDialRangeMinStr] = useState(() => String(dialRangeMin > 0 ? dialRangeMin : ''));
   const [dialRangeMax, setDialRangeMax] = useState(() => {
     const saved = localStorage.getItem('belkaDialRangeMax');
-    return saved ? parseInt(saved) || 0 : 0;
+    return saved ? parseFloat(saved) || 0 : 0;
   });
   const [dialRangeMaxStr, setDialRangeMaxStr] = useState(() => String(dialRangeMax > 0 ? dialRangeMax : ''));
 
   const commitDialMin = useCallback((raw: string) => {
-    const v = parseInt(raw);
-    const n = isNaN(v) ? 0 : Math.max(0, v);
+    const v = parseFloat(raw);
+    const n = isNaN(v) ? 0 : v;
     setDialRangeMin(n);
     setDialRangeMinStr(n > 0 ? String(n) : '');
     localStorage.setItem('belkaDialRangeMin', String(n));
   }, []);
   const commitDialMax = useCallback((raw: string) => {
-    const v = parseInt(raw);
-    const n = isNaN(v) ? 0 : Math.max(0, v);
+    const v = parseFloat(raw);
+    const n = isNaN(v) ? 0 : v;
     setDialRangeMax(n);
     setDialRangeMaxStr(n > 0 ? String(n) : '');
     localStorage.setItem('belkaDialRangeMax', String(n));
@@ -195,8 +260,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const beanAdvice = useMemo(() => {
     const roastScore = roastLevel <= 66 ? -80 + (roastLevel / 66) * 80 : ((roastLevel - 66) / 34) * 60;
     const densityScore = Math.round((50 - density) * 1.1);
-    const processScores: Record<string, number> = { washed: -20, natural: 10, honey: 0, anaerobic: 25, lactic: 25, 'thermal-shock': 35, other: 0 };
-    const processScore = processScores[process] ?? 0;
+    const procDensityScore = PROCESS_GUIDE.find(p => p.id === process)?.densityPct ?? 50;
+    const processScoreMultiplier = (density - procDensityScore) / procDensityScore;
+    const processScore = Math.round(processScoreMultiplier * 35);
     const altitudeScore = Math.round(50 - (altitude / 2500) * 100);
     const flowScore = Math.round((50 - flowSpeed) * 1.2);
     const brewTimeScore = Math.round((180 - brewTimeSec) * 0.3);
@@ -265,7 +331,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Setup Profile</h2>
 
       {/* Equipment Profile */}
-      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <section id="equipment-profile" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
         <h3 className="text-sm font-bold text-sky-800 uppercase tracking-wider mb-3">Equipment Profile</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
           <div className="flex flex-col gap-0.5">
@@ -359,8 +425,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       </section>
 
       {/* Water PPM */}
-      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-cyan-800 uppercase tracking-wider mb-3">Water PPM</h3>
+      <section id="water-ppm" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-cyan-800 uppercase tracking-wider">Water PPM</h3>
+          <span className="text-[9px] text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full border border-cyan-200 font-semibold">
+            Bean: {PROCESS_GUIDE.find(p => p.id === process)?.label ?? 'Unknown'} — suggest {waterSuggestion.range} PPM ({waterSuggestion.target})
+          </span>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Water : Mineral Ratio</label>
@@ -483,6 +554,36 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <p className="md:col-span-3 text-[10px] text-slate-500">
             Input your meter reading before brewing to keep water setup consistent across brews.
           </p>
+        </div>
+      </section>
+
+      {/* Brew Temperature */}
+      <section id="brew-temp" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-rose-800 uppercase tracking-wider">Brew Temperature</h3>
+          <span className="text-[9px] text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-semibold">
+            {tempSuggestion.label}
+          </span>
+        </div>
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => setWaterTemp(Math.max(80, waterTemp - 1))} className="w-6 h-6 flex items-center justify-center rounded text-sm font-bold text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100">−</button>
+            <span className="text-lg font-bold text-slate-700 tabular-nums w-10 text-center">{waterTemp}°C</span>
+            <button type="button" onClick={() => setWaterTemp(Math.min(100, waterTemp + 1))} className="w-6 h-6 flex items-center justify-center rounded text-sm font-bold text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100">+</button>
+          </div>
+          <button type="button" onClick={() => setWaterTemp(tempSuggestion.temp)} className="px-3 py-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100">
+            Apply {tempSuggestion.temp}°C ({tempSuggestion.label})
+          </button>
+          <div className="flex items-center gap-2 text-[10px] text-slate-500">
+            <span className="font-semibold text-slate-700">Density:</span>
+            <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${tempSuggestion.densityPct}%` }} />
+            </div>
+            <span className="font-bold text-slate-700 tabular-nums">{tempSuggestion.densityPct}%</span>
+          </div>
+        </div>
+        <div className="mt-2 text-[10px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+          <span className="font-semibold text-slate-700">Extraction Strategy:</span> {tempSuggestion.extraction}
         </div>
       </section>
 
@@ -647,43 +748,91 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               </div>
             )}
           </div>
+          {/* MicroClick */}
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">MicroClick</span>
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={() => {
+                  const next = microClickStep === 1 ? 10 : 1;
+                  setMicroClickStep(next);
+                  localStorage.setItem('belkaMicroClickStep', String(next));
+                  setMicroClick(0);
+                  setMicroClickStr('');
+                }} className={`text-[9px] font-bold px-2 py-0.5 rounded-lg border transition-colors ${microClickStep === 1 ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>×1</button>
+                <button type="button" onClick={() => {
+                  const next = microClickStep === 10 ? 1 : 10;
+                  setMicroClickStep(next);
+                  localStorage.setItem('belkaMicroClickStep', String(next));
+                  setMicroClick(0);
+                  setMicroClickStr('');
+                }} className={`text-[9px] font-bold px-2 py-0.5 rounded-lg border transition-colors ${microClickStep === 10 ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>×10</button>
+              </div>
+              <div className="flex items-center gap-0.5">
+                <button type="button" onClick={() => {
+                  const step = microClickStep === 1 ? 1 : 0.1;
+                  const v = parseFloat((microClick - step).toFixed(1));
+                  const n = v < 0 ? 0 : v;
+                  setMicroClick(n);
+                  setMicroClickStr(n > 0 ? String(n) : '');
+                  localStorage.setItem('belkaMicroClick', String(n));
+                }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">−</button>
+                <input type="text" inputMode="decimal" value={microClickStr} onChange={(e) => setMicroClickStr(e.target.value)} onBlur={(e) => commitMicroClick(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="0" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <button type="button" onClick={() => {
+                  const step = microClickStep === 1 ? 1 : 0.1;
+                  const max = microClickStep === 1 ? 9 : 1;
+                  const v = parseFloat((microClick + step).toFixed(1));
+                  const n = v > max ? max : v;
+                  setMicroClick(n);
+                  setMicroClickStr(n > 0 ? String(n) : '');
+                  localStorage.setItem('belkaMicroClick', String(n));
+                }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
+              </div>
+              <span className="text-[9px] text-slate-400">
+                {microClickStep === 1 ? '±1 click (up to 9)' : '±0.1 click (up to 1.0)'}
+              </span>
+              {microClick > 0 && (
+                <span className="text-[9px] text-emerald-600 font-semibold">Adjust: {microClickStr} click{microClick !== 1 ? 's' : ''}</span>
+              )}
+            </div>
+          </div>
+
           {/* Dialing Range */}
           <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Dialing Range</span>
               <div className="flex items-center gap-0.5">
                 <label className="text-[9px] text-slate-400">#</label>
-                <button type="button" onClick={() => { const v = Math.max(0, dialRangeMin - 1); setDialRangeMin(v); setDialRangeMinStr(String(v > 0 ? v : '')); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">−</button>
-                <input type="number" min={0} step={1} value={dialRangeMinStr} onChange={(e) => setDialRangeMinStr(e.target.value)} onBlur={(e) => commitDialMin(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="min" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
-                <button type="button" onClick={() => { const v = dialRangeMin + 1; setDialRangeMin(v); setDialRangeMinStr(String(v)); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
+                <button type="button" onClick={() => { const v = parseFloat((dialRangeMin - 0.1).toFixed(1)); const n = v < 0 ? 0 : v; setDialRangeMin(n); setDialRangeMinStr(n > 0 ? String(n) : ''); localStorage.setItem('belkaDialRangeMin', String(n)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">−</button>
+                <input type="text" inputMode="decimal" value={dialRangeMinStr} onChange={(e) => setDialRangeMinStr(e.target.value)} onBlur={(e) => commitDialMin(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="min" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <button type="button" onClick={() => { const v = parseFloat((dialRangeMin + 0.1).toFixed(1)); setDialRangeMin(v); setDialRangeMinStr(String(v)); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
               </div>
               <span className="text-slate-300 text-[10px]">→</span>
               <div className="flex items-center gap-0.5">
                 <label className="text-[9px] text-slate-400">#</label>
-                <button type="button" onClick={() => { const v = Math.max(0, dialRangeMax - 1); setDialRangeMax(v); setDialRangeMaxStr(String(v > 0 ? v : '')); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">−</button>
-                <input type="number" min={0} step={1} value={dialRangeMaxStr} onChange={(e) => setDialRangeMaxStr(e.target.value)} onBlur={(e) => commitDialMax(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="max" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
-                <button type="button" onClick={() => { const v = dialRangeMax + 1; setDialRangeMax(v); setDialRangeMaxStr(String(v)); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
+                <button type="button" onClick={() => { const v = parseFloat((dialRangeMax - 0.1).toFixed(1)); const n = v < 0 ? 0 : v; setDialRangeMax(n); setDialRangeMaxStr(n > 0 ? String(n) : ''); localStorage.setItem('belkaDialRangeMax', String(n)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">−</button>
+                <input type="text" inputMode="decimal" value={dialRangeMaxStr} onChange={(e) => setDialRangeMaxStr(e.target.value)} onBlur={(e) => commitDialMax(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="max" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <button type="button" onClick={() => { const v = parseFloat((dialRangeMax + 0.1).toFixed(1)); setDialRangeMax(v); setDialRangeMaxStr(String(v)); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
               </div>
               {dialRangeMin > 0 && dialRangeMax > 0 && (
                 <span className="text-[9px] text-emerald-600 font-semibold">Active search zone: #{dialRangeMin}–#{dialRangeMax}</span>
               )}
             </div>
-            {dialRangeMin > 0 && dialRangeMax > 0 && dialRangeMax > dialRangeMin && (() => {
+            {dialRangeMin > 0 && dialRangeMax > 0 && dialRangeMax >= dialRangeMin && (() => {
               const total = dialRangeMax - dialRangeMin;
-              const steps = Array.from({ length: total + 1 }, (_, i) => dialRangeMin + i);
+              const rawSteps = Math.round(total / 0.1) + 1;
+              const capped = Math.min(rawSteps, 50);
+              const stepSize = rawSteps > 50 ? (total / 50) : 0.1;
+              const steps = Array.from({ length: capped }, (_, i) => parseFloat((dialRangeMin + (rawSteps > 50 ? i * stepSize : i * 0.1)).toFixed(1)));
               return (
                 <div className="mt-2 overflow-x-auto">
                   <div className="flex items-center gap-0.5 min-w-[560px]">
-                    {steps.map(s => {
-                      return (
-                        <div key={s} className="flex-1 flex flex-col items-center gap-0.5">
-                          <div className={`w-full h-2 rounded-sm ${s === 14 || s === 16 ? 'bg-emerald-400' : s >= 14 && s <= 16 ? 'bg-emerald-300' : s < 14 ? 'bg-sky-300' : 'bg-amber-300'}`} />
-                          <span className={`text-[8px] font-bold tabular-nums ${s >= 14 && s <= 16 ? 'text-emerald-700' : 'text-slate-400'}`}>#{s}</span>
-                          {s === 14 && <span className="text-[7px] text-emerald-600 font-bold">◀ finest</span>}
-                          {s === 16 && <span className="text-[7px] text-emerald-600 font-bold">coarsest ▶</span>}
-                        </div>
-                      );
-                    })}
+                    {steps.map((s, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                        <div className={`w-full h-2 rounded-sm ${s === 0 ? 'bg-emerald-400' : s >= 0 && s <= 1 ? 'bg-emerald-300' : 'bg-sky-300'}`} />
+                        <span className={`text-[8px] font-bold tabular-nums ${s === 0 ? 'text-emerald-700' : 'text-slate-400'}`}>#{s.toFixed(1)}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               );
@@ -812,16 +961,81 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
           {/* Process */}
           <div className="col-span-2 md:col-span-1 flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Process</label>
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Process</label>
+              <span className="text-[9px] text-cyan-600 bg-cyan-50 px-1.5 py-0.5 rounded-full border border-cyan-200 font-semibold">💧 {waterSuggestion.range} PPM</span>
+            </div>
             <select value={process} onChange={(e) => setProcess(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
               <option value="washed">Washed</option>
               <option value="natural">Natural</option>
               <option value="honey">Honey</option>
               <option value="anaerobic">Anaerobic</option>
               <option value="lactic">Lactic</option>
+              <option value="carbonic-maceration">Carbonic Maceration</option>
+              <option value="co-fermented">Co-Fermented</option>
+              <option value="koji">Koji Fermented</option>
               <option value="thermal-shock">Thermal Shock</option>
               <option value="other">Other</option>
             </select>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[9px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-full border border-rose-200 font-semibold">🌡️ {tempSuggestion.temp}°C</span>
+              <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 font-semibold">🫘 {tempSuggestion.densityPct}% density</span>
+              <span className="text-[9px] text-slate-400 italic">{tempSuggestion.extraction}</span>
+            </div>
+          </div>
+
+          {/* Process Finder */}
+          <div className="col-span-2 flex flex-col gap-1">
+            <button type="button" onClick={() => setProcessFinderOpen(v => !v)} className="w-full flex items-center justify-center gap-2 text-[11px] font-bold text-orange-700 bg-orange-50 border-2 border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-100 hover:border-orange-400 transition-all shadow-sm">
+              <span className="text-base">{processFinderOpen ? '−' : '+'}</span>
+              <span>Process Finder — Reference {PROCESS_GUIDE.length - 1} Processes</span>
+              <span className="text-[9px] text-orange-500 font-normal">(click to {processFinderOpen ? 'close' : 'open'})</span>
+            </button>
+            {processFinderOpen && (
+              <div className="overflow-x-auto border border-orange-200 rounded-lg bg-orange-50/30 p-2">
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {processFinderCols.map(col => (
+                    <label key={col} className="flex items-center gap-1 text-[9px] text-slate-600 cursor-pointer">
+                      <input type="checkbox" checked={processFinderVisibleCols.includes(col)} onChange={() => {
+                        setProcessFinderVisibleCols(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
+                      }} className="w-2.5 h-2.5 accent-orange-500" />
+                      {col}
+                    </label>
+                  ))}
+                  <button type="button" onClick={() => setProcessFinderVisibleCols(processFinderCols)} className="text-[8px] text-orange-500 hover:text-orange-700 underline ml-1">Reset all</button>
+                </div>
+                <table className="w-full text-[9px] border-collapse">
+                  <thead>
+                    <tr className="bg-orange-100 text-orange-800">
+                      {processFinderCols.filter(c => processFinderVisibleCols.includes(c)).map(col => (
+                        <th key={col} className="px-1.5 py-1 text-left font-bold uppercase tracking-wider border border-orange-200 whitespace-nowrap">{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {PROCESS_GUIDE.filter(p => p.id !== 'other').map(p => (
+                      <tr key={p.id} className={`${process === p.id ? 'bg-orange-100 font-semibold' : 'hover:bg-orange-50'} cursor-pointer`} onClick={() => { setProcess(p.id); setProcessFinderOpen(false); }}>
+                        {processFinderCols.filter(c => processFinderVisibleCols.includes(c)).map(col => (
+                          <td key={col} className="px-1.5 py-1 border border-orange-200 text-slate-700">
+                            {col === 'Process' ? p.label :
+                             col === 'Crease' ? p.crease :
+                             col === 'Appearance' ? p.appearance :
+                             col === 'Aroma' ? p.aroma :
+                             col === 'Flavor' ? p.flavor :
+                             col === 'Water ppm' ? p.waterPpmRange :
+                             col === 'Water Target' ? p.waterTarget :
+                             col === 'Density' ? `${p.densityPct}%` :
+                             col === 'Grind Impact' ? p.grindImpact :
+                             col === 'Brew Temp' ? `${p.temp}°C` :
+                             col === 'Extraction Strategy' ? p.extraction : '—'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Origin */}
@@ -1000,7 +1214,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       </section>
 
       {/* Brew Time */}
-      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <section id="brew-time" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">⏱️ Brew Time</h3>
 
         {/* Target | Diff | Actual side by side */}
@@ -1315,7 +1529,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       {/* Grind Adjustment Calculator */}
       <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Grind Adjustment</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Grind Adjustment</h3>
+            <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 font-semibold">🫘 DENSITY {density}%</span>
+          </div>
           {(() => {
             const suggested = Math.round(beanAdvice.overall * 0.3);
             return (
@@ -1436,10 +1653,16 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       style={{ width: `${isGuided ? 100 : f.barPct}%` }}
                     />
                   </div>
-                  <span className={`text-[11px] font-semibold w-10 shrink-0 transition-colors ${
+                  <span className={`text-[11px] font-semibold w-12 shrink-0 transition-colors flex items-center gap-0.5 ${
                     isGuided ? 'text-emerald-700' : isActive ? 'text-emerald-700' : isConnected ? 'text-emerald-600' : 'text-slate-500'
                   }`}>
                     {f.name}
+                    <span className="text-[7px] text-slate-300 cursor-pointer hover:text-emerald-500 transition-colors" onClick={(e) => {
+                      e.stopPropagation();
+                      const idMap: Record<string, string> = { 'Grind': 'grinder-setup', 'Water': 'water-ppm', 'Temp': 'brew-temp', 'Time': 'brew-time' };
+                      const id = idMap[f.name];
+                      if (id) document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}>→</span>
                     {isGuided && <span className="ml-1 text-[9px] text-emerald-500">←</span>}
                   </span>
                 </div>
@@ -1513,66 +1736,116 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
       {/* TDS Target */}
       <section id="tds-target" className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        <TDSHUD
-          tdsMin={parseFloat(targetTDSMin) || 0}
-          tdsMax={parseFloat(targetTDSMax) || 0}
-          currentTDS={currentTDS}
-          eyTarget={parseFloat(targetEY) || 0}
-          onTDSChange={setCurrentTDS}
-          scaTdsMin={tdsPlanRatio > 0 ? getReferenceTDS(tdsPlanRatio, 18) : undefined}
-          scaTdsMax={tdsPlanRatio > 0 ? getReferenceTDS(tdsPlanRatio, 22) : undefined}
-        />
-        {tdsPlanRatio > 0 && (() => {
-          const scaLo = getReferenceTDS(tdsPlanRatio, 18);
-          const scaHi = getReferenceTDS(tdsPlanRatio, 22);
-          const actualEY = getReferenceEY(tdsPlanRatio, currentTDS);
-          const isUnder = currentTDS < scaLo;
-          const isOver = currentTDS > scaHi;
-          const tdsDelta = isUnder ? (scaLo - currentTDS) : isOver ? (currentTDS - scaHi) : 0;
-          let advice = '';
-          if (!isUnder && !isOver) advice = '✓ Your TDS is in the SCA gold cup zone for this ratio.';
-          else if (isUnder) advice = `TDS is ${tdsDelta.toFixed(2)}% below SCA zone. Tighten ratio to 1:${(tdsPlanRatio - 1).toFixed(0)}, increase dose, or grind finer.`;
-          else advice = `TDS is ${tdsDelta.toFixed(2)}% above SCA zone. Loosen ratio to 1:${(tdsPlanRatio + 1).toFixed(0)}, coarsen grind, or reduce dose.`;
-          const statusLabel = isUnder ? 'UNDER' : isOver ? 'OVER' : '✓ IDEAL';
-          const statusColor = isUnder ? 'text-sky-600 bg-sky-50 border-sky-200' : isOver ? 'text-red-600 bg-red-50 border-red-200' : 'text-emerald-600 bg-emerald-50 border-emerald-200';
-          return (
-            <div className="px-4 py-3 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-white">
-              <div className="flex items-start gap-4">
-                {/* Target zone */}
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Target</span>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-slate-500">TDS</span>
-                      <span className="text-sm font-bold text-emerald-700 tabular-nums">{scaLo.toFixed(2)}–{scaHi.toFixed(2)}%</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-slate-500">EY</span>
-                      <span className="text-sm font-bold text-emerald-700 tabular-nums">18.0–22.0%</span>
+        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">TDS Target</h3>
+          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
+            <button type="button" onClick={() => setBrewFilterMode('hot')} className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${brewFilterMode === 'hot' ? 'bg-white text-amber-700 shadow-sm border border-amber-200' : 'text-slate-400 hover:text-slate-600'}`}>☕ Hot</button>
+            <button type="button" onClick={() => setBrewFilterMode('iced')} className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${brewFilterMode === 'iced' ? 'bg-white text-sky-700 shadow-sm border border-sky-200' : 'text-slate-400 hover:text-slate-600'}`}>🧊 Iced</button>
+          </div>
+        </div>
+        {brewFilterMode === 'hot' && <>
+          <TDSHUD
+            tdsMin={parseFloat(targetTDSMin) || 0}
+            tdsMax={parseFloat(targetTDSMax) || 0}
+            currentTDS={currentTDS}
+            eyTarget={parseFloat(targetEY) || 0}
+            onTDSChange={setCurrentTDS}
+            scaTdsMin={tdsPlanRatio > 0 ? getReferenceTDS(tdsPlanRatio, 18) : undefined}
+            scaTdsMax={tdsPlanRatio > 0 ? getReferenceTDS(tdsPlanRatio, 22) : undefined}
+          />
+          {tdsPlanRatio > 0 && (() => {
+            const scaLo = getReferenceTDS(tdsPlanRatio, 18);
+            const scaHi = getReferenceTDS(tdsPlanRatio, 22);
+            const actualEY = getReferenceEY(tdsPlanRatio, currentTDS);
+            const isUnder = currentTDS < scaLo;
+            const isOver = currentTDS > scaHi;
+            const tdsDelta = isUnder ? (scaLo - currentTDS) : isOver ? (currentTDS - scaHi) : 0;
+            let advice = '';
+            if (!isUnder && !isOver) advice = '✓ Your TDS is in the SCA gold cup zone for this ratio.';
+            else if (isUnder) advice = `TDS is ${tdsDelta.toFixed(2)}% below SCA zone. Tighten ratio to 1:${(tdsPlanRatio - 1).toFixed(0)}, increase dose, or grind finer.`;
+            else advice = `TDS is ${tdsDelta.toFixed(2)}% above SCA zone. Loosen ratio to 1:${(tdsPlanRatio + 1).toFixed(0)}, coarsen grind, or reduce dose.`;
+            const statusLabel = isUnder ? 'UNDER' : isOver ? 'OVER' : '✓ IDEAL';
+            const statusColor = isUnder ? 'text-sky-600 bg-sky-50 border-sky-200' : isOver ? 'text-red-600 bg-red-50 border-red-200' : 'text-emerald-600 bg-emerald-50 border-emerald-200';
+            return (
+              <div className="px-4 py-3 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-white">
+                <div className="flex items-start gap-4">
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">SCA Target</span>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-slate-500">TDS</span>
+                        <span className="text-sm font-bold text-emerald-700 tabular-nums">{scaLo.toFixed(2)}–{scaHi.toFixed(2)}%</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-slate-500">EY</span>
+                        <span className="text-sm font-bold text-emerald-700 tabular-nums">18.0–22.0%</span>
+                      </div>
                     </div>
                   </div>
+                  <div className={`px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>
+                    {statusLabel} {tdsDelta > 0 && `+${tdsDelta.toFixed(2)}%`}
+                  </div>
                 </div>
-                {/* Status badge */}
-                <div className={`px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>
-                  {statusLabel} {tdsDelta > 0 && `+${tdsDelta.toFixed(2)}%`}
+                <div className="flex items-center gap-4 mt-2 text-xs">
+                  <span className="text-slate-500 tabular-nums">TDS <strong className={isUnder ? 'text-sky-600' : isOver ? 'text-red-600' : 'text-emerald-600'}>{currentTDS.toFixed(2)}%</strong></span>
+                  <span className="text-slate-500 tabular-nums">EY <strong className={isUnder ? 'text-sky-600' : isOver ? 'text-red-600' : 'text-emerald-600'}>{actualEY.toFixed(1)}%</strong></span>
+                  <span className="text-slate-400">at 1:{tdsPlanRatio}</span>
                 </div>
+                <div className="relative h-2 mt-2 mb-1 rounded-full bg-slate-100 overflow-hidden max-w-xs">
+                  <div className="absolute inset-y-0 bg-emerald-300/40 border-x border-emerald-400/50" style={{ left: `${Math.max(0, (scaLo - 0.7) / 1.4 * 100)}%`, width: `${Math.min(100, (scaHi - scaLo) / 1.4 * 100)}%` }} />
+                  <div className="absolute top-0 bottom-0 w-0.5 bg-slate-600 transition-all duration-300" style={{ left: `${Math.max(0, Math.min(100, (currentTDS - 0.7) / 1.4 * 100))}%` }} />
+                </div>
+                <p className="text-[10px] text-slate-500 leading-relaxed mt-1">{advice}</p>
               </div>
-              {/* Your values */}
-              <div className="flex items-center gap-4 mt-2 text-xs">
-                <span className="text-slate-500 tabular-nums">TDS <strong className={isUnder ? 'text-sky-600' : isOver ? 'text-red-600' : 'text-emerald-600'}>{currentTDS.toFixed(2)}%</strong></span>
-                <span className="text-slate-500 tabular-nums">EY <strong className={isUnder ? 'text-sky-600' : isOver ? 'text-red-600' : 'text-emerald-600'}>{actualEY.toFixed(1)}%</strong></span>
-                <span className="text-slate-400">at 1:{tdsPlanRatio}</span>
+            );
+          })()}
+        </>}
+        {brewFilterMode === 'iced' && <>
+          {(() => {
+            const totalWater = icedDose * icedRatio;
+            const ice = Math.round(totalWater * icedIcePct / 100);
+            const hotWater = totalWater - ice;
+            const reqTDSLo = getReferenceTDS(icedRatio, icedEYmin);
+            const reqTDSHi = getReferenceTDS(icedRatio, icedEYmax);
+            const finalTDS = hotWater > 0 ? icedHotTDS * hotWater / totalWater : 0;
+            const currentEY = icedDose > 0 ? (icedHotTDS / 100 * hotWater) / icedDose * 100 : 0;
+            const eyStatus = currentEY < icedEYmin ? 'Under' : currentEY > icedEYmax ? 'Over' : 'Ideal';
+            return (
+              <div className="px-4 py-3 bg-gradient-to-r from-sky-50 to-white border-t border-sky-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] uppercase font-bold tracking-wider text-sky-600">☕ Hot Concentrate Targets</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${eyStatus === 'Ideal' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : eyStatus === 'Under' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{eyStatus}</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="bg-white rounded-lg border border-sky-200 p-2">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold">EY Target</span>
+                    <div className="font-bold text-sky-700">{icedEYmin}–{icedEYmax}%</div>
+                  </div>
+                  <div className="bg-white rounded-lg border border-sky-200 p-2">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold">Hot TDS Target</span>
+                    <div className="font-bold text-amber-700">{reqTDSLo.toFixed(2)}–{reqTDSHi.toFixed(2)}%</div>
+                  </div>
+                  <div className="bg-white rounded-lg border border-sky-200 p-2">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold">Final TDS</span>
+                    <div className="font-bold text-emerald-700">{finalTDS.toFixed(2)}%</div>
+                  </div>
+                  <div className="bg-white rounded-lg border border-sky-200 p-2">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold">Current EY</span>
+                    <div className="font-bold text-purple-700">{currentEY.toFixed(1)}%</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-[9px] text-slate-500">
+                  <span>Hot TDS <strong className="text-slate-700">{icedHotTDS.toFixed(2)}%</strong></span>
+                  <span>Ratio 1:{icedRatio}</span>
+                  <span>Ice {icedIcePct}%</span>
+                  <span>Dose {icedDose}g</span>
+                </div>
+                <p className="text-[9px] text-slate-400 italic">ℹ️ Hot concentrate TDS is 2–4× higher than final TDS. Adjust in <strong className="text-sky-600">🧊 Iced Drip Calculator</strong> below.</p>
               </div>
-              {/* Gap bar */}
-              <div className="relative h-2 mt-2 mb-1 rounded-full bg-slate-100 overflow-hidden max-w-xs">
-                <div className="absolute inset-y-0 bg-emerald-300/40 border-x border-emerald-400/50" style={{ left: `${Math.max(0, (scaLo - 0.7) / 1.4 * 100)}%`, width: `${Math.min(100, (scaHi - scaLo) / 1.4 * 100)}%` }} />
-                <div className="absolute top-0 bottom-0 w-0.5 bg-slate-600 transition-all duration-300" style={{ left: `${Math.max(0, Math.min(100, (currentTDS - 0.7) / 1.4 * 100))}%` }} />
-              </div>
-              {/* Advice */}
-              <p className="text-[10px] text-slate-500 leading-relaxed mt-1">{advice}</p>
-            </div>
-          );
-        })()}
+            );
+          })()}
+        </>}
+        {brewFilterMode === 'hot' && (
         <div className="bg-white/80 px-4 py-3 flex flex-col gap-3 text-xs border-t border-slate-200">
           {/* Ratio + EY — prominent focus */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -1721,7 +1994,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               );
             })()}
           </div>
-        </div>
+        </div>)}
       </section>
 
       {/* Iced Drip Calculator */}

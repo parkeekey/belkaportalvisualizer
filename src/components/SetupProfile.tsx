@@ -87,24 +87,6 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     { label: '🫘 Physical', cols: ['Density', 'Grind Impact'] },
     { label: '🌡️ Brew', cols: ['Brew Temp', 'Extraction Strategy'] },
   ];
-  const [microClick, setMicroClick] = useState(() => {
-    const saved = localStorage.getItem('belkaMicroClick');
-    return saved ? parseFloat(saved) || 0 : 0;
-  });
-  const [microClickStr, setMicroClickStr] = useState(() => String(microClick));
-  const [microClickStep, setMicroClickStep] = useState(() => {
-    const saved = localStorage.getItem('belkaMicroClickStep');
-    return saved === '10' ? 10 : 1;
-  });
-
-  const commitMicroClick = useCallback((raw: string) => {
-    const v = parseFloat(raw);
-    const n = isNaN(v) || v < 0 ? 0 : Math.min(v, microClickStep === 1 ? 9 : 1);
-    setMicroClick(n);
-    setMicroClickStr(n > 0 ? String(n) : '');
-    localStorage.setItem('belkaMicroClick', String(n));
-  }, [microClickStep]);
-
   const waterSuggestion = useMemo(() => {
     const map: Record<string, { target: string; range: string }> = {
       washed: { target: 'Moderately soft', range: '50–80' },
@@ -535,7 +517,6 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               <option value="Flat Bottom">Flat Bottom</option>
               <option value="Aeropress">Aeropress</option>
               <option value="French Press">French Press</option>
-              <option value="Espresso">Espresso</option>
               <option value="Other">Other</option>
             </select>
           </div>
@@ -790,7 +771,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             <div className="flex gap-1 flex-wrap">
               {(['hand', 'electric'] as const).map((p) => (
                 <button key={p} type="button" onClick={() => setGrinderPower(p)} className={`flex-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${grinderPower === p ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-500 border-slate-200 hover:border-amber-200'}`}>
-                  {p === 'hand' ? '🖐 Hand' : '⚡ Electric'}
+                  {p === 'hand' ? 'Hand' : 'Electric'}
                 </button>
               ))}
             </div>
@@ -810,7 +791,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             <div className="flex items-center gap-2">
               {(['low', 'medium', 'high'] as const).map((f) => (
                 <button key={f} type="button" onClick={() => setFinesTendency(f)} className={`flex-1 px-2 py-1.5 text-[11px] font-bold rounded-lg border transition-colors ${finesTendency === f ? f === 'low' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : f === 'medium' ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-red-100 text-red-700 border-red-300' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}>
-                  {f === 'low' ? '↘ Low' : f === 'medium' ? '→ Med' : '↗ High'}
+                  {f === 'low' ? 'Low' : f === 'medium' ? 'Med' : 'High'}
                 </button>
               ))}
             </div>
@@ -821,10 +802,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               finesTendency === 'medium' ? 'bg-amber-50 border-amber-200 text-amber-700' :
               'bg-red-50 border-red-200 text-red-700'
             }`}>
-              {finesTendency === 'low' && '⚫ Low fines — clean bed, predictable flow, consistent extractions.'}
-              {finesTendency === 'medium' && '⚫ Moderate fines — slight channeling risk on fast pours. Keep agitation moderate.'}
-              {finesTendency === 'high' && '⚫ High fines — clogging risk, stalled brews, uneven extraction. Coarsen or reduce agitation.'}
-              {grinderBurr === 'flat' && finesTendency === 'high' && ' Worn flat burrs may cause this — consider replacement.'}
+              {finesTendency === 'low' && 'Low fines: clean bed, predictable flow, consistent extractions.'}
+              {finesTendency === 'medium' && 'Moderate fines: slight channeling risk on fast pours. Keep agitation moderate.'}
+              {finesTendency === 'high' && 'High fines: clogging risk, stalled brews, uneven extraction. Coarsen or reduce agitation.'}
+              {grinderBurr === 'flat' && finesTendency === 'high' && ' Worn flat burrs may cause this; consider replacement.'}
               {grinderBurr === 'blade' && ' Blade grinders produce very uneven particle sizes. Consistent dosing is difficult.'}
             </div>
           </div>
@@ -834,10 +815,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               <div className="flex items-center gap-2">
                 {targetRange && (
                   <span className="text-[9px] text-slate-400 font-medium">
-                    {targetRange.min}–{targetRange.max}µm
+                    {targetRange.min}-{targetRange.max} um
                   </span>
                 )}
-                <span className="text-xs font-bold text-amber-700 tabular-nums">{grinderMicron} µm</span>
+                <span className="text-xs font-bold text-amber-700 tabular-nums">{grinderMicron} um</span>
               </div>
             </div>
             {/* Slider with target zone overlay */}
@@ -870,26 +851,26 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       : 'bg-white text-slate-400 border-slate-200 hover:border-amber-200'
                   }`}
                 >
-                  {r.label} <span className="text-[8px] opacity-70">{r.min}–{r.max}</span>
+                  {r.label} <span className="text-[8px] opacity-70">{r.min}-{r.max}</span>
                 </button>
               ))}
             </div>
             {/* Current guide + target info */}
             <div className="flex items-start gap-2">
               <div className={`flex-1 px-2 py-1 rounded-lg text-[10px] font-semibold border ${micronGuide.color}`}>
-                Current: {micronGuide.label} — {micronGuide.note}
+                Current: {micronGuide.label} - {micronGuide.note}
               </div>
               {targetRange && (
                 <div className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-amber-50 border border-amber-200 text-amber-700 whitespace-nowrap">
-                  Target: {targetRange.min}–{targetRange.max}µm
-                  {grinderMicron < targetRange.min && ` (${targetRange.min - grinderMicron}µm finer)`}
-                  {grinderMicron > targetRange.max && ` (${grinderMicron - targetRange.max}µm coarser)`}
-                  {grinderMicron >= targetRange.min && grinderMicron <= targetRange.max && ' ✓ in range'}
+                  Target: {targetRange.min}-{targetRange.max} um
+                  {grinderMicron < targetRange.min && ` (${targetRange.min - grinderMicron} um finer)`}
+                  {grinderMicron > targetRange.max && ` (${grinderMicron - targetRange.max} um coarser)`}
+                  {grinderMicron >= targetRange.min && grinderMicron <= targetRange.max && ' in range'}
                 </div>
               )}
             </div>
           </div>
-          {/* Calibration: grind # ↔ micron */}
+          {/* Calibration: grind # to micron */}
           <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Calibration</span>
@@ -898,7 +879,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 <input type="number" min={0} max={100} value={calGrindDraft} onChange={(e) => setCalGrindDraft(e.target.value)} onBlur={() => { const v = parseInt(calGrindDraft); if (isNaN(v) || v < 0) setCalGrindDraft('0'); else setCalGrindDraft(String(v)); }} className="w-12 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
               </div>
               <div className="flex items-center gap-1">
-                <label className="text-[9px] text-slate-400">µm</label>
+                <label className="text-[9px] text-slate-400">um</label>
                 <input type="number" min={200} max={1400} step={25} value={calMicronDraft} onChange={(e) => setCalMicronDraft(e.target.value)} onBlur={() => { const v = parseInt(calMicronDraft); if (isNaN(v) || v < 200) setCalMicronDraft('800'); else if (v > 1400) setCalMicronDraft('1400'); else setCalMicronDraft(String(v)); }} className="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
               </div>
               <button type="button" onClick={() => {
@@ -919,108 +900,60 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   return (
                     <div key={i} className="flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 rounded text-[10px] tabular-nums">
                       <span className="font-semibold text-slate-600">#{c.grindNum}</span>
-                      <span className="text-slate-400">→</span>
-                      <span className="text-amber-700 font-bold">{c.micron}µm</span>
+                      <span className="text-slate-400">-&gt;</span>
+                      <span className="text-amber-700 font-bold">{c.micron} um</span>
                       <span className="text-slate-300">|</span>
                       <span className="text-[9px] text-slate-500">{range.label}</span>
-                      <button type="button" onClick={() => { recipePlanRef.current?.setGrindCalibration(c.grindNum, c.micron); document.getElementById('recipe-pour-planning')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-1.5 py-0.5 rounded text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100" title="Send to Recipe">→ Recipe</button>
+                      <button type="button" onClick={() => { recipePlanRef.current?.setGrindCalibration(c.grindNum, c.micron); document.getElementById('recipe-pour-planning')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-1.5 py-0.5 rounded text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100" title="Send to Recipe">To Recipe</button>
                       <button type="button" onClick={() => {
                         const idx = grinderCalibration.length - 1 - i;
                         const updated = grinderCalibration.filter((_, j) => j !== idx);
                         setGrinderCalibration(updated);
                         localStorage.setItem('belkaGrinderCal', JSON.stringify(updated));
-                      }} className="text-red-400 hover:text-red-600 text-[9px] font-bold px-0.5">✕</button>
+                      }} className="text-red-400 hover:text-red-600 text-[9px] font-bold px-0.5">X</button>
                     </div>
                   );
                 })}
               </div>
             )}
           </div>
-          {/* MicroClick */}
-          <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">MicroClick</span>
-              <div className="flex items-center gap-1">
-                <button type="button" onClick={() => {
-                  const next = microClickStep === 1 ? 10 : 1;
-                  setMicroClickStep(next);
-                  localStorage.setItem('belkaMicroClickStep', String(next));
-                  setMicroClick(0);
-                  setMicroClickStr('');
-                }} className={`text-[9px] font-bold px-2 py-0.5 rounded-lg border transition-colors ${microClickStep === 1 ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>×1</button>
-                <button type="button" onClick={() => {
-                  const next = microClickStep === 10 ? 1 : 10;
-                  setMicroClickStep(next);
-                  localStorage.setItem('belkaMicroClickStep', String(next));
-                  setMicroClick(0);
-                  setMicroClickStr('');
-                }} className={`text-[9px] font-bold px-2 py-0.5 rounded-lg border transition-colors ${microClickStep === 10 ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>×10</button>
-              </div>
-              <div className="flex items-center gap-0.5">
-                <button type="button" onClick={() => {
-                  const step = microClickStep === 1 ? 1 : 0.1;
-                  const v = parseFloat((microClick - step).toFixed(1));
-                  const n = v < 0 ? 0 : v;
-                  setMicroClick(n);
-                  setMicroClickStr(n > 0 ? String(n) : '');
-                  localStorage.setItem('belkaMicroClick', String(n));
-                }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">−</button>
-                <input type="text" inputMode="decimal" value={microClickStr} onChange={(e) => setMicroClickStr(e.target.value)} onBlur={(e) => commitMicroClick(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="0" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
-                <button type="button" onClick={() => {
-                  const step = microClickStep === 1 ? 1 : 0.1;
-                  const max = microClickStep === 1 ? 9 : 1;
-                  const v = parseFloat((microClick + step).toFixed(1));
-                  const n = v > max ? max : v;
-                  setMicroClick(n);
-                  setMicroClickStr(n > 0 ? String(n) : '');
-                  localStorage.setItem('belkaMicroClick', String(n));
-                }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
-              </div>
-              <span className="text-[9px] text-slate-400">
-                {microClickStep === 1 ? '±1 click (up to 9)' : '±0.1 click (up to 1.0)'}
-              </span>
-              {microClick > 0 && (
-                <span className="text-[9px] text-emerald-600 font-semibold">Adjust: {microClickStr} click{microClick !== 1 ? 's' : ''}</span>
-              )}
-            </div>
-          </div>
-
           {/* Dialing Range */}
           <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Dialing Range</span>
               <div className="flex items-center gap-0.5">
                 <label className="text-[9px] text-slate-400">#</label>
-                <button type="button" onClick={() => { const v = parseFloat((dialRangeMin - 0.1).toFixed(1)); const n = v < 0 ? 0 : v; setDialRangeMin(n); setDialRangeMinStr(n > 0 ? String(n) : ''); localStorage.setItem('belkaDialRangeMin', String(n)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">−</button>
-                <input type="text" inputMode="decimal" value={dialRangeMinStr} onChange={(e) => setDialRangeMinStr(e.target.value)} onBlur={(e) => commitDialMin(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="min" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
-                <button type="button" onClick={() => { const v = parseFloat((dialRangeMin + 0.1).toFixed(1)); setDialRangeMin(v); setDialRangeMinStr(String(v)); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
+                <button type="button" onClick={() => { const v = Math.max(0, dialRangeMin - 1); setDialRangeMin(v); setDialRangeMinStr(String(v > 0 ? v : '')); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">-</button>
+                <input type="number" min={0} step={1} value={dialRangeMinStr} onChange={(e) => setDialRangeMinStr(e.target.value)} onBlur={(e) => commitDialMin(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="min" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <button type="button" onClick={() => { const v = dialRangeMin + 1; setDialRangeMin(v); setDialRangeMinStr(String(v)); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
               </div>
-              <span className="text-slate-300 text-[10px]">→</span>
+              <span className="text-slate-300 text-[10px]">-&gt;</span>
               <div className="flex items-center gap-0.5">
                 <label className="text-[9px] text-slate-400">#</label>
-                <button type="button" onClick={() => { const v = parseFloat((dialRangeMax - 0.1).toFixed(1)); const n = v < 0 ? 0 : v; setDialRangeMax(n); setDialRangeMaxStr(n > 0 ? String(n) : ''); localStorage.setItem('belkaDialRangeMax', String(n)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">−</button>
-                <input type="text" inputMode="decimal" value={dialRangeMaxStr} onChange={(e) => setDialRangeMaxStr(e.target.value)} onBlur={(e) => commitDialMax(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="max" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
-                <button type="button" onClick={() => { const v = parseFloat((dialRangeMax + 0.1).toFixed(1)); setDialRangeMax(v); setDialRangeMaxStr(String(v)); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
+                <button type="button" onClick={() => { const v = Math.max(0, dialRangeMax - 1); setDialRangeMax(v); setDialRangeMaxStr(String(v > 0 ? v : '')); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">-</button>
+                <input type="number" min={0} step={1} value={dialRangeMaxStr} onChange={(e) => setDialRangeMaxStr(e.target.value)} onBlur={(e) => commitDialMax(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="max" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <button type="button" onClick={() => { const v = dialRangeMax + 1; setDialRangeMax(v); setDialRangeMaxStr(String(v)); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
               </div>
               {dialRangeMin > 0 && dialRangeMax > 0 && (
-                <span className="text-[9px] text-emerald-600 font-semibold">Active search zone: #{dialRangeMin}–#{dialRangeMax}</span>
+                <span className="text-[9px] text-emerald-600 font-semibold">Active search zone: #{dialRangeMin}-#{dialRangeMax}</span>
               )}
             </div>
-            {dialRangeMin > 0 && dialRangeMax > 0 && dialRangeMax >= dialRangeMin && (() => {
+            {dialRangeMin > 0 && dialRangeMax > 0 && dialRangeMax > dialRangeMin && (() => {
               const total = dialRangeMax - dialRangeMin;
-              const rawSteps = Math.round(total / 0.1) + 1;
-              const capped = Math.min(rawSteps, 50);
-              const stepSize = rawSteps > 50 ? (total / 50) : 0.1;
-              const steps = Array.from({ length: capped }, (_, i) => parseFloat((dialRangeMin + (rawSteps > 50 ? i * stepSize : i * 0.1)).toFixed(1)));
+              const steps = Array.from({ length: total + 1 }, (_, i) => dialRangeMin + i);
               return (
                 <div className="mt-2 overflow-x-auto">
                   <div className="flex items-center gap-0.5 min-w-[560px]">
-                    {steps.map((s, i) => (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                        <div className={`w-full h-2 rounded-sm ${s === 0 ? 'bg-emerald-400' : s >= 0 && s <= 1 ? 'bg-emerald-300' : 'bg-sky-300'}`} />
-                        <span className={`text-[8px] font-bold tabular-nums ${s === 0 ? 'text-emerald-700' : 'text-slate-400'}`}>#{s.toFixed(1)}</span>
-                      </div>
-                    ))}
+                    {steps.map(s => {
+                      return (
+                        <div key={s} className="flex-1 flex flex-col items-center gap-0.5">
+                          <div className={`w-full h-2 rounded-sm ${s === 14 || s === 16 ? 'bg-emerald-400' : s >= 14 && s <= 16 ? 'bg-emerald-300' : s < 14 ? 'bg-sky-300' : 'bg-amber-300'}`} />
+                          <span className={`text-[8px] font-bold tabular-nums ${s >= 14 && s <= 16 ? 'text-emerald-700' : 'text-slate-400'}`}>#{s}</span>
+                          {s === 14 && <span className="text-[7px] text-emerald-600 font-bold">finest</span>}
+                          {s === 16 && <span className="text-[7px] text-emerald-600 font-bold">coarsest</span>}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -1058,7 +991,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       delete updated[key];
                       setGrinderProfiles(updated);
                       localStorage.setItem('belkaGrinderProfiles', JSON.stringify(updated));
-                    }} className="text-red-400 hover:text-red-600 text-[9px] font-bold px-1">✕</button>
+                    }} className="text-red-400 hover:text-red-600 text-[9px] font-bold px-1">X</button>
                   </div>
                 ))}
               </div>
@@ -1687,7 +1620,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       {/* Turbulence Model */}
       <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
         <h3 className="text-sm font-bold text-orange-800 uppercase tracking-wider mb-3">🌊 Turbulence Model</h3>
-        <TurbulenceModel targetBrewTimeSec={brewTimeSec} />
+        <TurbulenceModel targetBrewTimeSec={brewTimeSec} brewerType={brewerType} onBrewerChange={setBrewerType} doseWeight={recipeValues.dose} grindSetting={grindAdjustPct} />
       </section>
 
       {/* Bean Grind Guidance */}
@@ -1717,8 +1650,8 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   }`}>
                     {absPct}%
                   </span>
-                )}
-              </div>
+            )}
+          </div>
               {/* Headline: action + percentage tag */}
               <div className="flex items-center gap-2 mb-2">
                 {totalPct !== 0 && (
@@ -2147,7 +2080,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <h3 className="text-sm font-bold text-sky-800 uppercase tracking-wider">🧊 Iced Drip Calculator</h3>
           <svg className={`w-4 h-4 text-sky-500 transition-transform ${icedOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
         </button>
-        {icedOpen && <><div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {icedOpen && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Brew Calculation */}
           <div className="space-y-2">
             {/* Tabs */}
@@ -2468,7 +2403,8 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </div>
           );
         })()}
-        </>}
+          </>
+        )}
       </section>
 
       {/* Recipe & Pour Planning */}
@@ -2481,6 +2417,20 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             <span className="text-emerald-700 font-bold tabular-nums">EY {parseFloat(targetEY).toFixed(1)}%</span>
             <span className="text-slate-300">|</span>
             <span className="text-amber-700 font-bold tabular-nums">1:{tdsPlanRatio}</span>
+            {(() => {
+              try {
+                const raw = localStorage.getItem('belkaTurbulencePlan');
+                if (!raw) return null;
+                const p = JSON.parse(raw);
+                return (
+                  <>
+                    <span className="text-slate-200">|</span>
+                    <span className="text-emerald-600 font-semibold">🌊 {p.flowRegime} · {p.bloomTime}s bloom · v={p.v}</span>
+                    <button type="button" onClick={() => localStorage.removeItem('belkaTurbulencePlan')} className="text-slate-300 hover:text-red-400 text-[10px]" title="Clear turbulence plan">✕</button>
+                  </>
+                );
+              } catch { return null; }
+            })()}
           </div>
           <button type="button" onClick={() => document.getElementById('grinder-setup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100">↑ Grinder Setup</button>
         </div>

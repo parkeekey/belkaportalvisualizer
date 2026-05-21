@@ -5,6 +5,10 @@ import GrinderKnob from './GrinderKnob';
 interface PourPlanEntry {
   cumulativePercent: number;
   duration?: number;
+  pourHeight?: number;
+  pourRate?: number;
+  spoutType?: 'narrow' | 'medium' | 'wide';
+  pattern?: 'spiral' | 'center-pulse' | 'single-point';
 }
 
 export interface RecipePourPlanningProfile {
@@ -233,10 +237,10 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
     localStorage.setItem('belkaTotalWaterIn', String(water));
     if (pourPlan.length === 0) {
       setPourPlan([
-        { cumulativePercent: 20 },
-        { cumulativePercent: 50 },
-        { cumulativePercent: 80 },
-        { cumulativePercent: 100 },
+        { cumulativePercent: 20, pourHeight: 6, pourRate: 3, spoutType: 'wide', pattern: 'center-pulse' },
+        { cumulativePercent: 50, pourHeight: 10, pourRate: 5, spoutType: 'medium', pattern: 'spiral' },
+        { cumulativePercent: 80, pourHeight: 10, pourRate: 5, spoutType: 'medium', pattern: 'spiral' },
+        { cumulativePercent: 100, pourHeight: 6, pourRate: 3, spoutType: 'wide', pattern: 'spiral' },
       ]);
     }
   }, [doseWeight, brewRatio, pourPlan.length]);
@@ -441,15 +445,38 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
             {pourPlan.length > 0 && (
               <span className="text-[9px] text-slate-400 font-medium">{pourPlan.length} pour{pourPlan.length > 1 ? 's' : ''}</span>
             )}
+            <button type="button" onClick={() => {
+              try {
+                const raw = localStorage.getItem('belkaTurbulencePlan');
+                if (!raw) return;
+                const plan = JSON.parse(raw);
+                const h = plan.pourHeight || 10;
+                const sp = plan.spoutType || 'medium';
+                const pa = plan.pattern || 'spiral';
+                const rate = plan.pourRate || 5;
+                setPourPlan(prev => prev.map((entry, i) => {
+                  const isBloom = i === 0;
+                  const isLast = i === prev.length - 1;
+                  return {
+                    ...entry,
+                    pourHeight: isBloom ? 6 : isLast ? 6 : h,
+                    pourRate: isBloom ? Math.min(rate, 4) : rate,
+                    spoutType: isBloom ? 'wide' : sp as 'narrow' | 'medium' | 'wide',
+                    pattern: isBloom ? 'center-pulse' : pa as 'spiral' | 'center-pulse' | 'single-point',
+                  };
+                }));
+              } catch {}
+            }} className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md px-2 py-0.5 transition-colors">🌊 Apply from Plan</button>
           </div>
           <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <div className="flex items-center gap-2 text-[10px] text-slate-500 font-semibold uppercase tracking-wider px-3 py-2 bg-slate-50 border-b border-slate-200">
             <span className="w-12">Pour</span>
-            <span className="w-28">Target %</span>
-            <span className="w-28 text-right">Cumul. g</span>
-            <span className="w-24 text-right">Delta g</span>
+            <span className="w-24">Target %</span>
+            <span className="w-24 text-right">Cumul. g</span>
+            <span className="w-20 text-right">Delta g</span>
             <span className="w-16 text-right">Delta %</span>
             <span className="w-14 text-right">Dur.s</span>
+            <span className="w-20 text-right">Flow</span>
             <span className="w-16 text-right">Time</span>
             {ecProps && <span className="w-16 text-right text-violet-500">EC</span>}
             <span className="w-8" />
@@ -544,6 +571,12 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                     });
                   }} className="w-4 h-4 flex items-center justify-center text-[9px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded hover:bg-slate-100 leading-none">+</button>
                 </div>
+                <div className="flex items-center gap-0.5">
+                  <button type="button" onClick={() => setPourPlan(prev => { const n = [...prev]; n[idx] = { ...n[idx], pourRate: Math.max(2, (n[idx].pourRate ?? 5) - 1) }; return n; })} className="w-4 h-4 flex items-center justify-center text-[9px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded hover:bg-slate-100 leading-none">−</button>
+                  <input type="number" min={2} max={10} step={0.5} value={entry.pourRate ?? 5} onChange={(e) => { const raw = e.target.value; if (raw === '') return; const v = parseFloat(raw); if (Number.isFinite(v)) setPourPlan(prev => { const n = [...prev]; n[idx] = { ...n[idx], pourRate: Math.min(10, Math.max(2, v)) }; return n; }); }} className="w-10 h-6 px-1 text-xs border border-slate-200 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white" />
+                  <button type="button" onClick={() => setPourPlan(prev => { const n = [...prev]; n[idx] = { ...n[idx], pourRate: Math.min(10, (n[idx].pourRate ?? 5) + 1) }; return n; })} className="w-4 h-4 flex items-center justify-center text-[9px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded hover:bg-slate-100 leading-none">+</button>
+                  <span className="text-[8px] text-slate-400 ml-0.5">ml/s</span>
+                </div>
                 <span className="w-16 text-right text-xs text-slate-600 tabular-nums font-medium">{Math.floor(pourTime / 60)}:{Math.round(pourTime % 60).toString().padStart(2, '0')}</span>
                 {ecVal != null && (
                   <span className="w-16 text-right text-violet-600 tabular-nums text-xs font-semibold">{ecVal.toFixed(2)}</span>
@@ -563,7 +596,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
           <div className="flex gap-1.5">
             <button
               type="button"
-              onClick={() => setPourPlan(prev => [...prev, { cumulativePercent: prev.length === 0 ? 100 : 100 }])}
+              onClick={() => setPourPlan(prev => [...prev, { cumulativePercent: prev.length === 0 ? 100 : 100, pourHeight: 10, pourRate: 5, spoutType: 'medium', pattern: 'spiral' }])}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg px-3 py-1.5 transition-colors"
             >
               + Add Pour
@@ -600,8 +633,12 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                 type="button"
                 onClick={() => {
                   const n = pourPlan.length;
-                  setPourPlan(pourPlan.map((_, i) => ({
+                  setPourPlan(pourPlan.map((e, i) => ({
                     cumulativePercent: Math.round((100 * (i + 1)) / n),
+                    pourHeight: e.pourHeight,
+                    pourRate: e.pourRate,
+                    spoutType: e.spoutType,
+                    pattern: e.pattern,
                   })));
                 }}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg px-3 py-1.5 transition-colors border border-emerald-200"

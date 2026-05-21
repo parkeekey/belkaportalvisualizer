@@ -1,32 +1,50 @@
 import { useState } from 'react';
 
-export default function TurbulenceModel({ targetBrewTimeSec = 180 }: { targetBrewTimeSec?: number }) {
+export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 'V60', onBrewerChange, doseWeight = 18, grindSetting = 50 }: { targetBrewTimeSec?: number; brewerType?: string; onBrewerChange?: (v: string) => void; doseWeight?: number; grindSetting?: number }) {
   const [pourHeight, setPourHeight] = useState(10);
   const [pourRate, setPourRate] = useState(5);
   const [spoutType, setSpoutType] = useState<'narrow' | 'medium' | 'wide'>('medium');
   const [pattern, setPattern] = useState<'spiral' | 'center-pulse' | 'single-point'>('spiral');
+  const [bloomTime, setBloomTime] = useState(30);
+  const [bloomStyle, setBloomStyle] = useState<'gentle' | 'normal' | 'aggressive'>('normal');
   const [activeTactic, setActiveTactic] = useState<string | null>(null);
   const [activeSymptom, setActiveSymptom] = useState<string | null>(null);
 
   // --- Forchheimer velocity model ---
-  // v = combined velocity factor from height, spout, and rate
   const heightVel = (pourHeight - 4) / (20 - 4);
   const spoutVel = spoutType === 'narrow' ? 1 : spoutType === 'medium' ? 0.55 : 0.15;
   const patternVel = pattern === 'single-point' ? 1 : pattern === 'center-pulse' ? 0.6 : 0.3;
   const rateVel = (pourRate - 2) / (10 - 2);
-  const v = 0.35 * heightVel + 0.3 * spoutVel + 0.2 * patternVel + 0.15 * rateVel;
+  const rawV = 0.35 * heightVel + 0.3 * spoutVel + 0.2 * patternVel + 0.15 * rateVel;
+
+  // Brewer geometry multiplier
+  const brewerMultiplier =
+    brewerType === 'Kalita Wave' ? 0.66 :
+    brewerType === 'Chemex' ? 0.59 :
+    brewerType === 'Aeropress' ? 1.73 :
+    brewerType === 'French Press' ? 0.70 :
+    1.0;
+
+  // Bloom stability modifier
+  const bloomStability = Math.min(0.7, (bloomTime / 60) * 0.5 + (bloomStyle === 'gentle' ? 0.2 : bloomStyle === 'aggressive' ? -0.2 : 0));
+  const v = rawV * brewerMultiplier * (1 - bloomStability * 0.35);
+
+  // Grind permeability factor — finer = less permeable, higher resistance
+  const grindNorm = Math.max(0, Math.min(100, grindSetting)) / 100;
+  const grindCoeff = 1 - grindNorm; // 0 at coarsest, 1 at finest
+  const permFactor = 1 + grindCoeff * 0.8; // 1.0× at coarsest, 1.8× at finest
 
   // Forchheimer: ΔP/L = (μ/k)v + βρv²
-  const darcyTerm = v;
-  const forchheimerTerm = v * v * 2.5;
+  const darcyTerm = v * permFactor;
+  const forchheimerTerm = v * v * 2.5 * permFactor * permFactor;
   const totalResistance = darcyTerm + forchheimerTerm;
   const turbDominance = totalResistance > 0 ? (forchheimerTerm / totalResistance) * 100 : 0;
 
   // Derived risks
-  const clogRisk = Math.min(100, Math.round(v * v * 140));
+  const clogRisk = Math.min(100, Math.round(v * v * 140 * permFactor));
   const clogLevel: 'Minimal' | 'Moderate' | 'High' | 'Critical' = clogRisk < 20 ? 'Minimal' : clogRisk < 45 ? 'Moderate' : clogRisk < 70 ? 'High' : 'Critical';
   const boundaryStrip = Math.round((v * (1 - v * v)) * 100);
-  const sweetSpotCenter = 0.55 - (targetBrewTimeSec - 180) / 600;
+  const sweetSpotCenter = 0.55 - (targetBrewTimeSec - 180) / 600 + (doseWeight - 18) / 36;
   const sweetSpotMin = Math.max(0.15, sweetSpotCenter - 0.2);
   const sweetSpotMax = Math.min(0.85, sweetSpotCenter + 0.25);
   const sweetSpot = v > sweetSpotMin && v < sweetSpotMax;
@@ -131,72 +149,153 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180 }: { targetBre
       <div className="flex gap-2">
         <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 overflow-hidden">
           <svg viewBox="0 0 200 160" className="w-full h-32">
-          {/* Brewer cone outline */}
-          <path d="M30 10 L170 10 L150 140 L50 140 Z" fill="none" stroke="#475569" strokeWidth="1" opacity="0.4" />
-
-          {/* Water body */}
-          <rect x={38} y={20 + (1 - v) * 20} width={124} height={70 - (1 - v) * 20} rx={2} fill="rgba(56,189,248,0.15)" />
-
-          {/* Coffee bed */}
-          <rect x={40} y={90} width={120} height={45} rx={3} fill="url(#bedGrad)" />
-          <defs>
-            <linearGradient id="bedGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8B5E3C" />
-              <stop offset="40%" stopColor="#6B3A2A" />
-              <stop offset="100%" stopColor="#4A2518" />
-            </linearGradient>
-          </defs>
-
-          {/* Clog layer at bottom of bed */}
-          {clogLevel !== 'Minimal' && (
-            <rect x={44} y={118} width={112} height={12} rx={1} fill={clogLevel === 'Moderate' ? '#d97706' : clogLevel === 'High' ? '#ea580c' : '#dc2626'} opacity={clogRisk / 140} />
-          )}
-
-          {/* Boundary layer stripping glow */}
-          {v > 0.15 && (
-            <rect x={42} y={92} width={116} height={8} rx={1} fill="#22d65e" opacity={boundaryStrip / 200} />
-          )}
-
-          {/* Bed surface irregularity based on turbulence */}
           {(() => {
-            const surf = [];
-            for (let x = 42; x < 158; x += 4) {
-              const wave = Math.sin(x * 0.2 + v * 10) * (v * 4);
-              surf.push({ x, y: 90 + (wave < 0 ? wave : 0) });
-            }
+            const BED_Y = 90;
+            const bedHeight = Math.max(15, Math.min(70, Math.round(40 * doseWeight / 18)));
+            const BED_BOT = BED_Y + bedHeight;
+            const BRIM = BED_BOT + 10;
+
+            interface BrShape { tlX: number; trX: number; blX: number; brX: number; }
+            const br: BrShape =
+              brewerType === 'Flat Bottom' ? { tlX: 35, trX: 165, blX: 65, brX: 135 } :
+              brewerType === 'Kalita Wave' ? { tlX: 30, trX: 170, blX: 60, brX: 140 } :
+              brewerType === 'Chemex' ? { tlX: 55, trX: 145, blX: 82, brX: 118 } :
+              brewerType === 'Aeropress' ? { tlX: 72, trX: 128, blX: 72, brX: 128 } :
+              brewerType === 'French Press' ? { tlX: 20, trX: 180, blX: 20, brX: 180 } :
+              { tlX: 40, trX: 160, blX: 97, brX: 103 }; // V60 / Other
+
+            const wallX = (y: number) => ({
+              l: br.tlX + (br.blX - br.tlX) * (y - 10) / (BRIM - 10),
+              r: br.trX + (br.brX - br.trX) * (y - 10) / (BRIM - 10),
+            });
+
+            const waterTopY = 20 + (1 - v) * 20;
+            const wt = wallX(waterTopY);
+            const wBot = wallX(BED_Y);
+
             return (
-              <path d={surf.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x} ${p.y}`).join(' ') + ' L158 135 L40 135 Z'} fill="rgba(239,68,68,0.15)" opacity={v > 0.5 ? 0.6 : 0} />
+              <g>
+                {/* Brewer outline */}
+                <path d={`M${br.tlX} 10 L${br.trX} 10 L${br.brX} ${BRIM} L${br.blX} ${BRIM} Z`} fill="none" stroke="#475569" strokeWidth="1" opacity="0.4" />
+
+                {/* Water body (follows walls) */}
+                <polygon points={`${wt.l + 2},${waterTopY} ${wt.r - 2},${waterTopY} ${wBot.r - 2},${BED_Y} ${wBot.l + 2},${BED_Y}`} fill="rgba(56,189,248,0.15)" />
+
+                {/* Coffee bed (trapezoid matching cone walls) */}
+                {(() => {
+                  const bt = wallX(BED_Y);
+                  const bb = wallX(BED_BOT);
+                  return (
+                    <polygon points={`${bt.l + 3},${BED_Y} ${bt.r - 3},${BED_Y} ${bb.r - 3},${BED_BOT + 5} ${bb.l + 3},${BED_BOT + 5}`} fill="url(#bedGrad)" />
+                  );
+                })()}
+                <defs>
+                  <linearGradient id="bedGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8B5E3C" />
+                    <stop offset="40%" stopColor="#6B3A2A" />
+                    <stop offset="100%" stopColor="#4A2518" />
+                  </linearGradient>
+                </defs>
+
+                {/* Clog layer at bottom of bed */}
+                {clogLevel !== 'Minimal' && (() => {
+                  const bb = wallX(BED_BOT);
+                  const bm = wallX(BED_BOT - 10);
+                  return (
+                    <polygon points={`${bm.l + 3},${BED_BOT - 10} ${bm.r - 3},${BED_BOT - 10} ${bb.r - 3},${BED_BOT + 5} ${bb.l + 3},${BED_BOT + 5}`} fill={clogLevel === 'Moderate' ? '#d97706' : clogLevel === 'High' ? '#ea580c' : '#dc2626'} opacity={clogRisk / 140} />
+                  );
+                })()}
+
+                {/* Boundary layer stripping glow */}
+                {v > 0.15 && (() => {
+                  const bt = wallX(BED_Y);
+                  const bs = wallX(BED_Y + 6);
+                  return (
+                    <polygon points={`${bt.l + 3},${BED_Y} ${bt.r - 3},${BED_Y} ${bs.r - 3},${BED_Y + 6} ${bs.l + 3},${BED_Y + 6}`} fill="#22d65e" opacity={boundaryStrip / 200} />
+                  );
+                })()}
+
+                {/* Bed surface irregularity based on turbulence */}
+                {(() => {
+                  const bt = wallX(BED_Y);
+                  const bb = wallX(BED_BOT);
+                  const surf = [];
+                  for (let x = bt.l + 4; x < bt.r - 4; x += 4) {
+                    const wave = Math.sin(x * 0.2 + v * 10) * (v * 4);
+                    surf.push({ x, y: BED_Y + (wave < 0 ? wave : 0) });
+                  }
+                  return (
+                    <path d={surf.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x} ${p.y}`).join(' ') + ` L${bb.r - 3} ${BED_BOT + 5} L${bb.l + 3} ${BED_BOT + 5} Z`} fill="rgba(239,68,68,0.15)" opacity={v > 0.5 ? 0.6 : 0} />
+                  );
+                })()}
+
+                {/* Forchheimer turbulence visualization */}
+                {turbDominance > 40 && (
+                  (() => {
+                    const count = Math.floor(turbDominance / 20);
+                    const paths = [];
+                    for (let i = 0; i < count; i++) {
+                      const x = br.blX + 10 + i * 12 + Math.sin(i * 2 + v * 5) * 8;
+                      paths.push(
+                        <path key={i} d={`M${x} ${BED_Y - 2} Q${x + 8} ${BED_Y + 10} ${x - 4} ${BED_Y + 20} T${x + 2} ${BED_Y + 35}`} fill="none" stroke={scoreColor} strokeWidth={0.5 + i * 0.2} opacity={0.3 + i * 0.08} strokeDasharray="2 3" />
+                      );
+                    }
+                    return paths;
+                  })()
+                )}
+
+                {/* Jet stream */}
+                {(() => {
+                  const jetY = 12;
+                  const tipY = 45 + (1 - heightVel) * 38;
+                  const jetWidth = spoutType === 'narrow' ? 3 : spoutType === 'medium' ? 7 : 12;
+                  const clr = spoutType === 'narrow' ? '#60a5fa' : spoutType === 'medium' ? '#38bdf8' : '#22d3ee';
+                  return <line x1={100} y1={jetY} x2={100} y2={tipY} stroke={clr} strokeWidth={jetWidth} strokeLinecap="round" opacity={0.5} />;
+                })()}
+
+                {/* Brewer-specific extras */}
+                {brewerType === 'Kalita Wave' && (
+                  <>
+                    <circle cx={br.blX + (br.brX - br.blX) * 0.25} cy={BRIM + 2} r={2} fill="#475569" opacity={0.6} />
+                    <circle cx={(br.blX + br.brX) / 2} cy={BRIM + 2} r={2} fill="#475569" opacity={0.6} />
+                    <circle cx={br.brX - (br.brX - br.blX) * 0.25} cy={BRIM + 2} r={2} fill="#475569" opacity={0.6} />
+                  </>
+                )}
+                {brewerType === 'Chemex' && (
+                  <>
+                    <path d={`M${br.blX - 2} ${BED_BOT + 2} L${br.brX + 2} ${BED_BOT + 2}`} stroke="#64748b" strokeWidth="3" opacity={0.5} strokeLinecap="round" />
+                    <path d={`M${br.blX - 2} ${BED_BOT + 5} L${br.brX + 2} ${BED_BOT + 5}`} stroke="#64748b" strokeWidth="1" opacity={0.3} strokeLinecap="round" />
+                  </>
+                )}
+                {brewerType === 'Aeropress' && (
+                  <>
+                    <line x1={br.tlX - 2} y1={10} x2={br.trX + 2} y2={10} stroke="#64748b" strokeWidth="2" opacity={0.6} strokeLinecap="round" />
+                    <line x1={100} y1={10} x2={100} y2={25} stroke="#94a3b8" strokeWidth="2" opacity={0.4} strokeLinecap="round" />
+                    <rect x={br.blX - 2} y={BED_BOT - 5} width={br.brX - br.blX + 4} height={6} rx={1} fill="none" stroke="#64748b" strokeWidth="1" opacity={0.5} />
+                  </>
+                )}
+                {brewerType === 'French Press' && (
+                  <>
+                    <line x1={100} y1={10} x2={100} y2={BED_Y + 5} stroke="#94a3b8" strokeWidth="1.5" opacity={0.35} strokeLinecap="round" />
+                    <line x1={br.tlX + 8} y1={BED_Y + 5} x2={br.trX - 8} y2={BED_Y + 5} stroke="#64748b" strokeWidth="1" opacity={0.4} strokeLinecap="round" />
+                    <line x1={br.tlX + 8} y1={BED_Y + 8} x2={br.trX - 8} y2={BED_Y + 8} stroke="#64748b" strokeWidth="1" opacity={0.3} strokeLinecap="round" strokeDasharray="1 2" />
+                  </>
+                )}
+                {brewerType === 'Flat Bottom' && (
+                  <line x1={br.blX + 5} y1={BRIM - 2} x2={br.brX - 5} y2={BRIM - 2} stroke="#475569" strokeWidth="1.5" opacity={0.5} strokeLinecap="round" />
+                )}
+                {/* Labels */}
+                <text x={100} y={5} textAnchor="middle" fill="#94a3b8" fontSize="7" fontFamily="monospace">⏱ {contactTimeShift >= 0 ? `+${contactTimeShift}s` : `${contactTimeShift}s`}</text>
+                <text x={195} y={BED_Y + 10} textAnchor="end" fill="#94a3b8" fontSize="6" fontFamily="monospace">{bedRiskLevel === 'Low' ? 'laminar' : bedRiskLevel === 'Moderate' ? 'mixed' : bedRiskLevel === 'High' ? 'turb' : '⛔'}</text>
+                <text x={100} y={BRIM + 15} textAnchor="middle" fill="#64748b" fontSize="6" fontFamily="monospace">Forchheimer: v·{darcyTerm.toFixed(2)} + v²·{forchheimerTerm.toFixed(2)}</text>
+                {/* Bed depth label */}
+                <line x1={br.brX + 4} y1={BED_Y} x2={br.brX + 4} y2={BED_BOT} stroke="#64748b" strokeWidth="1" opacity={0.5} />
+                <line x1={br.brX + 2} y1={BED_Y} x2={br.brX + 7} y2={BED_Y} stroke="#64748b" strokeWidth="1" opacity={0.5} />
+                <line x1={br.brX + 2} y1={BED_BOT} x2={br.brX + 7} y2={BED_BOT} stroke="#64748b" strokeWidth="1" opacity={0.5} />
+                <text x={br.brX + 12} y={(BED_Y + BED_BOT) / 2 + 2} textAnchor="start" fill="#94a3b8" fontSize="6" fontFamily="monospace">{doseWeight}g / {((BED_BOT - BED_Y) / 40 * 2).toFixed(1)}cm</text>
+              </g>
             );
           })()}
-
-          {/* Forchheimer turbulence visualization — extra chaotic paths when v² dominates */}
-          {turbDominance > 40 && (
-            (() => {
-              const count = Math.floor(turbDominance / 20);
-              const paths = [];
-              for (let i = 0; i < count; i++) {
-                const x = 50 + i * 15 + Math.sin(i * 2 + v * 5) * 10;
-                paths.push(
-                  <path key={i} d={`M${x} 88 Q${x + 10} 100 ${x - 5} 110 T${x + 3} 125`} fill="none" stroke={scoreColor} strokeWidth={0.5 + i * 0.2} opacity={0.3 + i * 0.08} strokeDasharray="2 3" />
-                );
-              }
-              return paths;
-            })()
-          )}
-
-          {/* Jet stream - width shows spout, depth shows height */}
-          {(() => {
-            const jetY = 12;
-            const tipY = 45 + (1 - heightVel) * 38;
-            const jetWidth = spoutType === 'narrow' ? 3 : spoutType === 'medium' ? 7 : 12;
-            const clr = spoutType === 'narrow' ? '#60a5fa' : spoutType === 'medium' ? '#38bdf8' : '#22d3ee';
-            return <line x1={100} y1={jetY} x2={100} y2={tipY} stroke={clr} strokeWidth={jetWidth} strokeLinecap="round" opacity={0.5} />;
-          })()}
-
-          {/* Labels */}
-          <text x={100} y={5} textAnchor="middle" fill="#94a3b8" fontSize="7" fontFamily="monospace">⏱ {contactTimeShift >= 0 ? `+${contactTimeShift}s` : `${contactTimeShift}s`}</text>
-          <text x={195} y={95} textAnchor="end" fill="#94a3b8" fontSize="7" fontFamily="monospace">{bedRiskLevel === 'Low' ? 'laminar' : bedRiskLevel === 'Moderate' ? 'mixed' : bedRiskLevel === 'High' ? 'turb' : '⛔'}</text>
-          <text x={100} y={155} textAnchor="middle" fill="#64748b" fontSize="6" fontFamily="monospace">Forchheimer: v·{darcyTerm.toFixed(2)} + v²·{forchheimerTerm.toFixed(2)}</text>
         </svg>
       </div>
       <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 overflow-hidden">
@@ -239,7 +338,23 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180 }: { targetBre
           <text x={100} y={5} textAnchor="middle" fill="#94a3b8" fontSize="7" fontFamily="monospace">spout: {spoutType}</text>
         </svg>
       </div>
-    </div>
+      </div>
+
+      {/* Brewer selector */}
+      {onBrewerChange && (
+        <div className="flex items-center gap-2">
+          <label className="text-[10px] font-semibold text-slate-500">Brewer</label>
+          <select value={brewerType} onChange={(e) => onBrewerChange(e.target.value)} className="text-[11px] px-2 py-1 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-orange-400">
+            <option value="V60">V60</option>
+            <option value="Chemex">Chemex</option>
+            <option value="Kalita Wave">Kalita Wave</option>
+            <option value="Flat Bottom">Flat Bottom</option>
+            <option value="Aeropress">Aeropress</option>
+            <option value="French Press">French Press</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <div className="flex flex-col gap-0.5">
@@ -268,9 +383,64 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180 }: { targetBre
           <label className="text-[10px] font-semibold text-slate-500">Pour Pattern</label>
           <div className="flex gap-1">
             {(['spiral', 'center-pulse', 'single-point'] as const).map((p) => (
-              <button key={p} type="button" onClick={() => setPattern(p)} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors capitalize ${pattern === p ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>{p === 'center-pulse' ? 'C-Pulse' : p === 'single-point' ? 'S-Point' : p}</button>
+              <button key={p} type="button" onClick={() => setPattern(p)} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors capitalize ${pattern === p ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>{p === 'center-pulse' ? 'Center' : p === 'single-point' ? 'Single' : 'Spiral'}</button>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Bloom / Pre-infusion */}
+      <div className="bg-white border border-slate-200 rounded-lg p-2">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">🌱 Bloom / Pre-infusion</span>
+          {bloomStability > 0.3 && <span className="text-[8px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-md px-1 py-0.5">Stabilizing</span>}
+          {bloomStability < 0 && <span className="text-[8px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-md px-1 py-0.5">Destabilizing</span>}
+        </div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[9px] text-slate-400 font-medium">Bloom Time</label>
+            <div className="flex items-center gap-1">
+              <input type="range" min={0} max={60} step={5} value={bloomTime} onChange={(e) => setBloomTime(parseInt(e.target.value))} className="flex-1 accent-sky-500" />
+              <span className="text-[11px] font-bold text-slate-700 tabular-nums w-8 text-right">{bloomTime}s</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[9px] text-slate-400 font-medium">Bloom Pour</label>
+            <div className="flex gap-1">
+              {(['gentle', 'normal', 'aggressive'] as const).map((b) => (
+                <button key={b} type="button" onClick={() => setBloomStyle(b)} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors capitalize ${bloomStyle === b ? 'bg-sky-100 text-sky-700 border-sky-300' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>{b}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="text-[9px] text-slate-500 mt-1 leading-tight">
+          {bloomTime === 0 ? 'No bloom — bed is dry when main pour starts, highest channeling risk' :
+           bloomTime < 20 ? `Short bloom (${bloomTime}s) — partial saturation, moderate stability gain` :
+           bloomTime < 40 ? `Standard bloom (${bloomTime}s) — bed well saturated, good stability` :
+           `Long bloom (${bloomTime}s) — deep saturation, max stability`}
+          {bloomStyle !== 'normal' && ` · ${bloomStyle === 'gentle' ? 'Gentle pour preserves bed structure' : 'Aggressive pour risks bed damage during bloom'}`}
+          {bloomStability > 0 && ` · Effective v reduced by ${Math.round(bloomStability * 35)}%`}
+        </div>
+      </div>
+
+      {/* Grind Adjustment plan */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-bold text-amber-800 uppercase tracking-wider">Grind</span>
+            <span className="text-[11px] font-mono text-amber-900">{grindSetting < 33 ? 'Finer' : grindSetting < 66 ? 'Neutral' : 'Coarser'}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] text-amber-700 font-mono">perm ×{permFactor.toFixed(2)}</span>
+            <span className="text-[9px] text-slate-500 font-mono">{grindNorm < 0.3 ? 'fine' : grindNorm < 0.7 ? 'medium' : 'coarse'}</span>
+          </div>
+        </div>
+        <div className="mt-1 h-1.5 bg-amber-200 rounded-full overflow-hidden">
+          <div className="h-full rounded-full transition-all duration-300" style={{ width: `${(1 - grindCoeff) * 100}%`, background: 'linear-gradient(to right, #78716c, #d97706)' }} />
+        </div>
+        <div className="flex justify-between text-[8px] text-amber-600 mt-0.5">
+          <span>Fine</span>
+          <span>Coarse</span>
         </div>
       </div>
 
@@ -278,7 +448,12 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180 }: { targetBre
       <div className="bg-slate-900 border border-slate-700 rounded-lg p-2">
         <div className="flex items-center justify-between mb-1">
           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Forchheimer Balance</span>
-          <span className="text-[9px] text-slate-500 font-mono">v = {v.toFixed(2)}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] text-slate-500 font-mono">v = {v.toFixed(2)}</span>
+            {brewerMultiplier !== 1.0 && <span className="text-[8px] text-sky-400 font-mono">×{brewerMultiplier.toFixed(2)} ({brewerType})</span>}
+            {bloomStability > 0 && <span className="text-[8px] text-sky-400 font-mono">raw {rawV.toFixed(2)}</span>}
+            {grindCoeff > 0 && <span className="text-[8px] text-amber-400 font-mono">perm ×{permFactor.toFixed(2)}</span>}
+          </div>
         </div>
         <div className="relative h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
           <div className="absolute inset-0 flex">
@@ -299,6 +474,8 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180 }: { targetBre
           setSpoutType('medium');
           setPattern('spiral');
           setPourRate(5);
+          setBloomTime(Math.min(45, Math.max(15, Math.round(targetBrewTimeSec / 6))));
+          setBloomStyle('gentle');
         }} className="mt-1.5 w-full text-[10px] font-bold text-emerald-400 bg-emerald-900/30 hover:bg-emerald-800/40 border border-emerald-700/50 rounded-md px-2 py-1 transition-colors">
           🎯 Sweet Spot for {Math.floor(targetBrewTimeSec / 60)}:{String(targetBrewTimeSec % 60).padStart(2, '0')} brew
         </button>
@@ -409,6 +586,38 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180 }: { targetBre
             </div>
           );
         })()}
+      </div>
+
+      {/* Turbulence Plan Summary */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">📋 Turbulence Plan</span>
+          <button type="button" onClick={() => {
+            const plan = {
+              pourHeight, pourRate, spoutType, pattern,
+              bloomTime, bloomStyle,
+              v: parseFloat(v.toFixed(3)),
+              rawV: parseFloat(rawV.toFixed(3)),
+              turbDominance: Math.round(turbDominance),
+              clogRisk,
+              boundaryStrip,
+              flowRegime: turbDominance < 30 ? 'Laminar (Darcy)' : turbDominance < 55 ? 'Transitional' : turbDominance < 75 ? 'Turbulent (Forchheimer)' : 'Chaotic',
+              sweetSpot,
+              bedRiskLevel,
+              targetBrewTimeSec,
+            };
+            localStorage.setItem('belkaTurbulencePlan', JSON.stringify(plan));
+            alert('✅ Turbulence plan imported to Recipe & Pour Planning');
+          }} className="text-[9px] font-bold text-emerald-600 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 rounded-md px-2 py-0.5 transition-colors">⬆ Import to Recipe</button>
+        </div>
+        <div className="grid grid-cols-3 gap-1 text-[9px] text-slate-600">
+          <div><span className="font-semibold">Pour:</span> {pourHeight}cm · {pourRate}ml/s · {spoutType} · {pattern}</div>
+          <div><span className="font-semibold">Bloom:</span> {bloomTime}s · {bloomStyle}</div>
+          <div><span className="font-semibold">v:</span> {v.toFixed(2)} <span className="text-slate-400">(raw {rawV.toFixed(2)})</span></div>
+          <div><span className="font-semibold">Turb:</span> {Math.round(turbDominance)}% · {turbDominance < 30 ? 'Laminar' : turbDominance < 55 ? 'Transitional' : turbDominance < 75 ? 'Turbulent' : 'Chaotic'}</div>
+          <div><span className="font-semibold">Bed:</span> {bedRiskLevel} · Clog {clogRisk}%</div>
+          <div><span className="font-semibold">Strip:</span> {boundaryStrip}% {sweetSpot ? '✦ Sweet spot' : ''}</div>
+        </div>
       </div>
     </div>
   );

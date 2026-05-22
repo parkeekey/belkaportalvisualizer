@@ -32,6 +32,18 @@ export interface SetupProfileHandle {
   importProfile: (profile: SetupProfileProfile) => void;
 }
 
+interface AttemptForTdsPrediction {
+  tdsActual: number;
+  grindSize?: number;
+  micron?: number;
+  ratio?: number;
+  dose?: number;
+  brewTimeSec?: number;
+  waterTemp?: number;
+  density?: number;
+  process?: string;
+}
+
 const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const recipePlanRef = React.useRef<RecipePourPlanningHandle>(null);
 
@@ -163,8 +175,75 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   });
   const [calGrindDraft, setCalGrindDraft] = useState('0');
   const [calMicronDraft, setCalMicronDraft] = useState('800');
+  const [predictGrindDraft, setPredictGrindDraft] = useState('');
+  const [predictMicronDraft, setPredictMicronDraft] = useState('');
+  const [tdsGrindDraft, setTdsGrindDraft] = useState('');
+  const [showTdsPrediction, setShowTdsPrediction] = useState(true);
+
+  const predictLinear = useCallback((points: Array<{ x: number; y: number }>, target: number) => {
+    const valid = points
+      .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
+      .sort((a, b) => a.x - b.x);
+
+    if (valid.length === 0) return null;
+    if (valid.length === 1) return valid[0].y;
+
+    const exact = valid.filter((p) => Math.abs(p.x - target) < 1e-9);
+    if (exact.length > 0) {
+      return exact.reduce((sum, p) => sum + p.y, 0) / exact.length;
+    }
+
+    let left = valid[0];
+    let right = valid[1];
+
+    if (target <= valid[0].x) {
+      return valid[0].y;
+    } else if (target >= valid[valid.length - 1].x) {
+      return valid[valid.length - 1].y;
+    } else {
+      let found = false;
+      for (let i = 0; i < valid.length - 1; i++) {
+        const a = valid[i];
+        const b = valid[i + 1];
+        if (target >= a.x && target <= b.x && Math.abs(a.x - b.x) > 1e-9) {
+          left = a;
+          right = b;
+          found = true;
+          break;
+        }
+      }
+      if (!found) return null;
+    }
+
+    if (Math.abs(right.x - left.x) < 1e-9) return null;
+    const ratio = (target - left.x) / (right.x - left.x);
+    return left.y + (right.y - left.y) * ratio;
+  }, []);
+
+  const predictedMicron = useMemo(() => {
+    const grind = parseFloat(predictGrindDraft);
+    if (!Number.isFinite(grind)) return null;
+    const raw = predictLinear(
+      grinderCalibration.map((c) => ({ x: c.grindNum, y: c.micron })),
+      grind,
+    );
+    if (raw == null) return null;
+    return Math.max(100, Math.min(1400, raw));
+  }, [grinderCalibration, predictGrindDraft, predictLinear]);
+
+  const predictedGrind = useMemo(() => {
+    const micron = parseFloat(predictMicronDraft);
+    if (!Number.isFinite(micron)) return null;
+    const raw = predictLinear(
+      grinderCalibration.map((c) => ({ x: c.micron, y: c.grindNum })),
+      micron,
+    );
+    if (raw == null) return null;
+    return Math.max(0, Math.min(100, raw));
+  }, [grinderCalibration, predictMicronDraft, predictLinear]);
+
   const MICRON_RANGES = [
-    { id: 'turkish', label: 'Turkish / Ibrik', min: 200, max: 300, mid: 250, color: 'text-purple-700 bg-purple-50 border-purple-200', note: 'Ultra-fine, powder-like.' },
+    { id: 'turkish', label: 'Turkish / Ibrik', min: 100, max: 300, mid: 220, color: 'text-purple-700 bg-purple-50 border-purple-200', note: 'Ultra-fine, powder-like.' },
     { id: 'espresso', label: 'Espresso', min: 300, max: 400, mid: 350, color: 'text-red-700 bg-red-50 border-red-200', note: 'Fine, high pressure required.' },
     { id: 'moka', label: 'Moka Pot / Fine Aeropress', min: 400, max: 500, mid: 450, color: 'text-orange-700 bg-orange-50 border-orange-200', note: 'Between espresso and pour-over.' },
     { id: 'pourover', label: 'Pour-Over / V60 / Drip', min: 500, max: 700, mid: 600, color: 'text-emerald-700 bg-emerald-50 border-emerald-200', note: 'Standard pour-over range.' },
@@ -310,6 +389,159 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     }, 1000);
     return () => clearInterval(id);
   }, []);
+
+  const tdsAttempts = useMemo(() => {
+    let attemptsRaw: unknown[] = [];
+    try {
+      attemptsRaw = JSON.parse(localStorage.getItem('belkaAttemptLog') || '[]');
+    } catch {
+      attemptsRaw = [];
+    }
+
+    const toFiniteNumber = (value: unknown): number | undefined => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : undefined;
+    };
+
+    const attempts: AttemptForTdsPrediction[] = [];
+    for (const entryUnknown of attemptsRaw) {
+      const entry = entryUnknown as Record<string, unknown>;
+      const plan = (entry.plan as Record<string, unknown> | null) ?? null;
+      const planGrinder = (plan?.grinder as Record<string, unknown> | null) ?? null;
+      const planBean = (plan?.bean as Record<string, unknown> | null) ?? null;
+      const planImpact = (plan?.brewImpact as Record<string, unknown> | null) ?? null;
+      const planBrewTime = (plan?.brewTime as Record<string, unknown> | null) ?? null;
+
+      const tds = toFiniteNumber(entry.tdsActual);
+      if (!tds || tds <= 0) continue;
+
+      const parsed: AttemptForTdsPrediction = { tdsActual: tds };
+      const grindSize = toFiniteNumber(entry.grindSize);
+      const micron = toFiniteNumber(planGrinder?.micron);
+      const ratio = toFiniteNumber(entry.brewRatio);
+      const dose = toFiniteNumber(entry.doseWeight);
+      const brewTime = toFiniteNumber(entry.brewTimeActual ?? planBrewTime?.actualSec ?? planBrewTime?.targetSec);
+      const temp = toFiniteNumber(planImpact?.temp);
+      const beanDensity = toFiniteNumber(planBean?.density);
+
+      if (grindSize !== undefined) parsed.grindSize = grindSize;
+      if (micron !== undefined) parsed.micron = micron;
+      if (ratio !== undefined) parsed.ratio = ratio;
+      if (dose !== undefined) parsed.dose = dose;
+      if (brewTime !== undefined) parsed.brewTimeSec = brewTime;
+      if (temp !== undefined) parsed.waterTemp = temp;
+      if (beanDensity !== undefined) parsed.density = beanDensity;
+      if (typeof planBean?.process === 'string') parsed.process = planBean.process;
+
+      attempts.push(parsed);
+    }
+
+    return attempts;
+  }, [recipeValues.grindSize, recipeValues.ratio, recipeValues.dose, grinderMicron, brewTimeSec, waterTemp, density, process]);
+
+  const computeTdsPredictionForRatio = useCallback((attempts: AttemptForTdsPrediction[], ratio: number, grindOverride?: number) => {
+    if (attempts.length < 2) {
+      return {
+        ready: false as const,
+        reason: 'Need at least 2 logged attempts to estimate TDS.',
+      };
+    }
+
+    const target = {
+      grindSize: Number.isFinite(grindOverride) ? grindOverride : recipeValues.grindSize,
+      micron: grinderMicron,
+      ratio,
+      dose: recipeValues.dose,
+      brewTimeSec,
+      waterTemp,
+      density,
+      process,
+    };
+
+    const scored = attempts
+      .map((a) => {
+        let dist = 0;
+        let used = 0;
+
+        const add = (av: number | undefined, tv: number | undefined, scale: number, weight = 1) => {
+          if (!Number.isFinite(av) || !Number.isFinite(tv)) return;
+          const z = (Math.abs((av as number) - (tv as number)) / scale) * weight;
+          dist += z * z;
+          used += 1;
+        };
+
+        add(a.grindSize, target.grindSize, 2, 1.4);
+        add(a.micron, target.micron, 140, 1.2);
+        add(a.ratio, target.ratio, 2, 1.3);
+        add(a.dose, target.dose, 2.5, 0.9);
+        add(a.brewTimeSec, target.brewTimeSec, 30, 0.8);
+        add(a.waterTemp, target.waterTemp, 2.5, 0.8);
+        add(a.density, target.density, 20, 0.6);
+        if (a.process && target.process && a.process !== target.process) {
+          dist += 0.7 * 0.7;
+          used += 1;
+        }
+
+        if (used === 0) return null;
+        return {
+          tds: a.tdsActual,
+          distance: Math.sqrt(dist / used),
+          used,
+        };
+      })
+      .filter((x): x is { tds: number; distance: number; used: number } => x !== null)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 8);
+
+    if (scored.length < 2) {
+      const fallbackTds = attempts.map((a) => a.tdsActual);
+      const fallbackMean = fallbackTds.reduce((sum, t) => sum + t, 0) / fallbackTds.length;
+      const fallbackVariance = fallbackTds.reduce((sum, t) => sum + Math.pow(t - fallbackMean, 2), 0) / fallbackTds.length;
+      const fallbackStdev = Math.sqrt(Math.max(0, fallbackVariance));
+      const fallbackSpread = Math.max(0.06, fallbackStdev * 1.4);
+      return {
+        ready: true as const,
+        estimated: fallbackMean,
+        min: Math.max(0, fallbackMean - fallbackSpread),
+        max: fallbackMean + fallbackSpread,
+        sampleCount: fallbackTds.length,
+        confidenceScore: 25,
+        confidenceLabel: 'Low' as const,
+      };
+    }
+
+    const weights = scored.map((s) => 1 / (0.2 + s.distance * s.distance));
+    const weightSum = weights.reduce((sum, w) => sum + w, 0);
+    const mean = scored.reduce((sum, s, i) => sum + s.tds * weights[i], 0) / weightSum;
+    const variance = scored.reduce((sum, s, i) => sum + weights[i] * Math.pow(s.tds - mean, 2), 0) / weightSum;
+    const stdev = Math.sqrt(Math.max(0, variance));
+    const avgDistance = scored.reduce((sum, s) => sum + s.distance, 0) / scored.length;
+    const spread = Math.max(0.03, stdev * 1.1 + avgDistance * 0.02);
+    const min = Math.max(0, mean - spread);
+    const max = mean + spread;
+
+    const confidenceScore = Math.min(100, Math.round((scored.length / 8) * 55 + Math.max(0, 45 - avgDistance * 35 - stdev * 110)));
+    const confidenceLabel = confidenceScore >= 75 ? 'High' : confidenceScore >= 45 ? 'Medium' : 'Low';
+
+    return {
+      ready: true as const,
+      estimated: mean,
+      min,
+      max,
+      sampleCount: scored.length,
+      confidenceScore,
+      confidenceLabel,
+    };
+  }, [recipeValues.grindSize, recipeValues.dose, grinderMicron, brewTimeSec, waterTemp, density, process]);
+
+  const tdsPrediction = useMemo(() => {
+    const grindOverride = parseFloat(tdsGrindDraft);
+    return computeTdsPredictionForRatio(
+      tdsAttempts,
+      recipeValues.ratio,
+      Number.isFinite(grindOverride) ? grindOverride : undefined,
+    );
+  }, [tdsAttempts, recipeValues.ratio, tdsGrindDraft, computeTdsPredictionForRatio]);
 
   useImperativeHandle(ref, () => ({
     exportProfile: () => ({
@@ -876,22 +1108,117 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Calibration</span>
               <div className="flex items-center gap-1">
                 <label className="text-[9px] text-slate-400">Grind #</label>
-                <input type="number" min={0} max={100} value={calGrindDraft} onChange={(e) => setCalGrindDraft(e.target.value)} onBlur={() => { const v = parseInt(calGrindDraft); if (isNaN(v) || v < 0) setCalGrindDraft('0'); else setCalGrindDraft(String(v)); }} className="w-12 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <input type="number" min={0} max={100} step={0.1} value={calGrindDraft} onChange={(e) => setCalGrindDraft(e.target.value)} onBlur={() => { const v = parseFloat(calGrindDraft); if (isNaN(v) || v < 0) setCalGrindDraft('0'); else setCalGrindDraft(String(v)); }} className="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
               </div>
               <div className="flex items-center gap-1">
                 <label className="text-[9px] text-slate-400">um</label>
-                <input type="number" min={200} max={1400} step={25} value={calMicronDraft} onChange={(e) => setCalMicronDraft(e.target.value)} onBlur={() => { const v = parseInt(calMicronDraft); if (isNaN(v) || v < 200) setCalMicronDraft('800'); else if (v > 1400) setCalMicronDraft('1400'); else setCalMicronDraft(String(v)); }} className="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <input type="number" min={100} max={1400} step={1} value={calMicronDraft} onChange={(e) => setCalMicronDraft(e.target.value)} onBlur={() => { const v = parseFloat(calMicronDraft); if (isNaN(v) || v < 100) setCalMicronDraft('800'); else if (v > 1400) setCalMicronDraft('1400'); else setCalMicronDraft(String(v)); }} className="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
               </div>
               <button type="button" onClick={() => {
-                const g = parseInt(calGrindDraft);
-                const m = parseInt(calMicronDraft);
-                if (isNaN(g) || isNaN(m) || g < 0 || m < 200) return;
+                const g = parseFloat(calGrindDraft);
+                const m = parseFloat(calMicronDraft);
+                if (isNaN(g) || isNaN(m) || g < 0 || m < 100) return;
                 const updated = [...grinderCalibration, { grindNum: g, micron: m }];
                 setGrinderCalibration(updated);
                 localStorage.setItem('belkaGrinderCal', JSON.stringify(updated));
                 setCalGrindDraft('0');
                 setCalMicronDraft('800');
               }} className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100">Record</button>
+            </div>
+            {grinderCalibration.length >= 2 && (
+              <div className="mb-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px]">
+                <div className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1.5">
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold text-sky-700 uppercase tracking-wider">Predict um from Grind #</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={predictGrindDraft}
+                      onChange={(e) => setPredictGrindDraft(e.target.value)}
+                      placeholder="e.g. 15.8"
+                      className="ml-auto w-16 px-1.5 py-0.5 text-[10px] border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400"
+                    />
+                  </div>
+                  <div className="mt-1 text-slate-600">
+                    {predictedMicron == null ? 'Enter grind # to predict.' : <>Estimated: <span className="font-bold text-sky-700 tabular-nums">{predictedMicron.toFixed(1)} um</span></>}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-violet-200 bg-violet-50 px-2 py-1.5">
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold text-violet-700 uppercase tracking-wider">Predict Grind # from um</span>
+                    <input
+                      type="number"
+                      min={100}
+                      max={1400}
+                      step={1}
+                      value={predictMicronDraft}
+                      onChange={(e) => setPredictMicronDraft(e.target.value)}
+                      placeholder="e.g. 760"
+                      className="ml-auto w-16 px-1.5 py-0.5 text-[10px] border border-violet-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    />
+                  </div>
+                  <div className="mt-1 text-slate-600">
+                    {predictedGrind == null ? 'Enter um to predict.' : <>Estimated: <span className="font-bold text-violet-700 tabular-nums">#{predictedGrind.toFixed(2)}</span></>}
+                  </div>
+                </div>
+                <div className="md:col-span-2 text-[9px] text-slate-500">
+                  More samples improve prediction quality. Supports decimal grinder values (example: 15.5, 15.8).
+                </div>
+              </div>
+            )}
+            <div className="mb-2 rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1.5 text-[10px]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-indigo-700 uppercase tracking-wider">Estimated TDS (beta)</span>
+                <div className="flex items-center gap-2">
+                  {tdsPrediction.ready && showTdsPrediction && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${
+                      tdsPrediction.confidenceLabel === 'High'
+                        ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
+                        : tdsPrediction.confidenceLabel === 'Medium'
+                        ? 'bg-amber-100 text-amber-700 border-amber-300'
+                        : 'bg-slate-100 text-slate-600 border-slate-300'
+                    }`}>
+                      {tdsPrediction.confidenceLabel} confidence ({tdsPrediction.confidenceScore}%)
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowTdsPrediction((v) => !v)}
+                    className="px-2 py-0.5 rounded border border-indigo-300 bg-white text-indigo-700 font-semibold hover:bg-indigo-100"
+                  >
+                    {showTdsPrediction ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+              {showTdsPrediction && (
+                <>
+                  <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-600">
+                    <label className="font-semibold text-indigo-700" htmlFor="tds-grind-override">What-if grind #</label>
+                    <input
+                      id="tds-grind-override"
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={tdsGrindDraft}
+                      onChange={(e) => setTdsGrindDraft(e.target.value)}
+                      placeholder={String(recipeValues.grindSize || '')}
+                      className="w-20 px-1.5 py-0.5 text-[10px] border border-indigo-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                    />
+                    <span className="text-[9px] text-slate-500">Leave blank to use current grind #{recipeValues.grindSize || 0}.</span>
+                  </div>
+                  {tdsPrediction.ready ? (
+                    <div className="mt-1 text-slate-600 leading-relaxed">
+                      Next attempt at grind <span className="font-bold text-indigo-700 tabular-nums">#{Number.isFinite(parseFloat(tdsGrindDraft)) ? parseFloat(tdsGrindDraft).toFixed(1) : recipeValues.grindSize.toFixed(1)}</span>, if you keep the same brew otherwise: <span className="font-bold text-indigo-700 tabular-nums">{tdsPrediction.min.toFixed(2)}-{tdsPrediction.max.toFixed(2)}%</span>
+                      {' '}(mid <span className="font-bold text-indigo-700 tabular-nums">{tdsPrediction.estimated.toFixed(2)}%</span>)
+                    </div>
+                  ) : (
+                    <div className="mt-1 text-slate-500">{tdsPrediction.reason}</div>
+                  )}
+                </>
+              )}
             </div>
             {grinderCalibration.length > 0 && (
               <div className="flex flex-wrap gap-1.5">

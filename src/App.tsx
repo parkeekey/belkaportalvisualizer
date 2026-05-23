@@ -3,6 +3,7 @@ import { ManualDigitizer, type ManualDigitizerHandle, type ManualDigitizerSessio
 import { InfoModal } from './components/InfoModal';
 import { UltrakokiParserPage, type UltrakokiParserPageHandle, type UltrakokiParserSessionProfile } from './components/UltrakokiParserPage';
 import SetupProfile, { type SetupProfileHandle } from './components/SetupProfile';
+import CoffeeChat from './components/CoffeeChat';
 
 type AppPage = 'digitizer' | 'ultrakoki-parser' | 'setup-profile';
 
@@ -20,6 +21,7 @@ interface BelkaWorkspaceProfile {
 function App() {
   const [showInfo, setShowInfo] = useState(false);
   const [showProfileBar, setShowProfileBar] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const digitizerRef = useRef<ManualDigitizerHandle>(null);
   const ultrakokiParserRef = useRef<UltrakokiParserPageHandle>(null);
   const setupProfileRef = useRef<SetupProfileHandle>(null);
@@ -139,6 +141,13 @@ function App() {
                 Setup
               </button>
               <button
+                onClick={() => setChatOpen(v => !v)}
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${chatOpen ? 'border-purple-300 bg-purple-100 text-purple-800' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                title="Open Brew Chat — AI brew assistant"
+              >
+                Chat
+              </button>
+              <button
                 onClick={() => setShowInfo(true)}
                 className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border border-slate-200 text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
                 title="About this app — EC, TDS, use cases, credits"
@@ -198,6 +207,60 @@ function App() {
           <SetupProfile ref={setupProfileRef} />
         </div>
       </main>
+
+      <CoffeeChat
+        externalOpen={chatOpen}
+        onExternalToggle={() => setChatOpen(v => !v)}
+        onApplyCommands={useCallback((cmds: Record<string, number>) => {
+          localStorage.setItem('belka.chatCommand', JSON.stringify(cmds));
+        }, [])}
+        onRequestContext={useCallback(() => {
+          const d = digitizerRef.current?.exportProfile();
+          const lines: string[] = [];
+          lines.push('── Current brew ──');
+          if (d) {
+            if (d.doseWeight) lines.push(`Dose: ${d.doseWeight}g`);
+            if (d.brewRatio) lines.push(`Ratio: 1:${d.brewRatio}`);
+            if (d.totalWaterIn) lines.push(`Total water: ${d.totalWaterIn}g`);
+            if (d.grinderName) lines.push(`Grinder: ${d.grinderName}`);
+            if (d.grindSize) lines.push(`Grind setting: ${d.grindSize}`);
+            if (d.micron) lines.push(`Micron: ${d.micron}µm`);
+            if (d.recipeFinishTimeSec) {
+              const m = Math.floor(d.recipeFinishTimeSec / 60);
+              const s = d.recipeFinishTimeSec % 60;
+              lines.push(`Finish time: ${m}:${s.toString().padStart(2, '0')}`);
+            }
+            if (d.importedBean?.coffeeName) {
+              lines.push(`Bean: ${d.importedBean.coffeeName}`);
+              if (d.importedBean.roastery) lines.push(`Roaster: ${d.importedBean.roastery}`);
+              if (d.importedBean.origin) lines.push(`Origin: ${d.importedBean.origin}`);
+              if (d.importedBean.process) lines.push(`Process: ${d.importedBean.process}`);
+              if (d.importedBean.roastLevel) lines.push(`Roast: ${d.importedBean.roastLevel}/5`);
+            }
+            if (d.refractometerTDSInput) lines.push(`Refractometer TDS: ${d.refractometerTDSInput}%`);
+          }
+          try {
+            const raw = localStorage.getItem('belka.chatAttemptData');
+            if (raw) {
+              const a = JSON.parse(raw);
+              lines.push('');
+              lines.push('── Selected brew attempt ──');
+              if (a.date) lines.push(`Date: ${new Date(a.date).toLocaleDateString()}`);
+              if (a.doseWeight) lines.push(`Dose: ${a.doseWeight}g`);
+              if (a.brewRatio) lines.push(`Ratio: 1:${a.brewRatio}`);
+              if (a.totalWater) lines.push(`Total water: ${a.totalWater}g`);
+              if (a.grindSize) lines.push(`Grind setting: ${a.grindSize}`);
+              if (a.tdsActual) lines.push(`TDS: ${a.tdsActual}%`);
+              if (a.ey) lines.push(`EY: ${a.ey}%`);
+              if (a.brewTimeActual) lines.push(`Brew time: ${Math.floor(a.brewTimeActual / 60)}:${(a.brewTimeActual % 60).toString().padStart(2, '0')}`);
+              if (a.tasteTags?.length) lines.push(`Taste: ${a.tasteTags.join(', ')}`);
+              if (a.liked !== null) lines.push(`Liked: ${a.liked ? 'Yes' : 'No'}`);
+              if (a.notes) lines.push(`Notes: ${a.notes}`);
+            }
+          } catch {}
+          return lines.join('\n');
+        }, [])}
+      />
     </div>
   );
 }

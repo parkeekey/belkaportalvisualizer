@@ -780,6 +780,28 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     }
   }, [isActive]);
 
+  // Chat AI app control: apply SET commands from the Brew Chat
+  useEffect(() => {
+    if (!isActive) return;
+    try {
+      const raw = localStorage.getItem('belka.chatCommand');
+      if (!raw) return;
+      localStorage.removeItem('belka.chatCommand');
+      const cmds = JSON.parse(raw);
+      if (typeof cmds.dose === 'number' && cmds.dose > 0) setDoseWeight(cmds.dose);
+      if (typeof cmds.ratio === 'number' && cmds.ratio > 0) setBrewRatio(cmds.ratio);
+      if (typeof cmds.grind === 'number' && cmds.grind >= 0) setGrindSize(cmds.grind);
+      if (typeof cmds.micron === 'number' && cmds.micron > 0) setMicron(cmds.micron);
+      if (typeof cmds.water === 'number' && cmds.water > 0) setTotalWaterIn(cmds.water);
+      if (typeof cmds.finish === 'number' && cmds.finish > 0) setRecipeFinishTimeSec(cmds.finish);
+      if (typeof cmds.temp === 'number' && cmds.temp > 0) {
+        try { localStorage.setItem('belka.chatSetTemp', String(cmds.temp)); } catch {}
+      }
+    } catch (err) {
+      console.error('Failed to apply chat command:', err);
+    }
+  }, [isActive]);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem('belkaBeanProfiles');

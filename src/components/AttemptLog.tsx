@@ -178,6 +178,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
   const [editTags, setEditTags] = useState<string[]>([]);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [graphFeedback, setGraphFeedback] = useState<string | null>(null);
+  const [chatFeedback, setChatFeedback] = useState<string | null>(null);
 
   const applyToGraph = useCallback((entry: AttemptEntry) => {
     localStorage.setItem('belka.attemptToGraph', JSON.stringify({
@@ -603,6 +604,21 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                       title="Send this attempt's targets to the Main App graph"
                     >
                       {graphFeedback === e.id ? '✓ Sent!' : '↗ Graph'}
+                    </button>
+                  )}
+
+                  {/* Send to Chat */}
+                  {!isEditing && (
+                    <button onClick={() => {
+                      localStorage.setItem('belka.chatAttemptData', JSON.stringify(e));
+                      window.dispatchEvent(new CustomEvent('belka:chat-attempt-ready', { detail: e.id }));
+                      setChatFeedback(e.id);
+                      setTimeout(() => setChatFeedback(null), 2500);
+                    }}
+                      className="px-1.5 py-1 rounded text-[9px] font-bold text-purple-600 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-colors"
+                      title="Send this attempt to the Brew Chat"
+                    >
+                      {chatFeedback === e.id ? '✓ Sent! Open Chat →' : '💬 Chat'}
                     </button>
                   )}
 

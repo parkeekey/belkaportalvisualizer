@@ -2785,6 +2785,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           currentDose={recipeValues.dose}
           currentRatio={recipeValues.ratio}
           currentTotalWater={recipeValues.water}
+          currentWaterTemp={waterTemp}
           tdsMin={parseFloat(targetTDSMin) || 0}
           tdsMax={parseFloat(targetTDSMax) || 0}
           currentTDS={currentTDS}

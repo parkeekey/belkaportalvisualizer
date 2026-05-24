@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, X, Settings, Loader2, Bot } from 'lucide-react';
+import { Send, X, Settings, Loader2, Bot, Trash2 } from 'lucide-react';
+import { getReferenceTDS, getReferenceEY } from '../utils/tdsReference';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -87,13 +88,12 @@ const MODE_STORAGE_KEY = 'belka.chatMode';
 
 type ChatMode = 'ai' | 'local';
 
+type LocalMode = 'menu' | 'symptom' | 'grinder' | 'turbulence' | 'bean' | 'recipe' | 'tds' | 'dial';
+
 interface DiagnosticState {
-  stage: 'awaiting' | 'asked_ratio' | 'asked_grind' | 'asked_temp' | 'done';
-  symptom: string;
-  ratio?: number;
-  grind?: number;
-  temp?: number;
-  time?: number;
+  mode: LocalMode;
+  step: number;
+  data: Record<string, any>;
 }
 
 function matchKeyword(text: string, keywords: string[]): boolean {
@@ -101,139 +101,865 @@ function matchKeyword(text: string, keywords: string[]): boolean {
   return keywords.some(k => lower.includes(k));
 }
 
+function extractNum(text: string, min: number, max: number): number | null {
+  const n = text.match(/[\d.]+/g)?.map(Number).find(n => n >= min && n <= max);
+  return n ?? null;
+}
+
+// Embedded process guide data (condensed from SetupProfile)
+const PROCESS_GUIDE: Record<string, { temp: number; density: number; grindImpact: string; extraction: string; waterPpm: string }> = {
+  washed: { temp: 93, density: 65, grindImpact: 'Finer grind to increase extraction', extraction: 'Standard — clarity-focused pour, moderate agitation', waterPpm: '50–80' },
+  natural: { temp: 90, density: 45, grindImpact: 'Coarser grind to control extraction', extraction: 'Low agitation — gentle pours, minimal turbulence', waterPpm: '110–130' },
+  honey: { temp: 91, density: 55, grindImpact: 'Standard grind with slight adjustments', extraction: 'Balanced — medium agitation, consistent pours', waterPpm: '80–110' },
+  anaerobic: { temp: 88, density: 40, grindImpact: 'Coarser grind to avoid over-extraction', extraction: 'Low agitation — avoid channeling, gentle swirl only', waterPpm: '60–80' },
+  lactic: { temp: 90, density: 50, grindImpact: 'Standard to slightly finer grind', extraction: 'Moderate agitation — maintain steady flow rate', waterPpm: '60–80' },
+  'carbonic-maceration': { temp: 88, density: 38, grindImpact: 'Coarser grind — very dense, slow flow', extraction: 'Very low agitation — long pre-infusion, gentle pours', waterPpm: '60–80' },
+  'co-fermented': { temp: 89, density: 42, grindImpact: 'Coarser grind — sugar content accelerates extraction', extraction: 'Low agitation — shorter ratio to control extraction', waterPpm: '70–90' },
+  koji: { temp: 89, density: 48, grindImpact: 'Standard grind — enzymatic breakdown increases solubility', extraction: 'Moderate agitation — watch for rapid extraction', waterPpm: '70–90' },
+  'thermal-shock': { temp: 87, density: 35, grindImpact: 'Finer grind — brittle beans fracture easily, watch fines', extraction: 'Low agitation — thermal stress makes beans fragile', waterPpm: '60–80' },
+};
+
+const BREWER_ADVICE: Record<string, string> = {
+  'v60': 'V60: conical, fast flow. Use spiral pours, medium-fine grind, keep pour height low (4-8cm) to avoid channeling.',
+  'v60 neo': 'V60 Neo: larger holes. Use regular paper not fast paper. Coarser grind helps slow flow. Center-pulse pattern recommended.',
+  'kalita': 'Kalita Wave: flat bottom, slower flow. Finer grind works, pulse pours help even extraction.',
+  'chemex': 'Chemex: thick filters, slowest flow. Coarser grind, long contact time. Single slow pour works best.',
+  'switch': 'Switch: hybrid brewer. Try immersion bloom (switch closed) then percolation. Great for controlling extraction.',
+};
+
+const GRIND_RANGES = {
+  'espresso': { min: 1, max: 15, note: 'Fine — like powdered sugar' },
+  'aeropress': { min: 15, max: 35, note: 'Medium-fine — like table salt' },
+  'v60': { min: 25, max: 55, note: 'Medium — like beach sand' },
+  'kalita': { min: 25, max: 50, note: 'Medium — slightly finer than V60' },
+  'chemex': { min: 40, max: 65, note: 'Medium-coarse — like kosher salt' },
+  'french press': { min: 55, max: 80, note: 'Coarse — like sea salt' },
+};
+
 function localDiagnose(text: string, state: DiagnosticState): { reply: string; newState: DiagnosticState } {
   const lower = text.toLowerCase();
 
-  // Extract numbers from text
-  const nums = lower.match(/[\d.]+/g)?.map(Number).filter(n => n > 0 && n < 1000) || [];
+  // Global commands: "menu", "back", "help"
+  if (matchKeyword(text, ['menu', 'back to menu', 'main menu', 'home'])) {
+    return {
+      reply: `╔══ Brew Assistant ══╗
+  Type a mode name to enter it:
 
-  // --- Stage: awaiting symptom ---
-  if (state.stage === 'awaiting') {
-    if (matchKeyword(text, ['hollow', 'weak', 'thin', 'watery', 'only aroma', 'no body', 'no flavour', 'dull'])) {
+  • **symptom** — Diagnose hollow, bitter, sour, etc.
+  • **grinder** — Grind size recommendations
+  • **turbulence** — Pour technique & flow advice  
+  • **bean** — Process-specific brewing guide
+  • **recipe** — Generate a new brew recipe
+  • **tds** — Quick TDS/EY lookup for any ratio
+  • **dial** — Track grind settings you've tried, log likes/dislikes, and find your sweet spot
+  • **tds** — Quick TDS/EY lookup for any ratio
+
+  Or just describe your problem and I'll match it.`,
+      newState: { mode: 'menu', step: 0, data: {} }
+    };
+  }
+
+  // Handle back from within a mode
+  if (matchKeyword(text, ['back', 'exit', 'stop'])) {
+    return {
+      reply: `Type **menu** to see all modes, or describe a new symptom.`,
+      newState: { mode: 'menu', step: 0, data: {} }
+    };
+  }
+
+  // Handle "check [something]" globally — routes to the right mode
+  if (matchKeyword(text, ['check', 'checking', 'checkup'])) {
+    if (matchKeyword(text, ['tds', 'ey', 'ratio', 'extraction'])) {
       return {
-        reply: `Sounds like under-extraction, babe. The aromatics made it through but not the solubles.
+        reply: `TDS/EY lookup — tell me the ratio and EY% or TDS% you want to check.
 
-Quick check — what's your brew time and ratio? (e.g. "2:30 at 1:16" or "1:11.5")`,
-        newState: { stage: 'asked_ratio', symptom: 'under-extracted', ...nums.length > 0 ? { ratio: nums[0] } : {} }
+Examples:
+• "tds 1:15 at 20%" — TDS for 1:15 at 20% EY
+• "ey 1:11.5 at 1.95%" — EY for 1:11.5 at 1.95% TDS
+• "range 1:11.5" — SCA TDS range for that ratio`,
+        newState: { mode: 'tds', step: 0, data: {} }
       };
     }
-    if (matchKeyword(text, ['bitter', 'dry', 'astringent', 'harsh', 'dry finish', 'tannic'])) {
+    if (matchKeyword(text, ['grind', 'grinder', 'setting', 'burr', 'micron', 'grindsize'])) {
+      if (state.mode === 'dial') {
+        return { reply: `You're already in dial mode. Say **history** to see your log, or tell me a new grind you tried.`, newState: state };
+      }
       return {
-        reply: `That bitter tail is classic over-extraction or channeling, babe.
+        reply: `**Grind Dial-In** — tell me what you've tried and whether you liked it.
 
-Are you using fast paper? What's your drawdown time? (e.g. "V60 Neo, fast paper, 1:20 total")`,
-        newState: { stage: 'asked_grind', symptom: 'over-extracted' }
+Say things like:
+• "I tried **15** and **liked** it"
+• "**17** was **too bitter**"
+• "**14** was **good**"
+
+I'll track your history, suggest the next grind to try, and show the search range + chance of finding your sweet spot.
+
+Type **reset** to clear, or **happy** when you've found it.`,
+        newState: { mode: 'dial', step: 0, data: {} }
       };
     }
-    if (matchKeyword(text, ['sour', 'sharp', 'acidic', 'under-ripe', 'unripe'])) {
+    if (matchKeyword(text, ['symptom', 'taste', 'brew'])) {
       return {
-        reply: `Sourness is under-extraction too — the acids taste sharp because sugars never extracted.
-
-What water temp are you using? And what's your ratio? (e.g. "93°C at 1:15")`,
-        newState: { stage: 'asked_temp', symptom: 'under-extracted-sour' }
+        reply: `Describe what you taste: hollow, bitter, sour, muddy, or salty?`,
+        newState: { mode: 'symptom', step: 0, data: {} }
       };
     }
-    if (matchKeyword(text, ['muddy', 'mud', 'heavy', 'too strong', 'thick'])) {
+    if (matchKeyword(text, ['recipe', 'pour', 'brew plan'])) {
       return {
-        reply: `Muddy body usually means too fine a grind or too much agitation.
+        reply: `Recipe generator — I'll build you a pour plan.
 
-What grinder and setting are you on? (e.g. "K-Ultra at 4.5")`,
-        newState: { stage: 'asked_grind', symptom: 'muddy' }
+Tell me: dose, ratio, hot or iced, and brewer. (e.g. "25g at 1:11.5 iced on V60 Neo")`,
+        newState: { mode: 'recipe', step: 1, data: {} }
       };
     }
-    if (matchKeyword(text, ['salty', 'salt'])) {
+    if (matchKeyword(text, ['turbulence', 'pour technique', 'flow'])) {
       return {
-        reply: `Salty is definitely under-extraction — the minerals come through before the sweet stuff.
-
-What ratio are you brewing at? Tighter ratios (like 1:11) can mask this.`,
-        newState: { stage: 'asked_ratio', symptom: 'under-extracted-salty' }
+        reply: `How do you pour? Describe your height, pattern, or pre-wet.`,
+        newState: { mode: 'turbulence', step: 1, data: {} }
       };
     }
-    if (matchKeyword(text, ['help', 'hello', 'hi', 'hey', 'fix', 'coffee fix', 'diagnose'])) {
+    if (matchKeyword(text, ['bean', 'process', 'roast'])) {
       return {
-        reply: `Hey babe 💕 I can help you fix your brew. Tell me what you're tasting:
+        reply: `Bean assist — brewing guide by process type.
 
-• **Hollow / weak / only aroma** → possible under-extraction
-• **Bitter / dry / astringent** → possible over-extraction or channeling
-• **Sour / sharp** → possible under-extraction
-• **Muddy / heavy** → maybe too fine
-• **Salty** → under-extraction
-
-Or just describe what's wrong and I'll walk you through it.`,
-        newState: state
+What process is your coffee? (Washed, Natural, Honey, Anaerobic, Lactic, Carbonic Maceration, Co-Fermented, Koji, Thermal Shock)`,
+        newState: { mode: 'bean', step: 1, data: {} }
       };
     }
     return {
-      reply: `I'm not sure what you're tasting, babe. Can you describe it? Words like "hollow", "bitter", "sour", "muddy", or "only aroma" help me figure it out.`,
+      reply: `Not sure what you want to check. Try **check tds**, **check grind**, **check taste**, **check recipe**, **check bean**, or **check pour**.`,
       newState: state
     };
   }
 
-  // --- Stage: asked_ratio ---
-  if (state.stage === 'asked_ratio') {
-    const ratio = nums.find(n => n >= 8 && n <= 25);
-    const timeSec = nums.find(n => n >= 30 && n <= 600);
-    if (ratio) state.ratio = ratio;
-    if (timeSec) state.time = timeSec;
+  // ── MODE: menu ──
+  if (state.mode === 'menu') {
+    if (matchKeyword(text, ['symptom', 'taste', 'bitter', 'sour', 'hollow', 'diagnose'])) {
+      return {
+        reply: `Symptom mode — describe what you're tasting and I'll help.
 
-    let reply = '';
-    if (state.symptom.includes('under-extracted')) {
-      reply = `For under-extraction, the fix is usually **grind finer** — try 2-3 clicks finer on your grinder.`;
-      if (state.ratio && state.ratio > 15) {
-        reply += `\n\nYour ratio (1:${state.ratio}) is also on the looser side — tightening to 1:14-1:15 could help. Want me to set that?`;
-      }
-      reply += `\n\nAlso check your water temp — 92-94°C for light roasts, 88-90°C for dark.`;
+(Hollow, bitter, sour, muddy, salty — or just describe it)`,
+        newState: { mode: 'symptom', step: 0, data: {} }
+      };
     }
-    reply += `\n\nTry those and report back what changes, yeah? 💕`;
-    return { reply, newState: { stage: 'done', symptom: state.symptom } };
-  }
+    if (matchKeyword(text, ['grinder', 'grind', 'setting', 'burr', 'micron'])) {
+      return {
+        reply: `Grinder assist — I'll help you find the right grind.
 
-  // --- Stage: asked_grind ---
-  if (state.stage === 'asked_grind') {
-    const grindVal = nums.find(n => n >= 1 && n <= 200);
-    if (grindVal) state.grind = grindVal;
-
-    let reply = '';
-    if (state.symptom === 'over-extracted') {
-      reply = `For over-extraction with fast flow, **grind coarser** (not finer!) to reduce channeling.`;
-      if (state.grind) {
-        reply += `\n\nTry going from ${state.grind} to ${Math.round(state.grind + 5)} and see if the bitterness drops.`;
-      }
-      reply += `\n\nAlso: lower your pour height (4-6cm), use a center-pulse pattern, and switch to regular (not fast) paper if you can.`;
-    } else if (state.symptom === 'muddy') {
-      reply = `Muddy means too fine or too much agitation.`;
-      if (state.grind) {
-        reply += `\n\nTry going from ${state.grind} to ${Math.round(state.grind + 8)} — significantly coarser.`;
-      }
-      reply += `\n\nAlso lower your pour height and use less agitation.`;
+What brew method are you using? (e.g. "V60", "Kalita", "Aeropress", "espresso")`,
+        newState: { mode: 'grinder', step: 1, data: {} }
+      };
     }
-    reply += `\n\nTry that and let me know how it goes 💕`;
-    return { reply, newState: { stage: 'done', symptom: state.symptom } };
-  }
+    if (matchKeyword(text, ['turbulence', 'pour', 'height', 'spout', 'pattern', 'flow'])) {
+      return {
+        reply: `Turbulence assist — pour technique advice.
 
-  // --- Stage: asked_temp ---
-  if (state.stage === 'asked_temp') {
-    const temp = nums.find(n => n >= 70 && n <= 100);
-    if (temp) state.temp = temp;
+What brewer are you using? (e.g. "V60", "V60 Neo", "Kalita", "Switch")`,
+        newState: { mode: 'turbulence', step: 1, data: {} }
+      };
+    }
+    if (matchKeyword(text, ['bean', 'process', 'washed', 'natural', 'anaerobic', 'roast'])) {
+      return {
+        reply: `Bean assist — brewing guide by process type.
 
-    let reply = 'For sour/under-extraction:\n\n';
-    if (state.temp && state.temp < 90) {
-      reply += `Your temp (${state.temp}°C) is a bit low. Try 92-94°C for more extraction power.`;
+What process is your coffee? (Washed, Natural, Honey, Anaerobic, Lactic, Carbonic Maceration, Co-Fermented, Koji, Thermal Shock)`,
+        newState: { mode: 'bean', step: 1, data: {} }
+      };
+    }
+    // Quick TDS lookup from menu — detect ratio pattern with EY or TDS keyword
+    const menuRatio = (() => {
+      const m = text.match(/(?:1:)?(\d{2}(?:\.\d+)?)\b/);
+      return m && parseFloat(m[1]) >= 8 ? parseFloat(m[1]) : null;
+    })();
+    if (menuRatio) {
+      const menuEy = (() => {
+        const m = text.match(/(?:(?:(\d{2}(?:\.\d+)?)\s*%\s*(?:EY|extraction))|(?:EY[:\s]+(\d{2}(?:\.\d+)?)\s*%))/i);
+        return m ? parseFloat(m[1] || m[2]) : null;
+      })();
+      const menuTds = (() => {
+        const m = text.match(/TDS[:\s]*(\d+(?:\.\d+)?)/i);
+        return m ? parseFloat(m[1]) : null;
+      })();
+      if (menuEy) {
+        const tds = getReferenceTDS(menuRatio, menuEy);
+        return { reply: `At **1:${menuRatio}** with **${menuEy}% EY** → TDS = **${tds.toFixed(2)}%**`, newState: { mode: 'menu', step: 0, data: {} } };
+      }
+      if (menuTds) {
+        const ey = getReferenceEY(menuRatio, menuTds);
+        return { reply: `At **1:${menuRatio}** with **${menuTds.toFixed(2)}% TDS** → EY = **${ey.toFixed(1)}%**`, newState: { mode: 'menu', step: 0, data: {} } };
+      }
+    }
+    if (matchKeyword(text, ['recipe', 'new recipe', 'generate', 'plan', 'pour plan'])) {
+      return {
+        reply: `Recipe generator — I'll build you a pour plan.
+
+Tell me: dose, ratio, hot or iced, and brewer. (e.g. "25g at 1:11.5 iced on V60 Neo")`,
+        newState: { mode: 'recipe', step: 1, data: {} }
+      };
+    }
+    if (matchKeyword(text, ['tds', 'ey', 'reference', 'lookup'])) {
+      // Check if they already provided ratio data in the same message
+      const tdsRatio = (() => {
+        const m = text.match(/(?:1:)?(\d{2}(?:\.\d+)?)\b/);
+        return m && parseFloat(m[1]) >= 8 ? parseFloat(m[1]) : null;
+      })();
+      if (tdsRatio) {
+        // Generate full table inline
+        const tds18 = getReferenceTDS(tdsRatio, 18);
+        const tds22 = getReferenceTDS(tdsRatio, 22);
+        const tds20 = getReferenceTDS(tdsRatio, 20);
+        const ey1_3 = getReferenceEY(tdsRatio, 1.3);
+        const ey1_35 = getReferenceEY(tdsRatio, 1.35);
+        let tab = `**TDS/EY table for 1:${tdsRatio}**\n\n`;
+        tab += `| EY | TDS |\n`;
+        tab += `|----|-----|\n`;
+        tab += `| 18% | ${tds18.toFixed(2)}% |\n`;
+        tab += `| 19% | ${getReferenceTDS(tdsRatio, 19).toFixed(2)}% |\n`;
+        tab += `| 20% | ${tds20.toFixed(2)}% |\n`;
+        tab += `| 21% | ${getReferenceTDS(tdsRatio, 21).toFixed(2)}% |\n`;
+        tab += `| 22% | ${tds22.toFixed(2)}% |\n`;
+        tab += `| 25% | ${getReferenceTDS(tdsRatio, 25).toFixed(2)}% |\n\n`;
+        tab += `SCA range: **${tds18.toFixed(2)}% – ${tds22.toFixed(2)}%**\n`;
+        tab += `At 1.30% TDS → ${ey1_3.toFixed(1)}% EY\n`;
+        tab += `At 1.35% TDS → ${ey1_35.toFixed(1)}% EY\n`;
+        return { reply: tab, newState: { mode: 'menu', step: 0, data: {} } };
+      }
+      return {
+        reply: `TDS/EY lookup — tell me the ratio and EY% or TDS% you want to check.
+
+Examples:
+• "tds 1:15 at 20%" — TDS for 1:15 at 20% EY
+• "ey 1:11.5 at 1.95%" — EY for 1:11.5 at 1.95% TDS
+• "range 1:11.5" — SCA TDS range for that ratio`,
+        newState: { mode: 'tds', step: 0, data: {} }
+      };
+    }
+    if (matchKeyword(text, ['dial', 'track', 'grind log', 'sweet spot', 'dial in'])) {
+      return {
+        reply: `**Grind Dial-In** — tell me what you've tried and whether you liked it.
+
+Say things like:
+• "I tried **15** and **liked** it"
+• "**17** was **too bitter**"
+• "**14** was **good**"
+
+I'll track your history, suggest the next grind to try, and show the search range + chance of finding your sweet spot.
+
+Type **reset** to clear, or **happy** when you've found it.`,
+        newState: { mode: 'dial', step: 0, data: {} }
+      };
+    }
+
+    // If they type a symptom directly from menu, switch to symptom mode
+    if (matchKeyword(text, ['weak', 'thin', 'watery', 'only aroma', 'no body', 'dull', 'dry', 'astringent', 'harsh', 'salty', 'muddy'])) {
+      state = { mode: 'symptom', step: 0, data: {} };
     } else {
-      reply += `Temp sounds fine, so the fix is **grind finer** — try 2-3 clicks finer.`;
+      return {
+        reply: `Not sure what you mean, babe. Try: **symptom**, **grinder**, **turbulence**, or **bean**. Or type **menu** to see options.`,
+        newState: state
+      };
     }
-    reply += `\n\nAlso check your ratio — if it's looser than 1:16, tighten it up to 1:14-1:15.`;
-    reply += `\n\nGive it a shot and let me know 💕`;
-    return { reply, newState: { stage: 'done', symptom: state.symptom } };
   }
 
-  // --- Stage: done or unknown ---
+  // ── MODE: symptom (existing flow, adapted) ──
+  if (state.mode === 'symptom') {
+    const nums = lower.match(/[\d.]+/g)?.map(Number).filter(n => n > 0 && n < 1000) || [];
+    // Parse imported context for brew data
+    const ctx = state.data.importedContext as string | undefined;
+    const ctxRatio = ctx ? (() => { const m = ctx.match(/Ratio:\s*1:([\d.]+)/); return m ? parseInt(m[1]) : null; })() : null;
+    const ctxGrind = ctx ? (() => { const m = ctx.match(/Grind setting:\s*([\d.]+)/); return m ? parseInt(m[1]) : null; })() : null;
+
+    if (state.step === 0) {
+      const ctxHint = ctxRatio ? ` (you're at 1:${ctxRatio})` : '';
+      if (matchKeyword(text, ['hollow', 'weak', 'thin', 'watery', 'only aroma', 'no body', 'no flavour', 'dull'])) {
+        return { reply: `Under-extraction. The aromatics came through but not the solubles.
+
+What's your brew time${ctxHint}? (e.g. "2:30")`, newState: { mode: 'symptom', step: 1, data: { issue: 'under', ctx } } };
+      }
+      if (matchKeyword(text, ['bitter', 'dry', 'astringent', 'harsh', 'dry finish', 'tannic'])) {
+        const grindHint = ctxGrind ? ` (grind at ${ctxGrind})` : '';
+        return { reply: `Over-extraction or channeling. That bitter tail is from uneven flow.
+
+What paper and brewer${grindHint}? Fast flow?`, newState: { mode: 'symptom', step: 1, data: { issue: 'over', ctx } } };
+      }
+      if (matchKeyword(text, ['sour', 'sharp', 'acidic', 'under-ripe'])) {
+        return { reply: `Sour means under-extraction — acids before sugars.
+
+Water temp and${ctxHint} ?`, newState: { mode: 'symptom', step: 1, data: { issue: 'sour', ctx } } };
+      }
+      if (matchKeyword(text, ['muddy', 'heavy', 'thick', 'too strong'])) {
+        const grindHint = ctxGrind ? ` (current grind: ${ctxGrind})` : '';
+        return { reply: `Too fine or too much agitation${grindHint}.
+
+What grinder setting?`, newState: { mode: 'symptom', step: 1, data: { issue: 'muddy', ctx } } };
+      }
+      if (matchKeyword(text, ['salty'])) {
+        return { reply: `Salty = under-extraction. Minerals extract first.
+
+What ratio${ctxHint}?`, newState: { mode: 'symptom', step: 1, data: { issue: 'under', ctx } } };
+      }
+      return { reply: `Describe what you taste: hollow, bitter, sour, muddy, or salty?`, newState: state };
+    }
+
+    if (state.step === 1) {
+      let reply = '';
+      const d = state.data;
+      const ctx = d.ctx as string | undefined;
+      const ctxRatio = ctx ? (() => { const m = ctx.match(/Ratio:\s*1:([\d.]+)/); return m ? parseInt(m[1]) : null; })() : null;
+      const ctxGrind = ctx ? (() => { const m = ctx.match(/Grind setting:\s*([\d.]+)/); return m ? parseInt(m[1]) : null; })() : null;
+      if (d.issue === 'under' || d.issue === 'sour') {
+        reply = `For under-extraction: **grind 2-3 clicks finer** first. That's the highest-impact change.`;
+        const ratio = nums.find(n => n >= 8 && n <= 25) || ctxRatio;
+        if (ratio && ratio > 15) reply += `\n\nYour ratio (1:${ratio}) is also loose — tightening to 1:14 helps.`;
+        reply += `\n\nWater temp: 92-94°C for light roasts, 88-90°C for dark.`;
+      } else if (d.issue === 'over') {
+        reply = `For over-extraction: **grind slightly coarser** (not finer!) to reduce channeling.`;
+        if (ctxGrind) reply += `\n\nCurrent grind: ${ctxGrind}. Try ${ctxGrind + 3}-${ctxGrind + 5}.`;
+        reply += `\n\nAlso: lower pour height to 4-6cm, center-pulse pattern, and switch to regular paper.`;
+      } else if (d.issue === 'muddy') {
+        reply = `Go **significantly coarser** — 5-8 clicks, or until the drawdown speeds up.`;
+        if (ctxGrind) reply += `\n\nFrom ${ctxGrind}, try ${ctxGrind + 5}-${ctxGrind + 8}.`;
+        reply += `\n\nLower pour height and less agitation too.`;
+      }
+      reply += `\n\nTry that and tell me how it tastes 💕`;
+      return { reply, newState: { mode: 'menu', step: 0, data: {} } };
+    }
+  }
+
+  // ── MODE: grinder ──
+  if (state.mode === 'grinder') {
+    if (state.step === 1) {
+      // Step 1: they told us the brew method
+      let method: string | null = null;
+      for (const [key] of Object.entries(GRIND_RANGES)) {
+        if (lower.includes(key)) { method = key; break; }
+      }
+      if (!method) {
+        return {
+          reply: `What method? (V60, Kalita, Chemex, Aeropress, Espresso, French Press)`,
+          newState: state
+        };
+      }
+      const range = GRIND_RANGES[method as keyof typeof GRIND_RANGES];
+      return {
+        reply: `For **${method}**: typical range is **${range.min}–${range.max}** (${range.note}).
+
+What's your current grind setting? And are you getting any specific taste issue?`,
+        newState: { mode: 'grinder', step: 2, data: { method } }
+      };
+    }
+
+    if (state.step === 2) {
+      const setting = extractNum(text, 1, 200);
+      let taste = '';
+      if (matchKeyword(text, ['bitter', 'dry'])) taste = 'over';
+      else if (matchKeyword(text, ['sour', 'hollow', 'weak'])) taste = 'under';
+      else taste = 'ok';
+
+      let reply = '';
+      if (setting) reply = `Current: **${setting}**. `;
+      if (taste === 'over') {
+        reply += `Go **coarser** by 3-5. The extractions is running too hot.`;
+      } else if (taste === 'under') {
+        reply += `Go **finer** by 2-3 clicks. Need more extraction surface.`;
+      } else {
+        reply += `If it tastes good, you're in the zone. If not, try adjusting 2 clicks at a time.`;
+      }
+      const method = state.data.method as string;
+      const range = GRIND_RANGES[method as keyof typeof GRIND_RANGES];
+      if (range) reply += `\n\nYour ${method} sweet spot is typically ${range.min}–${range.max}.`;
+      reply += `\n\nType **menu** for other tools, or describe a new symptom.`;
+      return { reply, newState: { mode: 'menu', step: 0, data: {} } };
+    }
+  }
+
+  // ── MODE: turbulence ──
+  if (state.mode === 'turbulence') {
+    if (state.step === 1) {
+      let brewer = '';
+      if (matchKeyword(text, ['v60 neo', 'neo'])) brewer = 'v60 neo';
+      else if (matchKeyword(text, ['v60', 'hario'])) brewer = 'v60';
+      else if (matchKeyword(text, ['kalita', 'wave'])) brewer = 'kalita';
+      else if (matchKeyword(text, ['chemex'])) brewer = 'chemex';
+      else if (matchKeyword(text, ['switch'])) brewer = 'switch';
+
+      if (!brewer) {
+        return { reply: `What brewer? (V60, V60 Neo, Kalita, Chemex, Switch)`, newState: state };
+      }
+      const advice = BREWER_ADVICE[brewer] || '';
+      return {
+        reply: `${advice}
+
+What pour pattern do you use? (spiral, center-pulse, single-point) And what height? (e.g. "spiral at 10cm")`,
+        newState: { mode: 'turbulence', step: 2, data: { brewer } }
+      };
+    }
+
+    if (state.step === 2) {
+      let pattern = matchKeyword(text, ['spiral']) ? 'spiral' : matchKeyword(text, ['center-pulse', 'pulse']) ? 'center-pulse' : matchKeyword(text, ['single-point', 'single']) ? 'single-point' : null;
+      const height = extractNum(text, 1, 30);
+
+      let reply = '';
+      if (pattern) reply = `**${pattern}** pattern. `;
+      if (height) reply += `Pour height **${height}cm**. `;
+
+      if ((height && height > 10) || pattern === 'single-point') {
+        reply += '\n\n⚠ That generates high turbulence — risk of channeling. Try lower height (4-6cm) and a spiral or center-pulse pattern for even extraction.';
+      } else if (pattern === 'spiral' && height && height <= 10) {
+        reply += '\n\n✓ Good balance. Spiral + moderate height = even extraction. Could try center-pulse if you get channeling.';
+      } else {
+        reply += '\n\nGeneral rule: lower height (4-8cm) + wider spout = less turbulence, fewer channels.';
+      }
+      reply += `\n\nType **menu** for other tools.`;
+      return { reply, newState: { mode: 'menu', step: 0, data: {} } };
+    }
+  }
+
+  // ── MODE: bean ──
+  if (state.mode === 'bean') {
+    if (state.step === 1) {
+      let processId: string | null = null;
+      for (const [id] of Object.entries(PROCESS_GUIDE)) {
+        if (lower.includes(id)) { processId = id; break; }
+      }
+      if (!processId) {
+        return {
+          reply: `What process? (Washed, Natural, Honey, Anaerobic, Lactic, Carbonic Maceration, Co-Fermented, Koji, Thermal Shock)`,
+          newState: state
+        };
+      }
+      const g = PROCESS_GUIDE[processId];
+      const label = processId.charAt(0).toUpperCase() + processId.slice(1).replace('-', ' ');
+      return {
+        reply: `**${label}** brewing guide:
+
+• Water temp: **${g.temp}°C**
+• Density: ${g.density}% — ${g.density < 50 ? 'light, careful with agitation' : 'dense, needs more extraction'}
+• Grind: ${g.grindImpact}
+• Method: ${g.extraction}
+• Water PPM: ${g.waterPpm}
+
+Want specific advice for this process? Ask about grind, temp, or water.`,
+        newState: { mode: 'bean', step: 2, data: { process: processId } }
+      };
+    }
+
+    if (state.step === 2) {
+      let reply = '';
+      if (matchKeyword(text, ['grind'])) {
+        const g = PROCESS_GUIDE[state.data.process as string];
+        reply = `For ${state.data.process}: ${g.grindImpact}. Try starting mid-range and adjust by taste.`;
+      } else if (matchKeyword(text, ['temp', 'temperature', 'water'])) {
+        const g = PROCESS_GUIDE[state.data.process as string];
+        reply = `For ${state.data.process}: brew at **${g.temp}°C**. Water PPM target: ${g.waterPpm}.`;
+      } else {
+        reply = `Ask me about **grind**, **temp**, or **water** for this process. Or type **menu** for other tools.`;
+      }
+      reply += `\n\nType **menu** to switch modes.`;
+      return { reply, newState: { mode: 'menu', step: 0, data: {} } };
+    }
+  }
+
+  // ── MODE: recipe ──
+  if (state.mode === 'recipe') {
+    if (state.step === 1) {
+      let dose = extractNum(text, 5, 60);
+      let ratio = extractNum(text, 8, 25);
+      const isIced = matchKeyword(text, ['ice', 'iced', 'cold']);
+
+      // Use imported context data as defaults if available
+      const ctx = state.data.importedContext as string | undefined;
+      if (!dose && ctx) {
+        const m = ctx.match(/Dose:\s*([\d.]+)g/);
+        if (m) dose = parseFloat(m[1]);
+      }
+      if (!ratio && ctx) {
+        const m = ctx.match(/Ratio:\s*1:([\d.]+)/);
+        if (m) ratio = parseInt(m[1]);
+      }
+      let brewer = '';
+      if (matchKeyword(text, ['v60 neo', 'neo'])) brewer = 'V60 Neo';
+      else if (matchKeyword(text, ['v60', 'hario'])) brewer = 'V60';
+      else if (matchKeyword(text, ['kalita', 'wave'])) brewer = 'Kalita Wave';
+      else if (matchKeyword(text, ['switch'])) brewer = 'Hario Switch';
+
+      if (!dose || !ratio) {
+        return {
+          reply: `Tell me the dose and ratio at least. (e.g. "25g at 1:11.5 iced on V60 Neo")`,
+          newState: state
+        };
+      }
+
+      const water = Math.round(dose * ratio);
+      const icePct = isIced ? 40 : 0;
+      const ice = isIced ? Math.round(water * icePct / 100) : 0;
+      const hotWater = water - ice;
+
+      let reply = `╔══ Recipe: ${dose}g × 1:${ratio} ${isIced ? '🧊 ICED' : '☕ HOT'} ══╗\n\n`;
+      reply += `Total water: **${water}g**${isIced ? `\nHot water: **${hotWater}g**\nIce: **${ice}g** (${icePct}%)` : ''}\n`;
+      reply += `Beverage: **~${water}g**\n\n`;
+
+      if (isIced) {
+        reply += `**Pour plan (iced):**\n`;
+        reply += `1. Bloom: ${Math.round(dose * 2.5)}g — 45s\n`;
+        const pours = 4;
+        const pourSize = Math.round(hotWater / pours);
+        for (let i = 0; i < pours; i++) {
+          const cumG = Math.round(pourSize * (i + 1));
+          const cumPct = Math.round((cumG / hotWater) * 100);
+          const time = i === 0 ? 45 : 30 + i * 20;
+          reply += `${i + 2}. Pour ${pourSize}g (to ${cumG}g / ${cumPct}%) — ~${time}s\n`;
+        }
+        const totalTime = Math.round(45 + pours * 25);
+        reply += `\nTarget brew time: **~${Math.floor(totalTime / 60)}:${(totalTime % 60).toString().padStart(2, '0')}**\n`;
+        // TDS/EY for iced: compute hot-side and final
+        const icedTds18 = getReferenceTDS(ratio, 18);
+        const icedTds22 = getReferenceTDS(ratio, 22);
+        const icedTds25 = getReferenceTDS(ratio, 25);
+        const hotTds18 = ratio > 0 && hotWater > 0 ? icedTds18 * water / hotWater : 0;
+        const hotTds22 = ratio > 0 && hotWater > 0 ? icedTds22 * water / hotWater : 0;
+        const hotTds25 = ratio > 0 && hotWater > 0 ? icedTds25 * water / hotWater : 0;
+        reply += `\n**Expected TDS range (target 18-22% EY):**\n`;
+        reply += `  Hot-side TDS: **${hotTds18.toFixed(2)}% – ${hotTds22.toFixed(2)}%**\n`;
+        reply += `  Final cup TDS (after ice): **${icedTds18.toFixed(2)}% – ${icedTds22.toFixed(2)}%**\n`;
+        reply += `  At 25% EY (max): hot ${hotTds25.toFixed(2)}% → final ${icedTds25.toFixed(2)}%\n`;
+      } else {
+        const pours = ratio <= 14 ? 5 : ratio <= 16 ? 4 : 3;
+        const pourSize = Math.round(water / pours);
+        reply += `**Pour plan (hot):**\n`;
+        reply += `1. Bloom: ${Math.round(dose * 2.5)}g — 30s\n`;
+        for (let i = 0; i < pours - 1; i++) {
+          reply += `${i + 2}. Pour ${pourSize}g — wait for bed to drain ~⅓\n`;
+        }
+        reply += `${pours}. Final pour — let drawdown finish\n`;
+        const totalTime = pours * 45;
+        reply += `\nTarget brew time: **~${Math.floor(totalTime / 60)}:${(totalTime % 60).toString().padStart(2, '0')}**\n`;
+        // TDS/EY for hot
+        const hotTds18 = getReferenceTDS(ratio, 18);
+        const hotTds22 = getReferenceTDS(ratio, 22);
+        const hotTds25 = getReferenceTDS(ratio, 25);
+        const approxTds = getReferenceTDS(ratio, 20);
+        reply += `\n**Expected (SCA zone, 18-22% EY):**\n`;
+        reply += `  TDS: **${hotTds18.toFixed(2)}% – ${hotTds22.toFixed(2)}%**\n`;
+        reply += `  At ~${approxTds.toFixed(2)}% TDS = **~20% EY**\n`;
+        reply += `  Max (25% EY): **${hotTds25.toFixed(2)}% TDS**\n`;
+      }
+
+      reply += `\n**Suggested grind:** medium${brewer ? ` for ${brewer}` : ''} — start mid-range and adjust\n`;
+      reply += `\nWant me to adjust anything? Or type **menu** for other tools.`;
+
+      return { reply, newState: { mode: 'menu', step: 0, data: { dose, ratio, isIced, brewer, water, hotWater, ice } } };
+    }
+  }
+
+  // ── MODE: tds ──
+  if (state.mode === 'tds') {
+    const ratioNum = (() => {
+      const m = text.match(/(?:1:)?(\d{2}(?:\.\d+)?)\b/);
+      if (m) return parseFloat(m[1]);
+      const m2 = text.match(/ratio\s*(?:of\s*)?(\d{2}(?:\.\d+)?)/i);
+      return m2 ? parseFloat(m2[1]) : null;
+    })();
+    const eyNum = (() => {
+      const m = text.match(/(?:(?:(\d{2}(?:\.\d+)?)\s*%\s*(?:EY|extraction))|(?:EY[:\s]+(\d{2}(?:\.\d+)?)\s*%))/i);
+      return m ? parseFloat(m[1] || m[2]) : null;
+    })();
+    const tdsNum = (() => {
+      const m = text.match(/(?:TDS|tds)\s*(\d+(?:\.\d+)?)\s*%/i);
+      return m ? parseFloat(m[1]) : null;
+    })();
+
+    if (state.step === 0 && ratioNum) {
+      if (eyNum && ratioNum >= 8) {
+        const tds = getReferenceTDS(ratioNum, eyNum);
+        return {
+          reply: `At **1:${ratioNum}** with **${eyNum}% EY** → TDS = **${tds.toFixed(2)}%**`,
+          newState: { mode: 'menu', step: 0, data: {} }
+        };
+      }
+      if (tdsNum && ratioNum >= 8) {
+        const ey = getReferenceEY(ratioNum, tdsNum);
+        return {
+          reply: `At **1:${ratioNum}** with **${tdsNum.toFixed(2)}% TDS** → EY = **${ey.toFixed(1)}%**`,
+          newState: { mode: 'menu', step: 0, data: {} }
+        };
+      }
+      if (matchKeyword(text, ['range']) && ratioNum >= 8) {
+        const tds18 = getReferenceTDS(ratioNum, 18);
+        const tds22 = getReferenceTDS(ratioNum, 22);
+        return {
+          reply: `At **1:${ratioNum}** SCA zone (18-22% EY): TDS **${tds18.toFixed(2)}% – ${tds22.toFixed(2)}%**`,
+          newState: { mode: 'menu', step: 0, data: {} }
+        };
+      }
+    }
+
+    if (state.step >= 0) {
+      if (ratioNum && ratioNum >= 8) {
+        const tds18 = getReferenceTDS(ratioNum, 18);
+        const tds22 = getReferenceTDS(ratioNum, 22);
+        const tds20 = getReferenceTDS(ratioNum, 20);
+        const ey1_3 = getReferenceEY(ratioNum, 1.3);
+        const ey1_35 = getReferenceEY(ratioNum, 1.35);
+        let tab = `**TDS/EY table for 1:${ratioNum}**\n\n`;
+        tab += `| EY | TDS |\n`;
+        tab += `|----|-----|\n`;
+        tab += `| 18% | ${tds18.toFixed(2)}% |\n`;
+        tab += `| 19% | ${getReferenceTDS(ratioNum, 19).toFixed(2)}% |\n`;
+        tab += `| 20% | ${tds20.toFixed(2)}% |\n`;
+        tab += `| 21% | ${getReferenceTDS(ratioNum, 21).toFixed(2)}% |\n`;
+        tab += `| 22% | ${tds22.toFixed(2)}% |\n`;
+        tab += `| 25% | ${getReferenceTDS(ratioNum, 25).toFixed(2)}% |\n\n`;
+        tab += `SCA range: **${tds18.toFixed(2)}% – ${tds22.toFixed(2)}%**\n`;
+        tab += `At 1.30% TDS → ${ey1_3.toFixed(1)}% EY\n`;
+        tab += `At 1.35% TDS → ${ey1_35.toFixed(1)}% EY\n`;
+        return { reply: tab, newState: { mode: 'menu', step: 0, data: {} } };
+      }
+      return {
+        reply: `Enter a ratio number (e.g. "1:15" or just "15") and optionally "at 20% EY" or "at 1.35% TDS".\n\nOr say **range 1:15** for the SCA zone.**`,
+        newState: state
+      };
+    }
+  }
+
+  // ── MODE: dial ──
+  if (state.mode === 'dial') {
+    const DIAL_KEY = 'belka.grindDialLog';
+
+    function getDialLog(): { grind: number; rating: 'like' | 'dislike'; note?: string }[] {
+      try { return JSON.parse(localStorage.getItem(DIAL_KEY) || '[]'); } catch { return []; }
+    }
+    function saveDialLog(entries: { grind: number; rating: 'like' | 'dislike'; note?: string }[]) {
+      localStorage.setItem(DIAL_KEY, JSON.stringify(entries));
+    }
+
+    // Reset
+    if (matchKeyword(text, ['reset', 'clear log', 'start over'])) {
+      localStorage.removeItem(DIAL_KEY);
+      return {
+        reply: `Log cleared. You're starting fresh. Tell me your next grind try.`,
+        newState: { mode: 'dial', step: 0, data: {} }
+      };
+    }
+
+    const entries = getDialLog();
+
+    // Happy — mark a favorite
+    if (matchKeyword(text, ['happy', 'found it', 'done', 'perfect', 'that\'s it'])) {
+      const nums = text.match(/[\d.]+/g)?.map(Number) || [];
+      const happyGrind = nums.find(n => n >= 1 && n <= 100);
+      if (happyGrind) {
+        // Update the liked entry to mark as final
+        const updated = entries.map(e => e.grind === happyGrind ? { ...e, note: (e.note || '') + ' ★FINAL' } : e);
+        if (!updated.some(e => e.grind === happyGrind)) {
+          updated.push({ grind: happyGrind, rating: 'like', note: '★FINAL' });
+        }
+        saveDialLog(updated);
+        return {
+          reply: `🎯 **Sweet spot saved: #${happyGrind}!** You're locked in, babe. Type **menu** when you're ready for other tools.`,
+          newState: { mode: 'dial', step: 0, data: {} }
+        };
+      }
+      // No number given — assume the most recent liked is the winner
+      const lastLiked = [...entries].reverse().find(e => e.rating === 'like');
+      if (lastLiked) {
+        const updated = entries.map(e => e.grind === lastLiked.grind ? { ...e, note: (e.note || '') + ' ★FINAL' } : e);
+        saveDialLog(updated);
+        return {
+          reply: `🎯 **Sweet spot saved: #${lastLiked.grind}!** Congrats babe! Type **menu** to switch modes.`,
+          newState: { mode: 'dial', step: 0, data: {} }
+        };
+      }
+      return {
+        reply: `You said you're happy — tell me which grind worked so I can save it. (e.g. "happy with #15")`,
+        newState: state
+      };
+    }
+
+    // History
+    if (matchKeyword(text, ['history', 'log', 'what i tried', 'show me'])) {
+      if (entries.length === 0) {
+        return { reply: `No entries yet. Tell me a grind you tried!`, newState: state };
+      }
+      let hist = `**Your grind log:**\n`;
+      for (const e of [...entries].reverse().slice(0, 20)) {
+        const icon = e.rating === 'like' ? '👍' : '👎';
+        const finalTag = e.note?.includes('★FINAL') ? ' ✓' : '';
+        hist += `  #${e.grind} ${icon}${e.note && !e.note.includes('★FINAL') ? ' — ' + e.note : ''}${finalTag}\n`;
+      }
+      return { reply: hist, newState: state };
+    }
+
+    // Parse grind numbers + sentiment
+    const grindNums = text.match(/[\d.]+/g)?.map(Number).filter(n => n >= 1 && n <= 100) || [];
+    const likeWords = ['like', 'good', 'great', 'yummy', 'nice', 'loved', 'best', 'amazing', 'smooth', 'clean', 'sweet', 'better', 'improved', 'improvement', 'improving', 'progress'];
+    const dislikeWords = ['dislike', 'bad', 'bitter', 'sour', 'harsh', 'muddy', 'weak', 'terrible', 'worst', 'awful', 'astringent', 'tannic', 'dry', 'thin', 'watery', 'salty', 'hollow', 'over', 'under', 'too fine', 'too coarse', 'channelling', 'channeling'];
+
+    const isLike = likeWords.some(w => lower.includes(w));
+    const isDislike = dislikeWords.some(w => lower.includes(w));
+
+    if (grindNums.length > 0 && (isLike || isDislike)) {
+      for (const g of grindNums) {
+        const existing = entries.findIndex(e => e.grind === g);
+        const entry = { grind: g, rating: isLike ? 'like' as const : 'dislike' as const, note: isLike ? 'liked' : 'disliked' };
+        if (existing >= 0) {
+          entries[existing] = { ...entries[existing], ...entry };
+        } else {
+          entries.push(entry);
+        }
+      }
+      saveDialLog(entries);
+
+      // Build response
+      let reply = '';
+      const liked = entries.filter(e => e.rating === 'like').map(e => e.grind).sort((a, b) => a - b);
+      const disliked = entries.filter(e => e.rating === 'dislike').map(e => e.grind).sort((a, b) => a - b);
+
+      reply += `Got it! `;
+      for (const g of grindNums) {
+        const icon = isLike ? '👍' : '👎';
+        reply += `#${g} ${icon} `;
+      }
+      reply += `\n\n`;
+
+      // Show history summary
+      if (entries.length > 0) {
+        reply += `**Log:** `;
+        for (const e of [...entries].reverse().slice(0, 10)) {
+          const icon = e.rating === 'like' ? '👍' : '👎';
+          reply += `#${e.grind}${icon} `;
+        }
+        reply += `\n\n`;
+      }
+
+      // Suggest next target
+      const minLiked = liked.length > 0 ? liked[0] : null;
+      const maxLiked = liked.length > 0 ? liked[liked.length - 1] : null;
+      const upperDislike = disliked.length > 0 && maxLiked !== null ? disliked.find(d => d > maxLiked) : null;
+      const lowerDislike = disliked.length > 0 && minLiked !== null ? [...disliked].reverse().find(d => d < minLiked) : null;
+      const targetRange = state.data.targetRange as { min: number; max: number } | undefined;
+
+      const rangeMin = lowerDislike != null ? lowerDislike : (targetRange ? targetRange.min : (minLiked != null ? minLiked - 2 : 1));
+      const rangeMax = upperDislike != null ? upperDislike : (targetRange ? targetRange.max : (maxLiked != null ? maxLiked + 2 : 100));
+      const triedSet = new Set(entries.map(e => e.grind));
+
+      let target: number | null = null;
+      if (maxLiked != null && upperDislike != null) {
+        // Bracketed above — try midpoint
+        target = Math.round((maxLiked + upperDislike) / 2 * 2) / 2;
+      } else if (minLiked != null && lowerDislike != null) {
+        // Bracketed below — try midpoint
+        target = Math.round((lowerDislike + minLiked) / 2 * 2) / 2;
+      } else if (maxLiked != null) {
+        // Only likes — suggest one step finer
+        target = Math.round((maxLiked + 1) * 2) / 2;
+      }
+
+      // Adjust if already tried
+      if (target !== null) {
+        const triedAdjs = [0, 0.5, 1, 1.5, 2, -0.5, -1, -1.5, -2];
+        for (const adj of triedAdjs) {
+          const candidate = Math.round((target + adj) * 2) / 2;
+          if (!triedSet.has(candidate) && candidate >= rangeMin && candidate <= rangeMax) {
+            target = candidate;
+            break;
+          }
+        }
+        if (triedSet.has(target)) target = null; // all options exhausted
+      }
+
+      // Calculate chance %
+      const totalInRange = Math.round((rangeMax - rangeMin) * 2) + 1; // slots at 0.5 increments
+      const triedInRange = entries.filter(e => e.grind >= rangeMin && e.grind <= rangeMax).length;
+      const remaining = Math.max(1, totalInRange - triedInRange);
+      const confidence = 100 - Math.round((liked.length > 0 ? (remaining / totalInRange) * 50 : 70));
+      const chance = Math.min(95, Math.max(5, confidence));
+
+      if (target !== null) {
+        reply += `**Next try: #${target.toFixed(1)}**\n`;
+        reply += `Range: **${rangeMin.toFixed(1)} – ${rangeMax.toFixed(1)}** | Chance: **~${chance}%**\n`;
+        reply += `\nTell me how it goes! Or say **history**, **reset**, or **happy with #X**.`;
+      } else if (liked.length > 0 && disliked.length > 0 && maxLiked !== null && upperDislike !== null && maxLiked === upperDislike! - 1) {
+        const finalGrind = liked.length > 0 ? liked[liked.length - 1] : null;
+        reply += `Looks like **#${finalGrind}** might be your sweet spot! Say **happy with #${finalGrind}** to lock it in. 💕`;
+      } else {
+        reply += `Tell me another grind you tried and I'll help narrow it down.`;
+      }
+
+      return { reply, newState: state };
+    }
+
+    // User is talking about range/target, not a new try
+    if (matchKeyword(text, ['range', 'target', 'next', 'recommend', 'suggest'])) {
+      const rangeNums = text.match(/[\d.]+/g)?.map(Number).filter((n, i, a) => n >= 1 && n <= 100 && (a.length === 1 || i < 2)) || [];
+      // If user gave numbers with "range" — treat as setting their target range
+      if (rangeNums.length >= 2) {
+        const rMin = Math.min(rangeNums[0], rangeNums[1]);
+        const rMax = Math.max(rangeNums[0], rangeNums[1]);
+        let confirm = `**Target range set: ${rMin.toFixed(1)} – ${rMax.toFixed(1)}**`;
+        if (entries.length > 0) {
+          confirm += `\nLog history: `;
+          for (const e of [...entries].reverse().slice(0, 10)) {
+            confirm += `#${e.grind}${e.rating === 'like' ? '👍' : '👎'} `;
+          }
+        }
+        confirm += `\nTry a grind in that zone and tell me how it tastes 💕`;
+        return { reply: confirm, newState: { mode: 'dial', step: 0, data: { targetRange: { min: rMin, max: rMax } } } };
+      }
+      if (rangeNums.length === 1) {
+        // Single number — treat as target, set range around it
+        const center = rangeNums[0];
+        return { reply: `**Target set: #${center}** — range around **${(center - 1).toFixed(1)} – ${(center + 1).toFixed(1)}**. Try it and let me know!`, newState: { mode: 'dial', step: 0, data: { targetRange: { min: center - 1, max: center + 1 } } } };
+      }
+      // No numbers — show computed range from log
+      if (entries.length === 0) {
+        return { reply: `You haven't tried anything yet. Say **range 13-14** to set a target range, then tell me how it tastes!`, newState: state };
+      }
+      const liked = entries.filter(e => e.rating === 'like').map(e => e.grind).sort((a, b) => a - b);
+      const disliked = entries.filter(e => e.rating === 'dislike').map(e => e.grind).sort((a, b) => a - b);
+      const maxLiked = liked.length > 0 ? liked[liked.length - 1] : null;
+      const minLiked = liked.length > 0 ? liked[0] : null;
+      const upperDislike = disliked.length > 0 && maxLiked != null ? disliked.find(d => d > maxLiked) : null;
+      const lowerDislike = disliked.length > 0 && minLiked != null ? [...disliked].reverse().find(d => d < minLiked) : null;
+      const targetRange = state.data.targetRange as { min: number; max: number } | undefined;
+      const rangeMin = lowerDislike != null ? lowerDislike : (targetRange ? targetRange.min : (minLiked != null ? minLiked - 2 : 1));
+      const rangeMax = upperDislike != null ? upperDislike : (targetRange ? targetRange.max : (maxLiked != null ? maxLiked + 2 : 100));
+      let hist = `**Your grind log:** `;
+      for (const e of [...entries].reverse().slice(0, 10)) {
+        hist += `#${e.grind}${e.rating === 'like' ? '👍' : '👎'} `;
+      }
+      hist += `\n\n`;
+      if (upperDislike != null && maxLiked != null) {
+        const target = Math.round((maxLiked + upperDislike) / 2 * 2) / 2;
+        hist += `**Try next: #${target.toFixed(1)}** | Range: **${rangeMin.toFixed(1)} – ${rangeMax.toFixed(1)}**`;
+      } else if (maxLiked != null) {
+        hist += `Try going finer. Range: **${rangeMin.toFixed(1)} – ${rangeMax.toFixed(1)}**`;
+      } else {
+        hist += `Tell me a grind you tried and I can recommend a range.`;
+      }
+      return { reply: hist, newState: state };
+    }
+
+    // User said a number but no rating
+    if (grindNums.length > 0) {
+      return {
+        reply: `How was #${grindNums[0]}? Like it or dislike it?`,
+        newState: state
+      };
+    }
+
+    return {
+      reply: `Tell me a grind you tried and how it was (e.g. "**15 liked**" or "**17 was bitter**").\n\nOr say **history**, **reset**, or **happy with #X**.`,
+      newState: state
+    };
+  }
+
+  // Fallback
   return {
-    reply: `Want to diagnose another symptom? Describe what you're tasting and I'll help.`,
-    newState: { stage: 'awaiting', symptom: '' }
+    reply: `Type **menu** to see available modes: symptom, grinder, turbulence, bean, recipe, tds, dial.`,
+    newState: { mode: 'menu', step: 0, data: {} }
   };
 }
-
 export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestContext, onApplyCommands }: CoffeeChatProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -260,7 +986,7 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
   const [allowControl, setAllowControl] = useState(() => localStorage.getItem(CONTROL_STORAGE_KEY) === 'true');
   const [cmdFeedback, setCmdFeedback] = useState('');
   const [chatMode, setChatMode] = useState<ChatMode>(() => (localStorage.getItem(MODE_STORAGE_KEY) as ChatMode) || 'ai');
-  const [diagnostic, setDiagnostic] = useState<DiagnosticState>({ stage: 'awaiting', symptom: '' });
+  const [diagnostic, setDiagnostic] = useState<DiagnosticState>({ mode: 'menu', step: 0, data: {} });
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -298,7 +1024,17 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
     if (open && messages.length === 0) {
       setMessages([{
         role: 'assistant',
-        content: "Hey babe. 💕 I'm your brew assistant. Tell me what you're working on — dose, ratio, grind, how it's tasting — and I'll help you dial it in. Or just ask me anything about your brew."
+        content: chatMode === 'local'
+          ? `Hey babe 💕 I'm your brew assistant in **local mode**. Type a mode name to start:
+
+• **symptom** — Diagnose hollow, bitter, sour, etc.
+• **grinder** — Grind size recommendations
+• **turbulence** — Pour technique & flow advice
+• **bean** — Process-specific brewing guide
+• **recipe** — Generate a new brew recipe
+
+Or just describe what you're tasting.`
+          : "Hey babe. 💕 I'm your brew assistant. Tell me what you're working on — dose, ratio, grind, how it's tasting — and I'll help you dial it in. Or just ask me anything about your brew."
       }]);
     }
   }, [open, messages.length]);
@@ -382,6 +1118,13 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
     if (!text || loading) return;
     setInput('');
 
+    // Global reset commands — go back to the very first welcome message
+    if (matchKeyword(text, ['exit', 'quit', 'im done', "i'm done", 'done for now', 'back to start', 'start over', 'restart'])) {
+      setMessages([]);
+      setDiagnostic({ mode: 'menu', step: 0, data: {} });
+      return;
+    }
+
     if (chatMode === 'local') {
       setMessages(prev => [...prev, { role: 'user', content: text }]);
       const { reply, newState } = localDiagnose(text, diagnostic);
@@ -442,7 +1185,14 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
                     const updatedMessages = [...messages, newMsg];
                     setMessages(updatedMessages);
                     setInput('');
-                    sendToAI(msg, updatedMessages);
+                    if (chatMode === 'local') {
+                      setDiagnostic({ mode: 'menu', step: 0, data: { importedContext: ctx } });
+                      setTimeout(() => {
+                        setMessages(prev => [...prev, { role: 'assistant', content: `Got your brew data, babe 💕\n\n${ctx}\n\nWhat would you like to do? Try **symptom**, **grinder**, **turbulence**, **bean**, or **recipe** — I'll use your actual numbers.` }]);
+                      }, 50);
+                    } else {
+                      sendToAI(msg, updatedMessages);
+                    }
                   }}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                   title="Import current brew data into chat"
@@ -462,14 +1212,14 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
                 className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                 title="Clear chat"
               >
-                <X className="w-4 h-4" />
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* Settings panel */}
           {showSettings && (
-            <div className="px-4 py-3 border-b border-slate-200 bg-amber-50/50 text-xs space-y-2">
+            <div className="px-4 py-3 border-b border-slate-200 bg-amber-50/50 text-xs max-h-[260px] overflow-y-auto space-y-2">
               <label className="block">
                 <span className="font-semibold text-slate-700">Gemini API Key</span>
                 <div className="mt-1 flex gap-1.5">
@@ -520,7 +1270,7 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
                   <p className="text-[9px] text-slate-400">{chatMode === 'ai' ? 'AI (Gemini)' : 'Local (no API needed)'}</p>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => { setChatMode('local'); setDiagnostic({ stage: 'awaiting', symptom: '' }); }}
+                  <button onClick={() => { setChatMode('local'); setDiagnostic({ mode: 'menu', step: 0, data: {} }); }}
                     className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-colors ${chatMode === 'local' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
                     Local
                   </button>

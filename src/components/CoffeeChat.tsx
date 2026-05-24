@@ -83,6 +83,156 @@ const MODELS = [
 ] as const;
 
 const CONTROL_STORAGE_KEY = 'belka.chatAllowControl';
+const MODE_STORAGE_KEY = 'belka.chatMode';
+
+type ChatMode = 'ai' | 'local';
+
+interface DiagnosticState {
+  stage: 'awaiting' | 'asked_ratio' | 'asked_grind' | 'asked_temp' | 'done';
+  symptom: string;
+  ratio?: number;
+  grind?: number;
+  temp?: number;
+  time?: number;
+}
+
+function matchKeyword(text: string, keywords: string[]): boolean {
+  const lower = text.toLowerCase();
+  return keywords.some(k => lower.includes(k));
+}
+
+function localDiagnose(text: string, state: DiagnosticState): { reply: string; newState: DiagnosticState } {
+  const lower = text.toLowerCase();
+
+  // Extract numbers from text
+  const nums = lower.match(/[\d.]+/g)?.map(Number).filter(n => n > 0 && n < 1000) || [];
+
+  // --- Stage: awaiting symptom ---
+  if (state.stage === 'awaiting') {
+    if (matchKeyword(text, ['hollow', 'weak', 'thin', 'watery', 'only aroma', 'no body', 'no flavour', 'dull'])) {
+      return {
+        reply: `Sounds like under-extraction, babe. The aromatics made it through but not the solubles.
+
+Quick check — what's your brew time and ratio? (e.g. "2:30 at 1:16" or "1:11.5")`,
+        newState: { stage: 'asked_ratio', symptom: 'under-extracted', ...nums.length > 0 ? { ratio: nums[0] } : {} }
+      };
+    }
+    if (matchKeyword(text, ['bitter', 'dry', 'astringent', 'harsh', 'dry finish', 'tannic'])) {
+      return {
+        reply: `That bitter tail is classic over-extraction or channeling, babe.
+
+Are you using fast paper? What's your drawdown time? (e.g. "V60 Neo, fast paper, 1:20 total")`,
+        newState: { stage: 'asked_grind', symptom: 'over-extracted' }
+      };
+    }
+    if (matchKeyword(text, ['sour', 'sharp', 'acidic', 'under-ripe', 'unripe'])) {
+      return {
+        reply: `Sourness is under-extraction too — the acids taste sharp because sugars never extracted.
+
+What water temp are you using? And what's your ratio? (e.g. "93°C at 1:15")`,
+        newState: { stage: 'asked_temp', symptom: 'under-extracted-sour' }
+      };
+    }
+    if (matchKeyword(text, ['muddy', 'mud', 'heavy', 'too strong', 'thick'])) {
+      return {
+        reply: `Muddy body usually means too fine a grind or too much agitation.
+
+What grinder and setting are you on? (e.g. "K-Ultra at 4.5")`,
+        newState: { stage: 'asked_grind', symptom: 'muddy' }
+      };
+    }
+    if (matchKeyword(text, ['salty', 'salt'])) {
+      return {
+        reply: `Salty is definitely under-extraction — the minerals come through before the sweet stuff.
+
+What ratio are you brewing at? Tighter ratios (like 1:11) can mask this.`,
+        newState: { stage: 'asked_ratio', symptom: 'under-extracted-salty' }
+      };
+    }
+    if (matchKeyword(text, ['help', 'hello', 'hi', 'hey', 'fix', 'coffee fix', 'diagnose'])) {
+      return {
+        reply: `Hey babe 💕 I can help you fix your brew. Tell me what you're tasting:
+
+• **Hollow / weak / only aroma** → possible under-extraction
+• **Bitter / dry / astringent** → possible over-extraction or channeling
+• **Sour / sharp** → possible under-extraction
+• **Muddy / heavy** → maybe too fine
+• **Salty** → under-extraction
+
+Or just describe what's wrong and I'll walk you through it.`,
+        newState: state
+      };
+    }
+    return {
+      reply: `I'm not sure what you're tasting, babe. Can you describe it? Words like "hollow", "bitter", "sour", "muddy", or "only aroma" help me figure it out.`,
+      newState: state
+    };
+  }
+
+  // --- Stage: asked_ratio ---
+  if (state.stage === 'asked_ratio') {
+    const ratio = nums.find(n => n >= 8 && n <= 25);
+    const timeSec = nums.find(n => n >= 30 && n <= 600);
+    if (ratio) state.ratio = ratio;
+    if (timeSec) state.time = timeSec;
+
+    let reply = '';
+    if (state.symptom.includes('under-extracted')) {
+      reply = `For under-extraction, the fix is usually **grind finer** — try 2-3 clicks finer on your grinder.`;
+      if (state.ratio && state.ratio > 15) {
+        reply += `\n\nYour ratio (1:${state.ratio}) is also on the looser side — tightening to 1:14-1:15 could help. Want me to set that?`;
+      }
+      reply += `\n\nAlso check your water temp — 92-94°C for light roasts, 88-90°C for dark.`;
+    }
+    reply += `\n\nTry those and report back what changes, yeah? 💕`;
+    return { reply, newState: { stage: 'done', symptom: state.symptom } };
+  }
+
+  // --- Stage: asked_grind ---
+  if (state.stage === 'asked_grind') {
+    const grindVal = nums.find(n => n >= 1 && n <= 200);
+    if (grindVal) state.grind = grindVal;
+
+    let reply = '';
+    if (state.symptom === 'over-extracted') {
+      reply = `For over-extraction with fast flow, **grind coarser** (not finer!) to reduce channeling.`;
+      if (state.grind) {
+        reply += `\n\nTry going from ${state.grind} to ${Math.round(state.grind + 5)} and see if the bitterness drops.`;
+      }
+      reply += `\n\nAlso: lower your pour height (4-6cm), use a center-pulse pattern, and switch to regular (not fast) paper if you can.`;
+    } else if (state.symptom === 'muddy') {
+      reply = `Muddy means too fine or too much agitation.`;
+      if (state.grind) {
+        reply += `\n\nTry going from ${state.grind} to ${Math.round(state.grind + 8)} — significantly coarser.`;
+      }
+      reply += `\n\nAlso lower your pour height and use less agitation.`;
+    }
+    reply += `\n\nTry that and let me know how it goes 💕`;
+    return { reply, newState: { stage: 'done', symptom: state.symptom } };
+  }
+
+  // --- Stage: asked_temp ---
+  if (state.stage === 'asked_temp') {
+    const temp = nums.find(n => n >= 70 && n <= 100);
+    if (temp) state.temp = temp;
+
+    let reply = 'For sour/under-extraction:\n\n';
+    if (state.temp && state.temp < 90) {
+      reply += `Your temp (${state.temp}°C) is a bit low. Try 92-94°C for more extraction power.`;
+    } else {
+      reply += `Temp sounds fine, so the fix is **grind finer** — try 2-3 clicks finer.`;
+    }
+    reply += `\n\nAlso check your ratio — if it's looser than 1:16, tighten it up to 1:14-1:15.`;
+    reply += `\n\nGive it a shot and let me know 💕`;
+    return { reply, newState: { stage: 'done', symptom: state.symptom } };
+  }
+
+  // --- Stage: done or unknown ---
+  return {
+    reply: `Want to diagnose another symptom? Describe what you're tasting and I'll help.`,
+    newState: { stage: 'awaiting', symptom: '' }
+  };
+}
 
 export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestContext, onApplyCommands }: CoffeeChatProps) {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -109,6 +259,8 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
   const [modelId, setModelId] = useState(() => localStorage.getItem(MODEL_STORAGE_KEY) || MODELS[0].id);
   const [allowControl, setAllowControl] = useState(() => localStorage.getItem(CONTROL_STORAGE_KEY) === 'true');
   const [cmdFeedback, setCmdFeedback] = useState('');
+  const [chatMode, setChatMode] = useState<ChatMode>(() => (localStorage.getItem(MODE_STORAGE_KEY) as ChatMode) || 'ai');
+  const [diagnostic, setDiagnostic] = useState<DiagnosticState>({ stage: 'awaiting', symptom: '' });
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -137,6 +289,10 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
   useEffect(() => {
     try { localStorage.setItem(CONTROL_STORAGE_KEY, String(allowControl)); } catch {}
   }, [allowControl]);
+
+  useEffect(() => {
+    try { localStorage.setItem(MODE_STORAGE_KEY, chatMode); } catch {}
+  }, [chatMode]);
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -175,7 +331,7 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents,
-            generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+            generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
           })
         }
       );
@@ -225,6 +381,15 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
     const text = input.trim();
     if (!text || loading) return;
     setInput('');
+
+    if (chatMode === 'local') {
+      setMessages(prev => [...prev, { role: 'user', content: text }]);
+      const { reply, newState } = localDiagnose(text, diagnostic);
+      setDiagnostic(newState);
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+      return;
+    }
+
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     await sendToAI(text);
   };
@@ -351,6 +516,23 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
               </div>
               <div className="flex items-center justify-between pt-1 border-t border-amber-200/50">
                 <div>
+                  <span className="font-semibold text-slate-700">Mode</span>
+                  <p className="text-[9px] text-slate-400">{chatMode === 'ai' ? 'AI (Gemini)' : 'Local (no API needed)'}</p>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => { setChatMode('local'); setDiagnostic({ stage: 'awaiting', symptom: '' }); }}
+                    className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-colors ${chatMode === 'local' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                    Local
+                  </button>
+                  <button onClick={() => setChatMode('ai')}
+                    className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-colors ${chatMode === 'ai' ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                    AI
+                  </button>
+                </div>
+              </div>
+              {chatMode === 'ai' && (
+              <div className="flex items-center justify-between pt-1 border-t border-amber-200/50">
+                <div>
                   <span className="font-semibold text-slate-700">App Control</span>
                   <p className="text-[9px] text-slate-400">Let AI change dose, ratio, grind, temp</p>
                 </div>
@@ -359,6 +541,7 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
                   <div className="w-8 h-4.5 bg-slate-300 peer-checked:bg-amber-500 rounded-full peer-checked:after:translate-x-[14px] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all" />
                 </label>
               </div>
+              )}
               {cmdFeedback && (
                 <p className="text-[10px] text-emerald-600 font-semibold text-center">{cmdFeedback}</p>
               )}
@@ -415,7 +598,7 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
                 <Send className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-[9px] text-slate-400 mt-1 text-center">Powered by Gemini · Key stored locally</p>
+            <p className="text-[9px] text-slate-400 mt-1 text-center">{chatMode === 'ai' ? 'Free tier: 1,500 req/day · 4K tokens/response' : 'Local mode — no API needed'}</p>
           </div>
         </div>
       )}

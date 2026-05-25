@@ -147,7 +147,7 @@ function analyzeCurve(points: ECReading[], redLightThreshold?: number): CurveAna
 const BASE_W = 280, BASE_H = 90, PAD = 6;
 
 function MiniECChart(
-  { sorted, peak, currentTime, currentEC, brewTimeSec, redLightThreshold, getPhase,
+  { sorted, peak, currentTime, currentEC, brewTimeSec, redLightThreshold, getPhase, getEC,
     chartZoom, chartPan, onZoomChange, onPanChange, referencePoints, onSeek }:
     {
       sorted: ECReading[];
@@ -157,6 +157,7 @@ function MiniECChart(
       brewTimeSec: number;
       redLightThreshold?: number;
       getPhase: (t: number) => string;
+      getEC: (t: number) => number;
       chartZoom: number;
       chartPan: number;
       onZoomChange: (z: number) => void;
@@ -219,14 +220,10 @@ function MiniECChart(
     if (!svg) { setTooltipPoint(null); return; }
     const rect = svg.getBoundingClientRect();
     const scaleX = rect.width / W;
-    const scaleY = rect.height / H;
     const vbX = (e.clientX - rect.left) / scaleX;
-    const vbY = (e.clientY - rect.top) / scaleY;
     const clampedX = Math.max(PAD, Math.min(W - PAD, vbX));
-    const clampedY = Math.max(PAD, Math.min(H - PAD, vbY));
     const timeAt = xStart + ((clampedX - PAD) / (W - 2 * PAD)) * visibleRange;
-    const ecAt = ecMax * (1 - (clampedY - PAD) / (H - 2 * PAD));
-    setTooltipPoint({ timeSec: Math.max(0, Math.min(brewTimeSec, timeAt)), ec: Math.max(0, ecAt) });
+    setTooltipPoint({ timeSec: Math.max(0, Math.min(brewTimeSec, timeAt)), ec: getEC(Math.max(0, Math.min(brewTimeSec, timeAt))) });
   };
   const handleMouseUp = () => {
     dragRef.current.dragging = false;
@@ -693,6 +690,7 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
           brewTimeSec={brewTimeSec}
           redLightThreshold={redLightThreshold}
           getPhase={analysis.getPhase}
+          getEC={analysis.getEC}
           chartZoom={chartZoom}
           chartPan={chartPan}
           onZoomChange={setChartZoom}

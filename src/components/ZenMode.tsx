@@ -340,6 +340,18 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const noteElsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const [showTagPicker, setShowTagPicker] = useState<string | null>(null);
   const [selectedArrow, setSelectedArrow] = useState<string | null>(null);
+  const [expandedChain, setExpandedChain] = useState<string | null>(null);
+
+  // Auto-expand first priority when 💡 opens, clear when it closes
+  useEffect(() => {
+    if (selectedArrow) {
+      const n = notes.find(x => x.id === selectedArrow);
+      const m = n?.tag ? MECHANISM_KNOWLEDGE[n.tag] : null;
+      if (m?.priority?.[0]) setExpandedChain(`${selectedArrow}:${m.priority[0]}`);
+    } else {
+      setExpandedChain(null);
+    }
+  }, [selectedArrow]);
   const [, setScrollTick] = useState(0);
   const mouseRef = useRef({ x: 0, y: 0 });
 
@@ -795,95 +807,77 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       ) : null}
 
                       {/* Mechanism knowledge details */}
-                      {mech ? (() => {
-                        const primary = mech.priority[0];
-                        const primaryF = FOUNDATIONS.find(f => f.id === primary);
-                        const primaryLink = primary ? mech.foundations[primary] : null;
-                        return (
-                          <>
-                            <div className="text-[8px] font-semibold text-slate-500 mb-0.5">{mech.mechanism}</div>
-                            <p className="text-[7px] text-slate-400 leading-relaxed mb-1">{mech.summary}</p>
-                            {/* Priority chain */}
-                            {!dir && (
-                              <div className="flex items-center gap-0.5 mb-1 flex-wrap">
-                                <span className="text-[6px] text-slate-400 uppercase mr-0.5">Check:</span>
-                                {mech.priority.map((fid, i) => {
-                                  const f = FOUNDATIONS.find(ff => ff.id === fid);
-                                  if (!f) return null;
-                                  return (
-                                    <span key={fid} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
-                                      style={{ backgroundColor: f.color + '15', color: f.color }}
-                                    >{i === 0 ? '① ' : i === 1 ? '② ' : i === 2 ? '③ ' : '④ '}{f.label}</span>
-                                  );
-                                })}
-                              </div>
-                            )}
-                            {/* Primary recommendation with causal chain */}
-                            {primaryF && primaryLink && (
-                              <div className="bg-blue-50 border border-blue-100 rounded px-1.5 py-1 mb-1">
-                                <div className="flex items-center gap-1 mb-0.5">
-                                  <span className="text-[7px] font-bold text-blue-700">① {primaryF.label}</span>
-                                  <span className="text-[6px] text-blue-500 font-medium">sub: {primaryLink.subTopic ?? primaryLink.explanation.split(' ').slice(0, 3).join(' ') + '...'}</span>
-                                </div>
-                                <div className="text-[7px] text-blue-600 mb-0.5">
-                                  <div className="text-center font-semibold text-blue-500 text-[6px] uppercase tracking-wider mb-0.5">Causal chain</div>
-                                  <div className="flex flex-col items-center gap-0">
-                                    {primaryLink.causalChain?.split('→').map((step, si) => (
-                                      <span key={si} className="flex flex-col items-center">
-                                        {si > 0 && <span className="block text-blue-300 text-[9px] leading-none">↓</span>}
-                                        <span className="block text-center px-1 py-0.5 rounded-sm bg-blue-100/60 text-blue-700 font-medium leading-tight">{step.trim()}</span>
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div className="text-[7px] text-blue-500 italic">
-                                  <span className="font-medium">Try:</span> {primaryLink.experiment}
-                                </div>
-                                {primaryLink.whyNot && (
-                                  <p className="text-[6px] text-blue-400 italic mt-0.5">↳ {primaryLink.whyNot}</p>
-                                )}
-                                {primaryLink.tell && (
-                                  <p className="text-[6px] text-amber-600 mt-0.5 font-medium">⚡ {primaryLink.tell}</p>
-                                )}
-                              </div>
-                            )}
-                            {/* Quick secondary chain hints */}
-                            {mech.priority.slice(1, 3).map((fid, i) => {
-                              const f = FOUNDATIONS.find(ff => ff.id === fid);
-                              const link = mech.foundations[fid];
-                              if (!f || !link) return null;
-                              return (
-                                <div key={fid} className="flex items-start gap-1 mb-0.5">
-                                  <span className="text-[7px] font-semibold shrink-0 mt-0.5" style={{ color: f.color }}>{i === 0 ? '②' : '③'}</span>
-                                  <div className="text-[7px] text-slate-500 leading-tight">
-                                    <span className="font-medium">{f.label}</span>
-                                    <span className="text-slate-400"> · sub: {link.subTopic ?? '—'}</span>
-                                    <br />
-                                    <span className="text-slate-400 not-italic">
-                                      {link.causalChain ? (() => {
-                                        const steps = link.causalChain.split('→');
-                                        const shown = steps.slice(0, 2);
-                                        return (
-                                          <span className="flex flex-col items-start gap-0">
-                                            {shown.map((step, si) => (
-                                              <span key={si} className="flex flex-col items-start">
-                                                {si > 0 && <span className="text-slate-300 text-[8px] leading-none">↓</span>}
-                                                <span className="text-[6px] bg-slate-100 rounded-sm px-1 py-0.5 text-slate-600">{step.trim()}</span>
-                                              </span>
-                                            ))}
-                                            {steps.length > 2 && <span className="text-slate-300 text-[8px] leading-tight">↓ ...</span>}
-                                          </span>
-                                        );
-                                      })() : link.explanation}
+                      {mech ? (
+                        <>
+                          <div className="text-[8px] font-semibold text-slate-500 mb-0.5">{mech.mechanism}</div>
+                          <p className="text-[7px] text-slate-400 leading-relaxed mb-1">{mech.summary}</p>
+                          {/* Accordion: each priority is a toggle */}
+                          {mech.priority.map((fid, i) => {
+                            const f = FOUNDATIONS.find(ff => ff.id === fid);
+                            const link = mech.foundations[fid];
+                            if (!f || !link) return null;
+                            const key = `${note.id}:${fid}`;
+                            const open = expandedChain === key;
+                            const dirLink = dir?.foundations[fid];
+                            return (
+                              <div key={fid} className="mb-0.5 rounded overflow-hidden border border-transparent"
+                                style={{ borderColor: open ? f.color + '30' : 'transparent', backgroundColor: open ? f.color + '06' : 'transparent' }}
+                              >
+                                {/* Header — click to toggle */}
+                                <div onClick={() => setExpandedChain(open ? null : key)}
+                                  className="flex items-center gap-1 px-1.5 py-1 cursor-pointer select-none hover:bg-slate-50 rounded transition-colors"
+                                >
+                                  <span className="text-[9px] font-bold shrink-0" style={{ color: f.color }}>
+                                    {i === 0 ? '①' : i === 1 ? '②' : i === 2 ? '③' : '④'}
+                                  </span>
+                                  <span className="text-[7px] font-semibold text-slate-600">{f.label}</span>
+                                  {dirLink?.action && (
+                                    <span className="text-[7px] text-slate-400 font-mono">{dirLink.action}</span>
+                                  )}
+                                  {dirLink?.impact != null && (
+                                    <span className="text-[6px] opacity-40 ml-auto" title={dirLink.impactDesc}>
+                                      {'●'.repeat(dirLink.impact)}{'○'.repeat(5 - dirLink.impact)}
                                     </span>
-                                    {link.tell && <><br /><span className="text-amber-500 text-[6px]">⚡ {link.tell}</span></>}
-                                  </div>
+                                  )}
+                                  <span className="text-[8px] text-slate-300 ml-1 shrink-0">{open ? '▾' : '▸'}</span>
                                 </div>
-                              );
-                            })}
-                          </>
-                        );
-                      })() : (
+                                {/* Body — expanded content */}
+                                {open && (
+                                  <div className="px-2.5 pb-2 pt-0.5">
+                                    {/* Sub-topic */}
+                                    <div className="text-[6px] text-slate-400 mb-0.5">
+                                      <span className="font-medium">sub:</span> {link.subTopic ?? '—'}
+                                    </div>
+                                    {/* Causal chain — vertical steps */}
+                                    {link.causalChain && (
+                                      <div className="flex flex-col items-center gap-0 my-1">
+                                        {link.causalChain.split('→').map((step, si) => (
+                                          <span key={si} className="flex flex-col items-center">
+                                            {si > 0 && <span className="text-slate-300 text-[9px] leading-none">↓</span>}
+                                            <span className="text-[7px] text-center px-1.5 py-0.5 rounded-sm bg-slate-100 text-slate-600 leading-snug">{step.trim()}</span>
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {/* Experiment */}
+                                    <div className="text-[7px] text-slate-500 italic mt-0.5">
+                                      <span className="font-medium">Try:</span> {link.experiment}
+                                    </div>
+                                    {/* Tell signs */}
+                                    {link.tell && (
+                                      <div className="text-[6px] text-amber-600 font-medium mt-0.5">⚡ {link.tell}</div>
+                                    )}
+                                    {/* Why not */}
+                                    {link.whyNot && (
+                                      <div className="text-[6px] text-slate-400 italic mt-0.5">↳ {link.whyNot}</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </>
+                      ) : (
                         <div>
                           <div className="text-[8px] font-semibold text-slate-500 mb-0.5">Exploring "{note.tag}"</div>
                           <p className="text-[7px] text-slate-400 leading-relaxed mb-1">No mechanism data yet. Investigate which foundation this symptom connects to.</p>

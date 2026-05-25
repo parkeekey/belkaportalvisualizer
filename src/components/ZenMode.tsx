@@ -31,7 +31,7 @@ const FOUNDATIONS = [
 
 const ZEN_KEY = 'belka.zenMode';
 const KNOWLEDGE_KEY = 'belka.zenKnowledge';
-const COMMON_TAGS = ['bitter', 'sour', 'dry', 'astringent', 'weak', 'muddy', 'hollow', 'flat', 'sharp', 'creamy'];
+const COMMON_TAGS = ['bitter', 'sour', 'dry', 'astringent', 'weak', 'muddy', 'hollow', 'flat', 'sharp', 'creamy', 'intensity', 'body', 'acidity', 'sweetness', 'balance'];
 
 // ── Mechanism Knowledge Base ────────────────────────────────
 // Links taste symptoms (tags) through secondary physical concepts
@@ -93,6 +93,28 @@ const MECHANISM_KNOWLEDGE: Record<string, {
     foundations: {
       grind: { explanation: 'Too fine or poor grind uniformity produces excess fines', evidence: 'Drawdown time significantly longer than expected', whyNot: '' },
       turbulence: { explanation: 'High agitation pushes fines downward into the filter, accelerating clog', evidence: 'Bed Integrity drops early, collapse during main pour', whyNot: '' },
+    },
+  },
+  intensity: {
+    mechanism: 'Total flavor compound concentration',
+    summary: 'Intensity is how much sensory impact each sip carries — driven by how many solubles made it into the cup and at what concentration.',
+    priority: ['ratio', 'grind', 'temp-time', 'turbulence'],
+    foundations: {
+      ratio: { explanation: 'More coffee per water = higher TDS ceiling = more intense. This is the primary lever for intensity.', evidence: 'EC curve higher across the entire brew, proportional to ratio change', whyNot: '' },
+      grind: { explanation: 'Finer grind extracts more from the same dose, pushing intensity higher without changing ratio', evidence: 'Peak EC higher, extraction window shifts earlier', whyNot: 'If the coffee tastes intense but also bitter, grind might be too fine — dial back before changing ratio.' },
+      'temp-time': { explanation: 'Longer or hotter extraction pulls more total solids, increasing intensity up to a limit', evidence: 'EC curve extends higher or longer', whyNot: 'Time-only intensity gains are small after peak extraction. Use ratio or grind for big changes.' },
+      turbulence: { explanation: 'More agitation can increase extraction slightly but easily overshoots into channeling', evidence: 'Minor EC increase followed by instability', whyNot: 'Turbulence is the weakest intensity lever. Only adjust if other signs of channeling are present.' },
+    },
+  },
+  body: {
+    mechanism: 'Lipid & colloid suspension in the cup',
+    summary: 'Body is the tactile weight and mouthfeel — driven by fines, oils, and insoluble particles that pass through the filter.',
+    priority: ['grind', 'turbulence', 'ratio', 'temp-time'],
+    foundations: {
+      grind: { explanation: 'Finer grind produces more fines that pass through the filter, increasing body', evidence: 'Muddier bed, longer drawdown', whyNot: '' },
+      turbulence: { explanation: 'More agitation pushes fines and oils through the filter bed into the cup', evidence: 'Higher turbidity in the cup, sediment visible', whyNot: '' },
+      ratio: { explanation: 'Higher ratio (less water) concentrates everything including body-forming compounds', evidence: 'Smaller volume, thicker mouthfeel', whyNot: 'Ratio affects body mostly through concentration — the actual body-forming compounds come from fines.' },
+      'temp-time': { explanation: 'Higher temp extracts more oils and colloids, but the effect on body is secondary', evidence: 'Slightly fuller feel at higher temps', whyNot: '' },
     },
   },
 };

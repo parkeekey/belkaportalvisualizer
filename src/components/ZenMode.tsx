@@ -40,53 +40,59 @@ const COMMON_TAGS = ['bitter', 'sour', 'dry', 'astringent', 'weak', 'muddy', 'ho
 const MECHANISM_KNOWLEDGE: Record<string, {
   mechanism: string;
   summary: string;
-  foundations: Record<string, { explanation: string; evidence: string }>;
+  priority: string[]; // foundation IDs from most → least likely
+  foundations: Record<string, { explanation: string; evidence: string; whyNot?: string }>;
 }> = {
   bitter: {
     mechanism: 'Over-extraction of late solubles',
-    summary: 'Bitter compounds (tannins, catechins) dissolve after desirable sugars and acids are depleted. The bed is giving too much contact time or surface area.',
+    summary: 'Tannins dissolve after desirable compounds are gone. Your bed gave too much contact.',
+    priority: ['temp-time', 'grind', 'turbulence', 'ratio'],
     foundations: {
-      grind: { explanation: 'Finer = more surface area = faster extraction of everything, including bitter fractions at the end', evidence: 'Peak EC too high, early peak, steep decline' },
-      ratio: { explanation: 'More water per coffee = more solvent = pulls deeper into the solubility curve, extracting bitter compounds', evidence: 'EC stays elevated well past peak, long flat decline' },
-      turbulence: { explanation: 'Channeling creates localized zones where water rushes through, over-extracting some pockets while under-extracting others', evidence: 'Sudden EC spikes then rapid collapse, uneven phase transitions' },
-      'temp-time': { explanation: 'Higher temp or longer time allows tannins to dissolve after desirable compounds finish extracting', evidence: 'Long declining tail after peak, extended extraction phase' },
+      grind: { explanation: 'Finer = more surface area = faster extraction of bitter fractions at the end', evidence: 'Peak EC too high, early peak, steep decline', whyNot: 'If your peak EC is normal but the tail is long, grind is probably fine — suspect time instead' },
+      ratio: { explanation: 'More water = more solvent = pulls deeper into the solubility curve', evidence: 'EC stays elevated well past peak, long flat decline', whyNot: 'Bitter from ratio is rare unless you\'re below 1:14. Check time and grind first.' },
+      turbulence: { explanation: 'Channeling over-extracts some pockets while others stall', evidence: 'Sudden EC spikes then rapid collapse', whyNot: 'Turbulence-related bitter usually comes with dryness. If the cup is just bitter but not dry, rule out channeling.' },
+      'temp-time': { explanation: 'Longer time lets tannins dissolve after good extraction finishes', evidence: 'Long declining tail after peak, extended extraction phase', whyNot: '' },
     },
   },
   sour: {
     mechanism: 'Under-extraction of sugars',
-    summary: 'Acids extract first and fast. Sugars and sweetness need more time, surface area, or heat. Sour means the extraction stopped before sugars fully dissolved.',
+    summary: 'Acids extract first, sugars need more time. Sour means the brew stopped too early for sweetness.',
+    priority: ['grind', 'temp-time', 'turbulence', 'ratio'],
     foundations: {
-      grind: { explanation: 'Too coarse = insufficient surface area for sugar dissolution, acids dominate the cup', evidence: 'EC peaks low, short extraction window' },
-      ratio: { explanation: 'Too little water = not enough solvent to reach the sugar fractions deep in the particle', evidence: 'EC curve truncated, never reaches expected peak' },
-      turbulence: { explanation: 'Too little agitation = water sits stagnant around particles, sugars don\'t diffuse out efficiently', evidence: 'Slow EC rise, shallow slope, low peak' },
-      'temp-time': { explanation: 'Too short or too cool = insufficient energy for sugar dissolution, acids extracted but sweetness never follows', evidence: 'EC drops while still rising, cut before peak' },
+      grind: { explanation: 'Too coarse = insufficient surface area for sugar dissolution', evidence: 'EC peaks low, short extraction window', whyNot: '' },
+      ratio: { explanation: 'Too little water = not enough solvent to reach sugars deep in particles', evidence: 'EC curve truncated, never reaches expected peak', whyNot: 'Sour from ratio usually comes with low body. If body is OK, suspect grind or time.' },
+      turbulence: { explanation: 'Too little agitation = water sits stagnant, sugars don\'t diffuse out', evidence: 'Slow EC rise, shallow slope, low peak', whyNot: 'Low turbulence sour usually tastes "flat" rather than sharp. Sharp sour is grind or time.' },
+      'temp-time': { explanation: 'Too short or too cool = insufficient energy for sugar dissolution', evidence: 'EC drops while still rising, cut before peak', whyNot: '' },
     },
   },
   dry: {
     mechanism: 'Fines migration & channeling',
-    summary: 'Dry/astringent mouthfeel comes from fines (micro-particles) that migrate to the filter, clog it, and create channels where water rushes through unevenly.',
+    summary: 'Dry/astringent means micro-particles clogged the filter, creating uneven flow.',
+    priority: ['turbulence', 'grind', 'temp-time'],
     foundations: {
-      grind: { explanation: 'Too fine creates excess fines that migrate and clog the filter, extending drawdown and creating dry sensation', evidence: 'EC shows late spike then cliff, irregular phase pattern' },
-      turbulence: { explanation: 'Aggressive pour dislodges fines from particles and pushes them to the filter surface', evidence: 'Sudden collapse phase, Bed Integrity drops sharply at turbulence step' },
-      'temp-time': { explanation: 'Long drawdown from clogged filter prolongs contact with exhausted bed, emphasizing dry/astringent notes', evidence: 'Extended declining phase, very long tail' },
+      grind: { explanation: 'Too fine creates excess fines that migrate to the filter', evidence: 'Irregular phase pattern, then sudden collapse', whyNot: '' },
+      turbulence: { explanation: 'Aggressive pour dislodges fines from particles into the filter', evidence: 'Bed Integrity drops sharply at turbulence step', whyNot: '' },
+      'temp-time': { explanation: 'Long drawdown from clogged filter prolongs contact with exhausted bed', evidence: 'Extended declining phase, very long tail', whyNot: 'Temp & Time alone doesn\'t cause dryness — it amplifies the effect of fines. Fix the source first.' },
     },
   },
   weak: {
     mechanism: 'Insufficient total dissolved solids',
-    summary: 'The brew didn\'t extract enough total coffee solids. The coffee tastes hollow, thin, or watery regardless of brew ratio.',
+    summary: 'Not enough coffee solids made it into the cup. The brew left flavor behind.',
+    priority: ['grind', 'temp-time', 'turbulence', 'ratio'],
     foundations: {
-      grind: { explanation: 'Too coarse = particles too large, water can\'t penetrate fast enough, leaving flavors locked inside', evidence: 'EC never rises to expected peak, low amplitude curve' },
-      ratio: { explanation: 'Too much water relative to coffee = dilution exceeds extraction rate, so TDS stays low', evidence: 'EC curve low but shape is normal, just compressed' },
-      turbulence: { explanation: 'Too fast a pour = water passes through without sufficient contact, leaving solubles behind', evidence: 'EC slope too shallow, peak too early' },
-      'temp-time': { explanation: 'Too short brew time = water stops flowing before maximum extraction is reached', evidence: 'EC still rising when brew ends, truncated curve' },
+      grind: { explanation: 'Too coarse = particles too large, water can\'t penetrate fast enough', evidence: 'EC never rises to expected peak, low amplitude', whyNot: '' },
+      ratio: { explanation: 'Too much water relative to coffee = dilution exceeds extraction', evidence: 'EC curve low but shape is normal, just compressed', whyNot: 'Weak from ratio is the most obvious — if your ratio is 1:17+, that\'s probably it. Below 1:16, check grind.' },
+      turbulence: { explanation: 'Too fast a pour = water passes through without sufficient contact', evidence: 'EC slope too shallow, peak too early', whyNot: '' },
+      'temp-time': { explanation: 'Too short brew time = extraction stops before peak', evidence: 'EC still rising when brew ends', whyNot: '' },
     },
   },
   muddy: {
     mechanism: 'Fines overload in the bed',
-    summary: 'Excessive fines create a slurry that clogs the filter. The brew slows to a drip, over-extracting some zones while stalling others.',
+    summary: 'Excessive fines create a slurry that clogs the filter and stalls the brew.',
+    priority: ['grind', 'turbulence'],
     foundations: {
-      grind: { explanation: 'Too fine or poor grind uniformity produces excess fines that saturate the filter pores', evidence: 'Volume drops on the foundation (less relevant)' },
-      turbulence: { explanation: 'High agitation pours push fines downward into the filter, accelerating the clog', evidence: 'Bed Integrity drops early, collapse starts during main pour' },
+      grind: { explanation: 'Too fine or poor grind uniformity produces excess fines', evidence: 'Drawdown time significantly longer than expected', whyNot: '' },
+      turbulence: { explanation: 'High agitation pushes fines downward into the filter, accelerating clog', evidence: 'Bed Integrity drops early, collapse during main pour', whyNot: '' },
     },
   },
 };
@@ -158,15 +164,17 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       y: 100 + (noteCounter % 4) * 80,
     };
     setNotes(prev => [...prev, note]);
-  }, []);
-
-  const updateNote = useCallback((id: string, patch: Partial<ZenNote>) => {
-    setNotes(prev => prev.map(n => n.id === id ? { ...n, ...patch } : n));
+    setSelectedArrow(null);
   }, []);
 
   const deleteNote = useCallback((id: string) => {
     setNotes(prev => prev.filter(n => n.id !== id));
     setArrows(prev => prev.filter(a => a.fromNoteId !== id));
+    setSelectedArrow(prev => prev === id ? null : prev);
+  }, []);
+
+  const updateNote = useCallback((id: string, patch: Partial<ZenNote>) => {
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, ...patch } : n));
   }, []);
 
   const startDrag = useCallback((noteId: string, e: React.MouseEvent) => {
@@ -508,28 +516,52 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 {/* Inline reasoning card */}
                 {selectedArrow === note.id && note.tag && MECHANISM_KNOWLEDGE[note.tag] && (() => {
                   const mech = MECHANISM_KNOWLEDGE[note.tag];
+                  const primary = mech.priority[0];
+                  const primaryF = FOUNDATIONS.find(f => f.id === primary);
+                  const primaryLink = primary ? mech.foundations[primary] : null;
                   return (
-                    <div className="mt-1.5 pt-1.5 border-t border-slate-100" onMouseDown={e => e.stopPropagation()}>
-                      <div className="text-[8px] font-semibold text-slate-500 mb-1 flex items-center gap-1">
-                        <span>💡 {mech.mechanism}</span>
+                    <div className="mt-1.5 pt-1.5 border-t border-slate-100 w-56" onMouseDown={e => e.stopPropagation()}>
+                      <div className="text-[8px] font-semibold text-slate-500 mb-0.5">{mech.mechanism}</div>
+                      <p className="text-[7px] text-slate-400 leading-relaxed mb-1">{mech.summary}</p>
+                      {/* Priority chain */}
+                      <div className="flex items-center gap-0.5 mb-1 flex-wrap">
+                        <span className="text-[6px] text-slate-400 uppercase mr-0.5">Check:</span>
+                        {mech.priority.map((fid, i) => {
+                          const f = FOUNDATIONS.find(ff => ff.id === fid);
+                          if (!f) return null;
+                          return (
+                            <span key={fid} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
+                              style={{ backgroundColor: f.color + '15', color: f.color }}
+                            >{i === 0 ? '① ' : i === 1 ? '② ' : i === 2 ? '③ ' : '④ '}{f.label}</span>
+                          );
+                        })}
                       </div>
-                      <p className="text-[7px] text-slate-400 leading-relaxed mb-1.5">{mech.summary}</p>
-                      {FOUNDATIONS.map(f => {
-                        const link = mech.foundations[f.id];
-                        if (!link) return null;
+                      {/* Primary recommendation */}
+                      {primaryF && primaryLink && (
+                        <div className="bg-blue-50 border border-blue-100 rounded px-1.5 py-1 mb-1">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <span className="text-[7px] font-bold text-blue-700">Most likely: {primaryF.label}</span>
+                          </div>
+                          <p className="text-[7px] text-blue-600 leading-relaxed">{primaryLink.explanation}</p>
+                          {primaryLink.whyNot && (
+                            <p className="text-[6px] text-blue-400 italic mt-0.5">↳ {primaryLink.whyNot}</p>
+                          )}
+                        </div>
+                      )}
+                      {/* Quick why-not for second priority */}
+                      {mech.priority.length > 1 && (() => {
+                        const second = mech.priority[1];
+                        const secondF = FOUNDATIONS.find(f => f.id === second);
+                        const secondLink = second ? mech.foundations[second] : null;
+                        if (!secondF || !secondLink || !secondLink.whyNot) return null;
                         return (
-                          <div key={f.id} className="mb-1 last:mb-0">
-                            <div className="flex items-center gap-1">
-                              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: f.color }} />
-                              <span className="text-[8px] font-semibold" style={{ color: f.color }}>{f.label}</span>
-                              <span className="text-[7px] text-slate-400 ml-auto">sub: {link.explanation.split(' — ')[0]}</span>
-                            </div>
-                            <p className="text-[7px] text-slate-400 ml-2 leading-relaxed">{link.explanation}</p>
+                          <div className="text-[7px] text-slate-400 mb-0.5">
+                            Not ② {secondF.label}? {secondLink.whyNot}
                           </div>
                         );
-                      })}
-                      <div className="text-[7px] text-slate-400 italic mt-1 pt-0.5 border-t border-slate-50">
-                        Connect the ◉ dot to the foundation you suspect
+                      })()}
+                      <div className="text-[6px] text-slate-300 italic mt-0.5 leading-tight">
+                        Drag ◉ to the foundation you suspect · click arrow to confirm/wrong
                       </div>
                     </div>
                   );

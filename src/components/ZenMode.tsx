@@ -982,8 +982,8 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         Drag notes freely · <span className="font-medium text-slate-500">Drag the ◉ dot</span> from a note toward a foundation's dot to connect · Click arrow: dashed (hyp) → green (✓) → red (✗) · Right-click to delete
       </div>
 
-      {/* SVG layer — fixed to viewport, on top of everything */}
-      <svg className="fixed inset-0 w-full h-full pointer-events-none z-50">
+      {/* SVG layer — fixed to viewport, behind notes so lines don't overlap */}
+      <svg className="fixed inset-0 w-full h-full pointer-events-none z-[28]">
         {arrows.map(a => {
           const fromP = getNoteDotPos(a.fromNoteId);
           const toP = a.toNoteId ? getNoteDotPos(a.toNoteId) : getFoundationDotPos(a.toFoundation);
@@ -1211,11 +1211,16 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                   <div className="flex items-start justify-between gap-1">
                     <textarea
                       value={note.text}
-                      onChange={(e) => updateNote(note.id, { text: e.target.value })}
+                      onChange={(e) => {
+                        updateNote(note.id, { text: e.target.value });
+                        e.currentTarget.style.height = 'auto';
+                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                      }}
                       onClick={(e) => e.stopPropagation()}
                       onMouseDown={(e) => e.stopPropagation()}
-                      className="w-full text-[11px] text-slate-700 bg-transparent border-none outline-none resize-none leading-tight min-h-[20px] font-sans"
+                      className="w-full text-[11px] text-slate-700 bg-transparent border-none outline-none resize-none leading-tight font-sans overflow-hidden"
                       rows={1}
+                      ref={el => { if (el && !el.dataset.autosized) { el.dataset.autosized = 'true'; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
                     />
                     <div className="flex flex-col items-center gap-0.5 shrink-0">
                       <div

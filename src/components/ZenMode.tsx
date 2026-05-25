@@ -4,6 +4,7 @@ interface ZenNote {
   id: string;
   text: string;
   tag: string;
+  direction: 'under' | 'over' | '';
   x: number;
   y: number;
 }
@@ -32,6 +33,50 @@ const FOUNDATIONS = [
 const ZEN_KEY = 'belka.zenMode';
 const KNOWLEDGE_KEY = 'belka.zenKnowledge';
 const COMMON_TAGS = ['bitter', 'sour', 'dry', 'astringent', 'weak', 'muddy', 'hollow', 'flat', 'sharp', 'creamy', 'intensity', 'body', 'acidity', 'sweetness', 'balance'];
+
+// ── Extraction Direction ─────────────────────────────────────
+// Every coffee problem is either under-extraction or over-extraction.
+// First answer: do I need ↑ more or ↓ less extraction?
+
+const TAG_DIRECTION: Record<string, 'under' | 'over' | ''> = {
+  sour: 'under', weak: 'under', hollow: 'under', flat: 'under', sharp: 'under',
+  bitter: 'over', dry: 'over', astringent: 'over', muddy: 'over', creamy: 'over',
+  intensity: '', body: '', acidity: '', sweetness: '', balance: '',
+};
+
+const EXTRACTION_DIRECTIONS: Record<string, {
+  label: string;
+  arrow: string;
+  color: string;
+  desc: string;
+  priority: string[];
+  foundations: Record<string, { action: string; subTopic: string; causalChain: string; evidence: string }>;
+}> = {
+  under: {
+    label: 'Need MORE extraction',
+    arrow: '↑', color: '#22c55e',
+    desc: 'Not enough flavor compounds dissolved. Push extraction harder.',
+    priority: ['grind', 'temp-time', 'turbulence', 'ratio'],
+    foundations: {
+      grind: { action: '↑ finer', subTopic: 'Surface area', causalChain: 'Finer grind → more surface → more compounds dissolve → higher extraction', evidence: 'EC peak too low, short extraction window' },
+      'temp-time': { action: '↑ hotter/longer', subTopic: 'Thermal energy', causalChain: 'More heat or time → more energy for dissolution → deeper extraction', evidence: 'EC still rising when brew ends' },
+      turbulence: { action: '↑ more agitation', subTopic: 'Convection', causalChain: 'More agitation → fresh water reaches particles → more diffusion → slightly more extraction', evidence: 'EC slope too shallow' },
+      ratio: { action: '↑ tighter ratio', subTopic: 'Concentration', causalChain: 'More coffee per water → higher TDS ceiling → more intense', evidence: 'EC curve low but shape normal' },
+    },
+  },
+  over: {
+    label: 'Need LESS extraction',
+    arrow: '↓', color: '#ef4444',
+    desc: 'Too many compounds dissolved, especially bitter ones. Pull extraction back.',
+    priority: ['temp-time', 'grind', 'turbulence', 'ratio'],
+    foundations: {
+      grind: { action: '↓ coarser', subTopic: 'Surface area', causalChain: 'Coarser grind → less surface → extraction slows → fewer bitter compounds', evidence: 'Peak EC too high, early peak' },
+      'temp-time': { action: '↓ cooler/shorter', subTopic: 'Thermal energy', causalChain: 'Less heat or time → less energy → stops before tannins dissolve', evidence: 'Long declining tail after peak' },
+      turbulence: { action: '↓ gentler pours', subTopic: 'Channeling', causalChain: 'Gentler pours → fewer channels → no localized over-extraction → less bitterness', evidence: 'Sudden EC spikes then collapse' },
+      ratio: { action: '↓ looser ratio', subTopic: 'Dilution', causalChain: 'More water per coffee → less concentration → bitter compounds diluted', evidence: 'EC stays elevated past peak' },
+    },
+  },
+};
 
 // ── Mechanism Knowledge Base ────────────────────────────────
 // Links taste symptoms (tags) through secondary physical concepts
@@ -237,6 +282,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       id: `note-${Date.now()}-${noteCounter}`,
       text: 'note',
       tag: '',
+      direction: '',
       x: 60 + (noteCounter % 5) * 40,
       y: 100 + (noteCounter % 4) * 80,
     };
@@ -544,13 +590,13 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                   {showTagPicker === note.id ? (
                     <div className="flex flex-wrap gap-0.5" onMouseDown={e => e.stopPropagation()}>
                       {COMMON_TAGS.map(t => (
-                        <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
+                        <button key={t} onClick={() => { const d = TAG_DIRECTION[t] ?? ''; updateNote(note.id, { tag: t, direction: note.direction || d }); setShowTagPicker(null); }}
                           className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
                         >{t}</button>
                       ))}
                       <input type="text" placeholder="custom tag..."
                         onMouseDown={e => e.stopPropagation()}
-                        onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { updateNote(note.id, { tag: val }); setShowTagPicker(null); } } }}
+                        onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { const d = TAG_DIRECTION[val] ?? ''; updateNote(note.id, { tag: val, direction: note.direction || d }); setShowTagPicker(null); } } }}
                         className="w-16 px-1 py-0.5 text-[8px] border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400"
                       />
                       <button onClick={() => setShowTagPicker(null)}
@@ -569,6 +615,17 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                           className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 hover:bg-amber-100 hover:text-amber-500'}`}
                           title="Show reasoning"
                         >💡</button>
+                      )}
+                      {/* Direction toggle — only shown when tag is set */}
+                      {note.tag && (
+                        <div className="flex gap-0.5 ml-1" onMouseDown={e => e.stopPropagation()}>
+                          <button onClick={() => updateNote(note.id, { direction: 'under' })}
+                            className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-green-600'}`}
+                          >↑</button>
+                          <button onClick={() => updateNote(note.id, { direction: 'over' })}
+                            className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-red-600'}`}
+                          >↓</button>
+                        </div>
                       )}
                     </div>
                   )}
@@ -597,84 +654,117 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
                 {/* Inline reasoning card */}
                 {selectedArrow === note.id && note.tag && (() => {
+                  const dir = note.direction ? EXTRACTION_DIRECTIONS[note.direction] : null;
                   const mech = MECHANISM_KNOWLEDGE[note.tag];
-                  if (!mech) {
-                    // Generic reasoning for unknown tags
-                    return (
-                      <div className="mt-1.5 pt-1.5 border-t border-slate-100 w-56" onMouseDown={e => e.stopPropagation()}>
-                        <div className="text-[8px] font-semibold text-slate-500 mb-0.5">Exploring "{note.tag}"</div>
-                        <p className="text-[7px] text-slate-400 leading-relaxed mb-1">No mechanism data yet. Investigate which foundation this symptom connects to.</p>
-                        <div className="flex items-center gap-0.5 mb-1 flex-wrap">
-                          <span className="text-[6px] text-slate-400 uppercase mr-0.5">Check each:</span>
-                          {FOUNDATIONS.map((f, i) => (
-                            <span key={f.id} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
-                              style={{ backgroundColor: f.color + '15', color: f.color }}
-                            >{i + 1}. {f.label}</span>
-                          ))}
-                        </div>
-                        <div className="bg-slate-50 border border-slate-100 rounded px-1.5 py-1 mb-1">
-                          <p className="text-[7px] text-slate-500 leading-relaxed">Connect ◉ to a foundation → later click the arrow to mark confirmed or wrong. The knowledge base grows with your data.</p>
-                        </div>
-                      </div>
-                    );
-                  }
-                  const primary = mech.priority[0];
-                  const primaryF = FOUNDATIONS.find(f => f.id === primary);
-                  const primaryLink = primary ? mech.foundations[primary] : null;
                   return (
                     <div className="mt-1.5 pt-1.5 border-t border-slate-100 w-56" onMouseDown={e => e.stopPropagation()}>
-                      <div className="text-[8px] font-semibold text-slate-500 mb-0.5">{mech.mechanism}</div>
-                      <p className="text-[7px] text-slate-400 leading-relaxed mb-1">{mech.summary}</p>
-                      {/* Priority chain */}
-                      <div className="flex items-center gap-0.5 mb-1 flex-wrap">
-                        <span className="text-[6px] text-slate-400 uppercase mr-0.5">Check:</span>
-                        {mech.priority.map((fid, i) => {
-                          const f = FOUNDATIONS.find(ff => ff.id === fid);
-                          if (!f) return null;
-                          return (
-                            <span key={fid} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
-                              style={{ backgroundColor: f.color + '15', color: f.color }}
-                            >{i === 0 ? '① ' : i === 1 ? '② ' : i === 2 ? '③ ' : '④ '}{f.label}</span>
-                          );
-                        })}
-                      </div>
-                      {/* Primary recommendation with causal chain */}
-                      {primaryF && primaryLink && (
-                        <div className="bg-blue-50 border border-blue-100 rounded px-1.5 py-1 mb-1">
+                      {/* Direction-first banner */}
+                      {dir ? (
+                        <div className="mb-1.5 pb-1.5 border-b border-slate-100">
                           <div className="flex items-center gap-1 mb-0.5">
-                            <span className="text-[7px] font-bold text-blue-700">① {primaryF.label}</span>
-                            <span className="text-[6px] text-blue-500 font-medium">sub: {primaryLink.subTopic ?? primaryLink.explanation.split(' ').slice(0, 3).join(' ') + '...'}</span>
+                            <span className="text-[13px] font-bold leading-none" style={{ color: dir.color }}>{dir.arrow}</span>
+                            <span className="text-[8px] font-bold" style={{ color: dir.color }}>{dir.label}</span>
+                            <span className="text-[6px] text-slate-300 ml-auto italic">{note.tag}</span>
                           </div>
-                          <div className="text-[7px] text-blue-600 leading-relaxed mb-0.5">
-                            <span className="font-medium">Chain:</span> {primaryLink.causalChain}
+                          <p className="text-[7px] text-slate-400 leading-relaxed mb-1">{dir.desc}</p>
+                          <div className="flex items-center gap-0.5 flex-wrap">
+                            <span className="text-[6px] text-slate-400 uppercase mr-0.5">Adjust:</span>
+                            {dir.priority.map((fid, i) => {
+                              const f = FOUNDATIONS.find(ff => ff.id === fid);
+                              const link = dir.foundations[fid];
+                              if (!f) return null;
+                              return (
+                                <span key={fid} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
+                                  style={{ backgroundColor: f.color + '20', color: f.color }}
+                                >{i === 0 ? '① ' : i === 1 ? '② ' : i === 2 ? '③ ' : '④ '}{f.label} {link?.action && <span className="font-mono">{link.action}</span>}</span>
+                              );
+                            })}
                           </div>
-                          <div className="text-[7px] text-blue-500 italic">
-                            <span className="font-medium">Try:</span> {primaryLink.experiment}
-                          </div>
-                          {primaryLink.whyNot && (
-                            <p className="text-[6px] text-blue-400 italic mt-0.5">↳ {primaryLink.whyNot}</p>
+                        </div>
+                      ) : null}
+
+                      {/* Mechanism knowledge details */}
+                      {mech ? (() => {
+                        const primary = mech.priority[0];
+                        const primaryF = FOUNDATIONS.find(f => f.id === primary);
+                        const primaryLink = primary ? mech.foundations[primary] : null;
+                        return (
+                          <>
+                            <div className="text-[8px] font-semibold text-slate-500 mb-0.5">{mech.mechanism}</div>
+                            <p className="text-[7px] text-slate-400 leading-relaxed mb-1">{mech.summary}</p>
+                            {/* Priority chain */}
+                            {!dir && (
+                              <div className="flex items-center gap-0.5 mb-1 flex-wrap">
+                                <span className="text-[6px] text-slate-400 uppercase mr-0.5">Check:</span>
+                                {mech.priority.map((fid, i) => {
+                                  const f = FOUNDATIONS.find(ff => ff.id === fid);
+                                  if (!f) return null;
+                                  return (
+                                    <span key={fid} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
+                                      style={{ backgroundColor: f.color + '15', color: f.color }}
+                                    >{i === 0 ? '① ' : i === 1 ? '② ' : i === 2 ? '③ ' : '④ '}{f.label}</span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {/* Primary recommendation with causal chain */}
+                            {primaryF && primaryLink && (
+                              <div className="bg-blue-50 border border-blue-100 rounded px-1.5 py-1 mb-1">
+                                <div className="flex items-center gap-1 mb-0.5">
+                                  <span className="text-[7px] font-bold text-blue-700">① {primaryF.label}</span>
+                                  <span className="text-[6px] text-blue-500 font-medium">sub: {primaryLink.subTopic ?? primaryLink.explanation.split(' ').slice(0, 3).join(' ') + '...'}</span>
+                                </div>
+                                <div className="text-[7px] text-blue-600 leading-relaxed mb-0.5">
+                                  <span className="font-medium">Chain:</span> {primaryLink.causalChain}
+                                </div>
+                                <div className="text-[7px] text-blue-500 italic">
+                                  <span className="font-medium">Try:</span> {primaryLink.experiment}
+                                </div>
+                                {primaryLink.whyNot && (
+                                  <p className="text-[6px] text-blue-400 italic mt-0.5">↳ {primaryLink.whyNot}</p>
+                                )}
+                              </div>
+                            )}
+                            {/* Quick secondary chain hints */}
+                            {mech.priority.slice(1, 3).map((fid, i) => {
+                              const f = FOUNDATIONS.find(ff => ff.id === fid);
+                              const link = mech.foundations[fid];
+                              if (!f || !link) return null;
+                              return (
+                                <div key={fid} className="flex items-start gap-1 mb-0.5">
+                                  <span className="text-[7px] font-semibold shrink-0 mt-0.5" style={{ color: f.color }}>{i === 0 ? '②' : '③'}</span>
+                                  <div className="text-[7px] text-slate-500 leading-tight">
+                                    <span className="font-medium">{f.label}</span>
+                                    <span className="text-slate-400"> · sub: {link.subTopic ?? '—'}</span>
+                                    <br />
+                                    <span className="text-slate-400 italic">{link.causalChain ? link.causalChain.split('→').slice(0, 2).join('→') + '→...' : link.explanation}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </>
+                        );
+                      })() : (
+                        <div>
+                          <div className="text-[8px] font-semibold text-slate-500 mb-0.5">Exploring "{note.tag}"</div>
+                          <p className="text-[7px] text-slate-400 leading-relaxed mb-1">No mechanism data yet. Investigate which foundation this symptom connects to.</p>
+                          {!dir && (
+                            <div className="flex items-center gap-0.5 mb-1 flex-wrap">
+                              <span className="text-[6px] text-slate-400 uppercase mr-0.5">Check each:</span>
+                              {FOUNDATIONS.map((f, i) => (
+                                <span key={f.id} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
+                                  style={{ backgroundColor: f.color + '15', color: f.color }}
+                                >{i + 1}. {f.label}</span>
+                              ))}
+                            </div>
                           )}
+                          <div className="bg-slate-50 border border-slate-100 rounded px-1.5 py-1 mb-1">
+                            <p className="text-[7px] text-slate-500 leading-relaxed"><span className="font-medium">Set direction ↑ or ↓</span> on the note — then the priority chain appears here based on whether you need more or less extraction.</p>
+                          </div>
                         </div>
                       )}
-                      {/* Quick secondary chain hints */}
-                      {mech.priority.slice(1, 3).map((fid, i) => {
-                        const f = FOUNDATIONS.find(ff => ff.id === fid);
-                        const link = mech.foundations[fid];
-                        if (!f || !link) return null;
-                        return (
-                          <div key={fid} className="flex items-start gap-1 mb-0.5">
-                            <span className="text-[7px] font-semibold shrink-0 mt-0.5" style={{ color: f.color }}>{i === 0 ? '②' : '③'}</span>
-                            <div className="text-[7px] text-slate-500 leading-tight">
-                              <span className="font-medium">{f.label}</span>
-                              <span className="text-slate-400"> · sub: {link.subTopic ?? '—'}</span>
-                              <br />
-                              <span className="text-slate-400 italic">{link.causalChain ? link.causalChain.split('→').slice(0, 2).join('→') + '→...' : link.explanation}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
                       <div className="text-[6px] text-slate-300 italic mt-0.5 leading-tight">
-                        Drag ◉ to the foundation you suspect · click arrow to confirm/wrong
+                        {dir ? '↑↓ toggle direction · drag ◉ to foundation · click arrow to confirm/wrong' : 'Drag ◉ to the foundation you suspect · click arrow to confirm/wrong'}
                       </div>
                     </div>
                   );

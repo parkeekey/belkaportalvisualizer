@@ -416,20 +416,16 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
 
   const pourPlanPhaseAnalysis = useMemo(() => {
     if (!analysis || !pourPlan || pourPlan.length === 0) return null;
+    const phaseColors: Record<string, string> = {
+      blooming: '#3b82f6', extracting: '#22c55e', declining: '#f59e0b', collapsing: '#ef4444', collapsed: '#b91c1c',
+    };
     const phaseHealth: Record<string, number> = {
       extracting: 1.0, blooming: 0.85, declining: 0.6, collapsing: 0.3, collapsed: 0.1,
     };
-    const steps: {
-      stepIndex: number;
-      startPct: number;
-      endPct: number;
-      integrity: number;
-      phases: { phase: string; color: string; startTime: number; endTime: number; ecStart: number; ecEnd: number }[];
-    }[] = [];
     const peakEC = analysis.peak.ec;
-    for (let i = 0; i < pourPlan.length; i++) {
+    return pourPlan.map((entry, i) => {
       const startPct = i === 0 ? 0 : pourPlan[i - 1].cumulativePercent;
-      const endPct = pourPlan[i].cumulativePercent;
+      const endPct = entry.cumulativePercent;
       const startTime = (startPct / 100) * brewTimeSec;
       const endTime = (endPct / 100) * brewTimeSec;
       const phases: {
@@ -449,20 +445,24 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
           });
         }
       }
-      if (phases.length === 0) continue;
+      if (phases.length === 0) {
+        const midT = (startTime + endTime) / 2;
+        const p = analysis.getPhase(midT);
+        const ec = analysis.getEC(midT);
+        phases.push({ phase: p, color: phaseColors[p] ?? '#94a3b8', startTime: midT, endTime: midT, ecStart: ec, ecEnd: ec });
+      }
       let totalDur = 0;
       let healthWeighted = 0;
       for (const p of phases) {
-        const dur = p.endTime - p.startTime;
+        const dur = Math.max(0.001, p.endTime - p.startTime);
         totalDur += dur;
         healthWeighted += dur * (phaseHealth[p.phase] ?? 0.5);
       }
       const midEC = analysis.getEC((startTime + endTime) / 2);
       const ecRatio = peakEC > 0 ? Math.min(1, midEC / peakEC) : 0;
       const integrity = Math.round((healthWeighted / totalDur * 0.5 + ecRatio * 0.5) * 100);
-      steps.push({ stepIndex: i, startPct, endPct, integrity, phases });
-    }
-    return steps;
+      return { stepIndex: i, startPct, endPct, integrity, phases };
+    });
   }, [analysis, pourPlan, brewTimeSec, phaseRanges]);
 
   const currentEC = analysis ? analysis.getEC(time) : fallbackEC;

@@ -95,6 +95,7 @@ const MECHANISM_KNOWLEDGE: Record<string, {
     explanation: string;       // brief explanation
     evidence: string;          // EC curve evidence
     whyNot?: string;
+    tell: string;              // observable signs to distinguish which foundation is the culprit
   }>;
 }> = {
   bitter: {
@@ -108,6 +109,7 @@ const MECHANISM_KNOWLEDGE: Record<string, {
         experiment: 'Go 1 click coarser at same time. If bitter drops but body holds, grind was the cause.',
         explanation: 'Finer = more surface area = faster extraction of bitter fractions at the end',
         evidence: 'Peak EC too high, early peak, steep decline', whyNot: 'If peak EC is normal but tail is long, grind is fine — suspect time.',
+        tell: 'Drawdown fast, bitterness hits early in sip, fines visible on filter',
       },
       ratio: {
         subTopic: 'Solvent volume / Solubility curve',
@@ -115,6 +117,7 @@ const MECHANISM_KNOWLEDGE: Record<string, {
         experiment: 'Increase dose by 1g (tighter ratio) at same grind and time. If bitterness drops, ratio was pushing too deep.',
         explanation: 'More water pulls deeper into the solubility curve, extracting bitter fractions',
         evidence: 'EC stays elevated well past peak, long flat decline', whyNot: 'Bitter from ratio is rare unless below 1:14. Check time and grind first.',
+        tell: 'Thin body despite bitterness, normal drawdown, bitterness is hollow',
       },
       turbulence: {
         subTopic: 'Channeling / Localized over-extraction',
@@ -122,6 +125,7 @@ const MECHANISM_KNOWLEDGE: Record<string, {
         experiment: 'Switch to gentle spiral pours at same ratio and grind. If bitter smooths out, turbulence was the cause.',
         explanation: 'Channeling creates localized over-extraction zones',
         evidence: 'Sudden EC spikes then rapid collapse', whyNot: 'Turbulence bitter usually comes with dryness. If not dry, rule out turbulence.',
+        tell: 'Spurty/uneven drawdown, mud on one side of bed, sweet spots + bitter spots',
       },
       'temp-time': {
         subTopic: 'Contact time / Thermal energy',
@@ -129,6 +133,7 @@ const MECHANISM_KNOWLEDGE: Record<string, {
         experiment: 'Cut your brew 10s earlier at same ratio and grind. If the bitter finish disappears, time was the cause.',
         explanation: 'Longer time lets tannins dissolve after good extraction finishes',
         evidence: 'Long declining tail after peak, extended extraction phase', whyNot: '',
+        tell: 'Drawdown normal, harsh/astringent finish at the very end, long EC tail',
       },
     },
   },
@@ -137,10 +142,28 @@ const MECHANISM_KNOWLEDGE: Record<string, {
     summary: 'Acids extract first, sugars need more time. Sour means the brew stopped too early for sweetness.',
     priority: ['grind', 'temp-time', 'turbulence', 'ratio'],
     foundations: {
-      grind: { explanation: 'Too coarse = insufficient surface area for sugar dissolution', evidence: 'EC peaks low, short extraction window', whyNot: '' },
-      ratio: { explanation: 'Too little water = not enough solvent to reach sugars deep in particles', evidence: 'EC curve truncated, never reaches expected peak', whyNot: 'Sour from ratio usually comes with low body. If body is OK, suspect grind or time.' },
-      turbulence: { explanation: 'Too little agitation = water sits stagnant, sugars don\'t diffuse out', evidence: 'Slow EC rise, shallow slope, low peak', whyNot: 'Low turbulence sour usually tastes "flat" rather than sharp. Sharp sour is grind or time.' },
-      'temp-time': { explanation: 'Too short or too cool = insufficient energy for sugar dissolution', evidence: 'EC drops while still rising, cut before peak', whyNot: '' },
+      grind: {
+        explanation: 'Too coarse = insufficient surface area for sugar dissolution',
+        evidence: 'EC peaks low, short extraction window', whyNot: '',
+        tell: 'Very fast drawdown, sour from first sip, pale bed',
+      },
+      ratio: {
+        explanation: 'Too little water = not enough solvent to reach sugars deep in particles',
+        evidence: 'EC curve truncated, never reaches expected peak',
+        whyNot: 'Sour from ratio usually comes with low body. If body is OK, suspect grind or time.',
+        tell: 'Thin and sour together, weak body, normal drawdown speed',
+      },
+      turbulence: {
+        explanation: 'Too little agitation = water sits stagnant, sugars don\'t diffuse out',
+        evidence: 'Slow EC rise, shallow slope, low peak',
+        whyNot: 'Low turbulence sour usually tastes "flat" rather than sharp. Sharp sour is grind or time.',
+        tell: 'Uneven extraction, sour pockets in an otherwise okay cup',
+      },
+      'temp-time': {
+        explanation: 'Too short or too cool = insufficient energy for sugar dissolution',
+        evidence: 'EC drops while still rising, cut before peak', whyNot: '',
+        tell: 'Drawdown stalled or too slow, sour at the end, water cooled too much',
+      },
     },
   },
   dry: {
@@ -148,9 +171,22 @@ const MECHANISM_KNOWLEDGE: Record<string, {
     summary: 'Dry/astringent means micro-particles clogged the filter, creating uneven flow.',
     priority: ['turbulence', 'grind', 'temp-time'],
     foundations: {
-      grind: { explanation: 'Too fine creates excess fines that migrate to the filter', evidence: 'Irregular phase pattern, then sudden collapse', whyNot: '' },
-      turbulence: { explanation: 'Aggressive pour dislodges fines from particles into the filter', evidence: 'Bed Integrity drops sharply at turbulence step', whyNot: '' },
-      'temp-time': { explanation: 'Long drawdown from clogged filter prolongs contact with exhausted bed', evidence: 'Extended declining phase, very long tail', whyNot: 'Temp & Time alone doesn\'t cause dryness — it amplifies the effect of fines. Fix the source first.' },
+      grind: {
+        explanation: 'Too fine creates excess fines that migrate to the filter',
+        evidence: 'Irregular phase pattern, then sudden collapse', whyNot: '',
+        tell: 'Slow drawdown, astringent feeling coats entire tongue, muddy bed',
+      },
+      turbulence: {
+        explanation: 'Aggressive pour dislodges fines from particles into the filter',
+        evidence: 'Bed Integrity drops sharply at turbulence step', whyNot: '',
+        tell: 'Some sweet spots, some dry spots, uneven bed cratering',
+      },
+      'temp-time': {
+        explanation: 'Long drawdown from clogged filter prolongs contact with exhausted bed',
+        evidence: 'Extended declining phase, very long tail',
+        whyNot: 'Temp & Time alone doesn\'t cause dryness — it amplifies the effect of fines. Fix the source first.',
+        tell: 'Normal drawdown, drying sensation only at finish, EC tail stays elevated',
+      },
     },
   },
   weak: {
@@ -158,10 +194,27 @@ const MECHANISM_KNOWLEDGE: Record<string, {
     summary: 'Not enough coffee solids made it into the cup. The brew left flavor behind.',
     priority: ['grind', 'temp-time', 'turbulence', 'ratio'],
     foundations: {
-      grind: { explanation: 'Too coarse = particles too large, water can\'t penetrate fast enough', evidence: 'EC never rises to expected peak, low amplitude', whyNot: '' },
-      ratio: { explanation: 'Too much water relative to coffee = dilution exceeds extraction', evidence: 'EC curve low but shape is normal, just compressed', whyNot: 'Weak from ratio is the most obvious — if your ratio is 1:17+, that\'s probably it. Below 1:16, check grind.' },
-      turbulence: { explanation: 'Too fast a pour = water passes through without sufficient contact', evidence: 'EC slope too shallow, peak too early', whyNot: '' },
-      'temp-time': { explanation: 'Too short brew time = extraction stops before peak', evidence: 'EC still rising when brew ends', whyNot: '' },
+      grind: {
+        explanation: 'Too coarse = particles too large, water can\'t penetrate fast enough',
+        evidence: 'EC never rises to expected peak, low amplitude', whyNot: '',
+        tell: 'Fast drawdown, watery from start, no body',
+      },
+      ratio: {
+        explanation: 'Too much water relative to coffee = dilution exceeds extraction',
+        evidence: 'EC curve low but shape is normal, just compressed',
+        whyNot: 'Weak from ratio is the most obvious — if your ratio is 1:17+, that\'s probably it. Below 1:16, check grind.',
+        tell: 'Classic \'not enough coffee\' — weak but balanced flavor, normal drawdown',
+      },
+      turbulence: {
+        explanation: 'Too fast a pour = water passes through without sufficient contact',
+        evidence: 'EC slope too shallow, peak too early', whyNot: '',
+        tell: 'Inconsistent strength between pours, some layers extracted others not',
+      },
+      'temp-time': {
+        explanation: 'Too short brew time = extraction stops before peak',
+        evidence: 'EC still rising when brew ends', whyNot: '',
+        tell: 'Normal drawdown, weak but no sourness, water not hot enough',
+      },
     },
   },
   muddy: {
@@ -169,8 +222,16 @@ const MECHANISM_KNOWLEDGE: Record<string, {
     summary: 'Excessive fines create a slurry that clogs the filter and stalls the brew.',
     priority: ['grind', 'turbulence'],
     foundations: {
-      grind: { explanation: 'Too fine or poor grind uniformity produces excess fines', evidence: 'Drawdown time significantly longer than expected', whyNot: '' },
-      turbulence: { explanation: 'High agitation pushes fines downward into the filter, accelerating clog', evidence: 'Bed Integrity drops early, collapse during main pour', whyNot: '' },
+      grind: {
+        explanation: 'Too fine or poor grind uniformity produces excess fines',
+        evidence: 'Drawdown time significantly longer than expected', whyNot: '',
+        tell: 'Very slow drawdown, bed looks like sludge, fines migration visible',
+      },
+      turbulence: {
+        explanation: 'High agitation pushes fines downward into the filter, accelerating clog',
+        evidence: 'Bed Integrity drops early, collapse during main pour', whyNot: '',
+        tell: 'Aggressive pouring, bed disturbed, fines washed through',
+      },
     },
   },
   intensity: {
@@ -184,6 +245,7 @@ const MECHANISM_KNOWLEDGE: Record<string, {
         experiment: 'Brew the same coffee at 1:15 and 1:17, same grind. The 1:15 will always taste more intense.',
         explanation: 'Ratio sets the maximum possible intensity for a given dose. This is the strongest lever.',
         evidence: 'EC curve higher across the entire brew, proportional to ratio change', whyNot: '',
+        tell: 'Most direct control. Intense + good balance = tight ratio working. Intense + harsh = too tight',
       },
       grind: {
         subTopic: 'Surface area / Extraction rate',
@@ -191,6 +253,7 @@ const MECHANISM_KNOWLEDGE: Record<string, {
         experiment: 'Keep ratio at 1:16, go 2 clicks finer. Intensity goes up without changing water amount.',
         explanation: 'Grind lets you extract more from the same dose, pushing intensity without changing ratio.',
         evidence: 'Peak EC higher, extraction window shifts earlier', whyNot: 'If intense but also bitter, grind might be too fine — dial back before changing ratio.',
+        tell: 'Intense + bitter = over. Intense + sour = under. Check drawdown speed',
       },
       'temp-time': {
         subTopic: 'Solubility / Contact time',
@@ -198,6 +261,7 @@ const MECHANISM_KNOWLEDGE: Record<string, {
         experiment: 'Brew at 92°C vs 96°C at same ratio and grind. The hotter cup is slightly more intense.',
         explanation: 'Time and temp increase extraction yield but have less impact than ratio or grind.',
         evidence: 'EC curve extends higher or longer', whyNot: 'Intensity gains from time alone are small after peak. Use ratio or grind for meaningful changes.',
+        tell: 'Intense + long finish = time. Intense + sharp = temp',
       },
       turbulence: {
         subTopic: 'Agitation / Channeling risk',
@@ -205,6 +269,7 @@ const MECHANISM_KNOWLEDGE: Record<string, {
         experiment: 'Pour with high agitation vs gentle pulses at same ratio. The gentle pour might actually taste more intense if channeling was avoided.',
         explanation: 'Weakest intensity lever. Only relevant when other signs of channeling exist.',
         evidence: 'Minor EC increase followed by instability', whyNot: 'If you need more intensity, don\'t reach for turbulence — change ratio or grind first.',
+        tell: 'Intense + uneven = channeling. Consistent intensity = other factors',
       },
     },
   },
@@ -213,10 +278,27 @@ const MECHANISM_KNOWLEDGE: Record<string, {
     summary: 'Body is the tactile weight and mouthfeel — driven by fines, oils, and insoluble particles that pass through the filter.',
     priority: ['grind', 'turbulence', 'ratio', 'temp-time'],
     foundations: {
-      grind: { explanation: 'Finer grind produces more fines that pass through the filter, increasing body', evidence: 'Muddier bed, longer drawdown', whyNot: '' },
-      turbulence: { explanation: 'More agitation pushes fines and oils through the filter bed into the cup', evidence: 'Higher turbidity in the cup, sediment visible', whyNot: '' },
-      ratio: { explanation: 'Higher ratio (less water) concentrates everything including body-forming compounds', evidence: 'Smaller volume, thicker mouthfeel', whyNot: 'Ratio affects body mostly through concentration — the actual body-forming compounds come from fines.' },
-      'temp-time': { explanation: 'Higher temp extracts more oils and colloids, but the effect on body is secondary', evidence: 'Slightly fuller feel at higher temps', whyNot: '' },
+      grind: {
+        explanation: 'Finer grind produces more fines that pass through the filter, increasing body',
+        evidence: 'Muddier bed, longer drawdown', whyNot: '',
+        tell: 'Finer = more body. If body is lacking but flavor is OK, go finer',
+      },
+      turbulence: {
+        explanation: 'More agitation pushes fines and oils through the filter bed into the cup',
+        evidence: 'Higher turbidity in the cup, sediment visible', whyNot: '',
+        tell: 'More agitation = more body. If body is thin, pour more aggressively',
+      },
+      ratio: {
+        explanation: 'Higher ratio (less water) concentrates everything including body-forming compounds',
+        evidence: 'Smaller volume, thicker mouthfeel',
+        whyNot: 'Ratio affects body mostly through concentration — the actual body-forming compounds come from fines.',
+        tell: 'More coffee = more body. Last resort — changes strength too',
+      },
+      'temp-time': {
+        explanation: 'Higher temp extracts more oils and colloids, but the effect on body is secondary',
+        evidence: 'Slightly fuller feel at higher temps', whyNot: '',
+        tell: 'More time = more body. If body is thin, extend contact time',
+      },
     },
   },
 };
@@ -752,6 +834,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                                 {primaryLink.whyNot && (
                                   <p className="text-[6px] text-blue-400 italic mt-0.5">↳ {primaryLink.whyNot}</p>
                                 )}
+                                {primaryLink.tell && (
+                                  <p className="text-[6px] text-amber-600 mt-0.5 font-medium">⚡ {primaryLink.tell}</p>
+                                )}
                               </div>
                             )}
                             {/* Quick secondary chain hints */}
@@ -767,6 +852,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                                     <span className="text-slate-400"> · sub: {link.subTopic ?? '—'}</span>
                                     <br />
                                     <span className="text-slate-400 italic">{link.causalChain ? link.causalChain.split('→').slice(0, 2).join('→') + '→...' : link.explanation}</span>
+                                    {link.tell && <><br /><span className="text-amber-500 text-[6px]">⚡ {link.tell}</span></>}
                                   </div>
                                 </div>
                               );

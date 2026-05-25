@@ -7,6 +7,12 @@ interface ZenNote {
   direction: 'under' | 'over' | '';
   x: number;
   y: number;
+  timeM: number;
+  timeS: number;
+  grind: number;
+  temp: number;
+  ratio: number;
+  turbulence: number;
 }
 
 interface ZenArrow {
@@ -59,11 +65,13 @@ const TAG_DIRECTION: Record<string, 'under' | 'over' | ''> = {
   sour: 'under', weak: 'under', hollow: 'under', flat: 'under', sharp: 'under',
   bitter: 'over', dry: 'over', astringent: 'over', muddy: 'over', creamy: 'over',
   intensity: '', body: '', acidity: '', sweetness: '', balance: '',
+  time: '', temp: '', grindsize: '', ratio: '', turbulence: '',
 };
 
 const UNDER_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === 'under').map(([t]) => t);
 const OVER_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === 'over').map(([t]) => t);
 const NEUTRAL_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === '').map(([t]) => t);
+const RECIPE_TAGS = ['time', 'temp', 'grindsize', 'ratio', 'turbulence'];
 
 const EXTRACTION_DIRECTIONS: Record<string, {
   label: string;
@@ -732,6 +740,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       direction: '',
       x: 60 + (noteCounter % 5) * 40,
       y: 100 + (noteCounter % 4) * 80,
+      timeM: 0, timeS: 0, grind: 0, temp: 0, ratio: 0, turbulence: 0,
     };
     setNotes(prev => [...prev, note]);
     setSelectedArrow(null);
@@ -1105,6 +1114,16 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                             ))}
                           </>
                         )}
+                        {RECIPE_TAGS.length > 0 && (
+                          <>
+                            <div className="w-full text-[6px] font-semibold text-slate-500 uppercase tracking-wider mt-1 mb-0.5">📊 Recipe</div>
+                            {RECIPE_TAGS.map(t => (
+                              <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
+                                className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
+                              >{t}</button>
+                            ))}
+                          </>
+                        )}
                         <input type="text" placeholder="custom tag..."
                           onMouseDown={e => e.stopPropagation()}
                           onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { const d = TAG_DIRECTION[val] ?? ''; updateNote(note.id, { tag: val, direction: note.direction || d }); setShowTagPicker(null); } } }}
@@ -1140,6 +1159,55 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       </div>
                     )}
                   </div>
+                  {/* Recipe input — only when a recipe tag is selected */}
+                  {RECIPE_TAGS.includes(note.tag) && (
+                  <div className="flex items-center gap-1 mb-1.5 px-1 py-1 bg-slate-50 border border-slate-200 rounded" onMouseDown={e => e.stopPropagation()}>
+                    {note.tag === 'time' && <>
+                      <span className="text-[9px] text-slate-500 font-medium">⏱</span>
+                      <input type="number" min={0} max={59} value={note.timeM}
+                        onChange={e => updateNote(note.id, { timeM: Math.min(59, Math.max(0, +e.target.value || 0)) })}
+                        className="w-6 px-0.5 py-0 text-[10px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      /><span className="text-[9px] text-slate-400">:</span>
+                      <input type="number" min={0} max={59} value={note.timeS}
+                        onChange={e => updateNote(note.id, { timeS: Math.min(59, Math.max(0, +e.target.value || 0)) })}
+                        className="w-6 px-0.5 py-0 text-[10px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <span className="text-[8px] text-slate-400 ml-auto italic">MM:SS</span>
+                    </>}
+                    {note.tag === 'temp' && <>
+                      <span className="text-[9px] text-slate-500 font-medium">🌡</span>
+                      <input type="number" value={note.temp}
+                        onChange={e => updateNote(note.id, { temp: +e.target.value || 0 })}
+                        className="w-12 px-1 py-0 text-[10px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <span className="text-[8px] text-slate-400">°C</span>
+                    </>}
+                    {note.tag === 'grindsize' && <>
+                      <span className="text-[9px] text-slate-500 font-medium">⚙</span>
+                      <input type="number" step={0.1} min={0} value={note.grind}
+                        onChange={e => updateNote(note.id, { grind: +e.target.value || 0 })}
+                        className="w-12 px-1 py-0 text-[10px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <span className="text-[8px] text-slate-400">mm</span>
+                    </>}
+                    {note.tag === 'ratio' && <>
+                      <span className="text-[9px] text-slate-500 font-medium">÷</span>
+                      <input type="number" step={0.1} min={0} value={note.ratio}
+                        onChange={e => updateNote(note.id, { ratio: +e.target.value || 0 })}
+                        className="w-12 px-1 py-0 text-[10px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <span className="text-[8px] text-slate-400">:1</span>
+                    </>}
+                    {note.tag === 'turbulence' && <>
+                      <span className="text-[9px] text-slate-500 font-medium">🌊</span>
+                      <input type="number" min={1} max={10} step={1} value={note.turbulence}
+                        onChange={e => updateNote(note.id, { turbulence: Math.min(10, Math.max(1, +e.target.value || 1)) })}
+                        className="w-8 px-1 py-0 text-[10px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <span className="text-[8px] text-slate-400">/10</span>
+                    </>}
+                  </div>
+                  )}
                   <div className="flex items-start justify-between gap-1">
                     <textarea
                       value={note.text}

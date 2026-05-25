@@ -43,6 +43,7 @@ interface ManualDigitizerProps {
   onDataExtracted: (data: DataPoint[]) => void;
   onNavigateToSetupProfile?: () => void;
   isActive?: boolean;
+  onPourPlanChange?: (plan: { cumulativePercent: number; duration?: number }[]) => void;
 }
 
 export interface ManualDigitizerSessionProfile {
@@ -214,7 +215,7 @@ const buildPreviewUltrakokiBrewData = (): UltrakokiBrewData => {
 
 type Step = 'upload' | 'calibrate-origin' | 'calibrate-x' | 'calibrate-y' | 'calibrate-highest' | 'calibrate-temp-min' | 'calibrate-temp-max' | 'extract' | 'complete';
 
-export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizerProps>(({ onDataExtracted, isActive }, ref) => {
+export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizerProps>(({ onDataExtracted, isActive, onPourPlanChange }, ref) => {
   const PHASE_COLORS = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#14b8a6'];
   const DEFAULT_PHASE_NAMES = ['Blooming', 'Acidity', 'Body', 'Sweetness', 'Aftertaste', 'Finish'];
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -444,6 +445,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       setConversionFactor(Number.isFinite(profile.conversionFactor) ? profile.conversionFactor : 0.5);
       setRefractometerTDSInput(profile.refractometerTDSInput ?? '');
       setPourPlan(Array.isArray(profile.pourPlan) ? profile.pourPlan : []);
+      onPourPlanChange?.(Array.isArray(profile.pourPlan) ? profile.pourPlan : []);
       setGrinderName(profile.grinderName ?? '');
       setGrindSize(Number.isFinite(profile.grindSize) ? profile.grindSize : 0);
       setMicron(Number.isFinite(profile.micron) ? profile.micron : 0);
@@ -3444,7 +3446,8 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
     setGrindSize(p.grindSize);
     setMicron(p.micron);
     setPourPlanFromAttempt(false);
-  }, []);
+    onPourPlanChange?.(p.pourPlan);
+  }, [onPourPlanChange]);
 
   return (
     <div className="max-w-6xl mx-auto p-6">

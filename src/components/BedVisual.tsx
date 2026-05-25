@@ -13,6 +13,7 @@ interface BedVisualProps {
   referencePoints?: ECReading[];
   onImportPhases?: (phases: PhaseRange[]) => void;
   className?: string;
+  pourPlan?: { cumulativePercent: number; duration?: number }[];
 }
 
 // ── Curve Analysis ──────────────────────────────────────────
@@ -404,7 +405,7 @@ function MiniECChart(
 
 // ── Main Component ──────────────────────────────────────────
 
-export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec = 180, redLightThreshold, referencePoints, onImportPhases, className = '' }: BedVisualProps) {
+export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec = 180, redLightThreshold, referencePoints, onImportPhases, className = '', pourPlan }: BedVisualProps) {
   const [time, setTime] = useState(brewTimeSec);
   const [chartZoom, setChartZoom] = useState(1);
   const [chartPan, setChartPan] = useState(0);
@@ -412,6 +413,57 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
 
   const analysis = useMemo(() => ecPoints && ecPoints.length > 0 ? analyzeCurve(ecPoints, redLightThreshold) : null, [ecPoints, redLightThreshold]);
   const phaseRanges = useMemo(() => analysis?.getPhaseRanges() ?? [], [analysis]);
+
+  const pourPlanPhaseAnalysis = useMemo(() => {
+    if (!analysis || !pourPlan || pourPlan.length === 0) return null;
+    const phaseHealth: Record<string, number> = {
+      extracting: 1.0, blooming: 0.85, declining: 0.6, collapsing: 0.3, collapsed: 0.1,
+    };
+    const steps: {
+      stepIndex: number;
+      startPct: number;
+      endPct: number;
+      integrity: number;
+      phases: { phase: string; color: string; startTime: number; endTime: number; ecStart: number; ecEnd: number }[];
+    }[] = [];
+    const peakEC = analysis.peak.ec;
+    for (let i = 0; i < pourPlan.length; i++) {
+      const startPct = i === 0 ? 0 : pourPlan[i - 1].cumulativePercent;
+      const endPct = pourPlan[i].cumulativePercent;
+      const startTime = (startPct / 100) * brewTimeSec;
+      const endTime = (endPct / 100) * brewTimeSec;
+      const phases: {
+        phase: string; color: string; startTime: number; endTime: number; ecStart: number; ecEnd: number;
+      }[] = [];
+      for (const r of phaseRanges) {
+        const overlapStart = Math.max(r.startTime, startTime);
+        const overlapEnd = Math.min(r.endTime, endTime);
+        if (overlapStart < overlapEnd) {
+          phases.push({
+            phase: r.phase,
+            color: r.color,
+            startTime: overlapStart,
+            endTime: overlapEnd,
+            ecStart: analysis.getEC(overlapStart),
+            ecEnd: analysis.getEC(overlapEnd),
+          });
+        }
+      }
+      if (phases.length === 0) continue;
+      let totalDur = 0;
+      let healthWeighted = 0;
+      for (const p of phases) {
+        const dur = p.endTime - p.startTime;
+        totalDur += dur;
+        healthWeighted += dur * (phaseHealth[p.phase] ?? 0.5);
+      }
+      const midEC = analysis.getEC((startTime + endTime) / 2);
+      const ecRatio = peakEC > 0 ? Math.min(1, midEC / peakEC) : 0;
+      const integrity = Math.round((healthWeighted / totalDur * 0.5 + ecRatio * 0.5) * 100);
+      steps.push({ stepIndex: i, startPct, endPct, integrity, phases });
+    }
+    return steps;
+  }, [analysis, pourPlan, brewTimeSec, phaseRanges]);
 
   const currentEC = analysis ? analysis.getEC(time) : fallbackEC;
   const currentPhase = analysis ? analysis.getPhase(time) : 'blooming';
@@ -733,6 +785,63 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pour Plan Phase Analysis */}
+      {pourPlanPhaseAnalysis && pourPlanPhaseAnalysis.length > 0 && (
+        <div className="w-full mt-2" style={{ maxWidth: BASE_W * chartZoom }}>
+          <div className="flex items-center justify-between mt-2 mb-1">
+            <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Pour Plan Phase Analysis</span>
+          </div>
+          {pourPlanPhaseAnalysis.map((step) => {
+            const stepStartTime = (step.startPct / 100) * brewTimeSec;
+            const stepEndTime = (step.endPct / 100) * brewTimeSec;
+            return (
+              <div key={step.stepIndex} className="mb-2">
+                <div className="flex items-center gap-1.5 text-[8px] text-slate-500 font-medium mb-0.5">
+                  <span>Step {step.stepIndex + 1}: {step.startPct}% → {step.endPct}% &nbsp;
+                    ({Math.floor(stepStartTime / 60)}:{String(Math.floor(stepStartTime % 60)).padStart(2, '0')} → {Math.floor(stepEndTime / 60)}:{String(Math.floor(stepEndTime % 60)).padStart(2, '0')})</span>
+                  <span className="px-1 py-0.5 rounded text-[7px] font-bold tabular-nums leading-none"
+                    style={{
+                      backgroundColor: step.integrity >= 70 ? '#dcfce7' : step.integrity >= 40 ? '#fef3c7' : '#fee2e2',
+                      color: step.integrity >= 70 ? '#166534' : step.integrity >= 40 ? '#92400e' : '#991b1b',
+                    }}
+                  >Bed {step.integrity}%</span>
+                </div>
+                <table className="w-full text-[8px] text-slate-500 border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100">
+                      <th className="pr-2 py-0.5 text-left font-semibold text-slate-400">Phase</th>
+                      <th className="pr-2 py-0.5 text-left font-semibold text-slate-400">Start</th>
+                      <th className="pr-2 py-0.5 text-left font-semibold text-slate-400">End</th>
+                      <th className="pr-2 py-0.5 text-right font-semibold text-slate-400">EC</th>
+                      <th className="py-0.5 text-right font-semibold text-slate-400">Dur</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {step.phases.map((p, j) => (
+                      <tr key={j} className="border-b border-slate-50">
+                        <td className="pr-2 py-0.5 font-bold" style={{ color: p.color }}>{p.phase}</td>
+                        <td className="pr-2 py-0.5 tabular-nums">
+                          {Math.floor(p.startTime / 60)}:{String(Math.floor(p.startTime % 60)).padStart(2, '0')}
+                        </td>
+                        <td className="pr-2 py-0.5 tabular-nums">
+                          {Math.floor(p.endTime / 60)}:{String(Math.floor(p.endTime % 60)).padStart(2, '0')}
+                        </td>
+                        <td className="pr-2 py-0.5 text-right tabular-nums text-slate-600">
+                          {p.ecStart.toFixed(1)}→{p.ecEnd.toFixed(1)}
+                        </td>
+                        <td className="py-0.5 text-right tabular-nums">
+                          {(p.endTime - p.startTime).toFixed(1)}s
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
       )}
 

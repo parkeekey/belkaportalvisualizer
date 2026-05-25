@@ -35,6 +35,7 @@ function App() {
   const [shapePresetPoints, setShapePresetPoints] = useState<{ timeSec: number; ec: number }[]>([]);
   const [targetBrewTimeSec, setTargetBrewTimeSec] = useState(180);
   const lastDigestRef = useRef('');
+  const [pourPlan, setPourPlan] = useState<{ cumulativePercent: number; duration?: number }[]>([]);
 
   const [activePage, setActivePage] = useState<AppPage>(() => {
     try {
@@ -259,7 +260,7 @@ function App() {
 
       <main>
         <div className={activePage === 'digitizer' ? 'block' : 'hidden'} aria-hidden={activePage !== 'digitizer'}>
-          <ManualDigitizer ref={digitizerRef} isActive={activePage === 'digitizer'} onDataExtracted={(data) => console.log('Extracted data:', data)} onNavigateToSetupProfile={useCallback(() => setActivePage('setup-profile'), [])} />
+          <ManualDigitizer ref={digitizerRef} isActive={activePage === 'digitizer'} onDataExtracted={(data) => console.log('Extracted data:', data)} onNavigateToSetupProfile={useCallback(() => setActivePage('setup-profile'), [])} onPourPlanChange={setPourPlan} />
 
           {/* Bed Health */}
           <section className="max-w-6xl mx-auto px-6 pb-6">
@@ -309,6 +310,7 @@ function App() {
                 <BedVisual ecPoints={liveECPoints} brewTimeSec={targetBrewTimeSec}
                   redLightThreshold={ecSource === 'digitizer' || liveECPoints.length > 0 ? redLightECThreshold : undefined}
                   referencePoints={presetOverlay && shapePresetPoints.length > 1 ? shapePresetPoints : undefined}
+                  pourPlan={pourPlan}
                   onImportPhases={useCallback((phases: { phase: string; startTime: number; endTime: number; color: string }[]) => {
                     digitizerRef.current?.importPhaseLogs?.(phases);
                   }, [])}

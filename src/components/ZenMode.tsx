@@ -1034,7 +1034,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       </svg>
 
       {/* Foundations column — fixed in viewport, always visible */}
-      <div className="fixed top-8 right-8 flex flex-col gap-5 z-30">
+      <div className="fixed top-20 right-8 flex flex-col gap-5 z-30">
         {FOUNDATIONS.map(f => (
           <div key={f.id} className="flex items-center gap-0 pointer-events-auto">
             <div data-fid={f.id}

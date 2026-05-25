@@ -5,8 +5,9 @@ import { UltrakokiParserPage, type UltrakokiParserPageHandle, type UltrakokiPars
 import SetupProfile, { type SetupProfileHandle } from './components/SetupProfile';
 import CoffeeChat from './components/CoffeeChat';
 import BedVisual from './components/BedVisual';
+import ZenMode from './components/ZenMode';
 
-type AppPage = 'digitizer' | 'ultrakoki-parser' | 'setup-profile';
+type AppPage = 'digitizer' | 'ultrakoki-parser' | 'setup-profile' | 'zen';
 
 const ACTIVE_PAGE_STORAGE_KEY = 'belka.activePage';
 
@@ -152,7 +153,7 @@ function App() {
       if (parsed.setupProfile) {
         setupProfileRef.current?.importProfile(parsed.setupProfile as unknown as Parameters<typeof setupProfileRef.current.importProfile>[0]);
       }
-      setActivePage(parsed.activePage === 'ultrakoki-parser' || parsed.activePage === 'setup-profile' ? parsed.activePage : 'digitizer');
+      setActivePage(parsed.activePage === 'ultrakoki-parser' || parsed.activePage === 'setup-profile' || parsed.activePage === 'zen' ? parsed.activePage : 'digitizer');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load workspace profile.';
       window.alert(message);
@@ -201,6 +202,13 @@ function App() {
                 title="Go to Setup Profile"
               >
                 Setup
+              </button>
+              <button
+                onClick={() => setActivePage('zen')}
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${activePage === 'zen' ? 'bg-amber-700 border-amber-700 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                title="Zen Mode — connect taste to fundamentals"
+              >
+                ☯ Zen
               </button>
               <button
                 onClick={() => setChatOpen(v => !v)}
@@ -413,6 +421,9 @@ function App() {
         <div className={activePage === 'setup-profile' ? 'block' : 'hidden'} aria-hidden={activePage !== 'setup-profile'}>
           <SetupProfile ref={setupProfileRef} />
         </div>
+        {activePage === 'zen' && (
+          <ZenMode onClose={() => setActivePage('digitizer')} />
+        )}
       </main>
 
       <CoffeeChat

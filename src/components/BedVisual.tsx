@@ -32,8 +32,10 @@ interface CurveAnalysis {
   getPhase: (t: number) => 'blooming' | 'extracting' | 'declining' | 'collapsing' | 'collapsed';
   getCrackSeverity: (t: number) => 0 | 1 | 2 | 3;
   getPhaseRanges: () => PhaseRange[];
-  findOptimalCutTime: () => number | null;
-  findCollapseTime: () => number | null;
+  findDeclineStart: () => { timeSec: number; ec: number } | null;
+  findCollapseStart: () => { timeSec: number; ec: number } | null;
+  findRedLightCross: (threshold: number) => { timeSec: number; ec: number } | null;
+  getPostPeakLowest: () => ECReading | null;
 }
 
 function analyzeCurve(points: ECReading[], redLightThreshold?: number): CurveAnalysis | null {
@@ -117,29 +119,44 @@ function analyzeCurve(points: ECReading[], redLightThreshold?: number): CurveAna
     return ranges;
   }
 
-  function findOptimalCutTime(): number | null {
-    // Post-peak: find when EC drops to 88% of peak (common specialty cutoff)
-    if (sorted.length < 3) return null;
-    const threshold = peak.ec * 0.88;
-    for (const p of sorted) {
-      if (p.timeSec > peak.timeSec && p.ec <= threshold) {
-        return p.timeSec;
+  function findDeclineStart(): { timeSec: number; ec: number } | null {
+    for (const d of derivatives) {
+      if (d.timeSec > peak.timeSec && d.rate < -declineRate) {
+        return { timeSec: d.timeSec, ec: getInterpolatedEC(d.timeSec) };
       }
     }
     return null;
   }
 
-  function findCollapseTime(): number | null {
-    // First post-peak point where derivative drops below -peakEC * 0.03
+  function findCollapseStart(): { timeSec: number; ec: number } | null {
     for (const d of derivatives) {
       if (d.timeSec > peak.timeSec && d.rate < -collapseRate) {
-        return d.timeSec;
+        return { timeSec: d.timeSec, ec: getInterpolatedEC(d.timeSec) };
       }
     }
     return null;
   }
 
-  return { peak, sorted, derivatives, getEC: getInterpolatedEC, getPhase, getCrackSeverity, getPhaseRanges, findOptimalCutTime, findCollapseTime };
+  function findRedLightCross(threshold: number): { timeSec: number; ec: number } | null {
+    for (const p of sorted) {
+      if (p.timeSec > peak.timeSec && p.ec <= threshold) {
+        return { timeSec: p.timeSec, ec: p.ec };
+      }
+    }
+    return null;
+  }
+
+  function getPostPeakLowest(): ECReading | null {
+    let lowest: ECReading | null = null;
+    for (const p of sorted) {
+      if (p.timeSec > peak.timeSec) {
+        if (!lowest || p.ec < lowest.ec) lowest = p;
+      }
+    }
+    return lowest;
+  }
+
+  return { peak, sorted, derivatives, getEC: getInterpolatedEC, getPhase, getCrackSeverity, getPhaseRanges, findDeclineStart, findCollapseStart, findRedLightCross, getPostPeakLowest };
 }
 
 // ── Interactive Mini EC Curve Chart ─────────────────────────
@@ -406,8 +423,11 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
 
   const progress = Math.min(1, Math.max(0, time / brewTimeSec));
 
-  const cutTime = analysis?.findOptimalCutTime() ?? null;
-  const collapseTime = analysis?.findCollapseTime() ?? null;
+  const [cutTargetSec, setCutTargetSec] = useState<number | ''>('');
+  const declineStart = analysis?.findDeclineStart() ?? null;
+  const collapseStart = analysis?.findCollapseStart() ?? null;
+  const redLightCross = redLightThreshold !== undefined ? analysis?.findRedLightCross(redLightThreshold) ?? null : null;
+  const postPeakLowest = analysis?.getPostPeakLowest() ?? null;
 
   const phaseMeta: Record<string, { level: string; color: string; bar: string; desc: string }> = {
     blooming: { level: 'Blooming', color: '#3b82f6', bar: '#2563eb', desc: 'Bed saturating — EC rising, no channels yet' },
@@ -580,17 +600,53 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
                 </td>
               </tr>
               <tr>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider" title="Time when EC drops to 88% of peak — recommended cutoff">Cut Time</td>
+                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider" title="First point where EC drop accelerates beyond normal">Decline ↓</td>
                 <td className="py-0.5 font-bold tabular-nums" style={{ color: '#f59e0b' }}>
-                  {cutTime !== null
-                    ? `${Math.floor(cutTime / 60)}:${String(Math.floor(cutTime % 60)).padStart(2, '0')} (${(cutTime / brewTimeSec * 100).toFixed(0)}%)`
-                    : '—'}
+                  {declineStart ? `${Math.floor(declineStart.timeSec / 60)}:${String(Math.floor(declineStart.timeSec % 60)).padStart(2, '0')}  EC ${declineStart.ec.toFixed(1)}` : '—'}
                 </td>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider pl-4" title="Post-peak point where EC drop accelerates into collapse">Collapse</td>
+                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider pl-4" title="First point where bed starts to collapse">Collapse ↓</td>
                 <td className="py-0.5 font-bold tabular-nums" style={{ color: '#ef4444' }}>
-                  {collapseTime !== null
-                    ? `${Math.floor(collapseTime / 60)}:${String(Math.floor(collapseTime % 60)).padStart(2, '0')} (${(collapseTime / brewTimeSec * 100).toFixed(0)}%)`
-                    : '—'}
+                  {collapseStart ? `${Math.floor(collapseStart.timeSec / 60)}:${String(Math.floor(collapseStart.timeSec % 60)).padStart(2, '0')}  EC ${collapseStart.ec.toFixed(1)}` : '—'}
+                </td>
+              </tr>
+              <tr>
+                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider" title="Time EC first drops below red light threshold">Cut @ RL</td>
+                <td className="py-0.5 font-bold tabular-nums" style={{ color: redLightCross ? '#ef4444' : '#22c55e' }}>
+                  {redLightCross ? `${Math.floor(redLightCross.timeSec / 60)}:${String(Math.floor(redLightCross.timeSec % 60)).padStart(2, '0')}  EC ${redLightCross.ec.toFixed(1)}` : 'EC > RL ✓'}
+                </td>
+                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider pl-4">Lowest</td>
+                <td className="py-0.5 font-bold tabular-nums" style={{ color: '#64748b' }}>
+                  {postPeakLowest ? `${Math.floor(postPeakLowest.timeSec / 60)}:${String(Math.floor(postPeakLowest.timeSec % 60)).padStart(2, '0')}  EC ${postPeakLowest.ec.toFixed(1)}` : '—'}
+                </td>
+              </tr>
+              <tr>
+                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider">Cut at time</td>
+                <td colSpan={3} className="py-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <input value={cutTargetSec === '' ? '' : `${Math.floor(cutTargetSec / 60)}:${String(Math.floor(cutTargetSec % 60)).padStart(2, '0')}`}
+                      onChange={e => {
+                        const parts = e.target.value.split(':');
+                        const m = parseInt(parts[0]);
+                        const s = parseInt(parts[1]);
+                        if (!isNaN(m) && !isNaN(s) && s >= 0 && s < 60) setCutTargetSec(m * 60 + s);
+                        else if (e.target.value === '') setCutTargetSec('');
+                      }}
+                      className="w-14 px-1 py-0.5 text-[9px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
+                      placeholder="m:ss"
+                    />
+                    {cutTargetSec !== '' && analysis && (
+                      <span className="text-[9px] font-bold tabular-nums">
+                        EC {analysis.getEC(cutTargetSec).toFixed(1)}
+                        <span className="text-slate-300 mx-1">·</span>
+                        <span style={{ color: (() => {
+                          const p = analysis.getPhase(cutTargetSec);
+                          return p === 'collapsed' ? '#b91c1c' : p === 'collapsing' ? '#ef4444' : p === 'declining' ? '#f59e0b' : p === 'extracting' ? '#22c55e' : '#3b82f6';
+                        })() }}>
+                          {analysis.getPhase(cutTargetSec)}
+                        </span>
+                      </span>
+                    )}
+                  </div>
                 </td>
               </tr>
             </tbody>

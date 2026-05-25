@@ -88,7 +88,7 @@ const MODE_STORAGE_KEY = 'belka.chatMode';
 
 type ChatMode = 'ai' | 'local';
 
-type LocalMode = 'menu' | 'symptom' | 'grinder' | 'turbulence' | 'bean' | 'recipe' | 'tds' | 'dial' | 'ec';
+type LocalMode = 'menu' | 'symptom' | 'grinder' | 'turbulence' | 'bean' | 'recipe' | 'tds' | 'dial' | 'ec' | 'cut';
 
 interface DiagnosticState {
   mode: LocalMode;
@@ -153,6 +153,8 @@ function localDiagnose(text: string, state: DiagnosticState): { reply: string; n
   • **tds** — Quick TDS/EY lookup for any ratio
   • **dial** — Track grind settings, log likes/dislikes, find your sweet spot
   • **ec** — EC & bed collapse analysis — understand your extraction health
+  • **cut** — Cut time assist — decide when to pull based on your curve
+  • **cut** — Cut time assist — decide when to pull based on your curve
 
   Or just describe your problem and I'll match it.`,
       newState: { mode: 'menu', step: 0, data: {} }
@@ -225,6 +227,23 @@ Tell me: dose, ratio, hot or iced, and brewer. (e.g. "25g at 1:11.5 iced on V60 
 What process is your coffee? (Washed, Natural, Honey, Anaerobic, Lactic, Carbonic Maceration, Co-Fermented, Koji, Thermal Shock)`,
           newState: { mode: 'bean', step: 1, data: {} }
         };
+    }
+    if (matchKeyword(text, ['cut', 'cutoff', 'pull', 'when to stop'])) {
+      return {
+        reply: `**Cut Time Assist** — use the Bed Health report table to decide when to pull.
+
+The table shows you 4 key moments in your EC curve:
+
+• **Decline ↓** — when extraction rate first slows. EC is still good, but the sweet spot is ending.
+• **Collapse ↓** — when the bed starts losing structure. Cut BEFORE this if you want clean cups.
+• **Cut @ RL** — when EC hits your red light threshold. Hard deadline — everything after is over-extracted.
+• **Lowest** — the minimum EC reached post-peak. Useful for fast brews.
+
+There's also a **Cut at time** field: type your target brew time (e.g. 1:20) and it instantly shows the EC + phase at that moment.
+
+If you're brewing fast (1:00–1:30), focus on **Collapse ↓** and **Cut @ RL** — those tell you if your bed held together at that speed.`,
+        newState: state
+      };
     }
     if (matchKeyword(text, ['ec', 'bed', 'collapse', 'extraction health', 'conductivity'])) {
       return {
@@ -379,6 +398,20 @@ Context:
 
 Tell me your EC reading, ratio, and what you're tasting.`,
         newState: { mode: 'ec', step: 0, data: {} }
+      };
+    }
+    if (matchKeyword(text, ['cut', 'cutoff', 'pull', 'when to stop', 'cut time'])) {
+      return {
+        reply: `**Cut Time Assist** — use the Bed Health table to decide when to pull.
+
+The table shows:
+• **Decline ↓** — extraction slowing, sweet spot ending
+• **Collapse ↓** — bed losing structure, cut before this
+• **Cut @ RL** — EC hits red light, hard deadline
+• **Lowest** — minimum EC post-peak
+
+Type a target time in the **Cut at time** field below the chart to see EC + phase.`,
+        newState: { mode: 'cut', step: 0, data: {} }
       };
     }
 
@@ -1077,13 +1110,32 @@ Want specific advice for this process? Ask about grind, temp, or water.`,
       return { reply: fix, newState: state };
     }
 
-    let ecPrompt = 'Tell me your EC reading (your scale 15-30) - like "18" or "my EC was 22" - and I\'ll analyze what it means for your bed and taste. Or ask about **why**, **fix**, or **state**.';
+    let ecPrompt = 'Tell me your EC reading (your scale 15-30) — like "18" or "my EC was 22" — and I\'ll analyze what it means for your bed and taste. Or ask about **why**, **fix**, or **state**.';
     return { reply: ecPrompt, newState: state };
+  }
+
+  // ── Cut Mode ───────────────────────────────────────────────
+  if (state.mode === 'cut') {
+    return {
+      reply: `**Cut Time Assist**
+
+Open the **Bed Health** section below the digitizer. The report table shows:
+
+• **Decline ↓** — first sign extraction is slowing. Sweet spot ending.
+• **Collapse ↓** — bed losing structure. Cut before this for clean flavor.
+• **Cut @ RL** — EC hits your red light line. Hard deadline.
+• **Lowest** — minimum EC after peak. Useful benchmark for fast brews.
+
+There's also a **Cut at time** input: type your target brew time (e.g. 1:20) and it shows the EC + phase at that moment.
+
+Type **check cut** from anywhere to see this again. Type **menu** for other tools.`,
+      newState: state
+    };
   }
 
   // Fallback
   return {
-    reply: `Type **menu** to see available modes: symptom, grinder, turbulence, bean, recipe, tds, dial, ec.`,
+    reply: `Type **menu** to see available modes: symptom, grinder, turbulence, bean, recipe, tds, dial, ec, cut.`,
     newState: { mode: 'menu', step: 0, data: {} }
   };
 }

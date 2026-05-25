@@ -116,6 +116,7 @@ interface AttemptEntry {
   tdsMax: number;
   ey: number;
   eyTarget: number;
+  ec: number;
   brewTimeActual: number | null;
   pourPlan: PourPlanEntry[];
   tasteTags: string[];
@@ -133,7 +134,7 @@ function loadLog(): AttemptEntry[] {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     return (raw as AttemptEntry[]).map(e => {
-      const entry = { ...e, brewTemp: (e as any).brewTemp ?? 0, tasteTags: e.tasteTags ?? [], chips: (e as any).chips ?? ((e as any).chipScores ? Object.keys((e as any).chipScores).filter((k: string) => (e as any).chipScores[k] > 0) : null), plan: (e as any).plan ?? null, eyTarget: (e as any).eyTarget ?? 0, brewTimeActual: (e as any).brewTimeActual ?? null, liked: (e as any).liked ?? null, pourPlan: (e as any).pourPlan ?? [], waterMix: (e as any).waterMix ?? null, cupRating: (e as any).cupRating ?? null };
+      const entry = { ...e, brewTemp: (e as any).brewTemp ?? 0, tasteTags: e.tasteTags ?? [], chips: (e as any).chips ?? ((e as any).chipScores ? Object.keys((e as any).chipScores).filter((k: string) => (e as any).chipScores[k] > 0) : null), plan: (e as any).plan ?? null, eyTarget: (e as any).eyTarget ?? 0, ec: (e as any).ec ?? 0, brewTimeActual: (e as any).brewTimeActual ?? null, liked: (e as any).liked ?? null, pourPlan: (e as any).pourPlan ?? [], waterMix: (e as any).waterMix ?? null, cupRating: (e as any).cupRating ?? null };
       if (entry.cupRating == null && entry.liked != null) entry.cupRating = entry.liked ? 3 : 1;
       return entry;
     });
@@ -184,6 +185,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
   const [logTemp, setLogTemp] = useState(currentWaterTemp > 0 ? String(currentWaterTemp) : '');
   const [logTDS, setLogTDS] = useState(String(currentTDS));
   const [logEY, setLogEY] = useState(currentEY && currentEY > 0 ? String(currentEY) : '');
+  const [logEC, setLogEC] = useState('');
   const [logBrewTarget, setLogBrewTarget] = useState(brewTimeTarget && brewTimeTarget > 0 ? String(brewTimeTarget) : '');
   const [logBrewActual, setLogBrewActual] = useState(brewTimeActual != null && brewTimeActual > 0 ? String(brewTimeActual) : '');
   const [logTags, setLogTags] = useState<string[]>([]);
@@ -199,6 +201,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
   const [editTemp, setEditTemp] = useState('');
   const [editTDS, setEditTDS] = useState('');
   const [editEY, setEditEY] = useState('');
+  const [editEC, setEditEC] = useState('');
   const [editBrewActual, setEditBrewActual] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
   const [editChips, setEditChips] = useState<string[]>([]);
@@ -285,6 +288,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
       pourPlan: pourPlanStandby ?? propPourPlan ?? [],
       tasteTags: [...logTags],
       chips: logChips.length > 0 ? [...logChips] : null,
+      ec: parseFloat(logEC) || 0,
       notes: logNotes,
       cupRating: logCupRating,
       liked: logCupRating != null ? logCupRating >= 2 : null,
@@ -296,12 +300,13 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
     setEntries(prev => [entry, ...prev]);
     setLogEY('');
     setLogBrewActual('');
+    setLogEC('');
               setLogTags([]);
     setLogChips([]);
     setShowChips(false);
               setLogCupRating(null);
               setLogLiked(null);
-  }, [logGrind, logRatio, logTemp, logTDS, logEY, logBrewTarget, logBrewActual, logTags, logChips, logNotes, logCupRating, logLiked, currentGrindSize, currentDose, currentRatio, currentTotalWater, currentWaterTemp, tdsMin, tdsMax, currentEY, brewTimeTarget, brewTimeActual, planSnapshot, waterMixStandby, onClearWaterMixStandby, pourPlanStandby, onClearPourPlanStandby, propPourPlan]);
+  }, [logGrind, logRatio, logTemp, logTDS, logEY, logEC, logBrewTarget, logBrewActual, logTags, logChips, logNotes, logCupRating, logLiked, currentGrindSize, currentDose, currentRatio, currentTotalWater, currentWaterTemp, tdsMin, tdsMax, currentEY, brewTimeTarget, brewTimeActual, planSnapshot, waterMixStandby, onClearWaterMixStandby, pourPlanStandby, onClearPourPlanStandby, propPourPlan]);
 
   const deleteEntry = useCallback((id: string) => {
     setEntries(prev => prev.filter(e => e.id !== id));
@@ -315,6 +320,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
     setEditTemp(e.brewTemp > 0 ? String(e.brewTemp) : '');
     setEditTDS(String(e.tdsActual));
     setEditEY(String(e.ey));
+    setEditEC(e.ec > 0 ? String(e.ec) : '');
     setEditBrewActual(e.brewTimeActual != null ? String(e.brewTimeActual) : '');
     setEditTags([...e.tasteTags]);
     setEditChips(e.chips ? [...e.chips] : []);
@@ -344,13 +350,14 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
         brewTimeActual: !isNaN(newBrewActual) ? newBrewActual : null,
         tasteTags: [...editTags],
         chips: editChips.length > 0 ? [...editChips] : null,
+        ec: parseFloat(editEC) || 0,
         notes: editNotes,
         cupRating: editCupRating,
         liked: editCupRating != null ? editCupRating >= 2 : null,
       };
     }));
     setEditingId(null);
-  }, [editGrind, editDose, editRatio, editTemp, editTDS, editEY, editBrewActual, editTags, editChips, editNotes, editCupRating, editLiked]);
+  }, [editGrind, editDose, editRatio, editTemp, editTDS, editEY, editEC, editBrewActual, editTags, editChips, editNotes, editCupRating, editLiked]);
 
   const total = entries.length;
   const idealCount = entries.filter(e => overallVerdict(e.tdsActual, e.tdsMin, e.tdsMax, e.tasteTags) === 'IDEAL').length;
@@ -511,6 +518,15 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
             />
           </div>
           <div className="flex flex-col gap-0.5">
+            <label className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">EC µS</label>
+            <input type="number" step={1} min={0} max={2000} value={logEC}
+              onChange={(e) => setLogEC(e.target.value)}
+              className="w-16 px-1.5 py-1 text-xs border border-purple-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white"
+              placeholder="µS/cm"
+              title="Electrical Conductivity (your scale: 15=collapsed, 30=healthy)"
+            />
+          </div>
+          <div className="flex flex-col gap-0.5">
             <label className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Brew finished ⏱</label>
             <div className="flex items-center gap-0.5">
               <input type="number" min={0} step={1} value={logBrewActual && parseInt(logBrewActual) > 0 ? Math.floor(parseInt(logBrewActual) / 60) : ''}
@@ -567,6 +583,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
               setLogTags([]);
               setLogChips([]);
               setShowChips(false);
+              setLogEC('');
               setLogNotes('');
               setLogCupRating(null);
               setLogLiked(null);
@@ -734,6 +751,22 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                     </label>
                   ) : (
                     <span className="tabular-nums text-slate-500">{e.ey > 0 ? `${e.ey.toFixed(1)}%` : '—'}</span>
+                  )}
+
+                  {/* EC */}
+                  {isEditing ? (
+                    <label className="flex flex-col items-center gap-0">
+                      <span className="text-[7px] text-purple-500 font-semibold uppercase tracking-wider">EC</span>
+                      <input type="number" step={1} min={0} max={2000} value={editEC}
+                        onChange={(ee) => setEditEC(ee.target.value)}
+                        className="w-14 px-1 py-0.5 text-xs border border-purple-300 rounded text-center bg-white"
+                        onKeyDown={(ee) => { if (ee.key === 'Enter') saveEdit(e.id); }}
+                      />
+                    </label>
+                  ) : (
+                    e.ec > 0 && <span className={`tabular-nums font-bold text-[10px] ${e.ec <= 15 ? 'text-red-500' : e.ec <= 20 ? 'text-amber-500' : e.ec <= 25 ? 'text-yellow-600' : 'text-emerald-500'}`}
+                      title={e.ec <= 15 ? 'Bed collapsed ⚠️' : e.ec <= 20 ? 'Partial bed deformation' : e.ec <= 25 ? 'Moderate breakdown' : 'Healthy extraction ✅'}
+                    >{e.ec}µS</span>
                   )}
 
                   <span className="text-slate-200 mx-0.5">|</span>
@@ -1115,6 +1148,11 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                     >{i + 1}</span>
                     {e.chips && e.chips.length > 0 && (
                       <span className="text-[7px] font-bold mt-px leading-none text-amber-600">🏅{e.chips.length}</span>
+                    )}
+                    {e.ec > 0 && (
+                      <span className={`text-[6px] font-bold mt-px leading-none ${e.ec <= 15 ? 'text-red-500' : e.ec <= 20 ? 'text-amber-500' : e.ec <= 25 ? 'text-yellow-600' : 'text-emerald-500'}`}
+                        title={`EC: ${e.ec}`}
+                      >{e.ec}µ</span>
                     )}
                   </div>
                 );

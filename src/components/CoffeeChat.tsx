@@ -88,7 +88,7 @@ const MODE_STORAGE_KEY = 'belka.chatMode';
 
 type ChatMode = 'ai' | 'local';
 
-type LocalMode = 'menu' | 'symptom' | 'grinder' | 'turbulence' | 'bean' | 'recipe' | 'tds' | 'dial';
+type LocalMode = 'menu' | 'symptom' | 'grinder' | 'turbulence' | 'bean' | 'recipe' | 'tds' | 'dial' | 'ec';
 
 interface DiagnosticState {
   mode: LocalMode;
@@ -151,8 +151,8 @@ function localDiagnose(text: string, state: DiagnosticState): { reply: string; n
   • **bean** — Process-specific brewing guide
   • **recipe** — Generate a new brew recipe
   • **tds** — Quick TDS/EY lookup for any ratio
-  • **dial** — Track grind settings you've tried, log likes/dislikes, and find your sweet spot
-  • **tds** — Quick TDS/EY lookup for any ratio
+  • **dial** — Track grind settings, log likes/dislikes, find your sweet spot
+  • **ec** — EC & bed collapse analysis — understand your extraction health
 
   Or just describe your problem and I'll match it.`,
       newState: { mode: 'menu', step: 0, data: {} }
@@ -219,15 +219,31 @@ Tell me: dose, ratio, hot or iced, and brewer. (e.g. "25g at 1:11.5 iced on V60 
       };
     }
     if (matchKeyword(text, ['bean', 'process', 'roast'])) {
-      return {
-        reply: `Bean assist — brewing guide by process type.
+        return {
+          reply: `Bean assist — brewing guide by process type.
 
 What process is your coffee? (Washed, Natural, Honey, Anaerobic, Lactic, Carbonic Maceration, Co-Fermented, Koji, Thermal Shock)`,
-        newState: { mode: 'bean', step: 1, data: {} }
+          newState: { mode: 'bean', step: 1, data: {} }
+        };
+    }
+    if (matchKeyword(text, ['ec', 'bed', 'collapse', 'extraction health', 'conductivity'])) {
+      return {
+        reply: `**EC & Bed Collapse Analysis** — I'll help you understand your brew's health.
+
+EC = Electrical Conductivity of your brew water, measured in µS/cm (or mS/cm). It tells you how much is actually being extracted.
+
+Some context:
+• EC ≤ 15 → bed likely collapsed, extraction stalled
+• EC 16–20 → partial bed deformation, inconsistent
+• EC 21–25 → moderate breakdown, risk of uneven extraction
+• EC > 25 → healthy extraction, bed holding together
+
+Tell me your EC reading, ratio, and what you're tasting and I'll give you a full analysis.`,
+        newState: { mode: 'ec', step: 0, data: {} }
       };
     }
     return {
-      reply: `Not sure what you want to check. Try **check tds**, **check grind**, **check taste**, **check recipe**, **check bean**, or **check pour**.`,
+      reply: `Not sure what you want to check. Try **check tds**, **check grind**, **check taste**, **check recipe**, **check bean**, **check ec**, or **check pour**.`,
       newState: state
     };
   }
@@ -347,6 +363,22 @@ I'll track your history, suggest the next grind to try, and show the search rang
 
 Type **reset** to clear, or **happy** when you've found it.`,
         newState: { mode: 'dial', step: 0, data: {} }
+      };
+    }
+    if (matchKeyword(text, ['ec', 'bed', 'collapse', 'extraction health', 'conductivity'])) {
+      return {
+        reply: `**EC & Bed Collapse Analysis** — I'll help you understand your brew's health.
+
+EC = Electrical Conductivity of your brew water. It's a real-time window into how well your coffee bed is extracting.
+
+Context:
+• EC ≤ 15 → bed likely collapsed, extraction stalled
+• EC 16–20 → partial bed deformation, inconsistent
+• EC 21–25 → moderate breakdown, risk of uneven
+• EC > 25 → healthy extraction, bed holding together
+
+Tell me your EC reading, ratio, and what you're tasting.`,
+        newState: { mode: 'ec', step: 0, data: {} }
       };
     }
 
@@ -954,9 +986,104 @@ Want specific advice for this process? Ask about grind, temp, or water.`,
     };
   }
 
+  // ── MODE: ec ──
+  if (state.mode === 'ec') {
+    const ecNum = (() => {
+      const m = text.match(/(\d{1,2}(?:\.\d)?)\s*(?:µS|uS|mS|ms|μS)?/);
+      if (m) { const v = parseFloat(m[1]); if (v >= 5 && v <= 50) return v; }
+      const m2 = text.match(/EC[:\s]*(\d{1,2}(?:\.\d)?)/i);
+      if (m2) { const v = parseFloat(m2[1]); if (v >= 5 && v <= 50) return v; }
+      return null;
+    })();
+    const ratioNum = (() => {
+      const m = text.match(/(?:1:)?(\d{2}(?:\.\d+)?)\b/);
+      if (m) return parseFloat(m[1]);
+      return null;
+    })();
+
+    // Step 0: accept EC reading and analyze
+    if (ecNum && ecNum >= 5 && ecNum <= 50) {
+      let ecStatus, bedState, risk, advice;
+
+      if (ecNum <= 15) {
+        ecStatus = '🔴 Critical — very low EC';
+        bedState = '**Total bed collapse.** The coffee bed has lost structural integrity. Water is channeling through or pooling on top without extracting properly.';
+        risk = 'High risk of **hollow, thin, sour** or **astringent** taste. Prolonged low EC = bad taste that persists.';
+        advice = 'Go **coarser** 3-5 clicks to reduce fines migration. Lower pour height (4-6cm). Use center-pulse pattern to reduce agitation. Check your water distribution — are you pouring evenly?';
+      } else if (ecNum <= 20) {
+        ecStatus = '🟠 Low — partial bed deformation';
+        bedState = '**Partial bed collapse.** Some channels have formed. Parts of the bed are extracting normally while others stall.';
+        risk = 'Moderate risk of **inconsistent flavor** — some sips taste good, others bitter or hollow.';
+        advice = 'Check your grind distribution. Try **2 clicks coarser** and reduce pour turbulence. Pour in a tight spiral at 5-7cm height.';
+      } else if (ecNum <= 25) {
+        ecStatus = '🟡 Moderate — bed breaking down';
+        bedState = '**Bed is breaking down but still extracting.** Some unevenness in flow. Fines migration may be starting to clog pores.';
+        risk = 'Risk of **astringency and bitterness** from over-extracted pockets. Mouthfeel may be unbalanced.';
+        advice = 'Slight adjustment — try **1 click coarser** or reduce your pour count. Keep pour height moderate (5-8cm).';
+      } else {
+        ecStatus = '🟢 Good — healthy extraction';
+        bedState = '**Bed is holding together well.** Even flow, proper dissolution, EC rising steadily through the brew.';
+        risk = 'Low risk. You\'re in a good zone.';
+        advice = 'Keep doing what you\'re doing! If you want to experiment, try adjusting grind 1 click at a time and compare.';
+      }
+
+      let reply = `╔══ EC Analysis ══╗\n\n`;
+      reply += `EC: **${ecNum}**\n`;
+      reply += `Status: ${ecStatus}\n\n`;
+      reply += `**Bed state:** ${bedState}\n\n`;
+      reply += `**Risk:** ${risk}\n\n`;
+      reply += `**Advice:** ${advice}\n\n`;
+
+      if (ratioNum && ratioNum >= 8) {
+        reply += `Your ratio is **1:${ratioNum}**. `;
+        if (ecNum <= 15 && ratioNum > 16) {
+          reply += `That's a loose ratio — combined with low EC it suggests water is running through too fast. Try tightening to 1:14-1:15.`;
+        } else if (ecNum <= 15 && ratioNum <= 14) {
+          reply += `A tight ratio — which normally extracts well, so low EC suggests a bed issue specifically. Focus on grind and pour technique.`;
+        } else if (ecNum >= 25) {
+          reply += `That's working well with your EC. Good combo.`;
+        }
+      }
+
+      reply += `\n\n**Particle expansion note:** Coffee grounds swell 2-3x when they hit hot water. This makes the bed denser over time. If the particle size distribution has too many fines, they clog the pores -> bed collapses -> EC drops. If it\'s too uniform (all same size), water flows through too fast -> EC stays low.\n\n`;
+      reply += `Type **menu** for other tools, or give me another EC reading. 💕`;
+
+      return { reply, newState: { mode: 'ec', step: 0, data: {} } };
+    }
+
+    // State
+    if (matchKeyword(text, ['state', 'progress', 'visual'])) {
+      let s = 'Think of the brew bed like a **sponge structure**:\n\n';
+      s += '- Low EC (<=15) = sponge collapsed, water runs around it\n';
+      s += '- Mid EC (16-20) = sponge partially crushed, some channels\n';
+      s += '- High EC (>25) = sponge holding shape, water flows through evenly\n\n';
+      s += 'Each pour adds more turbulence. If the bed is too fine or too agitated, it collapses mid-brew. Good EC = the bed survived all your pours.';
+      return { reply: s, newState: state };
+    }
+
+    if (matchKeyword(text, ['why', 'explain', 'science', 'how'])) {
+      let w = `**Why EC drops:**\n\n1. **Particle swelling** — 2-3x volume increase -> pores close up\n2. **Fines migration** — tiny particles drift down -> clog bottom pores\n3. **Bed fracture** — pressure builds, bed cracks -> water channels\n\nOnce a channel forms, water follows that path every time -> rest of the bed is untouched -> EC stays low because most grounds aren\'t being extracted.\n\n**Why it matters:** EC is the only real-time window into whether your extraction is even or not. TDS tells you the total, but EC tells you how it happened.`;
+      return { reply: w, newState: state };
+    }
+
+    if (matchKeyword(text, ['fix', 'improve', 'help', 'save'])) {
+      let fix = '**To fix low EC / bed collapse:**\n\n';
+      fix += '1. **Go coarser** - fewer fines = less clogging = bed stays open longer\n';
+      fix += '2. **Lower pour height** - 4-6cm instead of 10-15cm = less turbulence\n';
+      fix += '3. **Softer pour** - use a wider spout or pour slowly\n';
+      fix += '4. **Pre-wet filter** thoroughly - eliminates air pockets\n';
+      fix += '5. **Check water distribution** - pour in even circles, not one spot\n\n';
+      fix += 'Best quick fix: coarser grind + lower pour. That fixes most EC issues.';
+      return { reply: fix, newState: state };
+    }
+
+    let ecPrompt = 'Tell me your EC reading (your scale 15-30) - like "18" or "my EC was 22" - and I\'ll analyze what it means for your bed and taste. Or ask about **why**, **fix**, or **state**.';
+    return { reply: ecPrompt, newState: state };
+  }
+
   // Fallback
   return {
-    reply: `Type **menu** to see available modes: symptom, grinder, turbulence, bean, recipe, tds, dial.`,
+    reply: `Type **menu** to see available modes: symptom, grinder, turbulence, bean, recipe, tds, dial, ec.`,
     newState: { mode: 'menu', step: 0, data: {} }
   };
 }
@@ -1032,6 +1159,7 @@ export default function CoffeeChat({ externalOpen, onExternalToggle, onRequestCo
 • **turbulence** — Pour technique & flow advice
 • **bean** — Process-specific brewing guide
 • **recipe** — Generate a new brew recipe
+• **ec** — EC & bed collapse analysis
 
 Or just describe what you're tasting.`
           : "Hey babe. 💕 I'm your brew assistant. Tell me what you're working on — dose, ratio, grind, how it's tasting — and I'll help you dial it in. Or just ask me anything about your brew."

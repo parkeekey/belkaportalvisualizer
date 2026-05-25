@@ -95,6 +95,7 @@ export interface ManualDigitizerSessionProfile {
 export interface ManualDigitizerHandle {
   exportProfile: () => ManualDigitizerSessionProfile;
   importProfile: (profile: ManualDigitizerSessionProfile) => void;
+  importPhaseLogs?: (phases: { phase: string; startTime: number; endTime: number; color: string }[]) => void;
 }
 
 interface PourPlanEntry {
@@ -470,6 +471,19 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
       suppressNextCanvasClickRef.current = false;
       isToolStrokeActiveRef.current = false;
       lastTracePointRef.current = null;
+    },
+    importPhaseLogs: (phases) => {
+      const mapped = phases.map((p, i) => ({
+        id: `bed-detected-${Date.now()}-${i}`,
+        name: p.phase.charAt(0).toUpperCase() + p.phase.slice(1),
+        startTime: Number(p.startTime.toFixed(1)),
+        endTime: Number(p.endTime.toFixed(1)),
+        color: p.color || PHASE_COLORS[i % PHASE_COLORS.length],
+        expectedECMin: null,
+        expectedECMax: null,
+        pourPlanPercent: null,
+      }));
+      setPhaseLogs(mapped);
     },
   }), [
     selectedImage,

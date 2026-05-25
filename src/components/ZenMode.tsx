@@ -471,6 +471,11 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                           className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
                         >{t}</button>
                       ))}
+                      <input type="text" placeholder="custom tag..."
+                        onMouseDown={e => e.stopPropagation()}
+                        onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { updateNote(note.id, { tag: val }); setShowTagPicker(null); } } }}
+                        className="w-16 px-1 py-0.5 text-[8px] border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400"
+                      />
                       <button onClick={() => setShowTagPicker(null)}
                         className="px-1 py-0.5 text-[8px] rounded border border-slate-200 text-slate-400 hover:bg-slate-100"
                       >✕</button>
@@ -481,7 +486,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                         onMouseDown={e => e.stopPropagation()}
                         className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 border-slate-200' : 'text-slate-300 border-dashed border-slate-200 hover:text-slate-400'}`}
                       >{note.tag || '+ tag'}</button>
-                      {note.tag && MECHANISM_KNOWLEDGE[note.tag] && (
+                      {note.tag && (
                         <button onClick={(e) => { e.stopPropagation(); setSelectedArrow(prev => prev === note.id ? null : note.id); }}
                           onMouseDown={e => e.stopPropagation()}
                           className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 hover:bg-amber-100 hover:text-amber-500'}`}
@@ -514,8 +519,28 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 </div>
 
                 {/* Inline reasoning card */}
-                {selectedArrow === note.id && note.tag && MECHANISM_KNOWLEDGE[note.tag] && (() => {
+                {selectedArrow === note.id && note.tag && (() => {
                   const mech = MECHANISM_KNOWLEDGE[note.tag];
+                  if (!mech) {
+                    // Generic reasoning for unknown tags
+                    return (
+                      <div className="mt-1.5 pt-1.5 border-t border-slate-100 w-56" onMouseDown={e => e.stopPropagation()}>
+                        <div className="text-[8px] font-semibold text-slate-500 mb-0.5">Exploring "{note.tag}"</div>
+                        <p className="text-[7px] text-slate-400 leading-relaxed mb-1">No mechanism data yet. Investigate which foundation this symptom connects to.</p>
+                        <div className="flex items-center gap-0.5 mb-1 flex-wrap">
+                          <span className="text-[6px] text-slate-400 uppercase mr-0.5">Check each:</span>
+                          {FOUNDATIONS.map((f, i) => (
+                            <span key={f.id} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
+                              style={{ backgroundColor: f.color + '15', color: f.color }}
+                            >{i + 1}. {f.label}</span>
+                          ))}
+                        </div>
+                        <div className="bg-slate-50 border border-slate-100 rounded px-1.5 py-1 mb-1">
+                          <p className="text-[7px] text-slate-500 leading-relaxed">Connect ◉ to a foundation → later click the arrow to mark confirmed or wrong. The knowledge base grows with your data.</p>
+                        </div>
+                      </div>
+                    );
+                  }
                   const primary = mech.priority[0];
                   const primaryF = FOUNDATIONS.find(f => f.id === primary);
                   const primaryLink = primary ? mech.foundations[primary] : null;

@@ -32,8 +32,6 @@ const FOUNDATIONS = [
 
 const ZEN_KEY = 'belka.zenMode';
 const KNOWLEDGE_KEY = 'belka.zenKnowledge';
-const COMMON_TAGS = ['bitter', 'sour', 'dry', 'astringent', 'weak', 'muddy', 'hollow', 'flat', 'sharp', 'creamy', 'intensity', 'body', 'acidity', 'sweetness', 'balance'];
-
 // ── Extraction Direction ─────────────────────────────────────
 // Every coffee problem is either under-extraction or over-extraction.
 // First answer: do I need ↑ more or ↓ less extraction?
@@ -43,6 +41,10 @@ const TAG_DIRECTION: Record<string, 'under' | 'over' | ''> = {
   bitter: 'over', dry: 'over', astringent: 'over', muddy: 'over', creamy: 'over',
   intensity: '', body: '', acidity: '', sweetness: '', balance: '',
 };
+
+const UNDER_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === 'under').map(([t]) => t);
+const OVER_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === 'over').map(([t]) => t);
+const NEUTRAL_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === '').map(([t]) => t);
 
 const EXTRACTION_DIRECTIONS: Record<string, {
   label: string;
@@ -589,11 +591,28 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 <div className="flex items-center gap-1 mb-1">
                   {showTagPicker === note.id ? (
                     <div className="flex flex-wrap gap-0.5" onMouseDown={e => e.stopPropagation()}>
-                      {COMMON_TAGS.map(t => (
-                        <button key={t} onClick={() => { const d = TAG_DIRECTION[t] ?? ''; updateNote(note.id, { tag: t, direction: note.direction || d }); setShowTagPicker(null); }}
-                          className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
+                      <div className="w-full text-[6px] font-semibold text-green-600 uppercase tracking-wider mb-0.5">↑ Under-extraction</div>
+                      {UNDER_TAGS.map(t => (
+                        <button key={t} onClick={() => { updateNote(note.id, { tag: t, direction: 'under' }); setShowTagPicker(null); }}
+                          className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-green-700 text-white border-green-700' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
                         >{t}</button>
                       ))}
+                      <div className="w-full text-[6px] font-semibold text-red-600 uppercase tracking-wider mt-1 mb-0.5">↓ Over-extraction</div>
+                      {OVER_TAGS.map(t => (
+                        <button key={t} onClick={() => { updateNote(note.id, { tag: t, direction: 'over' }); setShowTagPicker(null); }}
+                          className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-red-700 text-white border-red-700' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
+                        >{t}</button>
+                      ))}
+                      {NEUTRAL_TAGS.length > 0 && (
+                        <>
+                          <div className="w-full text-[6px] font-semibold text-slate-400 uppercase tracking-wider mt-1 mb-0.5">You decide</div>
+                          {NEUTRAL_TAGS.map(t => (
+                            <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
+                              className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
+                            >{t}</button>
+                          ))}
+                        </>
+                      )}
                       <input type="text" placeholder="custom tag..."
                         onMouseDown={e => e.stopPropagation()}
                         onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { const d = TAG_DIRECTION[val] ?? ''; updateNote(note.id, { tag: val, direction: note.direction || d }); setShowTagPicker(null); } } }}

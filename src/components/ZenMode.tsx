@@ -15,10 +15,10 @@ interface ZenArrow {
 }
 
 const FOUNDATIONS = [
-  { id: 'grind', label: 'Grind', color: '#3b82f6' },
-  { id: 'ratio', label: 'Ratio', color: '#22c55e' },
-  { id: 'turbulence', label: 'Turbulence', color: '#f59e0b' },
-  { id: 'time', label: 'Time', color: '#ef4444' },
+  { id: 'grind', label: 'Grindsize', color: '#3b82f6', rank: 1, desc: 'most impact — surface area & extraction' },
+  { id: 'ratio', label: 'Ratio', color: '#22c55e', rank: 2, desc: 'strength — water to coffee balance' },
+  { id: 'turbulence', label: 'Turbulence', color: '#f59e0b', rank: 3, desc: 'agitation — pour height & flow' },
+  { id: 'temp-time', label: 'Temp & Time', color: '#ef4444', rank: 4, desc: 'heat & contact duration' },
 ];
 
 const ZEN_KEY = 'belka.zenMode';
@@ -219,7 +219,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
       {/* Instructions */}
       <div className="px-4 py-1.5 text-[10px] text-slate-400 italic border-b border-slate-100 bg-[#f8f6f0] select-none">
-        Drag notes to position · <span className="font-medium text-slate-500">Drag the dot ·</span> from a note to a foundation to connect · Click an arrow to cycle: dashed (hypothesis) → green (confirmed) → red (wrong)
+        Drag notes to position · <span className="font-medium text-slate-500">Drag the dot ·</span> from a note to a foundation to connect · Click an arrow to cycle: dashed (hypothesis) → green (confirmed) → red (wrong) · Rank 1 = most impact
       </div>
 
       {/* Canvas */}
@@ -257,24 +257,25 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
             return (
               <path d={arrowPath(from.x + 180, from.y + 14, toX, toY)}
                 fill="none" stroke="#94a3b8" strokeWidth={2} strokeDasharray="4,4"
-              />
-            );
-          })()}
-        </svg>
+                />
+              );
+            })()}
+          </svg>
 
-        {/* Foundations (right side) */}
-        <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col gap-6 z-10">
+        {/* Foundations */}
+        <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-10">
           {FOUNDATIONS.map(f => (
             <div key={f.id} data-foundation-id={f.id}
-              className="w-28 h-28 rounded-2xl border-2 flex flex-col items-center justify-center select-none cursor-default shadow-sm bg-white/80"
+              className="w-32 rounded-2xl border-2 flex flex-col items-center justify-center select-none cursor-default shadow-sm bg-white/80 px-3 py-2.5"
               style={{ borderColor: f.color + '60' }}
             >
-              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: f.color }}>{f.label}</span>
-              <span className="text-[9px] text-slate-400 mt-0.5 text-center px-1 leading-tight">
-                {f.id === 'grind' ? 'surface area' :
-                 f.id === 'ratio' ? 'strength' :
-                 f.id === 'turbulence' ? 'agitation' : 'contact'}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[7px] font-bold text-white"
+                  style={{ backgroundColor: f.color }}
+                >{f.rank}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: f.color }}>{f.label}</span>
+              </div>
+              <span className="text-[8px] text-slate-400 mt-0.5 text-center leading-tight">{f.desc}</span>
             </div>
           ))}
         </div>

@@ -939,7 +939,10 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#f8f6f0] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-[#f8f6f0] flex flex-col"
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+    >
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-white/70 shrink-0">
         <div className="flex items-center gap-2">
@@ -1359,9 +1362,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
       {/* Scrollable canvas — provides scroll behavior */}
       <div ref={scrollRef} className="flex-1 overflow-auto"
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={() => { setDragging(null); setConnecting(null); setHoverDot(null); }}
+        onMouseLeave={() => { if (!dragging && !connecting) { setHoverDot(null); } }}
       >
         <div className="min-h-[150vh] min-w-[1200px]" />
       </div>

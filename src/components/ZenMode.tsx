@@ -32,6 +32,24 @@ const FOUNDATIONS = [
 
 const ZEN_KEY = 'belka.zenMode';
 const KNOWLEDGE_KEY = 'belka.zenKnowledge';
+// ── Bean Defect Knowledge ────────────────────────────────────
+// Some taste symptoms are bean defects, not extraction problems.
+// No foundation adjustment fixes a defective bean.
+
+const DEFECT_KNOWLEDGE: Record<string, {
+  defect: string;
+  desc: string;
+  signs: string;
+  fix: string;
+}> = {
+  sour: { defect: 'Quakers / underripe beans', desc: 'Pale, underdeveloped beans taste like peanut shells, grass, or sharp sour — easily mistaken for under-extraction.', signs: 'Look at your roasted beans: do you see pale or light-brown beans mixed with darker ones? Pick them out, cup them separately.', fix: 'Pick out pale quakers before grinding. No extraction change fixes a quaker.' },
+  grassy: { defect: 'Quakers / underripe beans', desc: 'Raw, grassy flavor that no amount of heat develops.', signs: 'Same as sour — pale beans in the roast. Also check roast date: too fresh (＜3 days) can taste grassy.', fix: 'Sort quakers, or rest beans 5-7 days post-roast.' },
+  bitter: { defect: 'Tipped / scorched beans', desc: 'Dark beans with burned tips from roasting too fast. The tip chars before the center develops.', signs: 'Look for beans with dark/black tips. Also check for over-fermented (medicinal) notes.', fix: 'Sort tipped beans, or switch roaster. No pour-over adjustment fixes a scorched tip.' },
+  muddy: { defect: 'Over-fermented / stinker beans', desc: 'Funky, fermented, almost medicinal. Some origins (natural Ethiopians) can mimic this in small doses.', signs: 'Does the muddiness taste like overripe fruit or rot? Check one bean at a time in your palm.', fix: 'Cull stinkers. If every brew has this, the green coffee is defective.' },
+  flat: { defect: 'Baked beans / staling', desc: 'Stalled roast (baked) or simply old beans. No vibrancy, bread-like.', signs: 'Roast date older than 4 weeks? Or did the bean temp stall during roasting?', fix: 'Fresh roast, properly developed. Baked beans are permanently flat.' },
+  astringent: { defect: 'Insect damage / broca', desc: 'Coffee borer beetle damage makes beans crumbly, producing harsh astringency.', signs: 'Look for tiny holes in beans. Broken or hollow beans in the bag.', fix: 'Sort damaged beans. No extraction change fixes insect damage.' },
+};
+
 // ── Extraction Direction ─────────────────────────────────────
 // Every coffee problem is either under-extraction or over-extraction.
 // First answer: do I need ↑ more or ↓ less extraction?
@@ -341,6 +359,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const [showTagPicker, setShowTagPicker] = useState<string | null>(null);
   const [selectedArrow, setSelectedArrow] = useState<string | null>(null);
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
+  const [defectOpen, setDefectOpen] = useState(false);
 
   // Auto-expand first priority when 💡 opens, clear when it closes
   useEffect(() => {
@@ -348,6 +367,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       const n = notes.find(x => x.id === selectedArrow);
       const m = n?.tag ? MECHANISM_KNOWLEDGE[n.tag] : null;
       if (m?.priority?.[0]) setExpandedChain(`${selectedArrow}:${m.priority[0]}`);
+      setDefectOpen(false);
     } else {
       setExpandedChain(null);
     }
@@ -805,6 +825,34 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                           </div>
                         </div>
                       ) : null}
+
+                      {/* ── Bean defect gate ── */}
+                      {DEFECT_KNOWLEDGE[note.tag] && (
+                        <div className="mb-1.5 pb-1.5 border-b border-slate-100">
+                          <div onClick={() => setDefectOpen(v => !v)}
+                            className="flex items-center gap-1 cursor-pointer select-none hover:bg-amber-50 rounded px-1 py-0.5 transition-colors"
+                          >
+                            <span className="text-[9px]">⚠️</span>
+                            <span className="text-[7px] font-medium text-amber-700">Could be bean defect?</span>
+                            <span className="text-[8px] text-amber-400 ml-auto">{defectOpen ? '▾' : '▸'}</span>
+                          </div>
+                          {defectOpen && (() => {
+                            const d = DEFECT_KNOWLEDGE[note.tag];
+                            return (
+                              <div className="mt-1 px-1.5 py-1 bg-amber-50 border border-amber-200 rounded text-[7px]">
+                                <div className="font-semibold text-amber-800 mb-0.5">{d.defect}</div>
+                                <p className="text-amber-700 leading-relaxed mb-0.5">{d.desc}</p>
+                                <div className="text-amber-600 mb-0.5">
+                                  <span className="font-medium">🔍 Check:</span> {d.signs}
+                                </div>
+                                <div className="text-amber-700 font-medium">
+                                  <span className="font-medium">✅ Fix:</span> {d.fix}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
 
                       {/* Mechanism knowledge details */}
                       {mech ? (

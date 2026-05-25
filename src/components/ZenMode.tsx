@@ -825,13 +825,13 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                                   <span className="text-[7px] font-bold text-blue-700">① {primaryF.label}</span>
                                   <span className="text-[6px] text-blue-500 font-medium">sub: {primaryLink.subTopic ?? primaryLink.explanation.split(' ').slice(0, 3).join(' ') + '...'}</span>
                                 </div>
-                                <div className="text-[7px] text-blue-600 leading-relaxed mb-0.5">
-                                  <span className="font-medium">Chain</span>
-                                  <div className="mt-0.5">
+                                <div className="text-[7px] text-blue-600 mb-0.5">
+                                  <div className="text-center font-semibold text-blue-500 text-[6px] uppercase tracking-wider mb-0.5">Causal chain</div>
+                                  <div className="flex flex-col items-center gap-0">
                                     {primaryLink.causalChain?.split('→').map((step, si) => (
-                                      <span key={si}>
-                                        {si > 0 && <span className="block text-center text-blue-300 leading-none">↓</span>}
-                                        <span className="block">{step.trim()}</span>
+                                      <span key={si} className="flex flex-col items-center">
+                                        {si > 0 && <span className="block text-blue-300 text-[9px] leading-none">↓</span>}
+                                        <span className="block text-center px-1 py-0.5 rounded-sm bg-blue-100/60 text-blue-700 font-medium leading-tight">{step.trim()}</span>
                                       </span>
                                     ))}
                                   </div>
@@ -859,17 +859,22 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                                     <span className="font-medium">{f.label}</span>
                                     <span className="text-slate-400"> · sub: {link.subTopic ?? '—'}</span>
                                     <br />
-                                    <span className="text-slate-400 italic">
+                                    <span className="text-slate-400 not-italic">
                                       {link.causalChain ? (() => {
                                         const steps = link.causalChain.split('→');
-                                        return steps.slice(0, 2).map((step, si) => (
-                                          <span key={si}>
-                                            {si > 0 && <span className="text-slate-300"> ↓ </span>}
-                                            {step.trim()}
+                                        const shown = steps.slice(0, 2);
+                                        return (
+                                          <span className="flex flex-col items-start gap-0">
+                                            {shown.map((step, si) => (
+                                              <span key={si} className="flex flex-col items-start">
+                                                {si > 0 && <span className="text-slate-300 text-[8px] leading-none">↓</span>}
+                                                <span className="text-[6px] bg-slate-100 rounded-sm px-1 py-0.5 text-slate-600">{step.trim()}</span>
+                                              </span>
+                                            ))}
+                                            {steps.length > 2 && <span className="text-slate-300 text-[8px] leading-tight">↓ ...</span>}
                                           </span>
-                                        ));
+                                        );
                                       })() : link.explanation}
-                                      {link.causalChain && link.causalChain.split('→').length > 2 && <span className="text-slate-300"> ↓ ...</span>}
                                     </span>
                                     {link.tell && <><br /><span className="text-amber-500 text-[6px]">⚡ {link.tell}</span></>}
                                   </div>

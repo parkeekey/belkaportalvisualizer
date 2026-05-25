@@ -10,6 +10,8 @@ interface ZenNote {
   timeM: number;
   timeS: number;
   grind: number;
+  grindLow: number;
+  grindHigh: number;
   temp: number;
   ratio: number;
   turbulence: number;
@@ -713,6 +715,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   }, [selectedArrow]);
   const [, setScrollTick] = useState(0);
   const mouseRef = useRef({ x: 0, y: 0 });
+  const grindDragRef = useRef<string | null>(null);
 
   // Re-render on scroll so fixed SVG arrows track DOM positions
   useEffect(() => {
@@ -740,7 +743,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       direction: '',
       x: 60 + (noteCounter % 5) * 40,
       y: 100 + (noteCounter % 4) * 80,
-      timeM: 0, timeS: 0, grind: 0, temp: 0, ratio: 0, turbulence: 0,
+      timeM: 0, timeS: 0, grind: 0, grindLow: 0, grindHigh: 0, temp: 0, ratio: 0, turbulence: 0,
     };
     setNotes(prev => [...prev, note]);
     setSelectedArrow(null);
@@ -1164,11 +1167,11 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                   <div className="flex items-center gap-1 mb-1.5 px-1 py-1 bg-slate-50 border border-slate-200 rounded" onMouseDown={e => e.stopPropagation()}>
                     {note.tag === 'time' && <>
                       <span className="text-[9px] text-slate-500 font-medium">⏱</span>
-                      <input type="number" min={0} max={59} value={note.timeM}
+                      <input type="number" min={0} max={59} value={note.timeM ?? 0}
                         onChange={e => updateNote(note.id, { timeM: Math.min(59, Math.max(0, +e.target.value || 0)) })}
                         className="w-6 px-0.5 py-0 text-[10px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       /><span className="text-[9px] text-slate-400">:</span>
-                      <input type="number" min={0} max={59} value={note.timeS}
+                      <input type="number" min={0} max={59} value={note.timeS ?? 0}
                         onChange={e => updateNote(note.id, { timeS: Math.min(59, Math.max(0, +e.target.value || 0)) })}
                         className="w-6 px-0.5 py-0 text-[10px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
@@ -1183,12 +1186,89 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       <span className="text-[8px] text-slate-400">°C</span>
                     </>}
                     {note.tag === 'grindsize' && <>
-                      <span className="text-[9px] text-slate-500 font-medium">⚙</span>
-                      <input type="number" step={0.1} min={0} value={note.grind}
-                        onChange={e => updateNote(note.id, { grind: +e.target.value || 0 })}
-                        className="w-12 px-1 py-0 text-[10px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                      <span className="text-[8px] text-slate-400">mm</span>
+                      <div className="flex flex-col items-center gap-0.5 w-full">
+                        <svg width="76" height="76" viewBox="0 0 100 100" className="cursor-pointer"
+                          onMouseDown={e => {
+                            e.preventDefault();
+                            grindDragRef.current = note.id;
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const cx = rect.left + rect.width / 2;
+                            const cy = rect.top + rect.height / 2;
+                            let angle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90;
+                            if (angle < 0) angle += 360;
+                            const val = Math.round((angle / 360) * 30);
+                            updateNote(note.id, { grind: Math.min(30, Math.max(0, val)) });
+                          }}
+                          onMouseMove={e => {
+                            if (e.buttons === 1 && grindDragRef.current === note.id) {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const cx = rect.left + rect.width / 2;
+                              const cy = rect.top + rect.height / 2;
+                              let angle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90;
+                              if (angle < 0) angle += 360;
+                              const val = Math.round((angle / 360) * 30);
+                              updateNote(note.id, { grind: Math.min(30, Math.max(0, val)) });
+                            }
+                          }}
+                          onMouseUp={() => { grindDragRef.current = null; }}
+                          onMouseLeave={() => { if (grindDragRef.current === note.id) grindDragRef.current = null; }}
+                        >
+                          {/* Background ring */}
+                          <circle cx="50" cy="50" r="42" fill="none" stroke="#e2e8f0" strokeWidth="6" />
+                          {/* Light green fill zone */}
+                          {(note.grindLow ?? 0) > 0 && (note.grindHigh ?? 0) > (note.grindLow ?? 0) && (() => {
+                            const low = note.grindLow ?? 0;
+                            const high = note.grindHigh ?? 0;
+                            const a1 = ((low / 30) * 360 - 90) * Math.PI / 180;
+                            const a2 = ((high / 30) * 360 - 90) * Math.PI / 180;
+                            const x1 = 50 + 42 * Math.cos(a1), y1 = 50 + 42 * Math.sin(a1);
+                            const x2 = 50 + 42 * Math.cos(a2), y2 = 50 + 42 * Math.sin(a2);
+                            const large = high - low > 15 ? 1 : 0;
+                            return <path d={`M 50 50 L ${x1} ${y1} A 42 42 0 ${large} 1 ${x2} ${y2} Z`} fill="#86efac" fillOpacity="0.35" />;
+                          })()}
+                          {/* Tick marks — every 5 with label */}
+                          {[0,5,10,15,20,25,30].map(v => {
+                            const a = ((v / 30) * 360 - 90) * Math.PI / 180;
+                            const cos = Math.cos(a), sin = Math.sin(a);
+                            return (
+                              <g key={v}>
+                                <line x1={50 + 42 * cos} y1={50 + 42 * sin} x2={50 + 37 * cos} y2={50 + 37 * sin}
+                                  stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
+                                <text x={50 + 49 * cos} y={50 + 49 * sin} textAnchor="middle" dominantBaseline="central"
+                                  className="text-[6px]" fill="#94a3b8">{v}</text>
+                              </g>
+                            );
+                          })}
+                          {/* Needle */}
+                          {(() => {
+                            const g = note.grind ?? 0;
+                            const a = ((g / 30) * 360 - 90) * Math.PI / 180;
+                            const cos = Math.cos(a), sin = Math.sin(a);
+                            return (
+                              <>
+                                <line x1="50" y1="50" x2={50 + 38 * cos} y2={50 + 38 * sin}
+                                  stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" />
+                                <circle cx={50 + 42 * cos} cy={50 + 42 * sin} r="3" fill="#22c55e" />
+                              </>
+                            );
+                          })()}
+                          {/* Center dot */}
+                          <circle cx="50" cy="50" r="3" fill="#475569" />
+                        </svg>
+                        <div className="flex items-center gap-1 text-[7px] text-slate-400">
+                          <span>zone</span>
+                          <input type="number" min={0} max={30} value={note.grindLow ?? 0}
+                            onChange={e => updateNote(note.id, { grindLow: Math.min(30, Math.max(0, +e.target.value || 0)) })}
+                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <span>—</span>
+                          <input type="number" min={0} max={30} value={note.grindHigh ?? 0}
+                            onChange={e => updateNote(note.id, { grindHigh: Math.min(30, Math.max(0, +e.target.value || 0)) })}
+                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <span className="font-medium ml-1" style={{ color: '#22c55e' }}>#{(note.grind ?? 0)}</span>
+                        </div>
+                      </div>
                     </>}
                     {note.tag === 'ratio' && <>
                       <span className="text-[9px] text-slate-500 font-medium">÷</span>

@@ -272,6 +272,33 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
 
       <div className="flex items-start gap-3 flex-wrap">
         <div ref={dialRef} className="relative flex-shrink-0" style={{ width: outerPx, height: outerPx, touchAction: 'none' }} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp}>
+          {/* Light green fill zones between proximate liked entries */}
+          {(() => {
+            const liked = visibleLines.filter(e => e.like).map(e => e.clicks).sort((a, b) => a - b);
+            if (liked.length < 2) return null;
+            const zones: { low: number; high: number }[] = [];
+            for (let i = 0; i < liked.length - 1; i++) {
+              if (liked[i + 1] - liked[i] <= 5) {
+                zones.push({ low: liked[i], high: liked[i + 1] });
+              }
+            }
+            if (zones.length === 0) return null;
+            const cx = outerPx / 2, cy = outerPx / 2;
+            return (
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
+                {zones.map((z, i) => {
+                  const a1 = tickAngle(z.low) * Math.PI / 180;
+                  const a2 = tickAngle(z.high) * Math.PI / 180;
+                  const r = knobPx / 2 - 1;
+                  const x1 = cx + r * Math.sin(a1), y1 = cy - r * Math.cos(a1);
+                  const x2 = cx + r * Math.sin(a2), y2 = cy - r * Math.cos(a2);
+                  const large = z.high - z.low > 15 ? 1 : 0;
+                  return <path key={i} d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`} fill="#86efac" fillOpacity="0.3" />;
+                })}
+              </svg>
+            );
+          })()}
+
           {microPositions.filter(p => !focusMode || (p >= rangeMin && p <= rangeMax)).map((p) => {
             const a = tickAngle(p);
             return focusMode ? (

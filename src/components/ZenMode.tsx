@@ -69,6 +69,16 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const noteElsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const [showTagPicker, setShowTagPicker] = useState<string | null>(null);
+  const [, setScrollTick] = useState(0);
+
+  // Re-render on scroll so fixed SVG arrows track DOM positions
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => setScrollTick(t => t + 1);
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     saveState({ notes, arrows });
@@ -226,20 +236,14 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
     const el = noteElsRef.current.get(noteId);
     if (!el) return null;
     const r = el.getBoundingClientRect();
-    const scroll = scrollRef.current;
-    const sx = scroll ? scroll.scrollLeft : 0;
-    const sy = scroll ? scroll.scrollTop : 0;
-    return { x: r.left + r.width + sx, y: r.top + r.height / 2 + sy };
+    return { x: r.left + r.width, y: r.top + r.height / 2 };
   };
 
   const getFoundationDotPos = (fid: string) => {
     const el = document.querySelector(`.foundation-dot[data-fid="${fid}"]`);
     if (!el) return null;
     const r = el.getBoundingClientRect();
-    const scroll = scrollRef.current;
-    const sx = scroll ? scroll.scrollLeft : 0;
-    const sy = scroll ? scroll.scrollTop : 0;
-    return { x: r.left + r.width / 2 + sx, y: r.top + r.height / 2 + sy };
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   };
 
   const arrowPath = (fromX: number, fromY: number, toX: number, toY: number) => {
@@ -298,8 +302,8 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         onMouseLeave={() => { setDragging(null); setConnecting(null); setHoverDot(null); }}
       >
         <div className="relative min-h-[150vh] w-full">
-          {/* SVG layer */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ minHeight: '150vh' }}>
+          {/* SVG layer — fixed to viewport so arrow coordinates always match DOM positions */}
+          <svg className="fixed inset-0 w-full h-full pointer-events-none z-30">
             {arrows.map(a => {
               const fromP = getNoteDotPos(a.fromNoteId);
               const toP = getFoundationDotPos(a.toFoundation);

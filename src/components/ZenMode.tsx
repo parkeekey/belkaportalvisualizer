@@ -1003,8 +1003,8 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                   <path d={arrowPath(fromP.x, fromP.y, toP.x, toP.y)}
                     fill="none" stroke="transparent" strokeWidth={16}
                   />
-                  {/* Mechanism label on arrow */}
-                  {(a.tag && a.tag !== 'untagged') && (() => {
+                  {/* Mechanism label on arrow — only for foundation links */}
+                  {!a.toNoteId && a.tag && a.tag !== 'untagged' && (() => {
                     const mech = MECHANISM_KNOWLEDGE[a.tag];
                     const mechanismName = mech ? mech.mechanism : a.tag;
                     return (

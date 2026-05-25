@@ -41,17 +41,48 @@ const MECHANISM_KNOWLEDGE: Record<string, {
   mechanism: string;
   summary: string;
   priority: string[]; // foundation IDs from most → least likely
-  foundations: Record<string, { explanation: string; evidence: string; whyNot?: string }>;
+  foundations: Record<string, {
+    subTopic?: string;          // the secondary concept (concentration, surface area, etc.)
+    causalChain?: string;       // step-by-step "this → that → result"
+    experiment?: string;        // what to try to verify
+    explanation: string;       // brief explanation
+    evidence: string;          // EC curve evidence
+    whyNot?: string;
+  }>;
 }> = {
   bitter: {
     mechanism: 'Over-extraction of late solubles',
     summary: 'Tannins dissolve after desirable compounds are gone. Your bed gave too much contact.',
     priority: ['temp-time', 'grind', 'turbulence', 'ratio'],
     foundations: {
-      grind: { explanation: 'Finer = more surface area = faster extraction of bitter fractions at the end', evidence: 'Peak EC too high, early peak, steep decline', whyNot: 'If your peak EC is normal but the tail is long, grind is probably fine — suspect time instead' },
-      ratio: { explanation: 'More water = more solvent = pulls deeper into the solubility curve', evidence: 'EC stays elevated well past peak, long flat decline', whyNot: 'Bitter from ratio is rare unless you\'re below 1:14. Check time and grind first.' },
-      turbulence: { explanation: 'Channeling over-extracts some pockets while others stall', evidence: 'Sudden EC spikes then rapid collapse', whyNot: 'Turbulence-related bitter usually comes with dryness. If the cup is just bitter but not dry, rule out channeling.' },
-      'temp-time': { explanation: 'Longer time lets tannins dissolve after good extraction finishes', evidence: 'Long declining tail after peak, extended extraction phase', whyNot: '' },
+      grind: {
+        subTopic: 'Surface area / Fines',
+        causalChain: 'Finer grind → more surface area → extraction runs faster → bitter fractions dissolve before you can stop them',
+        experiment: 'Go 1 click coarser at same time. If bitter drops but body holds, grind was the cause.',
+        explanation: 'Finer = more surface area = faster extraction of bitter fractions at the end',
+        evidence: 'Peak EC too high, early peak, steep decline', whyNot: 'If peak EC is normal but tail is long, grind is fine — suspect time.',
+      },
+      ratio: {
+        subTopic: 'Solvent volume / Solubility curve',
+        causalChain: 'More water → more solvent → extracts deeper into the solubility curve → pulls bitter compounds that would otherwise stay in the grounds',
+        experiment: 'Increase dose by 1g (tighter ratio) at same grind and time. If bitterness drops, ratio was pushing too deep.',
+        explanation: 'More water pulls deeper into the solubility curve, extracting bitter fractions',
+        evidence: 'EC stays elevated well past peak, long flat decline', whyNot: 'Bitter from ratio is rare unless below 1:14. Check time and grind first.',
+      },
+      turbulence: {
+        subTopic: 'Channeling / Localized over-extraction',
+        causalChain: 'Aggressive pour → channels form → water rushes through some zones → those zones over-extract → bitter pockets in an otherwise balanced bed',
+        experiment: 'Switch to gentle spiral pours at same ratio and grind. If bitter smooths out, turbulence was the cause.',
+        explanation: 'Channeling creates localized over-extraction zones',
+        evidence: 'Sudden EC spikes then rapid collapse', whyNot: 'Turbulence bitter usually comes with dryness. If not dry, rule out turbulence.',
+      },
+      'temp-time': {
+        subTopic: 'Contact time / Thermal energy',
+        causalChain: 'Longer brew time → more contact between water and exhausted bed → tannins continue dissolving → bitter dominates the finish',
+        experiment: 'Cut your brew 10s earlier at same ratio and grind. If the bitter finish disappears, time was the cause.',
+        explanation: 'Longer time lets tannins dissolve after good extraction finishes',
+        evidence: 'Long declining tail after peak, extended extraction phase', whyNot: '',
+      },
     },
   },
   sour: {
@@ -97,13 +128,37 @@ const MECHANISM_KNOWLEDGE: Record<string, {
   },
   intensity: {
     mechanism: 'Total flavor compound concentration',
-    summary: 'Intensity is how much sensory impact each sip carries — driven by how many solubles made it into the cup and at what concentration.',
+    summary: 'Intensity = how many solubles per sip. The ceiling is set by ratio, then modulated by grind and time.',
     priority: ['ratio', 'grind', 'temp-time', 'turbulence'],
     foundations: {
-      ratio: { explanation: 'More coffee per water = higher TDS ceiling = more intense. This is the primary lever for intensity.', evidence: 'EC curve higher across the entire brew, proportional to ratio change', whyNot: '' },
-      grind: { explanation: 'Finer grind extracts more from the same dose, pushing intensity higher without changing ratio', evidence: 'Peak EC higher, extraction window shifts earlier', whyNot: 'If the coffee tastes intense but also bitter, grind might be too fine — dial back before changing ratio.' },
-      'temp-time': { explanation: 'Longer or hotter extraction pulls more total solids, increasing intensity up to a limit', evidence: 'EC curve extends higher or longer', whyNot: 'Time-only intensity gains are small after peak extraction. Use ratio or grind for big changes.' },
-      turbulence: { explanation: 'More agitation can increase extraction slightly but easily overshoots into channeling', evidence: 'Minor EC increase followed by instability', whyNot: 'Turbulence is the weakest intensity lever. Only adjust if other signs of channeling are present.' },
+      ratio: {
+        subTopic: 'Concentration / Dilution',
+        causalChain: 'More coffee per water → higher TDS ceiling → more solubles per sip → higher perceived intensity',
+        experiment: 'Brew the same coffee at 1:15 and 1:17, same grind. The 1:15 will always taste more intense.',
+        explanation: 'Ratio sets the maximum possible intensity for a given dose. This is the strongest lever.',
+        evidence: 'EC curve higher across the entire brew, proportional to ratio change', whyNot: '',
+      },
+      grind: {
+        subTopic: 'Surface area / Extraction rate',
+        causalChain: 'Finer grind → more surface area → more total extraction → higher TDS from same ratio → more intensity',
+        experiment: 'Keep ratio at 1:16, go 2 clicks finer. Intensity goes up without changing water amount.',
+        explanation: 'Grind lets you extract more from the same dose, pushing intensity without changing ratio.',
+        evidence: 'Peak EC higher, extraction window shifts earlier', whyNot: 'If intense but also bitter, grind might be too fine — dial back before changing ratio.',
+      },
+      'temp-time': {
+        subTopic: 'Solubility / Contact time',
+        causalChain: 'Hotter or longer → more energy for dissolution → more compounds extracted → modest intensity gain',
+        experiment: 'Brew at 92°C vs 96°C at same ratio and grind. The hotter cup is slightly more intense.',
+        explanation: 'Time and temp increase extraction yield but have less impact than ratio or grind.',
+        evidence: 'EC curve extends higher or longer', whyNot: 'Intensity gains from time alone are small after peak. Use ratio or grind for meaningful changes.',
+      },
+      turbulence: {
+        subTopic: 'Agitation / Channeling risk',
+        causalChain: 'More agitation → slightly more extraction → small intensity gain → but risks channeling which kills intensity',
+        experiment: 'Pour with high agitation vs gentle pulses at same ratio. The gentle pour might actually taste more intense if channeling was avoided.',
+        explanation: 'Weakest intensity lever. Only relevant when other signs of channeling exist.',
+        evidence: 'Minor EC increase followed by instability', whyNot: 'If you need more intensity, don\'t reach for turbulence — change ratio or grind first.',
+      },
     },
   },
   body: {
@@ -583,30 +638,41 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                           );
                         })}
                       </div>
-                      {/* Primary recommendation */}
+                      {/* Primary recommendation with causal chain */}
                       {primaryF && primaryLink && (
                         <div className="bg-blue-50 border border-blue-100 rounded px-1.5 py-1 mb-1">
                           <div className="flex items-center gap-1 mb-0.5">
-                            <span className="text-[7px] font-bold text-blue-700">Most likely: {primaryF.label}</span>
+                            <span className="text-[7px] font-bold text-blue-700">① {primaryF.label}</span>
+                            <span className="text-[6px] text-blue-500 font-medium">sub: {primaryLink.subTopic ?? primaryLink.explanation.split(' ').slice(0, 3).join(' ') + '...'}</span>
                           </div>
-                          <p className="text-[7px] text-blue-600 leading-relaxed">{primaryLink.explanation}</p>
+                          <div className="text-[7px] text-blue-600 leading-relaxed mb-0.5">
+                            <span className="font-medium">Chain:</span> {primaryLink.causalChain}
+                          </div>
+                          <div className="text-[7px] text-blue-500 italic">
+                            <span className="font-medium">Try:</span> {primaryLink.experiment}
+                          </div>
                           {primaryLink.whyNot && (
                             <p className="text-[6px] text-blue-400 italic mt-0.5">↳ {primaryLink.whyNot}</p>
                           )}
                         </div>
                       )}
-                      {/* Quick why-not for second priority */}
-                      {mech.priority.length > 1 && (() => {
-                        const second = mech.priority[1];
-                        const secondF = FOUNDATIONS.find(f => f.id === second);
-                        const secondLink = second ? mech.foundations[second] : null;
-                        if (!secondF || !secondLink || !secondLink.whyNot) return null;
+                      {/* Quick secondary chain hints */}
+                      {mech.priority.slice(1, 3).map((fid, i) => {
+                        const f = FOUNDATIONS.find(ff => ff.id === fid);
+                        const link = mech.foundations[fid];
+                        if (!f || !link) return null;
                         return (
-                          <div className="text-[7px] text-slate-400 mb-0.5">
-                            Not ② {secondF.label}? {secondLink.whyNot}
+                          <div key={fid} className="flex items-start gap-1 mb-0.5">
+                            <span className="text-[7px] font-semibold shrink-0 mt-0.5" style={{ color: f.color }}>{i === 0 ? '②' : '③'}</span>
+                            <div className="text-[7px] text-slate-500 leading-tight">
+                              <span className="font-medium">{f.label}</span>
+                              <span className="text-slate-400"> · sub: {link.subTopic ?? '—'}</span>
+                              <br />
+                              <span className="text-slate-400 italic">{link.causalChain ? link.causalChain.split('→').slice(0, 2).join('→') + '→...' : link.explanation}</span>
+                            </div>
                           </div>
                         );
-                      })()}
+                      })}
                       <div className="text-[6px] text-slate-300 italic mt-0.5 leading-tight">
                         Drag ◉ to the foundation you suspect · click arrow to confirm/wrong
                       </div>

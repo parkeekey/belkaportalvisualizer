@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 interface ZenNote {
   id: string;
   text: string;
+  tag: string;
   x: number;
   y: number;
 }
@@ -12,6 +13,13 @@ interface ZenArrow {
   fromNoteId: string;
   toFoundation: string;
   color: 'hypothesis' | 'confirmed' | 'wrong';
+  tag: string;
+}
+
+interface TagKnowledge {
+  [tag: string]: {
+    connections: { to: string; count: number; confirmed: number; wrong: number }[];
+  };
 }
 
 const FOUNDATIONS = [
@@ -22,6 +30,8 @@ const FOUNDATIONS = [
 ];
 
 const ZEN_KEY = 'belka.zenMode';
+const KNOWLEDGE_KEY = 'belka.zenKnowledge';
+const COMMON_TAGS = ['bitter', 'sour', 'dry', 'astringent', 'weak', 'muddy', 'hollow', 'flat', 'sharp', 'creamy'];
 
 function loadState() {
   try {
@@ -35,50 +45,53 @@ function saveState(state: { notes: ZenNote[]; arrows: ZenArrow[] }) {
   localStorage.setItem(ZEN_KEY, JSON.stringify(state));
 }
 
+function loadKnowledge(): TagKnowledge {
+  try {
+    const raw = localStorage.getItem(KNOWLEDGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return {};
+}
+
+function saveKnowledge(k: TagKnowledge) {
+  localStorage.setItem(KNOWLEDGE_KEY, JSON.stringify(k));
+}
+
 let noteCounter = 0;
 
 export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const [notes, setNotes] = useState<ZenNote[]>(() => loadState().notes);
   const [arrows, setArrows] = useState<ZenArrow[]>(() => loadState().arrows);
   const [dragging, setDragging] = useState<{ noteId: string; offsetX: number; offsetY: number } | null>(null);
-  const [connecting, setConnecting] = useState<{ fromNoteId: string; mouseX: number; mouseY: number } | null>(null);
+  const [connecting, setConnecting] = useState<{ fromNoteId: string } | null>(null);
   const [hoverDot, setHoverDot] = useState<string | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const [knowledge, setKnowledge] = useState<TagKnowledge>(() => loadKnowledge());
   const scrollRef = useRef<HTMLDivElement>(null);
   const noteElsRef = useRef<Map<string, HTMLDivElement>>(new Map());
-  const foundationElsRef = useRef<Map<string, HTMLDivElement>>(new Map());
-  const [, setSvgSize] = useState({ w: 1200, h: 800 });
+  const [showTagPicker, setShowTagPicker] = useState<string | null>(null);
 
   useEffect(() => {
     saveState({ notes, arrows });
   }, [notes, arrows]);
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const update = () => {
-      const r = el.getBoundingClientRect();
-      setSvgSize({ w: Math.max(el.scrollWidth, r.width), h: Math.max(el.scrollHeight, r.height) });
-    };
-    update();
-    const obs = new ResizeObserver(update);
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [notes.length]);
+    saveKnowledge(knowledge);
+  }, [knowledge]);
 
   const addNote = useCallback(() => {
     noteCounter++;
     const note: ZenNote = {
       id: `note-${Date.now()}-${noteCounter}`,
-      text: 'my symptom...',
+      text: 'note',
+      tag: '',
       x: 60 + (noteCounter % 5) * 40,
       y: 100 + (noteCounter % 4) * 80,
     };
     setNotes(prev => [...prev, note]);
   }, []);
 
-  const updateNoteText = useCallback((id: string, text: string) => {
-    setNotes(prev => prev.map(n => n.id === id ? { ...n, text } : n));
+  const updateNote = useCallback((id: string, patch: Partial<ZenNote>) => {
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, ...patch } : n));
   }, []);
 
   const deleteNote = useCallback((id: string) => {
@@ -97,10 +110,8 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
   const startConnect = useCallback((noteId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const scroll = scrollRef.current;
-    const sx = scroll ? scroll.scrollLeft : 0;
-    const sy = scroll ? scroll.scrollTop : 0;
-    setConnecting({ fromNoteId: noteId, mouseX: e.clientX + sx, mouseY: e.clientY + sy });
+    setConnecting({ fromNoteId: noteId });
+    setHoverDot(null);
   }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -113,38 +124,103 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       ));
     }
     if (connecting) {
-      setConnecting(prev => prev ? { ...prev, mouseX: e.clientX + sx, mouseY: e.clientY + sy } : null);
-      // Check proximity to foundation dots
-      const cx = e.clientX + sx;
-      const cy = e.clientY + sy;
-      let closest: string | null = null;
-      let closestDist = 30;
-      foundationElsRef.current.forEach((el, fid) => {
-        const r = el.getBoundingClientRect();
-        const scroll = scrollRef.current;
-        const ssx = scroll ? scroll.scrollLeft : 0;
-        const ssy = scroll ? scroll.scrollTop : 0;
-        const dotX = r.left + ssx;
-        const dotY = r.top + r.height / 2 + ssy;
-        const dist = Math.sqrt((cx - dotX) ** 2 + (cy - dotY) ** 2);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closest = fid;
-        }
-      });
-      setHoverDot(closest);
+      // Check proximity to foundation dots using elementsFromPoint
+      const dot = document.querySelector('.foundation-dot:hover, .foundation-dot.hover');
+      if (dot) {
+        const fid = dot.getAttribute('data-fid');
+        setHoverDot(fid);
+      } else {
+        // Manual proximity check
+        const cx = e.clientX;
+        const cy = e.clientY;
+        let closest: string | null = null;
+        let closestDist = 28;
+        document.querySelectorAll('.foundation-dot').forEach(el => {
+          const r = el.getBoundingClientRect();
+          const ddx = r.left + r.width / 2;
+          const ddy = r.top + r.height / 2;
+          const dist = Math.sqrt((cx - ddx) ** 2 + (cy - ddy) ** 2);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closest = el.getAttribute('data-fid');
+          }
+        });
+        setHoverDot(closest);
+      }
     }
   }, [dragging, connecting]);
 
-  const getDotPos = (foundationId: string) => {
-    const el = foundationElsRef.current.get(foundationId);
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    const scroll = scrollRef.current;
-    const sx = scroll ? scroll.scrollLeft : 0;
-    const sy = scroll ? scroll.scrollTop : 0;
-    return { x: r.left + sx, y: r.top + r.height / 2 + sy };
-  };
+  const handleMouseUp = useCallback(() => {
+    if (connecting) {
+      // Check if released on a foundation dot
+      const target = document.querySelector('.foundation-dot.hover');
+      if (target) {
+        const fid = target.getAttribute('data-fid');
+        if (fid) {
+          const note = notes.find(n => n.id === connecting.fromNoteId);
+          const tag = note?.tag || 'untagged';
+          setArrows(prev => {
+            const exists = prev.some(a => a.fromNoteId === connecting.fromNoteId && a.toFoundation === fid);
+            if (exists) return prev;
+            const arrow = { id: `arrow-${Date.now()}`, fromNoteId: connecting.fromNoteId, toFoundation: fid, color: 'hypothesis' as const, tag };
+            return [...prev, arrow];
+          });
+          // Update knowledge
+          if (tag && tag !== 'untagged') {
+            setKnowledge(prev => {
+              const next = { ...prev };
+              if (!next[tag]) next[tag] = { connections: [] };
+              const conns = next[tag].connections;
+              const existing = conns.find(c => c.to === fid);
+              if (existing) {
+                existing.count++;
+              } else {
+                conns.push({ to: fid, count: 1, confirmed: 0, wrong: 0 });
+              }
+              return next;
+            });
+          }
+        }
+      }
+    }
+    if (dragging || connecting) {
+      setDragging(null);
+      setConnecting(null);
+      setHoverDot(null);
+    }
+  }, [connecting, dragging, notes]);
+
+  const cycleArrowColor = useCallback((arrowId: string) => {
+    setArrows(prev => prev.map(a => {
+      if (a.id !== arrowId) return a;
+      const next: Record<string, 'confirmed' | 'wrong' | 'hypothesis'> = {
+        hypothesis: 'confirmed',
+        confirmed: 'wrong',
+        wrong: 'hypothesis',
+      };
+      const newColor = next[a.color];
+      // Update knowledge
+      if (a.tag && a.tag !== 'untagged') {
+        setKnowledge(k => {
+          const nk = { ...k };
+          const tagData = nk[a.tag];
+          if (tagData) {
+            const conn = tagData.connections.find(c => c.to === a.toFoundation);
+            if (conn) {
+              if (newColor === 'confirmed') conn.confirmed++;
+              if (newColor === 'wrong') conn.wrong++;
+            }
+          }
+          return nk;
+        });
+      }
+      return { ...a, color: newColor };
+    }));
+  }, []);
+
+  const deleteArrow = useCallback((arrowId: string) => {
+    setArrows(prev => prev.filter(a => a.id !== arrowId));
+  }, []);
 
   const getNoteDotPos = (noteId: string) => {
     const el = noteElsRef.current.get(noteId);
@@ -156,47 +232,15 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
     return { x: r.left + r.width + sx, y: r.top + r.height / 2 + sy };
   };
 
-  const handleMouseUp = useCallback((e: React.MouseEvent) => {
-    if (connecting) {
-      const scroll = scrollRef.current;
-      const sx = scroll ? scroll.scrollLeft : 0;
-      const sy = scroll ? scroll.scrollTop : 0;
-      const cx = e.clientX + sx;
-      const cy = e.clientY + sy;
-      foundationElsRef.current.forEach((el, fid) => {
-        const r = el.getBoundingClientRect();
-        const dotX = r.left + sx;
-        const dotY = r.top + r.height / 2 + sy;
-        const dist = Math.sqrt((cx - dotX) ** 2 + (cy - dotY) ** 2);
-          if (dist < 35) {
-          setArrows(prev => {
-            const exists = prev.some(a => a.fromNoteId === connecting.fromNoteId && a.toFoundation === fid);
-            if (exists) return prev;
-            return [...prev, { id: `arrow-${Date.now()}`, fromNoteId: connecting.fromNoteId, toFoundation: fid, color: 'hypothesis' }];
-          });
-        }
-      });
-    }
-    setDragging(null);
-    setConnecting(null);
-    setHoverDot(null);
-  }, [connecting]);
-
-  const cycleArrowColor = useCallback((arrowId: string) => {
-    setArrows(prev => prev.map(a => {
-      if (a.id !== arrowId) return a;
-      const next: Record<string, 'confirmed' | 'wrong' | 'hypothesis'> = {
-        hypothesis: 'confirmed',
-        confirmed: 'wrong',
-        wrong: 'hypothesis',
-      };
-      return { ...a, color: next[a.color] };
-    }));
-  }, []);
-
-  const deleteArrow = useCallback((arrowId: string) => {
-    setArrows(prev => prev.filter(a => a.id !== arrowId));
-  }, []);
+  const getFoundationDotPos = (fid: string) => {
+    const el = document.querySelector(`.foundation-dot[data-fid="${fid}"]`);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const scroll = scrollRef.current;
+    const sx = scroll ? scroll.scrollLeft : 0;
+    const sy = scroll ? scroll.scrollTop : 0;
+    return { x: r.left + r.width / 2 + sx, y: r.top + r.height / 2 + sy };
+  };
 
   const arrowPath = (fromX: number, fromY: number, toX: number, toY: number) => {
     const dx = toX - fromX;
@@ -244,7 +288,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
       {/* Instructions */}
       <div className="px-4 py-1.5 text-[10px] text-slate-400 italic border-b border-slate-100 bg-[#f8f6f0] shrink-0 select-none">
-        Drag notes to position · <span className="font-medium text-slate-500">Drag the dot ·</span> from a note toward a foundation's <span className="font-medium text-slate-500">○ dot</span> to connect · Click arrow: dashed (hypothesis) → green (confirmed) → red (wrong) · Right-click to delete
+        Drag notes freely · <span className="font-medium text-slate-500">Drag the ◉ dot</span> from a note toward a foundation's dot to connect · Click arrow: dashed (hyp) → green (✓) → red (✗) · Right-click to delete
       </div>
 
       {/* Scrollable canvas */}
@@ -253,15 +297,12 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         onMouseUp={handleMouseUp}
         onMouseLeave={() => { setDragging(null); setConnecting(null); setHoverDot(null); }}
       >
-        <div className="relative min-h-[1200px] w-full" style={{ minHeight: '150vh' }}>
-          {/* SVG layer for arrows */}
-          <svg ref={svgRef}
-            className="absolute inset-0 w-full h-full pointer-events-none z-0"
-            style={{ minHeight: '150vh' }}
-          >
+        <div className="relative min-h-[150vh] w-full">
+          {/* SVG layer */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ minHeight: '150vh' }}>
             {arrows.map(a => {
               const fromP = getNoteDotPos(a.fromNoteId);
-              const toP = getDotPos(a.toFoundation);
+              const toP = getFoundationDotPos(a.toFoundation);
               if (!fromP || !toP) return null;
               return (
                 <g key={a.id} className="pointer-events-auto cursor-pointer"
@@ -275,53 +316,54 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                   <path d={arrowPath(fromP.x, fromP.y, toP.x, toP.y)}
                     fill="none" stroke="transparent" strokeWidth={16}
                   />
+                  {/* Tag label on arrow */}
+                  {a.tag && a.tag !== 'untagged' && (
+                    <text x={(fromP.x + toP.x) / 2} y={(fromP.y + toP.y) / 2 - 6}
+                      textAnchor="middle" fontSize="7" fill={arrowColor(a.color)} className="pointer-events-none select-none"
+                    >{a.tag}</text>
+                  )}
                 </g>
               );
             })}
-            {/* Active connection line */}
+            {/* Active connection rubber band */}
             {connecting && (() => {
               const fromP = getNoteDotPos(connecting.fromNoteId);
               if (!fromP) return null;
-              const targetP = hoverDot ? getDotPos(hoverDot) : null;
-              const toX = targetP ? targetP.x : connecting.mouseX;
-              const toY = targetP ? targetP.y : connecting.mouseY;
+              const targetP = hoverDot ? getFoundationDotPos(hoverDot) : null;
+              const toX = targetP ? targetP.x : (() => {
+                // Use mouse position from a synthetic event
+                return fromP.x + 200;
+              })();
+              const toY = targetP ? targetP.y : fromP.y;
               return (
-                <path d={arrowPath(fromP.x, fromP.y, toX, toY)}
+                <path d={arrowPath(fromP.x, fromP.y, targetP ? toX : fromP.x + 200, targetP ? toY : fromP.y)}
                   fill="none" stroke={hoverDot ? '#3b82f6' : '#94a3b8'} strokeWidth={2.5} strokeDasharray="4,4"
                 />
               );
             })()}
           </svg>
 
-          {/* Foundations column — sticky on right */}
+          {/* Foundations column */}
           <div className="absolute top-8 right-8 flex flex-col gap-5 z-10">
             {FOUNDATIONS.map(f => (
-              <div key={f.id}
-                ref={el => { if (el) foundationElsRef.current.set(f.id, el); else foundationElsRef.current.delete(f.id); }}
-                data-foundation-id={f.id}
-                className="flex items-center gap-0"
-              >
+              <div key={f.id} className="flex items-center gap-0">
                 {/* Connection dot */}
-                <div
-                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-150 -ml-2 mr-1.5 z-10
-                    ${hoverDot === f.id ? 'scale-150 border-blue-500 bg-blue-100 shadow-lg shadow-blue-200' : 'border-slate-300 bg-white'}`}
+                <div data-fid={f.id}
+                  className={`foundation-dot w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-150 -ml-2 mr-2 z-10 cursor-crosshair
+                    ${hoverDot === f.id ? 'scale-150 border-blue-500 bg-blue-100 shadow-lg shadow-blue-300' : 'border-slate-300 bg-white hover:border-slate-400'}`}
                   style={{ borderColor: hoverDot === f.id ? '#3b82f6' : f.color + '80' }}
                 >
-                  <div className={`w-1.5 h-1.5 rounded-full transition-all duration-150
-                    ${hoverDot === f.id ? 'bg-blue-500' : ''}`}
+                  <div className={`w-2 h-2 rounded-full transition-all duration-150 ${hoverDot === f.id ? 'bg-blue-500' : ''}`}
                     style={{ backgroundColor: hoverDot === f.id ? '#3b82f6' : f.color }}
                   />
                 </div>
                 {/* Card */}
-                <div
-                  className={`w-36 rounded-2xl border-2 flex flex-col items-center justify-center select-none cursor-default shadow-sm bg-white/90 px-3 py-2.5 transition-shadow duration-150
-                    ${hoverDot === f.id ? 'shadow-md shadow-blue-200/50' : ''}`}
+                <div className={`w-36 rounded-2xl border-2 flex flex-col items-center justify-center select-none cursor-default shadow-sm bg-white/90 px-3 py-2.5 transition-shadow duration-150 ${hoverDot === f.id ? 'shadow-md shadow-blue-200/50' : ''}`}
                   style={{ borderColor: hoverDot === f.id ? '#3b82f6' : f.color + '60' }}
                 >
                   <div className="flex items-center gap-1.5">
                     <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[7px] font-bold text-white"
-                      style={{ backgroundColor: f.color }}
-                    >{f.rank}</span>
+                      style={{ backgroundColor: f.color }}>{f.rank}</span>
                     <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: f.color }}>{f.label}</span>
                   </div>
                   <span className="text-[8px] text-slate-400 mt-0.5 text-center leading-tight">{f.desc}</span>
@@ -332,31 +374,53 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
           {/* Notes */}
           {notes.map(note => (
-            <div key={note.id} data-note-id={note.id}
+            <div key={note.id}
               ref={el => { if (el) noteElsRef.current.set(note.id, el); else noteElsRef.current.delete(note.id); }}
-              className="absolute z-20 bg-white rounded-xl shadow-md border border-slate-200 px-3 py-2 min-w-[160px] max-w-[220px] cursor-grab active:cursor-grabbing select-none"
+              className="absolute z-20 bg-white rounded-xl shadow-md border border-slate-200 cursor-grab active:cursor-grabbing select-none"
               style={{ left: note.x, top: note.y }}
               onMouseDown={(e) => startDrag(note.id, e)}
             >
-              <div className="flex items-start justify-between gap-1">
-                <textarea
-                  value={note.text}
-                  onChange={(e) => updateNoteText(note.id, e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  className="w-full text-[11px] text-slate-700 bg-transparent border-none outline-none resize-none leading-tight min-h-[20px] font-sans"
-                  rows={1}
-                />
-                <div className="flex items-center gap-0.5 shrink-0">
-                  {/* Output connection dot */}
-                  <div
-                    className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-slate-400 cursor-crosshair inline-flex items-center justify-center text-[7px] text-white font-bold transition-colors border border-slate-300 hover:border-slate-500"
-                    title="Drag to connect to a foundation"
-                    onMouseDown={(e) => { e.stopPropagation(); startConnect(note.id, e); }}
-                  >◉</div>
-                  <button onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
-                    className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-red-300 inline-flex items-center justify-center text-[7px] text-slate-400 hover:text-white font-bold leading-none transition-colors"
-                  >×</button>
+              <div className="px-2.5 py-1.5">
+                {/* Tag row */}
+                <div className="flex items-center gap-1 mb-1">
+                  {showTagPicker === note.id ? (
+                    <div className="flex flex-wrap gap-0.5" onMouseDown={e => e.stopPropagation()}>
+                      {COMMON_TAGS.map(t => (
+                        <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
+                          className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
+                        >{t}</button>
+                      ))}
+                      <button onClick={() => setShowTagPicker(null)}
+                        className="px-1 py-0.5 text-[8px] rounded border border-slate-200 text-slate-400 hover:bg-slate-100"
+                      >✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={(e) => { e.stopPropagation(); setShowTagPicker(p => p === note.id ? null : note.id); }}
+                      onMouseDown={e => e.stopPropagation()}
+                      className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 border-slate-200' : 'text-slate-300 border-dashed border-slate-200 hover:text-slate-400'}`}
+                    >{note.tag || '+ tag'}</button>
+                  )}
+                </div>
+                {/* Note text + actions */}
+                <div className="flex items-start justify-between gap-1">
+                  <textarea
+                    value={note.text}
+                    onChange={(e) => updateNote(note.id, { text: e.target.value })}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="w-full text-[11px] text-slate-700 bg-transparent border-none outline-none resize-none leading-tight min-h-[20px] font-sans"
+                    rows={1}
+                  />
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <div
+                      className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-slate-400 cursor-crosshair inline-flex items-center justify-center text-[7px] text-white font-bold transition-colors border border-slate-300 hover:border-slate-500"
+                      title="Drag to connect to a foundation"
+                      onMouseDown={(e) => { e.stopPropagation(); startConnect(note.id, e); }}
+                    >◉</div>
+                    <button onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
+                      className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-red-300 inline-flex items-center justify-center text-[7px] text-slate-400 hover:text-white font-bold leading-none transition-colors"
+                    >×</button>
+                  </div>
                 </div>
               </div>
             </div>

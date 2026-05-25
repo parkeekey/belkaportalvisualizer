@@ -826,7 +826,15 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                                   <span className="text-[6px] text-blue-500 font-medium">sub: {primaryLink.subTopic ?? primaryLink.explanation.split(' ').slice(0, 3).join(' ') + '...'}</span>
                                 </div>
                                 <div className="text-[7px] text-blue-600 leading-relaxed mb-0.5">
-                                  <span className="font-medium">Chain:</span> {primaryLink.causalChain}
+                                  <span className="font-medium">Chain</span>
+                                  <div className="mt-0.5">
+                                    {primaryLink.causalChain?.split('→').map((step, si) => (
+                                      <span key={si}>
+                                        {si > 0 && <span className="block text-center text-blue-300 leading-none">↓</span>}
+                                        <span className="block">{step.trim()}</span>
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
                                 <div className="text-[7px] text-blue-500 italic">
                                   <span className="font-medium">Try:</span> {primaryLink.experiment}
@@ -851,7 +859,18 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                                     <span className="font-medium">{f.label}</span>
                                     <span className="text-slate-400"> · sub: {link.subTopic ?? '—'}</span>
                                     <br />
-                                    <span className="text-slate-400 italic">{link.causalChain ? link.causalChain.split('→').slice(0, 2).join('→') + '→...' : link.explanation}</span>
+                                    <span className="text-slate-400 italic">
+                                      {link.causalChain ? (() => {
+                                        const steps = link.causalChain.split('→');
+                                        return steps.slice(0, 2).map((step, si) => (
+                                          <span key={si}>
+                                            {si > 0 && <span className="text-slate-300"> ↓ </span>}
+                                            {step.trim()}
+                                          </span>
+                                        ));
+                                      })() : link.explanation}
+                                      {link.causalChain && link.causalChain.split('→').length > 2 && <span className="text-slate-300"> ↓ ...</span>}
+                                    </span>
                                     {link.tell && <><br /><span className="text-amber-500 text-[6px]">⚡ {link.tell}</span></>}
                                   </div>
                                 </div>

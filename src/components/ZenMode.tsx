@@ -75,6 +75,33 @@ const OVER_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === 'over').
 const NEUTRAL_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === '').map(([t]) => t);
 const RECIPE_TAGS = ['time', 'temp', 'grindsize', 'ratio', 'turbulence'];
 
+const FOUNDATION_ACTIONS: Record<string, string[]> = {
+  grind: [
+    'Turn the grinder knob — finer ↑ flow ↓ contact ↑',
+    'Coarser ↓ flow ↑ contact ↓',
+    'Your step: 0.1 = 11 micron — huge resolution',
+    'Delivery time = how fast water flows through',
+  ],
+  ratio: [
+    'Change coffee dose (grams)',
+    'Change water volume (ml)',
+    'More coffee = stronger cup, not more extraction',
+    'Ratio changes strength, not contact time',
+  ],
+  turbulence: [
+    'Pour height — higher = more agitation',
+    'Pour speed — faster pours = more agitation',
+    'Spout type — narrow spout = more jet',
+    'More agitation = uneven extraction risk',
+  ],
+  'temp-time': [
+    'Water temperature (°C) — hotter ↑ extraction',
+    'Total brew time (seconds) — longer ↑ extraction',
+    'Bloom time & volume',
+    'Contact time = how long water sits with coffee',
+  ],
+};
+
 const EXTRACTION_DIRECTIONS: Record<string, {
   label: string;
   arrow: string;
@@ -701,6 +728,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const [selectedArrow, setSelectedArrow] = useState<string | null>(null);
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
   const [defectOpen, setDefectOpen] = useState(false);
+  const [expandedFoundation, setExpandedFoundation] = useState<string | null>(null);
 
   // Auto-expand first priority when 💡 opens, clear when it closes
   useEffect(() => {
@@ -1062,15 +1090,28 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 style={{ backgroundColor: hoverDot === f.id ? '#3b82f6' : f.color }}
               />
             </div>
-            <div className={`w-36 rounded-2xl border-2 flex flex-col items-center justify-center select-none cursor-default shadow-sm bg-white/90 px-3 py-2.5 transition-shadow duration-150 ${hoverDot === f.id ? 'shadow-md shadow-blue-200/50' : ''}`}
+              <div className={`w-36 rounded-2xl border-2 flex flex-col items-center select-none cursor-default shadow-sm bg-white/90 px-3 py-2.5 transition-shadow duration-150 ${hoverDot === f.id ? 'shadow-md shadow-blue-200/50' : ''}`}
               style={{ borderColor: hoverDot === f.id ? '#3b82f6' : f.color + '60' }}
             >
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 w-full">
                 <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[7px] font-bold text-white"
                   style={{ backgroundColor: f.color }}>{f.rank}</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: f.color }}>{f.label}</span>
+                <button onClick={(e) => { e.stopPropagation(); setExpandedFoundation(prev => prev === f.id ? null : f.id); }}
+                  className="ml-auto text-[8px] text-slate-300 hover:text-slate-500 transition-colors w-3.5 h-3.5 rounded-full inline-flex items-center justify-center"
+                >{expandedFoundation === f.id ? '▾' : '▸'}</button>
               </div>
               <span className="text-[8px] text-slate-400 mt-0.5 text-center leading-tight">{f.desc}</span>
+              {expandedFoundation === f.id && (
+                <div className="mt-1.5 pt-1.5 border-t border-slate-100 w-full">
+                  {FOUNDATION_ACTIONS[f.id]?.map((line, i) => (
+                    <div key={i} className="text-[6px] text-slate-500 leading-relaxed flex gap-1">
+                      <span className="text-slate-300 mt-0.5">•</span>
+                      <span>{line}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}

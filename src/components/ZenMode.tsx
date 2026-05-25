@@ -52,7 +52,7 @@ const EXTRACTION_DIRECTIONS: Record<string, {
   color: string;
   desc: string;
   priority: string[];
-  foundations: Record<string, { action: string; subTopic: string; causalChain: string; evidence: string }>;
+  foundations: Record<string, { action: string; subTopic: string; causalChain: string; evidence: string; impact: number; impactDesc: string }>;
 }> = {
   under: {
     label: 'Need MORE extraction',
@@ -60,10 +60,10 @@ const EXTRACTION_DIRECTIONS: Record<string, {
     desc: 'Not enough flavor compounds dissolved. Push extraction harder.',
     priority: ['grind', 'temp-time', 'turbulence', 'ratio'],
     foundations: {
-      grind: { action: '↑ finer', subTopic: 'Surface area', causalChain: 'Finer grind → more surface → more compounds dissolve → higher extraction', evidence: 'EC peak too low, short extraction window' },
-      'temp-time': { action: '↑ hotter/longer', subTopic: 'Thermal energy', causalChain: 'More heat or time → more energy for dissolution → deeper extraction', evidence: 'EC still rising when brew ends' },
-      turbulence: { action: '↑ more agitation', subTopic: 'Convection', causalChain: 'More agitation → fresh water reaches particles → more diffusion → slightly more extraction', evidence: 'EC slope too shallow' },
-      ratio: { action: '↑ tighter ratio', subTopic: 'Concentration', causalChain: 'More coffee per water → higher TDS ceiling → more intense', evidence: 'EC curve low but shape normal' },
+      grind: { action: '↑ finer', subTopic: 'Surface area', causalChain: 'Finer grind → more surface → more compounds dissolve → higher extraction', evidence: 'EC peak too low, short extraction window', impact: 5, impactDesc: 'BIG rock — 1-2 clicks can overshoot' },
+      'temp-time': { action: '↑ hotter/longer', subTopic: 'Thermal energy', causalChain: 'More heat or time → more energy for dissolution → deeper extraction', evidence: 'EC still rising when brew ends', impact: 3, impactDesc: 'Medium rock — adjust 3-5°C or 10-15s' },
+      turbulence: { action: '↑ more agitation', subTopic: 'Convection', causalChain: 'More agitation → fresh water reaches particles → more diffusion → slightly more extraction', evidence: 'EC slope too shallow', impact: 2, impactDesc: 'Small rock — pour from higher, spiral outward' },
+      ratio: { action: '↑ tighter ratio', subTopic: 'Concentration', causalChain: 'More coffee per water → higher TDS ceiling → more intense', evidence: 'EC curve low but shape normal', impact: 1, impactDesc: 'Tiny rock — 1-2g change, fine-tune last' },
     },
   },
   over: {
@@ -72,10 +72,10 @@ const EXTRACTION_DIRECTIONS: Record<string, {
     desc: 'Too many compounds dissolved, especially bitter ones. Pull extraction back.',
     priority: ['temp-time', 'grind', 'turbulence', 'ratio'],
     foundations: {
-      grind: { action: '↓ coarser', subTopic: 'Surface area', causalChain: 'Coarser grind → less surface → extraction slows → fewer bitter compounds', evidence: 'Peak EC too high, early peak' },
-      'temp-time': { action: '↓ cooler/shorter', subTopic: 'Thermal energy', causalChain: 'Less heat or time → less energy → stops before tannins dissolve', evidence: 'Long declining tail after peak' },
-      turbulence: { action: '↓ gentler pours', subTopic: 'Channeling', causalChain: 'Gentler pours → fewer channels → no localized over-extraction → less bitterness', evidence: 'Sudden EC spikes then collapse' },
-      ratio: { action: '↓ looser ratio', subTopic: 'Dilution', causalChain: 'More water per coffee → less concentration → bitter compounds diluted', evidence: 'EC stays elevated past peak' },
+      grind: { action: '↓ coarser', subTopic: 'Surface area', causalChain: 'Coarser grind → less surface → extraction slows → fewer bitter compounds', evidence: 'Peak EC too high, early peak', impact: 5, impactDesc: 'BIG rock — 1-2 clicks can fix it' },
+      'temp-time': { action: '↓ cooler/shorter', subTopic: 'Thermal energy', causalChain: 'Less heat or time → less energy → stops before tannins dissolve', evidence: 'Long declining tail after peak', impact: 3, impactDesc: 'Medium rock — reduce 3-5°C or 10-15s' },
+      turbulence: { action: '↓ gentler pours', subTopic: 'Channeling', causalChain: 'Gentler pours → fewer channels → no localized over-extraction → less bitterness', evidence: 'Sudden EC spikes then collapse', impact: 2, impactDesc: 'Small rock — pour lower, center stream' },
+      ratio: { action: '↓ looser ratio', subTopic: 'Dilution', causalChain: 'More water per coffee → less concentration → bitter compounds diluted', evidence: 'EC stays elevated past peak', impact: 1, impactDesc: 'Tiny rock — 1-2g change, fine-tune last' },
     },
   },
 };
@@ -693,11 +693,21 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                               const link = dir.foundations[fid];
                               if (!f) return null;
                               return (
-                                <span key={fid} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
-                                  style={{ backgroundColor: f.color + '20', color: f.color }}
-                                >{i === 0 ? '① ' : i === 1 ? '② ' : i === 2 ? '③ ' : '④ '}{f.label} {link?.action && <span className="font-mono">{link.action}</span>}</span>
+                                <span key={fid} className="inline-flex items-center gap-0.5 text-[7px] font-semibold px-1 py-0.5 rounded-sm"
+                                  style={{ backgroundColor: f.color + '20', color: f.color }} title={link?.impactDesc}
+                                >
+                                  <span>{i === 0 ? '① ' : i === 1 ? '② ' : i === 2 ? '③ ' : '④ '}{f.label} {link?.action}</span>
+                                  {link?.impact != null && (
+                                    <span className="opacity-60">{'●'.repeat(link.impact)}{'○'.repeat(5 - link.impact)}</span>
+                                  )}
+                                </span>
                               );
                             })}
+                          </div>
+                          {/* Impact legend */}
+                          <div className="text-[5px] text-slate-300 mt-0.5 leading-none">
+                            <span className="mr-1">●●●●● = BIG rock (adjust tiny)</span>
+                            <span>●○○○○ = small rock (adjust more)</span>
                           </div>
                         </div>
                       ) : null}

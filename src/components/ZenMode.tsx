@@ -160,36 +160,37 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
     }
   }, [dragging, connecting]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
     if (connecting) {
-      // Check if released on a foundation dot
-      const target = document.querySelector('.foundation-dot.hover');
-      if (target) {
-        const fid = target.getAttribute('data-fid');
-        if (fid) {
-          const note = notes.find(n => n.id === connecting.fromNoteId);
-          const tag = note?.tag || 'untagged';
-          setArrows(prev => {
-            const exists = prev.some(a => a.fromNoteId === connecting.fromNoteId && a.toFoundation === fid);
-            if (exists) return prev;
-            const arrow = { id: `arrow-${Date.now()}`, fromNoteId: connecting.fromNoteId, toFoundation: fid, color: 'hypothesis' as const, tag };
-            return [...prev, arrow];
+      const cx = e.clientX;
+      const cy = e.clientY;
+      let hitFid: string | null = null;
+      document.querySelectorAll('.foundation-dot').forEach(el => {
+        const r = el.getBoundingClientRect();
+        const ddx = r.left + r.width / 2;
+        const ddy = r.top + r.height / 2;
+        const dist = Math.sqrt((cx - ddx) ** 2 + (cy - ddy) ** 2);
+        if (dist < 30) hitFid = el.getAttribute('data-fid');
+      });
+      if (hitFid) {
+        const note = notes.find(n => n.id === connecting.fromNoteId);
+        const tag = note?.tag || 'untagged';
+        setArrows(prev => {
+          const exists = prev.some(a => a.fromNoteId === connecting.fromNoteId && a.toFoundation === hitFid);
+          if (exists) return prev;
+          const arrow = { id: `arrow-${Date.now()}`, fromNoteId: connecting.fromNoteId, toFoundation: hitFid!, color: 'hypothesis' as const, tag };
+          return [...prev, arrow];
+        });
+        if (tag && tag !== 'untagged') {
+          setKnowledge(prev => {
+            const next = { ...prev };
+            if (!next[tag]) next[tag] = { connections: [] };
+            const conns = next[tag].connections;
+            const existing = conns.find(c => c.to === hitFid);
+            if (existing) { existing.count++; }
+            else { conns.push({ to: hitFid!, count: 1, confirmed: 0, wrong: 0 }); }
+            return next;
           });
-          // Update knowledge
-          if (tag && tag !== 'untagged') {
-            setKnowledge(prev => {
-              const next = { ...prev };
-              if (!next[tag]) next[tag] = { connections: [] };
-              const conns = next[tag].connections;
-              const existing = conns.find(c => c.to === fid);
-              if (existing) {
-                existing.count++;
-              } else {
-                conns.push({ to: fid, count: 1, confirmed: 0, wrong: 0 });
-              }
-              return next;
-            });
-          }
         }
       }
     }

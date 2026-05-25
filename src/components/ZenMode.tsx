@@ -751,9 +751,11 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
     const note = notes.find(n => n.id === noteId);
     if (!note) return;
     const scroll = scrollRef.current;
-    const sx = scroll ? scroll.scrollLeft : 0;
-    const sy = scroll ? scroll.scrollTop : 0;
-    setDragging({ noteId, offsetX: e.clientX - note.x + sx, offsetY: e.clientY - note.y + sy });
+    if (!scroll) return;
+    const cr = scroll.getBoundingClientRect();
+    const sx = scroll.scrollLeft;
+    const sy = scroll.scrollTop;
+    setDragging({ noteId, offsetX: e.clientX - cr.left + sx - note.x, offsetY: e.clientY - cr.top + sy - note.y });
   }, [notes]);
 
   const startConnect = useCallback((noteId: string, e: React.MouseEvent) => {
@@ -764,12 +766,14 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     mouseRef.current = { x: e.clientX, y: e.clientY };
-    const scroll = scrollRef.current;
-    const sx = scroll ? scroll.scrollLeft : 0;
-    const sy = scroll ? scroll.scrollTop : 0;
     if (dragging) {
+      const scroll = scrollRef.current;
+      if (!scroll) return;
+      const cr = scroll.getBoundingClientRect();
+      const sx = scroll.scrollLeft;
+      const sy = scroll.scrollTop;
       setNotes(prev => prev.map(n =>
-        n.id === dragging.noteId ? { ...n, x: e.clientX - dragging.offsetX + sx, y: e.clientY - dragging.offsetY + sy } : n
+        n.id === dragging.noteId ? { ...n, x: e.clientX - cr.left + sx - dragging.offsetX, y: e.clientY - cr.top + sy - dragging.offsetY } : n
       ));
     }
     if (connecting) {
@@ -1060,311 +1064,308 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         ))}
       </div>
 
-      {/* Notes — fixed overlay, scroll-adjusted */}
-      {notes.map(note => {
-        const scroll = scrollRef.current;
-        const sx = scroll ? scroll.scrollLeft : 0;
-        const sy = scroll ? scroll.scrollTop : 0;
-        const posStyle: React.CSSProperties = { left: note.x - sx, top: note.y - sy };
-        return (
-          <div key={note.id}
-            ref={el => { if (el) noteElsRef.current.set(note.id, el); else noteElsRef.current.delete(note.id); }}
-            className="fixed z-40 bg-white rounded-xl shadow-md border border-slate-200 cursor-grab active:cursor-grabbing select-none"
-            style={posStyle}
-            onMouseDown={(e) => startDrag(note.id, e)}
-          >
-            <div className="px-2.5 py-1.5">
-              <div className="flex items-center gap-1 mb-1">
-                {showTagPicker === note.id ? (
-                  <div className="flex flex-wrap gap-0.5" onMouseDown={e => e.stopPropagation()}>
-                    <div className="w-full text-[6px] font-semibold text-green-600 uppercase tracking-wider mb-0.5">↑ Under-extraction</div>
-                    {UNDER_TAGS.map(t => (
-                      <button key={t} onClick={() => { updateNote(note.id, { tag: t, direction: 'under' }); setShowTagPicker(null); }}
-                        className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-green-700 text-white border-green-700' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
-                      >{t}</button>
-                    ))}
-                    <div className="w-full text-[6px] font-semibold text-red-600 uppercase tracking-wider mt-1 mb-0.5">↓ Over-extraction</div>
-                    {OVER_TAGS.map(t => (
-                      <button key={t} onClick={() => { updateNote(note.id, { tag: t, direction: 'over' }); setShowTagPicker(null); }}
-                        className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-red-700 text-white border-red-700' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
-                      >{t}</button>
-                    ))}
-                    {NEUTRAL_TAGS.length > 0 && (
-                      <>
-                        <div className="w-full text-[6px] font-semibold text-slate-400 uppercase tracking-wider mt-1 mb-0.5">You decide</div>
-                        {NEUTRAL_TAGS.map(t => (
-                          <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
-                            className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
-                          >{t}</button>
-                        ))}
-                      </>
-                    )}
-                    <input type="text" placeholder="custom tag..."
-                      onMouseDown={e => e.stopPropagation()}
-                      onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { const d = TAG_DIRECTION[val] ?? ''; updateNote(note.id, { tag: val, direction: note.direction || d }); setShowTagPicker(null); } } }}
-                      className="w-16 px-1 py-0.5 text-[8px] border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400"
-                    />
-                    <button onClick={() => setShowTagPicker(null)}
-                      className="px-1 py-0.5 text-[8px] rounded border border-slate-200 text-slate-400 hover:bg-slate-100"
-                    >✕</button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <button onClick={(e) => { e.stopPropagation(); setShowTagPicker(p => p === note.id ? null : note.id); }}
-                      onMouseDown={e => e.stopPropagation()}
-                      className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 border-slate-200' : 'text-slate-300 border-dashed border-slate-200 hover:text-slate-400'}`}
-                    >{note.tag || '+ tag'}</button>
-                    {note.tag && (
-                      <button onClick={(e) => { e.stopPropagation(); setSelectedArrow(prev => prev === note.id ? null : note.id); }}
-                        onMouseDown={e => e.stopPropagation()}
-                        className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 hover:bg-amber-100 hover:text-amber-500'}`}
-                        title="Show reasoning"
-                      >💡</button>
-                    )}
-                    {note.tag && (
-                      <div className="flex gap-0.5 ml-1" onMouseDown={e => e.stopPropagation()}>
-                        <button onClick={() => updateNote(note.id, { direction: 'under' })}
-                          className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-green-600'}`}
-                        >↑</button>
-                        <button onClick={() => updateNote(note.id, { direction: 'over' })}
-                          className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-red-600'}`}
-                        >↓</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-start justify-between gap-1">
-                <textarea
-                  value={note.text}
-                  onChange={(e) => updateNote(note.id, { text: e.target.value })}
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  className="w-full text-[11px] text-slate-700 bg-transparent border-none outline-none resize-none leading-tight min-h-[20px] font-sans"
-                  rows={1}
-                />
-                <div className="flex flex-col items-center gap-0.5 shrink-0">
-                  <div
-                    className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-slate-400 cursor-crosshair inline-flex items-center justify-center text-[7px] text-white font-bold transition-colors border border-slate-300 hover:border-slate-500 note-connect-dot"
-                    data-noteid={note.id}
-                    title="Drag to connect to a foundation or another note"
-                    onMouseDown={(e) => { e.stopPropagation(); startConnect(note.id, e); }}
-                  >◉</div>
-                  <button onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
-                    className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-red-300 inline-flex items-center justify-center text-[7px] text-slate-400 hover:text-white font-bold leading-none transition-colors"
-                  >×</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Connection list — arrows from/to this note */}
-            {(() => {
-              const outArrows = arrows.filter(a => a.fromNoteId === note.id);
-              const inArrows = arrows.filter(a => a.toNoteId === note.id);
-              if (outArrows.length === 0 && inArrows.length === 0) return null;
-              return (
-                <div className="px-2.5 pb-1.5 flex flex-wrap gap-1" onMouseDown={e => e.stopPropagation()}>
-                  {outArrows.map(a => {
-                    const f = FOUNDATIONS.find(ff => ff.id === a.toFoundation);
-                    const label = f ? f.label : a.toNoteId ? (notes.find(n => n.id === a.toNoteId)?.tag || 'note') : '?';
-                    const bg = a.color === 'confirmed' ? 'bg-green-100 text-green-700' : a.color === 'wrong' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500';
-                    return (
-                      <span key={a.id} className={`inline-flex items-center gap-0.5 text-[6px] px-1 py-0.5 rounded ${bg}`}>
-                        <span>→ {label}</span>
-                        <button onClick={(e) => { e.stopPropagation(); deleteArrow(a.id); }}
-                          className="hover:text-red-600 font-bold leading-none ml-0.5"
-                        >✕</button>
-                      </span>
-                    );
-                  })}
-                  {inArrows.map(a => {
-                    const fromNote = notes.find(n => n.id === a.fromNoteId);
-                    const label = fromNote?.tag || 'note';
-                    return (
-                      <span key={a.id} className="inline-flex items-center gap-0.5 text-[6px] px-1 py-0.5 rounded bg-slate-100 text-slate-500">
-                        <span>← {label}</span>
-                        <button onClick={(e) => { e.stopPropagation(); deleteArrow(a.id); }}
-                          className="hover:text-red-600 font-bold leading-none ml-0.5"
-                        >✕</button>
-                      </span>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-
-            {/* Inline reasoning card */}
-            {selectedArrow === note.id && note.tag && (() => {
-              const dir = note.direction ? EXTRACTION_DIRECTIONS[note.direction] : null;
-              const mech = MECHANISM_KNOWLEDGE[note.tag];
-              return (
-                <div className="mt-1.5 pt-1.5 border-t border-slate-100 w-56" onMouseDown={e => e.stopPropagation()}>
-                  {dir ? (
-                    <div className="mb-1.5 pb-1.5 border-b border-slate-100">
-                      <div className="flex items-center gap-1 mb-0.5">
-                        <span className="text-[13px] font-bold leading-none" style={{ color: dir.color }}>{dir.arrow}</span>
-                        <span className="text-[8px] font-bold" style={{ color: dir.color }}>{dir.label}</span>
-                        <span className="text-[6px] text-slate-300 ml-auto italic">{note.tag}</span>
-                      </div>
-                      <p className="text-[7px] text-slate-400 leading-relaxed mb-1">{dir.desc}</p>
-                      <div className="flex items-center gap-0.5 flex-wrap">
-                        <span className="text-[6px] text-slate-400 uppercase mr-0.5">Adjust:</span>
-                        {dir.priority.map((fid, i) => {
-                          const f = FOUNDATIONS.find(ff => ff.id === fid);
-                          const link = dir.foundations[fid];
-                          if (!f) return null;
-                          return (
-                            <span key={fid} className="inline-flex items-center gap-0.5 text-[7px] font-semibold px-1 py-0.5 rounded-sm"
-                              style={{ backgroundColor: f.color + '20', color: f.color }} title={link?.impactDesc}
-                            >
-                              <span>{i === 0 ? '① ' : i === 1 ? '② ' : i === 2 ? '③ ' : '④ '}{f.label} {link?.action}</span>
-                              {link?.impact != null && (
-                                <span className="opacity-60">{'●'.repeat(link.impact)}{'○'.repeat(5 - link.impact)}</span>
-                              )}
-                            </span>
-                          );
-                        })}
-                      </div>
-                      <div className="text-[5px] text-slate-300 mt-0.5 leading-none">
-                        <span className="mr-1">●●●●● = BIG rock (adjust tiny)</span>
-                        <span>●○○○○ = small rock (adjust more)</span>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {DEFECT_KNOWLEDGE[note.tag] && (
-                    <div className="mb-1.5 pb-1.5 border-b border-slate-100">
-                      <div onClick={() => setDefectOpen(v => !v)}
-                        className="flex items-center gap-1 cursor-pointer select-none hover:bg-amber-50 rounded px-1 py-0.5 transition-colors"
-                      >
-                        <span className="text-[9px]">⚠️</span>
-                        <span className="text-[7px] font-medium text-amber-700">Could be bean defect?</span>
-                        <span className="text-[8px] text-amber-400 ml-auto">{defectOpen ? '▾' : '▸'}</span>
-                      </div>
-                      {defectOpen && (() => {
-                        const d = DEFECT_KNOWLEDGE[note.tag];
-                        return (
-                          <div className="mt-1 px-1.5 py-1 bg-amber-50 border border-amber-200 rounded text-[7px]">
-                            <div className="font-semibold text-amber-800 mb-0.5">{d.defect}</div>
-                            <p className="text-amber-700 leading-relaxed mb-0.5">{d.desc}</p>
-                            <div className="text-amber-600 mb-0.5">
-                              <span className="font-medium">🔍 Check:</span> {d.signs}
-                            </div>
-                            <div className="text-amber-700 font-medium">
-                              <span className="font-medium">✅ Fix:</span> {d.fix}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
-
-                  {mech ? (
-                    <>
-                      <div className="text-[8px] font-semibold text-slate-500 mb-0.5">{mech.mechanism}</div>
-                      <p className="text-[7px] text-slate-400 leading-relaxed mb-1">{mech.summary}</p>
-                      {mech.priority.map((fid, i) => {
-                        const f = FOUNDATIONS.find(ff => ff.id === fid);
-                        const link = mech.foundations[fid];
-                        if (!f || !link) return null;
-                        const key = `${note.id}:${fid}`;
-                        const open = expandedChain === key;
-                        const dirLink = dir?.foundations[fid];
-                        return (
-                          <div key={fid} className="mb-0.5 rounded overflow-hidden border border-transparent"
-                            style={{ borderColor: open ? f.color + '30' : 'transparent', backgroundColor: open ? f.color + '06' : 'transparent' }}
-                          >
-                            <div onClick={() => setExpandedChain(open ? null : key)}
-                              className="flex items-center gap-1 px-1.5 py-1 cursor-pointer select-none hover:bg-slate-50 rounded transition-colors"
-                            >
-                              <span className="text-[9px] font-bold shrink-0" style={{ color: f.color }}>
-                                {i === 0 ? '①' : i === 1 ? '②' : i === 2 ? '③' : '④'}
-                              </span>
-                              <span className="text-[7px] font-semibold text-slate-600">{f.label}</span>
-                              {dirLink?.action && (
-                                <span className="text-[7px] text-slate-400 font-mono">{dirLink.action}</span>
-                              )}
-                              {dirLink?.impact != null && (
-                                <span className="text-[6px] opacity-40 ml-auto" title={dirLink.impactDesc}>
-                                  {'●'.repeat(dirLink.impact)}{'○'.repeat(5 - dirLink.impact)}
-                                </span>
-                              )}
-                              <span className="text-[8px] text-slate-300 ml-1 shrink-0">{open ? '▾' : '▸'}</span>
-                            </div>
-                            {open && (
-                              <div className="px-2.5 pb-2 pt-0.5">
-                                <div className="text-[6px] text-slate-400 mb-0.5">
-                                  <span className="font-medium">sub:</span> {link.subTopic ?? '—'}
-                                </div>
-                                {link.causalChain && (
-                                  <div className="flex flex-col items-center gap-0 my-1">
-                                    {link.causalChain.split('→').map((step, si) => (
-                                      <span key={si} className="flex flex-col items-center">
-                                        {si > 0 && <span className="text-slate-300 text-[9px] leading-none">↓</span>}
-                                        <span className="text-[7px] text-center px-1.5 py-0.5 rounded-sm bg-slate-100 text-slate-600 leading-snug">{step.trim()}</span>
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                                <div className="text-[7px] text-slate-500 italic mt-0.5">
-                                  <span className="font-medium">Try:</span> {link.experiment}
-                                </div>
-                                {link.tell && (
-                                  <div className="text-[6px] text-amber-600 font-medium mt-0.5">⚡ {link.tell}</div>
-                                )}
-                                {link.whyNot && (
-                                  <div className="text-[6px] text-slate-400 italic mt-0.5">↳ {link.whyNot}</div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </>
-                  ) : (
-                    <div>
-                      <div className="text-[8px] font-semibold text-slate-500 mb-0.5">Exploring "{note.tag}"</div>
-                      <p className="text-[7px] text-slate-400 leading-relaxed mb-1">No mechanism data yet. Investigate which foundation this symptom connects to.</p>
-                      {!dir && (
-                        <div className="flex items-center gap-0.5 mb-1 flex-wrap">
-                          <span className="text-[6px] text-slate-400 uppercase mr-0.5">Check each:</span>
-                          {FOUNDATIONS.map((f, i) => (
-                            <span key={f.id} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
-                              style={{ backgroundColor: f.color + '15', color: f.color }}
-                            >{i + 1}. {f.label}</span>
-                          ))}
-                        </div>
-                      )}
-                      <div className="bg-slate-50 border border-slate-100 rounded px-1.5 py-1 mb-1">
-                        <p className="text-[7px] text-slate-500 leading-relaxed"><span className="font-medium">Set direction ↑ or ↓</span> on the note — then the priority chain appears here based on whether you need more or less extraction.</p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="text-[6px] text-slate-300 italic mt-0.5 leading-tight">
-                    {dir ? '↑↓ toggle direction · drag ◉ to foundation · click arrow to confirm/wrong' : 'Drag ◉ to the foundation you suspect · click arrow to confirm/wrong'}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        );
-      })}
-
-      {/* Empty state */}
-      {notes.length === 0 && (
-        <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-30">
-          <div className="text-center">
-            <div className="text-3xl mb-2">☯</div>
-            <p className="text-[11px] text-slate-400">Click <span className="font-semibold text-slate-500">+ Add Note</span> to start mapping your brew</p>
-          </div>
-        </div>
-      )}
-
       {/* Scrollable canvas — provides scroll behavior */}
       <div ref={scrollRef} className="flex-1 overflow-auto"
         onMouseLeave={() => { if (!dragging && !connecting) { setHoverDot(null); } }}
       >
-        <div className="min-h-[150vh] min-w-[1200px]" />
+        <div className="min-h-[150vh] min-w-[1200px] relative">
+          {/* Notes — inside scroll container so they scroll with canvas */}
+          {notes.map(note => {
+            const posStyle: React.CSSProperties = { left: note.x, top: note.y };
+            return (
+              <div key={note.id}
+                ref={el => { if (el) noteElsRef.current.set(note.id, el); else noteElsRef.current.delete(note.id); }}
+                className="absolute z-40 bg-white rounded-xl shadow-lg border border-slate-300 cursor-grab active:cursor-grabbing select-none"
+                style={posStyle}
+                onMouseDown={(e) => startDrag(note.id, e)}
+              >
+                <div className="px-2.5 py-1.5">
+                  <div className="flex items-center gap-1 mb-1">
+                    {showTagPicker === note.id ? (
+                      <div className="flex flex-wrap gap-0.5" onMouseDown={e => e.stopPropagation()}>
+                        <div className="w-full text-[6px] font-semibold text-green-600 uppercase tracking-wider mb-0.5">↑ Under-extraction</div>
+                        {UNDER_TAGS.map(t => (
+                          <button key={t} onClick={() => { updateNote(note.id, { tag: t, direction: 'under' }); setShowTagPicker(null); }}
+                            className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-green-700 text-white border-green-700' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
+                          >{t}</button>
+                        ))}
+                        <div className="w-full text-[6px] font-semibold text-red-600 uppercase tracking-wider mt-1 mb-0.5">↓ Over-extraction</div>
+                        {OVER_TAGS.map(t => (
+                          <button key={t} onClick={() => { updateNote(note.id, { tag: t, direction: 'over' }); setShowTagPicker(null); }}
+                            className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-red-700 text-white border-red-700' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
+                          >{t}</button>
+                        ))}
+                        {NEUTRAL_TAGS.length > 0 && (
+                          <>
+                            <div className="w-full text-[6px] font-semibold text-slate-400 uppercase tracking-wider mt-1 mb-0.5">You decide</div>
+                            {NEUTRAL_TAGS.map(t => (
+                              <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
+                                className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
+                              >{t}</button>
+                            ))}
+                          </>
+                        )}
+                        <input type="text" placeholder="custom tag..."
+                          onMouseDown={e => e.stopPropagation()}
+                          onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { const d = TAG_DIRECTION[val] ?? ''; updateNote(note.id, { tag: val, direction: note.direction || d }); setShowTagPicker(null); } } }}
+                          className="w-16 px-1 py-0.5 text-[8px] border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400"
+                        />
+                        <button onClick={() => setShowTagPicker(null)}
+                          className="px-1 py-0.5 text-[8px] rounded border border-slate-200 text-slate-400 hover:bg-slate-100"
+                        >✕</button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <button onClick={(e) => { e.stopPropagation(); setShowTagPicker(p => p === note.id ? null : note.id); }}
+                          onMouseDown={e => e.stopPropagation()}
+                          className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 border-slate-200' : 'text-slate-300 border-dashed border-slate-200 hover:text-slate-400'}`}
+                        >{note.tag || '+ tag'}</button>
+                        {note.tag && (
+                          <button onClick={(e) => { e.stopPropagation(); setSelectedArrow(prev => prev === note.id ? null : note.id); }}
+                            onMouseDown={e => e.stopPropagation()}
+                            className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 hover:bg-amber-100 hover:text-amber-500'}`}
+                            title="Show reasoning"
+                          >💡</button>
+                        )}
+                        {note.tag && (
+                          <div className="flex gap-0.5 ml-1" onMouseDown={e => e.stopPropagation()}>
+                            <button onClick={() => updateNote(note.id, { direction: 'under' })}
+                              className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-green-600'}`}
+                            >↑</button>
+                            <button onClick={() => updateNote(note.id, { direction: 'over' })}
+                              className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-red-600'}`}
+                            >↓</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-start justify-between gap-1">
+                    <textarea
+                      value={note.text}
+                      onChange={(e) => updateNote(note.id, { text: e.target.value })}
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      className="w-full text-[11px] text-slate-700 bg-transparent border-none outline-none resize-none leading-tight min-h-[20px] font-sans"
+                      rows={1}
+                    />
+                    <div className="flex flex-col items-center gap-0.5 shrink-0">
+                      <div
+                        className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-slate-400 cursor-crosshair inline-flex items-center justify-center text-[7px] text-white font-bold transition-colors border border-slate-300 hover:border-slate-500 note-connect-dot"
+                        data-noteid={note.id}
+                        title="Drag to connect to a foundation or another note"
+                        onMouseDown={(e) => { e.stopPropagation(); startConnect(note.id, e); }}
+                      >◉</div>
+                      <button onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
+                        className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-red-300 inline-flex items-center justify-center text-[7px] text-slate-400 hover:text-white font-bold leading-none transition-colors"
+                      >×</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Connection list — arrows from/to this note */}
+                {(() => {
+                  const outArrows = arrows.filter(a => a.fromNoteId === note.id);
+                  const inArrows = arrows.filter(a => a.toNoteId === note.id);
+                  if (outArrows.length === 0 && inArrows.length === 0) return null;
+                  return (
+                    <div className="px-2.5 pb-1.5 flex flex-wrap gap-1" onMouseDown={e => e.stopPropagation()}>
+                      {outArrows.map(a => {
+                        const f = FOUNDATIONS.find(ff => ff.id === a.toFoundation);
+                        const label = f ? f.label : a.toNoteId ? (notes.find(n => n.id === a.toNoteId)?.tag || 'note') : '?';
+                        const bg = a.color === 'confirmed' ? 'bg-green-100 text-green-700' : a.color === 'wrong' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500';
+                        return (
+                          <span key={a.id} className={`inline-flex items-center gap-0.5 text-[6px] px-1 py-0.5 rounded ${bg}`}>
+                            <span>→ {label}</span>
+                            <button onClick={(e) => { e.stopPropagation(); deleteArrow(a.id); }}
+                              className="hover:text-red-600 font-bold leading-none ml-0.5"
+                            >✕</button>
+                          </span>
+                        );
+                      })}
+                      {inArrows.map(a => {
+                        const fromNote = notes.find(n => n.id === a.fromNoteId);
+                        const label = fromNote?.tag || 'note';
+                        return (
+                          <span key={a.id} className="inline-flex items-center gap-0.5 text-[6px] px-1 py-0.5 rounded bg-slate-100 text-slate-500">
+                            <span>← {label}</span>
+                            <button onClick={(e) => { e.stopPropagation(); deleteArrow(a.id); }}
+                              className="hover:text-red-600 font-bold leading-none ml-0.5"
+                            >✕</button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* Inline reasoning card */}
+                {selectedArrow === note.id && note.tag && (() => {
+                  const dir = note.direction ? EXTRACTION_DIRECTIONS[note.direction] : null;
+                  const mech = MECHANISM_KNOWLEDGE[note.tag];
+                  return (
+                    <div className="mt-1.5 pt-1.5 border-t border-slate-100 w-56 px-2 pb-2" onMouseDown={e => e.stopPropagation()}>
+                      {dir ? (
+                        <div className="mb-1.5 pb-1.5 border-b border-slate-100">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <span className="text-[13px] font-bold leading-none" style={{ color: dir.color }}>{dir.arrow}</span>
+                            <span className="text-[8px] font-bold" style={{ color: dir.color }}>{dir.label}</span>
+                            <span className="text-[6px] text-slate-300 ml-auto italic">{note.tag}</span>
+                          </div>
+                          <p className="text-[7px] text-slate-400 leading-relaxed mb-1">{dir.desc}</p>
+                          <div className="flex items-center gap-0.5 flex-wrap">
+                            <span className="text-[6px] text-slate-400 uppercase mr-0.5">Adjust:</span>
+                            {dir.priority.map((fid, i) => {
+                              const f = FOUNDATIONS.find(ff => ff.id === fid);
+                              const link = dir.foundations[fid];
+                              if (!f) return null;
+                              return (
+                                <span key={fid} className="inline-flex items-center gap-0.5 text-[7px] font-semibold px-1 py-0.5 rounded-sm"
+                                  style={{ backgroundColor: f.color + '20', color: f.color }} title={link?.impactDesc}
+                                >
+                                  <span>{i === 0 ? '① ' : i === 1 ? '② ' : i === 2 ? '③ ' : '④ '}{f.label} {link?.action}</span>
+                                  {link?.impact != null && (
+                                    <span className="opacity-60">{'●'.repeat(link.impact)}{'○'.repeat(5 - link.impact)}</span>
+                                  )}
+                                </span>
+                              );
+                            })}
+                          </div>
+                          <div className="text-[5px] text-slate-300 mt-0.5 leading-none">
+                            <span className="mr-1">●●●●● = BIG rock (adjust tiny)</span>
+                            <span>●○○○○ = small rock (adjust more)</span>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {DEFECT_KNOWLEDGE[note.tag] && (
+                        <div className="mb-1.5 pb-1.5 border-b border-slate-100">
+                          <div onClick={() => setDefectOpen(v => !v)}
+                            className="flex items-center gap-1 cursor-pointer select-none hover:bg-amber-50 rounded px-1 py-0.5 transition-colors"
+                          >
+                            <span className="text-[9px]">⚠️</span>
+                            <span className="text-[7px] font-medium text-amber-700">Could be bean defect?</span>
+                            <span className="text-[8px] text-amber-400 ml-auto">{defectOpen ? '▾' : '▸'}</span>
+                          </div>
+                          {defectOpen && (() => {
+                            const d = DEFECT_KNOWLEDGE[note.tag];
+                            return (
+                              <div className="mt-1 px-1.5 py-1 bg-amber-50 border border-amber-200 rounded text-[7px]">
+                                <div className="font-semibold text-amber-800 mb-0.5">{d.defect}</div>
+                                <p className="text-amber-700 leading-relaxed mb-0.5">{d.desc}</p>
+                                <div className="text-amber-600 mb-0.5">
+                                  <span className="font-medium">🔍 Check:</span> {d.signs}
+                                </div>
+                                <div className="text-amber-700 font-medium">
+                                  <span className="font-medium">✅ Fix:</span> {d.fix}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      {mech ? (
+                        <>
+                          <div className="text-[8px] font-semibold text-slate-500 mb-0.5">{mech.mechanism}</div>
+                          <p className="text-[7px] text-slate-400 leading-relaxed mb-1">{mech.summary}</p>
+                          {mech.priority.map((fid, i) => {
+                            const f = FOUNDATIONS.find(ff => ff.id === fid);
+                            const link = mech.foundations[fid];
+                            if (!f || !link) return null;
+                            const key = `${note.id}:${fid}`;
+                            const open = expandedChain === key;
+                            const dirLink = dir?.foundations[fid];
+                            return (
+                              <div key={fid} className="mb-0.5 rounded overflow-hidden border border-transparent"
+                                style={{ borderColor: open ? f.color + '30' : 'transparent', backgroundColor: open ? f.color + '06' : 'transparent' }}
+                              >
+                                <div onClick={() => setExpandedChain(open ? null : key)}
+                                  className="flex items-center gap-1 px-1.5 py-1 cursor-pointer select-none hover:bg-slate-50 rounded transition-colors"
+                                >
+                                  <span className="text-[9px] font-bold shrink-0" style={{ color: f.color }}>
+                                    {i === 0 ? '①' : i === 1 ? '②' : i === 2 ? '③' : '④'}
+                                  </span>
+                                  <span className="text-[7px] font-semibold text-slate-600">{f.label}</span>
+                                  {dirLink?.action && (
+                                    <span className="text-[7px] text-slate-400 font-mono">{dirLink.action}</span>
+                                  )}
+                                  {dirLink?.impact != null && (
+                                    <span className="text-[6px] opacity-40 ml-auto" title={dirLink.impactDesc}>
+                                      {'●'.repeat(dirLink.impact)}{'○'.repeat(5 - dirLink.impact)}
+                                    </span>
+                                  )}
+                                  <span className="text-[8px] text-slate-300 ml-1 shrink-0">{open ? '▾' : '▸'}</span>
+                                </div>
+                                {open && (
+                                  <div className="px-2.5 pb-2 pt-0.5">
+                                    <div className="text-[6px] text-slate-400 mb-0.5">
+                                      <span className="font-medium">sub:</span> {link.subTopic ?? '—'}
+                                    </div>
+                                    {link.causalChain && (
+                                      <div className="flex flex-col items-center gap-0 my-1">
+                                        {link.causalChain.split('→').map((step, si) => (
+                                          <span key={si} className="flex flex-col items-center">
+                                            {si > 0 && <span className="text-slate-300 text-[9px] leading-none">↓</span>}
+                                            <span className="text-[7px] text-center px-1.5 py-0.5 rounded-sm bg-slate-100 text-slate-600 leading-snug">{step.trim()}</span>
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <div className="text-[7px] text-slate-500 italic mt-0.5">
+                                      <span className="font-medium">Try:</span> {link.experiment}
+                                    </div>
+                                    {link.tell && (
+                                      <div className="text-[6px] text-amber-600 font-medium mt-0.5">⚡ {link.tell}</div>
+                                    )}
+                                    {link.whyNot && (
+                                      <div className="text-[6px] text-slate-400 italic mt-0.5">↳ {link.whyNot}</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </>
+                      ) : (
+                        <div>
+                          <div className="text-[8px] font-semibold text-slate-500 mb-0.5">Exploring "{note.tag}"</div>
+                          <p className="text-[7px] text-slate-400 leading-relaxed mb-1">No mechanism data yet. Investigate which foundation this symptom connects to.</p>
+                          {!dir && (
+                            <div className="flex items-center gap-0.5 mb-1 flex-wrap">
+                              <span className="text-[6px] text-slate-400 uppercase mr-0.5">Check each:</span>
+                              {FOUNDATIONS.map((f, i) => (
+                                <span key={f.id} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
+                                  style={{ backgroundColor: f.color + '15', color: f.color }}
+                                >{i + 1}. {f.label}</span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="bg-slate-50 border border-slate-100 rounded px-1.5 py-1 mb-1">
+                            <p className="text-[7px] text-slate-500 leading-relaxed"><span className="font-medium">Set direction ↑ or ↓</span> on the note — then the priority chain appears here based on whether you need more or less extraction.</p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="text-[6px] text-slate-300 italic mt-0.5 leading-tight">
+                        {dir ? '↑↓ toggle direction · drag ◉ to foundation · click arrow to confirm/wrong' : 'Drag ◉ to the foundation you suspect · click arrow to confirm/wrong'}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          })}
+
+          {/* Empty state */}
+          {notes.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-center">
+                <div className="text-3xl mb-2">☯</div>
+                <p className="text-[11px] text-slate-400">Click <span className="font-semibold text-slate-500">+ Add Note</span> to start mapping your brew</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Bottom bar */}

@@ -822,6 +822,20 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
     setDragging({ noteId, offsetX: e.clientX - cr.left + sx - note.x, offsetY: e.clientY - cr.top + sy - note.y });
   }, [notes]);
 
+  const startDragTouch = useCallback((noteId: string, e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.tagName === 'BUTTON') return;
+    const note = notes.find(n => n.id === noteId);
+    if (!note || note.locked) return;
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    const t = e.touches[0];
+    const cr = scroll.getBoundingClientRect();
+    const sx = scroll.scrollLeft;
+    const sy = scroll.scrollTop;
+    setDragging({ noteId, offsetX: t.clientX - cr.left + sx - note.x, offsetY: t.clientY - cr.top + sy - note.y });
+  }, [notes]);
+
   const startConnect = useCallback((noteId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setConnecting({ fromNoteId: noteId });
@@ -884,6 +898,96 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
     if (connecting) {
       const cx = e.clientX;
       const cy = e.clientY;
+      let hitFid: string | null = null;
+      let hitNid: string | null = null;
+      document.querySelectorAll('.foundation-dot').forEach(el => {
+        const r = el.getBoundingClientRect();
+        const ddx = r.left + r.width / 2;
+        const ddy = r.top + r.height / 2;
+        const dist = Math.sqrt((cx - ddx) ** 2 + (cy - ddy) ** 2);
+        if (dist < 30) hitFid = el.getAttribute('data-fid');
+      });
+      document.querySelectorAll('.note-connect-dot').forEach(el => {
+        const nid = el.getAttribute('data-noteid');
+        if (nid === connecting.fromNoteId) return;
+        const r = el.getBoundingClientRect();
+        const ndx = r.left + r.width / 2;
+        const ndy = r.top + r.height / 2;
+        const dist = Math.sqrt((cx - ndx) ** 2 + (cy - ndy) ** 2);
+        if (dist < 30) hitNid = nid;
+      });
+      const note = notes.find(n => n.id === connecting.fromNoteId);
+      const tag = note?.tag || 'untagged';
+      if (hitFid) {
+        const fid: string = hitFid;
+        setArrows(prev => {
+          const exists = prev.some(a => a.fromNoteId === connecting.fromNoteId && a.toFoundation === fid);
+          if (exists) return prev;
+          const arrow: ZenArrow = { id: `arrow-${Date.now()}`, fromNoteId: connecting.fromNoteId, toFoundation: fid, toNoteId: '', color: 'confirmed', tag };
+          return [...prev, arrow];
+        });
+      }
+      if (hitNid) {
+        const nid: string = hitNid;
+        setArrows(prev => {
+          const exists = prev.some(a => a.fromNoteId === connecting.fromNoteId && a.toNoteId === nid);
+          if (exists) return prev;
+          const arrow: ZenArrow = { id: `arrow-${Date.now()}`, fromNoteId: connecting.fromNoteId, toFoundation: '', toNoteId: nid, color: 'hypothesis', tag };
+          return [...prev, arrow];
+        });
+      }
+    }
+    if (dragging || connecting) {
+      setDragging(null);
+      setConnecting(null);
+      setHoverDot(null);
+    }
+  }, [connecting, dragging, notes]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    mouseRef.current = { x: t.clientX, y: t.clientY };
+    if (dragging) {
+      e.preventDefault();
+      const scroll = scrollRef.current;
+      if (!scroll) return;
+      const cr = scroll.getBoundingClientRect();
+      const sx = scroll.scrollLeft;
+      const sy = scroll.scrollTop;
+      setNotes(prev => prev.map(n =>
+        n.id === dragging.noteId ? { ...n, x: t.clientX - cr.left + sx - dragging.offsetX, y: t.clientY - cr.top + sy - dragging.offsetY } : n
+      ));
+    }
+    if (connecting) {
+      const cx = t.clientX;
+      const cy = t.clientY;
+      let closest: string | null = null;
+      let closestDist = 28;
+      document.querySelectorAll('.foundation-dot').forEach(el => {
+        const r = el.getBoundingClientRect();
+        const ddx = r.left + r.width / 2;
+        const ddy = r.top + r.height / 2;
+        const dist = Math.sqrt((cx - ddx) ** 2 + (cy - ddy) ** 2);
+        if (dist < closestDist) { closestDist = dist; closest = el.getAttribute('data-fid'); }
+      });
+      document.querySelectorAll('.note-connect-dot').forEach(el => {
+        const nid = el.getAttribute('data-noteid');
+        if (nid === connecting.fromNoteId) return;
+        const r = el.getBoundingClientRect();
+        const ndx = r.left + r.width / 2;
+        const ndy = r.top + r.height / 2;
+        const dist = Math.sqrt((cx - ndx) ** 2 + (cy - ndy) ** 2);
+        if (dist < closestDist) { closestDist = dist; closest = 'note:' + nid; }
+      });
+      setHoverDot(closest);
+    }
+  }, [dragging, connecting]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (connecting) {
+      const t = e.changedTouches[0];
+      const cx = t.clientX;
+      const cy = t.clientY;
       let hitFid: string | null = null;
       let hitNid: string | null = null;
       document.querySelectorAll('.foundation-dot').forEach(el => {
@@ -1012,7 +1116,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   return (
     <div className="fixed inset-0 z-50 bg-[#f8f6f0] flex flex-col"
       onMouseMove={handleMouseMove}
+      onTouchMove={handleTouchMove}
       onMouseUp={handleMouseUp}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-white/70 shrink-0">
@@ -1169,6 +1275,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 className={`absolute z-40 bg-white rounded-xl shadow-lg border select-none ${note.locked ? 'border-slate-200 opacity-70 cursor-default' : 'border-slate-300 cursor-grab active:cursor-grabbing'}`}
                 style={posStyle}
                 onMouseDown={(e) => startDrag(note.id, e)}
+                onTouchStart={(e) => startDragTouch(note.id, e)}
               >
                 {linkedFoundations.length > 0 && (
                   <div className="h-1 rounded-t-xl overflow-hidden flex">
@@ -1389,6 +1496,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       }}
                       onClick={(e) => { if (note.locked) e.stopPropagation(); else e.stopPropagation(); }}
                       onMouseDown={(e) => { if (note.locked) e.stopPropagation(); else e.stopPropagation(); }}
+                      onTouchStart={(e) => { e.stopPropagation(); }}
                       readOnly={note.locked}
                       className={`w-full text-[11px] bg-transparent border-none outline-none resize-none leading-tight font-sans overflow-hidden ${note.locked ? 'text-slate-400 italic' : 'text-slate-700'}`}
                       rows={1}
@@ -1400,6 +1508,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                         data-noteid={note.id}
                         title="Drag to connect to a foundation or another note"
                         onMouseDown={(e) => { e.stopPropagation(); startConnect(note.id, e); }}
+                        onTouchStart={(e) => { e.stopPropagation(); setConnecting({ fromNoteId: note.id }); setHoverDot(null); }}
                       >◉</div>
                       <button onClick={(e) => { e.stopPropagation(); updateNote(note.id, { locked: !note.locked }); }}
                         className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[7px] font-bold transition-colors ${note.locked ? 'bg-amber-200 text-amber-700' : 'bg-slate-200 text-slate-400 hover:text-amber-600'}`}

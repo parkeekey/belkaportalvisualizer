@@ -8,7 +8,9 @@ interface ZenNote {
   x: number;
   y: number;
   locked: boolean;
+  starred: boolean;
   counter: number;
+  counterLabel: string;
   pct: number;
   timeM: number;
   timeS: number;
@@ -807,7 +809,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       tag: '',
       direction: '',
       locked: false,
+      starred: false,
       counter: 1,
+      counterLabel: '',
       pct: 50,
       x: 60 + (noteCounter % 5) * 40,
       y: 100 + (noteCounter % 4) * 80,
@@ -1310,7 +1314,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
             return (
               <div key={note.id}
                 ref={el => { if (el) noteElsRef.current.set(note.id, el); else noteElsRef.current.delete(note.id); }}
-                className={`absolute z-40 bg-white rounded-xl shadow-lg border select-none ${note.locked ? 'border-slate-200 opacity-70 cursor-default' : 'border-slate-300 cursor-grab active:cursor-grabbing'}`}
+                className={`absolute z-40 bg-white rounded-xl shadow-lg border select-none ${note.locked ? 'border-slate-200 opacity-70 cursor-default' : note.starred ? 'border-amber-300 ring-2 ring-amber-200/60 cursor-grab active:cursor-grabbing' : 'border-slate-300 cursor-grab active:cursor-grabbing'}`}
                 style={posStyle}
                 onMouseDown={(e) => startDrag(note.id, e)}
                 onTouchStart={(e) => { const t = e.target as HTMLElement; if (t.closest('[data-drag-handle]')) startDragTouch(note.id, e); }}
@@ -1540,6 +1544,11 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                     <div className="flex items-center gap-1 mb-1.5 px-1 py-1 bg-slate-50 border border-slate-200 rounded" onMouseDown={e => e.stopPropagation()}>
                     {note.tag === 'counter' && <>
                       <span className="text-[9px] text-slate-500 font-medium">#</span>
+                      <input type="text" value={note.counterLabel ?? ''}
+                        onChange={e => updateNote(note.id, { counterLabel: e.target.value })}
+                        placeholder="label..."
+                        className="w-14 px-0.5 py-0 text-[8px] border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400 bg-white"
+                      />
                       <button onClick={() => updateNote(note.id, { counter: Math.max(0, (note.counter ?? 1) - 1) })}
                         className="px-1 py-0 text-[10px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100"
                       >−</button>
@@ -1547,7 +1556,6 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       <button onClick={() => updateNote(note.id, { counter: (note.counter ?? 1) + 1 })}
                         className="px-1 py-0 text-[10px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100"
                       >+</button>
-                      <span className="text-[7px] text-slate-400 ml-1">Attempt #{note.counter ?? 1}</span>
                     </>}
                     {note.tag === 'pct' && <>
                       <span className="text-[9px] text-slate-500 font-medium">%</span>
@@ -1584,6 +1592,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                         onMouseDown={(e) => { e.stopPropagation(); startConnect(note.id, e); }}
                         onTouchStart={(e) => { e.stopPropagation(); setConnecting({ fromNoteId: note.id }); setHoverDot(null); }}
                       >◉</div>
+                      <button onClick={(e) => { e.stopPropagation(); updateNote(note.id, { starred: !note.starred }); }}
+                        className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${note.starred ? 'text-amber-400' : 'text-slate-200 hover:text-amber-300'}`}
+                      >{note.starred ? '⭐' : '☆'}</button>
                       <button onClick={(e) => { e.stopPropagation(); updateNote(note.id, { locked: !note.locked }); }}
                         className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[7px] font-bold transition-colors ${note.locked ? 'bg-amber-200 text-amber-700' : 'bg-slate-200 text-slate-400 hover:text-amber-600'}`}
                       >{note.locked ? '🔒' : '🔓'}</button>

@@ -1275,7 +1275,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 className={`absolute z-40 bg-white rounded-xl shadow-lg border select-none ${note.locked ? 'border-slate-200 opacity-70 cursor-default' : 'border-slate-300 cursor-grab active:cursor-grabbing'}`}
                 style={posStyle}
                 onMouseDown={(e) => startDrag(note.id, e)}
-                onTouchStart={(e) => startDragTouch(note.id, e)}
+                onTouchStart={(e) => { const t = e.target as HTMLElement; if (t.closest('[data-drag-handle]')) startDragTouch(note.id, e); }}
               >
                 {linkedFoundations.length > 0 && (
                   <div className="h-1 rounded-t-xl overflow-hidden flex">
@@ -1285,6 +1285,13 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                   </div>
                 )}
                 <div className="px-2.5 py-1.5">
+                  {/* Drag handle — only touch target on mobile for dragging */}
+                  <div data-drag-handle
+                    className="flex items-center justify-center gap-0.5 mb-1 cursor-grab active:cursor-grabbing select-none -mt-0.5"
+                    onMouseDown={(e) => { e.stopPropagation(); startDrag(note.id, e); }}
+                  >
+                    <span className="text-[6px] text-slate-200 tracking-[4px] select-none">∙∙∙</span>
+                  </div>
                   <div className="flex items-center gap-1 mb-1">
                     {showTagPicker === note.id ? (
                       <div className="flex flex-wrap gap-0.5" onMouseDown={e => e.stopPropagation()}>

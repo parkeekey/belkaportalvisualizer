@@ -699,10 +699,10 @@ function loadState() {
     const raw = localStorage.getItem(ZEN_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
-  return { notes: [], arrows: [], lockedFoundations: [] };
+  return { notes: [], arrows: [], lockedFoundations: [], foundationPositions: {} };
 }
 
-function saveState(state: { notes: ZenNote[]; arrows: ZenArrow[]; lockedFoundations: string[] }) {
+function saveState(state: { notes: ZenNote[]; arrows: ZenArrow[]; lockedFoundations: string[]; foundationPositions: Record<string, {x: number; y: number}> }) {
   localStorage.setItem(ZEN_KEY, JSON.stringify(state));
 }
 
@@ -724,6 +724,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const [notes, setNotes] = useState<ZenNote[]>(() => loadState().notes);
   const [arrows, setArrows] = useState<ZenArrow[]>(() => loadState().arrows);
   const [dragging, setDragging] = useState<{ noteId: string; offsetX: number; offsetY: number } | null>(null);
+  const [foundationDrag, setFoundationDrag] = useState<{ fid: string; offsetX: number; offsetY: number } | null>(null);
   const [connecting, setConnecting] = useState<{ fromNoteId: string } | null>(null);
   const [hoverDot, setHoverDot] = useState<string | null>(null);
   const [knowledge, setKnowledge] = useState<TagKnowledge>(() => loadKnowledge());
@@ -735,6 +736,13 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const [defectOpen, setDefectOpen] = useState(false);
   const [expandedFoundation, setExpandedFoundation] = useState<string | null>(null);
   const [lockedFoundations, setLockedFoundations] = useState<string[]>(() => loadState().lockedFoundations ?? []);
+  const [foundationPositions, setFoundationPositions] = useState<Record<string, {x: number; y: number}>>(() => {
+    const saved = loadState().foundationPositions;
+    if (saved && Object.keys(saved).length) return saved;
+    const defaults: Record<string, {x: number; y: number}> = {};
+    FOUNDATIONS.forEach((f, i) => { defaults[f.id] = { x: 1120, y: 100 + i * 130 }; });
+    return defaults;
+  });
 
   // Auto-expand first priority when 💡 opens, clear when it closes
   useEffect(() => {
@@ -778,8 +786,8 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   }, []);
 
   useEffect(() => {
-    saveState({ notes, arrows, lockedFoundations });
-  }, [notes, arrows, lockedFoundations]);
+    saveState({ notes, arrows, lockedFoundations, foundationPositions });
+  }, [notes, arrows, lockedFoundations, foundationPositions]);
 
   useEffect(() => {
     saveKnowledge(knowledge);
@@ -844,6 +852,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     mouseRef.current = { x: e.clientX, y: e.clientY };
+    if (foundationDrag) {
+      setFoundationPositions(prev => ({ ...prev, [foundationDrag.fid]: { x: e.clientX - foundationDrag.offsetX, y: e.clientY - foundationDrag.offsetY } }));
+    }
     if (dragging) {
       const scroll = scrollRef.current;
       if (!scroll) return;
@@ -937,16 +948,21 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         });
       }
     }
-    if (dragging || connecting) {
+    if (dragging || connecting || foundationDrag) {
       setDragging(null);
       setConnecting(null);
+      setFoundationDrag(null);
       setHoverDot(null);
     }
-  }, [connecting, dragging, notes]);
+  }, [connecting, dragging, foundationDrag, notes]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     const t = e.touches[0];
     mouseRef.current = { x: t.clientX, y: t.clientY };
+    if (foundationDrag) {
+      e.preventDefault();
+      setFoundationPositions(prev => ({ ...prev, [foundationDrag.fid]: { x: t.clientX - foundationDrag.offsetX, y: t.clientY - foundationDrag.offsetY } }));
+    }
     if (dragging) {
       e.preventDefault();
       const scroll = scrollRef.current;
@@ -1027,12 +1043,13 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         });
       }
     }
-    if (dragging || connecting) {
+    if (dragging || connecting || foundationDrag) {
       setDragging(null);
       setConnecting(null);
+      setFoundationDrag(null);
       setHoverDot(null);
     }
-  }, [connecting, dragging, notes]);
+  }, [connecting, dragging, foundationDrag, notes]);
 
   const cycleArrowColor = useCallback((arrowId: string) => {
     setArrows(prev => prev.map(a => {
@@ -1127,7 +1144,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
           <span className="text-[10px] text-slate-400 italic">connect your taste to the fundamentals</span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => { saveState({ notes, arrows, lockedFoundations }); }}
+          <button onClick={() => { saveState({ notes, arrows, lockedFoundations, foundationPositions }); }}
             className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100"
           >Save</button>
           <button onClick={() => { setShowFoundations(p => !p); }}
@@ -1213,10 +1230,14 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         })()}
       </svg>
 
-      {/* Foundations column — fixed in viewport, toggleable */}
-      {showFoundations && <div className="fixed top-20 right-8 flex flex-col gap-5 z-30">
-        {FOUNDATIONS.map(f => (
-          <div key={f.id} className="flex items-center gap-0 pointer-events-auto">
+      {/* Foundations — individually fixed-positioned, freely draggable */}
+      {showFoundations && FOUNDATIONS.map(f => {
+        const pos = foundationPositions[f.id] || { x: 1120, y: 100 + FOUNDATIONS.indexOf(f) * 130 };
+        return (
+          <div key={f.id}
+            className="fixed z-30 flex items-center gap-0 pointer-events-auto"
+            style={{ left: pos.x, top: pos.y }}
+          >
             <div data-fid={f.id}
               className={`foundation-dot w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-150 -ml-2 mr-2 z-10 cursor-crosshair
                 ${lockedFoundations.includes(f.id) ? 'border-slate-200 bg-slate-50 opacity-40' : ''}
@@ -1227,7 +1248,16 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 style={{ backgroundColor: lockedFoundations.includes(f.id) ? '#cbd5e1' : (hoverDot === f.id ? '#3b82f6' : f.color) }}
               />
             </div>
-              <div className={`w-36 rounded-2xl border-2 flex flex-col items-center select-none cursor-default shadow-sm px-3 py-2.5 transition-all duration-150 ${lockedFoundations.includes(f.id) ? 'bg-white/40 opacity-50 border-slate-200 shadow-none' : 'bg-white/90 shadow-sm'} ${hoverDot === f.id ? 'shadow-md shadow-blue-200/50' : ''}`}
+            <div
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                setFoundationDrag({ fid: f.id, offsetX: e.clientX - pos.x, offsetY: e.clientY - pos.y });
+              }}
+              onTouchStart={(e) => {
+                const t = e.touches[0];
+                setFoundationDrag({ fid: f.id, offsetX: t.clientX - pos.x, offsetY: t.clientY - pos.y });
+              }}
+              className={`w-36 rounded-2xl border-2 flex flex-col items-center select-none cursor-grab active:cursor-grabbing shadow-sm px-3 py-2.5 transition-all duration-150 ${lockedFoundations.includes(f.id) ? 'bg-white/40 opacity-50 border-slate-200 shadow-none' : 'bg-white/90 shadow-sm'} ${hoverDot === f.id ? 'shadow-md shadow-blue-200/50' : ''}`}
               style={{ borderColor: lockedFoundations.includes(f.id) ? '#e2e8f0' : (hoverDot === f.id ? '#3b82f6' : f.color + '60') }}
             >
               <div className="flex items-center gap-1.5 w-full">
@@ -1255,8 +1285,8 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
               )}
             </div>
           </div>
-        ))}
-      </div>}
+        );
+      })}
 
       {/* Scrollable canvas — provides scroll behavior */}
       <div ref={scrollRef} className="flex-1 overflow-auto"

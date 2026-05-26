@@ -8,6 +8,8 @@ interface ZenNote {
   x: number;
   y: number;
   locked: boolean;
+  counter: number;
+  pct: number;
   timeM: number;
   timeS: number;
   grind: number;
@@ -71,6 +73,7 @@ const TAG_DIRECTION: Record<string, 'under' | 'over' | ''> = {
   time: '', temp: '', grindsize: '', ratio: '', turbulence: '',
   equipment: '', grinder: '', 'water ppm': '', 'dripper flowrate': '',
   clogged: '', 'muddy bed': '', channeling: '', 'fast drawdown': '', stalling: '', 'even bed': '',
+  counter: '', pct: '',
 };
 
 const UNDER_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === 'under').map(([t]) => t);
@@ -79,6 +82,7 @@ const NEUTRAL_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === '').m
 const RECIPE_TAGS = ['time', 'temp', 'grindsize', 'ratio', 'turbulence'];
 const EQUIPMENT_TAGS = ['equipment', 'grinder', 'water ppm', 'dripper flowrate'];
 const BED_TAGS = ['clogged', 'muddy bed', 'channeling', 'fast drawdown', 'stalling', 'even bed'];
+const UTILITY_TAGS = ['counter', 'pct'];
 
 const FOUNDATION_ACTIONS: Record<string, string[]> = {
   grind: [
@@ -803,6 +807,8 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       tag: '',
       direction: '',
       locked: false,
+      counter: 1,
+      pct: 50,
       x: 60 + (noteCounter % 5) * 40,
       y: 100 + (noteCounter % 4) * 80,
       timeM: 0, timeS: 0, grind: 0, grindLow: 0, grindHigh: 0, temp: 0, ratio: 0, turbulence: 0,
@@ -1340,7 +1346,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                           >{t}</button>
                         ))}
                         <div className="w-full text-[6px] font-semibold text-slate-400 uppercase tracking-wider mt-1 mb-0.5">You decide</div>
-                        {NEUTRAL_TAGS.filter(t => !RECIPE_TAGS.includes(t) && !EQUIPMENT_TAGS.includes(t) && !BED_TAGS.includes(t)).map(t => (
+                        {NEUTRAL_TAGS.filter(t => !RECIPE_TAGS.includes(t) && !EQUIPMENT_TAGS.includes(t) && !BED_TAGS.includes(t) && !UTILITY_TAGS.includes(t)).map(t => (
                           <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
                             className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
                           >{t}</button>
@@ -1362,6 +1368,12 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                           <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
                             className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-amber-700 text-white border-amber-700' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}
                           >{t}</button>
+                        ))}
+                        <div className="w-full text-[6px] font-semibold text-slate-500 uppercase tracking-wider mt-1 mb-0.5">🧰 Utility</div>
+                        {UTILITY_TAGS.map(t => (
+                          <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
+                            className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
+                          >{t === 'counter' ? '# counter' : '% pct'}</button>
                         ))}
                         <input type="text" placeholder="custom tag..."
                           onMouseDown={e => e.stopPropagation()}
@@ -1523,6 +1535,29 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       <span className="text-[8px] text-slate-400">/10</span>
                     </>}
                   </div>
+                  )}
+                  {UTILITY_TAGS.includes(note.tag) && (
+                    <div className="flex items-center gap-1 mb-1.5 px-1 py-1 bg-slate-50 border border-slate-200 rounded" onMouseDown={e => e.stopPropagation()}>
+                    {note.tag === 'counter' && <>
+                      <span className="text-[9px] text-slate-500 font-medium">#</span>
+                      <button onClick={() => updateNote(note.id, { counter: Math.max(0, (note.counter ?? 1) - 1) })}
+                        className="px-1 py-0 text-[10px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100"
+                      >−</button>
+                      <span className="text-[11px] font-semibold text-slate-700 min-w-[20px] text-center">{note.counter ?? 1}</span>
+                      <button onClick={() => updateNote(note.id, { counter: (note.counter ?? 1) + 1 })}
+                        className="px-1 py-0 text-[10px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100"
+                      >+</button>
+                      <span className="text-[7px] text-slate-400 ml-1">Attempt #{note.counter ?? 1}</span>
+                    </>}
+                    {note.tag === 'pct' && <>
+                      <span className="text-[9px] text-slate-500 font-medium">%</span>
+                      <input type="range" min={0} max={100} value={note.pct ?? 50}
+                        onChange={e => updateNote(note.id, { pct: +e.target.value })}
+                        className="w-20 h-1 accent-slate-500"
+                      />
+                      <span className="text-[10px] font-semibold text-slate-700 min-w-[32px] text-right">{note.pct ?? 50}%</span>
+                    </>}
+                    </div>
                   )}
                   <div className="flex items-start justify-between gap-1">
                     <textarea

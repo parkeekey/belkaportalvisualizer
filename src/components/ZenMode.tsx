@@ -740,7 +740,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
     const saved = loadState().foundationPositions;
     if (saved && Object.keys(saved).length) return saved;
     const defaults: Record<string, {x: number; y: number}> = {};
-    FOUNDATIONS.forEach((f, i) => { defaults[f.id] = { x: 1120, y: 100 + i * 130 }; });
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1400;
+    const startX = vw - 200;
+    FOUNDATIONS.forEach((f, i) => { defaults[f.id] = { x: startX, y: 100 + i * 130 }; });
     return defaults;
   });
 
@@ -1232,7 +1234,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
       {/* Foundations — individually fixed-positioned, freely draggable */}
       {showFoundations && FOUNDATIONS.map(f => {
-        const pos = foundationPositions[f.id] || { x: 1120, y: 100 + FOUNDATIONS.indexOf(f) * 130 };
+        const pos = foundationPositions[f.id] || { x: Math.max(300, (typeof window !== 'undefined' ? window.innerWidth : 1400) - 200), y: 130 + FOUNDATIONS.indexOf(f) * 150 };
         return (
           <div key={f.id}
             className="fixed z-30 flex items-center gap-0 pointer-events-auto"

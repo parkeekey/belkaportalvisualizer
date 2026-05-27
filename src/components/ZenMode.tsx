@@ -763,6 +763,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   });
   const [viewMode, setViewMode] = useState<'canvas' | 'layout'>('canvas');
   const [layoutMode, setLayoutMode] = useState<'feed' | '2x2' | '3x3'>('feed');
+  const [dragLock, setDragLock] = useState<string | null>(null);
 
   // Auto-expand first priority when 💡 opens, clear when it closes
   useEffect(() => {
@@ -846,6 +847,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const startDrag = useCallback((noteId: string, e: React.MouseEvent) => {
     const note = notes.find(n => n.id === noteId);
     if (!note || note.locked) return;
+    e.preventDefault();
     const scroll = scrollRef.current;
     if (!scroll) return;
     const cr = scroll.getBoundingClientRect();
@@ -857,6 +859,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const startDragTouch = useCallback((noteId: string, e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
     if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.tagName === 'BUTTON') return;
+    e.preventDefault();
     const note = notes.find(n => n.id === noteId);
     if (!note || note.locked) return;
     const scroll = scrollRef.current;
@@ -884,6 +887,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       setFoundationPositions(prev => ({ ...prev, [foundationDrag.fid]: clamped }));
     }
     if (dragging) {
+      e.preventDefault();
       const scroll = scrollRef.current;
       if (!scroll) return;
       const cr = scroll.getBoundingClientRect();
@@ -1369,10 +1373,10 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
           return (
             <div key={note.id}
               ref={el => { if (el) noteElsRef.current.set(note.id, el); else noteElsRef.current.delete(note.id); }}
-              className={`absolute z-40 bg-white rounded-xl shadow-lg border select-none ${note.locked ? 'border-slate-200 opacity-70 cursor-default' : note.starred ? 'border-amber-300 ring-2 ring-amber-200/60' : 'border-slate-300'} cursor-grab active:cursor-grabbing`}
-              style={{ left: note.x, top: note.y }}
+              className={`absolute z-40 bg-white rounded-xl shadow-lg border select-none transition-shadow ${note.locked ? 'border-slate-200 opacity-70 cursor-default' : note.starred ? 'border-amber-300 ring-2 ring-amber-200/60' : dragLock === note.id ? 'border-amber-400 ring-2 ring-amber-300/50 shadow-amber-200/50' : 'border-slate-300'} ${dragLock === note.id ? 'cursor-grab' : 'cursor-grab active:cursor-grabbing'}`}
+              style={{ left: note.x, top: note.y, touchAction: dragLock === note.id ? 'none' as const : undefined } as React.CSSProperties}
               onMouseDown={(e) => startDrag(note.id, e)}
-              onTouchStart={(e) => { const t = e.target as HTMLElement; if (t.closest('[data-drag-handle]')) startDragTouch(note.id, e); }}
+              onTouchStart={(e) => { e.preventDefault(); startDragTouch(note.id, e); }}
             >
                 {linkedFoundations.length > 0 && (
                   <div className="h-1 rounded-t-xl overflow-hidden flex">
@@ -1384,10 +1388,11 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 <div className="px-2.5 py-1.5">
                   {/* Drag handle — only touch target on mobile for dragging */}
                   <div data-drag-handle
-                    className="flex items-center justify-center gap-0.5 mb-1 cursor-grab active:cursor-grabbing select-none -mt-0.5"
+                    className={`flex items-center justify-center gap-0.5 mb-1 cursor-pointer select-none -mt-0.5 rounded transition-colors ${dragLock === note.id ? 'bg-amber-200 py-0.5 shadow-sm' : 'hover:bg-slate-50'}`}
                     onMouseDown={(e) => { e.stopPropagation(); startDrag(note.id, e); }}
+                    onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); const active = dragLock === note.id; setDragLock(active ? null : note.id); if (!active) startDragTouch(note.id, e); }}
                   >
-                    <span className="text-[6px] text-slate-200 tracking-[4px] select-none">∙∙∙</span>
+                    <span className={`text-[6px] tracking-[4px] select-none transition-colors ${dragLock === note.id ? 'text-amber-700 font-bold' : 'text-slate-200'}`}>{dragLock === note.id ? '☰' : '∙∙∙'}</span>
                   </div>
                   <div className="flex items-center gap-1 mb-1">
                     <button onClick={(e) => { e.stopPropagation(); setShowTagPicker(p => p === note.id ? null : note.id); }}
@@ -1953,6 +1958,16 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
             </div>
           );
         })()}
+
+      {/* Drag mode indicator — mobile: locks canvas, tap to unlock */}
+      {dragLock && (
+        <div className="fixed bottom-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 bg-amber-500 text-white rounded-full shadow-lg text-[10px] font-semibold">
+          <span>☰ Drag mode</span>
+          <button onClick={() => setDragLock(null)}
+            className="ml-1 w-4 h-4 rounded-full bg-white/20 hover:bg-white/30 inline-flex items-center justify-center text-[8px]"
+          >✕</button>
+        </div>
+      )}
 
       {/* Bottom bar */}
       <div className="flex items-center gap-3 px-4 py-2 border-t border-slate-200 bg-white/70 shrink-0">

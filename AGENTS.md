@@ -1,6 +1,6 @@
-## Git Permission Rule
+## Never Destroy Rule
 
-You MUST ask for explicit confirmation before running ANY git operation: commit, add, reset, push, pull, merge, rebase, stash, branch, checkout, or any other git command. Do not proceed until the user says yes.
+Never delete, remove, disable, or replace existing working features unless I explicitly tell you to remove that specific thing. When I ask for something new (B), you add it alongside the existing feature (A) — never remove, refactor, or replace A to make room for B. Preserve everything that works.
 
 ## Propose-First Rule
 

@@ -761,6 +761,8 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
     FOUNDATIONS.forEach((f, i) => { defaults[f.id] = { x: startX, y: 100 + i * 130 }; });
     return defaults;
   });
+  const [viewMode, setViewMode] = useState<'canvas' | 'layout'>('canvas');
+  const [layoutMode, setLayoutMode] = useState<'feed' | '2x2' | '3x3'>('feed');
 
   // Auto-expand first priority when 💡 opens, clear when it closes
   useEffect(() => {
@@ -1191,7 +1193,23 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
           >Save</button>
           <button onClick={() => { setShowFoundations(p => !p); }}
             className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100"
-          >{showFoundations ? '🧭 Hide' : '🧭 Show'}</button>
+          >{showFoundations ? '🧭 Hide' : '🧭 Show'}          </button>
+          <div className="flex items-center gap-0.5 border-l border-slate-200 pl-2">
+            {(['canvas', 'layout'] as const).map(v => (
+              <button key={v} onClick={() => setViewMode(v)}
+                className={`px-2 py-1 text-[10px] font-semibold border rounded-md transition-colors ${viewMode === v ? 'bg-slate-700 text-white border-slate-700' : 'border-slate-300 text-slate-500 hover:bg-slate-100'}`}
+              >{v === 'canvas' ? '▦ Canvas' : '⊞ Layout'}</button>
+            ))}
+          </div>
+          {viewMode === 'layout' && (
+            <div className="flex items-center gap-0.5 border-l border-slate-200 pl-2">
+              {(['feed', '2x2', '3x3'] as const).map(m => (
+                <button key={m} onClick={() => setLayoutMode(m)}
+                  className={`px-2 py-1 text-[10px] font-semibold border rounded-md transition-colors ${layoutMode === m ? 'bg-slate-700 text-white border-slate-700' : 'border-slate-300 text-slate-500 hover:bg-slate-100'}`}
+                >{m === 'feed' ? '≡ Feed' : `⊟ ${m}`}</button>
+              ))}
+            </div>
+          )}
           <button onClick={() => setFoundationPositions({})}
             className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100"
           >↺ Restore</button>
@@ -1212,7 +1230,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       </div>
 
       {/* SVG layer — fixed to viewport, behind notes so lines don't overlap */}
-      <svg className="fixed inset-0 w-full h-full pointer-events-none z-[28]">
+      {viewMode === 'canvas' && <svg className="fixed inset-0 w-full h-full pointer-events-none z-[28]">
         {arrows.map(a => {
           const fromP = getNoteDotPos(a.fromNoteId);
           const toP = a.toNoteId ? getNoteDotPos(a.toNoteId) : getFoundationDotPos(a.toFoundation);
@@ -1276,10 +1294,10 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
             />
           );
         })()}
-      </svg>
+      </svg>}
 
       {/* Foundations — individually fixed-positioned, freely draggable */}
-      {showFoundations && FOUNDATIONS.map(f => {
+      {viewMode === 'canvas' && showFoundations && FOUNDATIONS.map(f => {
         const raw = foundationPositions[f.id] || { x: Math.max(300, (typeof window !== 'undefined' ? window.innerWidth : 1400) - 200), y: 130 + FOUNDATIONS.indexOf(f) * 150 };
         const pos = {
           x: Math.max(8, Math.min(raw.x, window.innerWidth - 160)),
@@ -1342,25 +1360,20 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         );
       })}
 
-      {/* Scrollable canvas — provides scroll behavior */}
-      <div ref={scrollRef} className="flex-1 overflow-auto"
-        onMouseLeave={() => { if (!dragging && !connecting) { setHoverDot(null); } }}
-      >
-        <div className="min-h-[150vh] min-w-[1200px] relative">
-          {/* Notes — inside scroll container so they scroll with canvas */}
-          {notes.map(note => {
-            const posStyle: React.CSSProperties = { left: note.x, top: note.y };
-            const linkedFoundations = FOUNDATIONS.filter(f =>
-              arrows.some(a => a.fromNoteId === note.id && a.toFoundation === f.id && a.color === 'confirmed')
-            );
-            return (
-              <div key={note.id}
-                ref={el => { if (el) noteElsRef.current.set(note.id, el); else noteElsRef.current.delete(note.id); }}
-                className={`absolute z-40 bg-white rounded-xl shadow-lg border select-none ${note.locked ? 'border-slate-200 opacity-70 cursor-default' : note.starred ? 'border-amber-300 ring-2 ring-amber-200/60 cursor-grab active:cursor-grabbing' : 'border-slate-300 cursor-grab active:cursor-grabbing'}`}
-                style={posStyle}
-                onMouseDown={(e) => startDrag(note.id, e)}
-                onTouchStart={(e) => { const t = e.target as HTMLElement; if (t.closest('[data-drag-handle]')) startDragTouch(note.id, e); }}
-              >
+      {/* Notes container — desktop canvas or mobile feed */}
+      {(() => {
+        const noteCards = notes.length > 0 ? notes.map(note => {
+          const linkedFoundations = FOUNDATIONS.filter(f =>
+            arrows.some(a => a.fromNoteId === note.id && a.toFoundation === f.id && a.color === 'confirmed')
+          );
+          return (
+            <div key={note.id}
+              ref={el => { if (el) noteElsRef.current.set(note.id, el); else noteElsRef.current.delete(note.id); }}
+              className={`absolute z-40 bg-white rounded-xl shadow-lg border select-none ${note.locked ? 'border-slate-200 opacity-70 cursor-default' : note.starred ? 'border-amber-300 ring-2 ring-amber-200/60' : 'border-slate-300'} cursor-grab active:cursor-grabbing`}
+              style={{ left: note.x, top: note.y }}
+              onMouseDown={(e) => startDrag(note.id, e)}
+              onTouchStart={(e) => { const t = e.target as HTMLElement; if (t.closest('[data-drag-handle]')) startDragTouch(note.id, e); }}
+            >
                 {linkedFoundations.length > 0 && (
                   <div className="h-1 rounded-t-xl overflow-hidden flex">
                     {linkedFoundations.map(f => (
@@ -1565,7 +1578,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       onMouseDown={(e) => { if (note.locked) e.stopPropagation(); else e.stopPropagation(); }}
                       onTouchStart={(e) => { e.stopPropagation(); }}
                       readOnly={note.locked}
-                      className={`w-full text-[11px] bg-transparent border-none outline-none resize-none leading-tight font-sans overflow-hidden ${note.locked ? 'text-slate-400 italic' : 'text-slate-700'}`}
+                      className={`w-full text-[11px] bg-transparent border-none outline-none resize-none leading-tight font-sans ${note.locked ? 'text-slate-400 italic' : 'text-slate-700'} max-h-24 overflow-y-auto`}
                       rows={1}
                       ref={el => { if (el && !el.dataset.autosized) { el.dataset.autosized = 'true'; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
                     />
@@ -1787,19 +1800,159 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 })()}
               </div>
             );
-          })}
+          }) : null;
 
-          {/* Empty state */}
-          {notes.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-center">
-                <div className="text-3xl mb-2">☯</div>
-                <p className="text-[11px] text-slate-400">Click <span className="font-semibold text-slate-500">+ Add Note</span> to start mapping your brew</p>
+          return viewMode === 'canvas' ? (
+            <div ref={scrollRef} className="flex-1 overflow-auto"
+              onMouseLeave={() => { if (!dragging && !connecting) { setHoverDot(null); } }}
+            >
+              <div className="min-h-[150vh] min-w-[1200px] relative">
+                {notes.length > 0 ? noteCards : (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">☯</div>
+                      <p className="text-[11px] text-slate-400">Click <span className="font-semibold text-slate-500">+ Add Note</span> to start mapping your brew</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </div>
-      </div>
+          ) : layoutMode === 'feed' ? (
+            <div className="flex-1 overflow-auto px-3 py-3 space-y-3">
+              {notes.length > 0 ? notes.map(note => {
+                const linkedFoundations = FOUNDATIONS.filter(f =>
+                  arrows.some(a => a.fromNoteId === note.id && a.toFoundation === f.id && a.color === 'confirmed')
+                );
+                return (
+                  <div key={note.id} className="relative bg-white rounded-xl shadow-lg border select-none border-slate-300">
+                    {linkedFoundations.length > 0 && (
+                      <div className="h-1 rounded-t-xl overflow-hidden flex">
+                        {linkedFoundations.map(f => (
+                          <div key={f.id} className="h-full flex-1" style={{ backgroundColor: f.color }} />
+                        ))}
+                      </div>
+                    )}
+                    <div className="px-2.5 py-1.5">
+                      <div className="flex items-center gap-1 mb-1">
+                        <button onClick={(e) => { e.stopPropagation(); setShowTagPicker(p => p === note.id ? null : note.id); }}
+                          onMouseDown={e => e.stopPropagation()}
+                          className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 border-slate-200' : 'text-slate-300 border-dashed border-slate-200 hover:text-slate-400'}`}
+                        >{note.tag || '+ tag'}</button>
+                        {note.tag && (
+                          <button onClick={(e) => { e.stopPropagation(); setSelectedArrow(prev => prev === note.id ? null : note.id); }}
+                            onMouseDown={e => e.stopPropagation()}
+                            className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 hover:bg-amber-100 hover:text-amber-500'}`}
+                          >💡</button>
+                        )}
+                        {note.tag && (
+                          <div className="flex gap-0.5 ml-1" onMouseDown={e => e.stopPropagation()}>
+                            <button onClick={() => updateNote(note.id, { direction: 'under' })}
+                              className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-green-600'}`}
+                            >↑</button>
+                            <button onClick={() => updateNote(note.id, { direction: 'over' })}
+                              className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-red-600'}`}
+                            >↓</button>
+                          </div>
+                        )}
+                      </div>
+                      <textarea value={note.text}
+                        onChange={(e) => { if (note.locked) return; updateNote(note.id, { text: e.target.value }); e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }}
+                        readOnly={note.locked}
+                        className={`w-full text-[11px] bg-transparent border-none outline-none resize-none leading-tight font-sans max-h-24 overflow-y-auto ${note.locked ? 'text-slate-400 italic' : 'text-slate-700'}`}
+                        rows={1}
+                        placeholder="note..."
+                      />
+                      {note.tag && (() => {
+                        const dir = note.direction;
+                        const m = MECHANISM_KNOWLEDGE[note.tag];
+                        if (!dir || !m) return null;
+                        return (
+                          <div className="mt-1 pt-1 border-t border-slate-100">
+                            <div className="text-[6px] text-slate-400 font-medium">{m.mechanism}</div>
+                            <div className="text-[6px] text-slate-500 leading-tight mt-0.5">{m.summary}</div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div className="text-center py-16">
+                  <div className="text-3xl mb-3">☯</div>
+                  <p className="text-[11px] text-slate-400">Tap <span className="font-semibold text-slate-500">+ Add Note</span> to start mapping your brew</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex-1 overflow-auto px-3 py-3">
+              <div className={`grid ${layoutMode === '2x2' ? 'grid-cols-2' : 'grid-cols-3'} gap-3 auto-rows-max`}>
+                {notes.length > 0 ? notes.map(note => {
+                  const linkedFoundations = FOUNDATIONS.filter(f =>
+                    arrows.some(a => a.fromNoteId === note.id && a.toFoundation === f.id && a.color === 'confirmed')
+                  );
+                  return (
+                    <div key={note.id} className="relative bg-white rounded-xl shadow-lg border select-none border-slate-300">
+                      {linkedFoundations.length > 0 && (
+                        <div className="h-1 rounded-t-xl overflow-hidden flex">
+                          {linkedFoundations.map(f => (
+                            <div key={f.id} className="h-full flex-1" style={{ backgroundColor: f.color }} />
+                          ))}
+                        </div>
+                      )}
+                      <div className="px-2.5 py-1.5">
+                        <div className="flex items-center gap-1 mb-1">
+                          <button onClick={(e) => { e.stopPropagation(); setShowTagPicker(p => p === note.id ? null : note.id); }}
+                            onMouseDown={e => e.stopPropagation()}
+                            className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 border-slate-200' : 'text-slate-300 border-dashed border-slate-200 hover:text-slate-400'}`}
+                          >{note.tag || '+ tag'}</button>
+                          {note.tag && (
+                            <button onClick={(e) => { e.stopPropagation(); setSelectedArrow(prev => prev === note.id ? null : note.id); }}
+                              onMouseDown={e => e.stopPropagation()}
+                              className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 hover:bg-amber-100 hover:text-amber-500'}`}
+                            >💡</button>
+                          )}
+                          {note.tag && (
+                            <div className="flex gap-0.5 ml-1" onMouseDown={e => e.stopPropagation()}>
+                              <button onClick={() => updateNote(note.id, { direction: 'under' })}
+                                className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-green-600'}`}
+                              >↑</button>
+                              <button onClick={() => updateNote(note.id, { direction: 'over' })}
+                                className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-red-600'}`}
+                              >↓</button>
+                            </div>
+                          )}
+                        </div>
+                        <textarea value={note.text}
+                          onChange={(e) => { if (note.locked) return; updateNote(note.id, { text: e.target.value }); e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }}
+                          readOnly={note.locked}
+                          className={`w-full text-[11px] bg-transparent border-none outline-none resize-none leading-tight font-sans max-h-24 overflow-y-auto ${note.locked ? 'text-slate-400 italic' : 'text-slate-700'}`}
+                          rows={1}
+                          placeholder="note..."
+                        />
+                        {note.tag && (() => {
+                          const dir = note.direction;
+                          const m = MECHANISM_KNOWLEDGE[note.tag];
+                          if (!dir || !m) return null;
+                          return (
+                            <div className="mt-1 pt-1 border-t border-slate-100">
+                              <div className="text-[6px] text-slate-400 font-medium">{m.mechanism}</div>
+                              <div className="text-[6px] text-slate-500 leading-tight mt-0.5">{m.summary}</div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  );
+                }) : (
+                  <div className="text-center py-16 col-span-full">
+                    <div className="text-3xl mb-3">☯</div>
+                    <p className="text-[11px] text-slate-400">Tap <span className="font-semibold text-slate-500">+ Add Note</span> to start mapping your brew</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
       {/* Bottom bar */}
       <div className="flex items-center gap-3 px-4 py-2 border-t border-slate-200 bg-white/70 shrink-0">
@@ -1832,7 +1985,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         const px = Math.min(r.right + 8, window.innerWidth - 260);
         const py = Math.max(4, r.top);
         return (
-          <div className="fixed z-[100] bg-white border border-slate-200 rounded-xl shadow-xl px-2 py-1.5 pointer-events-auto"
+          <div className="fixed z-[100] bg-white border border-slate-200 rounded-xl shadow-xl px-2 py-1.5 pointer-events-auto max-w-[260px]"
             style={{ left: px, top: py }}
             onMouseDown={e => e.stopPropagation()}
             onTouchStart={e => e.stopPropagation()}

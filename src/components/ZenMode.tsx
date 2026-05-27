@@ -1662,67 +1662,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                               );
       })}
 
-      {/* Floating tag picker — positioned by the target note */}
-      {showTagPicker && (() => {
-        const el = noteElsRef.current.get(showTagPicker);
-        if (!el) return null;
-        const r = el.getBoundingClientRect();
-        const px = Math.min(r.right + 8, window.innerWidth - 260);
-        const py = Math.max(4, r.top);
-        return (
-          <div className="fixed z-50 bg-white border border-slate-200 rounded-xl shadow-xl px-2 py-1.5"
-            style={{ left: px, top: py }}
-            onMouseDown={e => e.stopPropagation()}
-          >
-            <div className="grid grid-cols-2 gap-1 mb-1">
-              {TAG_GROUPS.slice(0, 2).map(g => (
-                <div key={g.name}>
-                  <div className="text-[6px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: g.name.startsWith('↑') ? '#16a34a' : '#dc2626' }}>{g.name}</div>
-                  <div className="flex flex-wrap gap-0.5">
-                    {g.tags.map(t => (
-                      <button key={t} onClick={() => { const n = notes.find(x => x.id === showTagPicker); if (!n) return; updateNote(showTagPicker, { tag: t, direction: g.name.startsWith('↑') ? 'under' as const : 'over' as const }); setShowTagPicker(null); }}
-                        className={`px-0.5 py-0 text-[7px] rounded border transition-colors ${notes.find(x => x.id === showTagPicker)?.tag === t ? g.active : `${g.base} ${g.hover}`}`}
-                      >{t.length > 7 ? t.slice(0, 6) + '…' : t}</button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-4 gap-1 mb-1">
-              {TAG_GROUPS.slice(2, 6).map(g => (
-                <div key={g.name}>
-                  <div className="text-[5px] font-semibold uppercase tracking-wider mb-0.5 text-slate-400">{g.name}</div>
-                  <div className="flex flex-wrap gap-0.5">
-                    {g.tags.map(t => (
-                      <button key={t} onClick={() => { updateNote(showTagPicker, { tag: t }); setShowTagPicker(null); }}
-                        className={`px-0.5 py-0 text-[7px] rounded border transition-colors ${notes.find(x => x.id === showTagPicker)?.tag === t ? g.active : `${g.base} ${g.hover}`}`}
-                      >{t === 'counter' ? '# ctr' : t === 'water ppm' ? 'ppm' : t === 'dripper flowrate' ? 'flow' : t.length > 6 ? t.slice(0, 5) + '…' : t}</button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[6px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">🔄</span>
-              <div className="flex flex-wrap gap-0.5">
-                {TAG_GROUPS[6].tags.map(t => (
-                  <button key={t} onClick={() => { updateNote(showTagPicker, { tag: t }); setShowTagPicker(null); }}
-                    className={`px-0.5 py-0 text-[7px] rounded border transition-colors ${notes.find(x => x.id === showTagPicker)?.tag === t ? TAG_GROUPS[6].active : `${TAG_GROUPS[6].base} ${TAG_GROUPS[6].hover}`}`}
-                  >{t.length > 7 ? t.slice(0, 6) + '…' : t}</button>
-                ))}
-              </div>
-              <input type="text" placeholder="+custom"
-                onMouseDown={e => e.stopPropagation()}
-                onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { const d = TAG_DIRECTION[val] ?? ''; updateNote(showTagPicker, { tag: val, direction: notes.find(x => x.id === showTagPicker)?.direction || d }); setShowTagPicker(null); } } }}
-                className="w-12 px-0.5 py-0 text-[7px] border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400"
-              />
-              <button onClick={() => setShowTagPicker(null)}
-                className="px-0.5 py-0 text-[7px] rounded border border-slate-200 text-slate-400 hover:bg-slate-100"
-              >✕</button>
-            </div>
-          </div>
-        );
-      })()}
+
                           </div>
                           <div className="text-[5px] text-slate-300 mt-0.5 leading-none">
                             <span className="mr-1">●●●●● = BIG rock (adjust tiny)</span>
@@ -1883,6 +1823,69 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
           <span className="inline-block w-3 h-0.5 bg-red-500" /> wrong
         </div>
       </div>
+
+      {/* Floating tag picker — positioned by the target note */}
+      {showTagPicker && (() => {
+        const el = noteElsRef.current.get(showTagPicker);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        const px = Math.min(r.right + 8, window.innerWidth - 260);
+        const py = Math.max(4, r.top);
+        return (
+          <div className="fixed z-[100] bg-white border border-slate-200 rounded-xl shadow-xl px-2 py-1.5 pointer-events-auto"
+            style={{ left: px, top: py }}
+            onMouseDown={e => e.stopPropagation()}
+            onTouchStart={e => e.stopPropagation()}
+          >
+            <div className="grid grid-cols-2 gap-1 mb-1">
+              {TAG_GROUPS.slice(0, 2).map(g => (
+                <div key={g.name}>
+                  <div className="text-[6px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: g.name.startsWith('↑') ? '#16a34a' : '#dc2626' }}>{g.name}</div>
+                  <div className="flex flex-wrap gap-0.5">
+                    {g.tags.map(t => (
+                      <button key={t} onClick={() => { const n = notes.find(x => x.id === showTagPicker); if (!n) return; updateNote(showTagPicker, { tag: t, direction: g.name.startsWith('↑') ? 'under' as const : 'over' as const }); setShowTagPicker(null); }}
+                        className={`px-0.5 py-0 text-[7px] rounded border transition-colors ${notes.find(x => x.id === showTagPicker)?.tag === t ? g.active : `${g.base} ${g.hover}`}`}
+                      >{t.length > 7 ? t.slice(0, 6) + '…' : t}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-4 gap-1 mb-1">
+              {TAG_GROUPS.slice(2, 6).map(g => (
+                <div key={g.name}>
+                  <div className="text-[5px] font-semibold uppercase tracking-wider mb-0.5 text-slate-400">{g.name}</div>
+                  <div className="flex flex-wrap gap-0.5">
+                    {g.tags.map(t => (
+                      <button key={t} onClick={() => { updateNote(showTagPicker, { tag: t }); setShowTagPicker(null); }}
+                        className={`px-0.5 py-0 text-[7px] rounded border transition-colors ${notes.find(x => x.id === showTagPicker)?.tag === t ? g.active : `${g.base} ${g.hover}`}`}
+                      >{t === 'counter' ? '# ctr' : t === 'water ppm' ? 'ppm' : t === 'dripper flowrate' ? 'flow' : t.length > 6 ? t.slice(0, 5) + '…' : t}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-[6px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">🔄</span>
+              <div className="flex flex-wrap gap-0.5">
+                {TAG_GROUPS[6].tags.map(t => (
+                  <button key={t} onClick={() => { updateNote(showTagPicker, { tag: t }); setShowTagPicker(null); }}
+                    className={`px-0.5 py-0 text-[7px] rounded border transition-colors ${notes.find(x => x.id === showTagPicker)?.tag === t ? TAG_GROUPS[6].active : `${TAG_GROUPS[6].base} ${TAG_GROUPS[6].hover}`}`}
+                  >{t.length > 7 ? t.slice(0, 6) + '…' : t}</button>
+                ))}
+              </div>
+              <input type="text" placeholder="+custom"
+                onMouseDown={e => e.stopPropagation()}
+                onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { const d = TAG_DIRECTION[val] ?? ''; updateNote(showTagPicker, { tag: val, direction: notes.find(x => x.id === showTagPicker)?.direction || d }); setShowTagPicker(null); } } }}
+                className="w-12 px-0.5 py-0 text-[7px] border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400"
+              />
+              <button onClick={() => setShowTagPicker(null)}
+                className="px-0.5 py-0 text-[7px] rounded border border-slate-200 text-slate-400 hover:bg-slate-100"
+              >✕</button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

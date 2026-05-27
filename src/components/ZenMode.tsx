@@ -80,11 +80,21 @@ const TAG_DIRECTION: Record<string, 'under' | 'over' | ''> = {
 
 const UNDER_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === 'under').map(([t]) => t);
 const OVER_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === 'over').map(([t]) => t);
-const NEUTRAL_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === '').map(([t]) => t);
 const RECIPE_TAGS = ['time', 'temp', 'grindsize', 'ratio', 'turbulence'];
 const EQUIPMENT_TAGS = ['equipment', 'grinder', 'water ppm', 'dripper flowrate'];
 const BED_TAGS = ['clogged', 'muddy bed', 'channeling', 'fast drawdown', 'stalling', 'even bed'];
 const UTILITY_TAGS = ['counter', 'pct'];
+
+type TagGroup = { name: string; icon: string; base: string; active: string; hover: string; tags: string[] };
+const TAG_GROUPS: TagGroup[] = [
+  { name: '↑ Under', icon: '', base: 'bg-green-50 text-green-700 border-green-200', active: 'bg-green-700 text-white border-green-700', hover: 'hover:bg-green-100', tags: UNDER_TAGS },
+  { name: '↓ Over', icon: '', base: 'bg-red-50 text-red-700 border-red-200', active: 'bg-red-700 text-white border-red-700', hover: 'hover:bg-red-100', tags: OVER_TAGS },
+  { name: '📊 Recipe', icon: '', base: 'bg-white text-slate-600 border-slate-200', active: 'bg-slate-700 text-white border-slate-700', hover: 'hover:bg-slate-100', tags: RECIPE_TAGS },
+  { name: '🔧 Equipment', icon: '', base: 'bg-indigo-50 text-indigo-600 border-indigo-200', active: 'bg-indigo-700 text-white border-indigo-700', hover: 'hover:bg-indigo-100', tags: EQUIPMENT_TAGS },
+  { name: '☕ Bed', icon: '', base: 'bg-amber-50 text-amber-700 border-amber-200', active: 'bg-amber-700 text-white border-amber-700', hover: 'hover:bg-amber-100', tags: BED_TAGS },
+  { name: '🧰 Utility', icon: '', base: 'bg-white text-slate-500 border-slate-200', active: 'bg-slate-700 text-white border-slate-700', hover: 'hover:bg-slate-100', tags: UTILITY_TAGS },
+  { name: '🔄 You decide', icon: '', base: 'bg-white text-slate-500 border-slate-200', active: 'bg-slate-700 text-white border-slate-700', hover: 'hover:bg-slate-100', tags: ['intensity', 'body', 'acidity', 'sweetness', 'balance'] },
+];
 
 const FOUNDATION_ACTIONS: Record<string, string[]> = {
   grind: [
@@ -1367,82 +1377,25 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                     <span className="text-[6px] text-slate-200 tracking-[4px] select-none">∙∙∙</span>
                   </div>
                   <div className="flex items-center gap-1 mb-1">
-                    {showTagPicker === note.id ? (
-                      <div className="flex flex-wrap gap-0.5" onMouseDown={e => e.stopPropagation()}>
-                        <div className="w-full text-[6px] font-semibold text-green-600 uppercase tracking-wider mb-0.5">↑ Under-extraction</div>
-                        {UNDER_TAGS.map(t => (
-                          <button key={t} onClick={() => { updateNote(note.id, { tag: t, direction: 'under' }); setShowTagPicker(null); }}
-                            className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-green-700 text-white border-green-700' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
-                          >{t}</button>
-                        ))}
-                        <div className="w-full text-[6px] font-semibold text-red-600 uppercase tracking-wider mt-1 mb-0.5">↓ Over-extraction</div>
-                        {OVER_TAGS.map(t => (
-                          <button key={t} onClick={() => { updateNote(note.id, { tag: t, direction: 'over' }); setShowTagPicker(null); }}
-                            className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-red-700 text-white border-red-700' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
-                          >{t}</button>
-                        ))}
-                        <div className="w-full text-[6px] font-semibold text-slate-400 uppercase tracking-wider mt-1 mb-0.5">You decide</div>
-                        {NEUTRAL_TAGS.filter(t => !RECIPE_TAGS.includes(t) && !EQUIPMENT_TAGS.includes(t) && !BED_TAGS.includes(t) && !UTILITY_TAGS.includes(t)).map(t => (
-                          <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
-                            className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
-                          >{t}</button>
-                        ))}
-                        <div className="w-full text-[6px] font-semibold text-slate-500 uppercase tracking-wider mt-1 mb-0.5">📊 Recipe</div>
-                        {RECIPE_TAGS.map(t => (
-                          <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
-                            className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
-                          >{t}</button>
-                        ))}
-                        <div className="w-full text-[6px] font-semibold text-indigo-500 uppercase tracking-wider mt-1 mb-0.5">🔧 Equipment</div>
-                        {EQUIPMENT_TAGS.map(t => (
-                          <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
-                            className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-indigo-700 text-white border-indigo-700' : 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100'}`}
-                          >{t}</button>
-                        ))}
-                        <div className="w-full text-[6px] font-semibold text-amber-600 uppercase tracking-wider mt-1 mb-0.5">☕ Bed</div>
-                        {BED_TAGS.map(t => (
-                          <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
-                            className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-amber-700 text-white border-amber-700' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}
-                          >{t}</button>
-                        ))}
-                        <div className="w-full text-[6px] font-semibold text-slate-500 uppercase tracking-wider mt-1 mb-0.5">🧰 Utility</div>
-                        {UTILITY_TAGS.map(t => (
-                          <button key={t} onClick={() => { updateNote(note.id, { tag: t }); setShowTagPicker(null); }}
-                            className={`px-1 py-0.5 text-[8px] rounded border transition-colors ${note.tag === t ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
-                          >{t === 'counter' ? '# counter' : '% pct'}</button>
-                        ))}
-                        <input type="text" placeholder="custom tag..."
-                          onMouseDown={e => e.stopPropagation()}
-                          onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { const d = TAG_DIRECTION[val] ?? ''; updateNote(note.id, { tag: val, direction: note.direction || d }); setShowTagPicker(null); } } }}
-                          className="w-16 px-1 py-0.5 text-[8px] border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400"
-                        />
-                        <button onClick={() => setShowTagPicker(null)}
-                          className="px-1 py-0.5 text-[8px] rounded border border-slate-200 text-slate-400 hover:bg-slate-100"
-                        >✕</button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <button onClick={(e) => { e.stopPropagation(); setShowTagPicker(p => p === note.id ? null : note.id); }}
-                          onMouseDown={e => e.stopPropagation()}
-                          className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 border-slate-200' : 'text-slate-300 border-dashed border-slate-200 hover:text-slate-400'}`}
-                        >{note.tag || '+ tag'}</button>
-                        {note.tag && (
-                          <button onClick={(e) => { e.stopPropagation(); setSelectedArrow(prev => prev === note.id ? null : note.id); }}
-                            onMouseDown={e => e.stopPropagation()}
-                            className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 hover:bg-amber-100 hover:text-amber-500'}`}
-                            title="Show reasoning"
-                          >💡</button>
-                        )}
-                        {note.tag && (
-                          <div className="flex gap-0.5 ml-1" onMouseDown={e => e.stopPropagation()}>
-                            <button onClick={() => updateNote(note.id, { direction: 'under' })}
-                              className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-green-600'}`}
-                            >↑</button>
-                            <button onClick={() => updateNote(note.id, { direction: 'over' })}
-                              className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-red-600'}`}
-                            >↓</button>
-                          </div>
-                        )}
+                    <button onClick={(e) => { e.stopPropagation(); setShowTagPicker(p => p === note.id ? null : note.id); }}
+                      onMouseDown={e => e.stopPropagation()}
+                      className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 border-slate-200' : 'text-slate-300 border-dashed border-slate-200 hover:text-slate-400'}`}
+                    >{note.tag || '+ tag'}</button>
+                    {note.tag && (
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedArrow(prev => prev === note.id ? null : note.id); }}
+                        onMouseDown={e => e.stopPropagation()}
+                        className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 hover:bg-amber-100 hover:text-amber-500'}`}
+                        title="Show reasoning"
+                      >💡</button>
+                    )}
+                    {note.tag && (
+                      <div className="flex gap-0.5 ml-1" onMouseDown={e => e.stopPropagation()}>
+                        <button onClick={() => updateNote(note.id, { direction: 'under' })}
+                          className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-green-600'}`}
+                        >↑</button>
+                        <button onClick={() => updateNote(note.id, { direction: 'over' })}
+                          className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 text-slate-300 hover:text-red-600'}`}
+                        >↓</button>
                       </div>
                     )}
                   </div>
@@ -1707,7 +1660,69 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                                   )}
                                 </span>
                               );
-                            })}
+      })}
+
+      {/* Floating tag picker — positioned by the target note */}
+      {showTagPicker && (() => {
+        const el = noteElsRef.current.get(showTagPicker);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        const px = Math.min(r.right + 8, window.innerWidth - 260);
+        const py = Math.max(4, r.top);
+        return (
+          <div className="fixed z-50 bg-white border border-slate-200 rounded-xl shadow-xl px-2 py-1.5"
+            style={{ left: px, top: py }}
+            onMouseDown={e => e.stopPropagation()}
+          >
+            <div className="grid grid-cols-2 gap-1 mb-1">
+              {TAG_GROUPS.slice(0, 2).map(g => (
+                <div key={g.name}>
+                  <div className="text-[6px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: g.name.startsWith('↑') ? '#16a34a' : '#dc2626' }}>{g.name}</div>
+                  <div className="flex flex-wrap gap-0.5">
+                    {g.tags.map(t => (
+                      <button key={t} onClick={() => { const n = notes.find(x => x.id === showTagPicker); if (!n) return; updateNote(showTagPicker, { tag: t, direction: g.name.startsWith('↑') ? 'under' as const : 'over' as const }); setShowTagPicker(null); }}
+                        className={`px-0.5 py-0 text-[7px] rounded border transition-colors ${notes.find(x => x.id === showTagPicker)?.tag === t ? g.active : `${g.base} ${g.hover}`}`}
+                      >{t.length > 7 ? t.slice(0, 6) + '…' : t}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-4 gap-1 mb-1">
+              {TAG_GROUPS.slice(2, 6).map(g => (
+                <div key={g.name}>
+                  <div className="text-[5px] font-semibold uppercase tracking-wider mb-0.5 text-slate-400">{g.name}</div>
+                  <div className="flex flex-wrap gap-0.5">
+                    {g.tags.map(t => (
+                      <button key={t} onClick={() => { updateNote(showTagPicker, { tag: t }); setShowTagPicker(null); }}
+                        className={`px-0.5 py-0 text-[7px] rounded border transition-colors ${notes.find(x => x.id === showTagPicker)?.tag === t ? g.active : `${g.base} ${g.hover}`}`}
+                      >{t === 'counter' ? '# ctr' : t === 'water ppm' ? 'ppm' : t === 'dripper flowrate' ? 'flow' : t.length > 6 ? t.slice(0, 5) + '…' : t}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-[6px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">🔄</span>
+              <div className="flex flex-wrap gap-0.5">
+                {TAG_GROUPS[6].tags.map(t => (
+                  <button key={t} onClick={() => { updateNote(showTagPicker, { tag: t }); setShowTagPicker(null); }}
+                    className={`px-0.5 py-0 text-[7px] rounded border transition-colors ${notes.find(x => x.id === showTagPicker)?.tag === t ? TAG_GROUPS[6].active : `${TAG_GROUPS[6].base} ${TAG_GROUPS[6].hover}`}`}
+                  >{t.length > 7 ? t.slice(0, 6) + '…' : t}</button>
+                ))}
+              </div>
+              <input type="text" placeholder="+custom"
+                onMouseDown={e => e.stopPropagation()}
+                onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { const d = TAG_DIRECTION[val] ?? ''; updateNote(showTagPicker, { tag: val, direction: notes.find(x => x.id === showTagPicker)?.direction || d }); setShowTagPicker(null); } } }}
+                className="w-12 px-0.5 py-0 text-[7px] border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400"
+              />
+              <button onClick={() => setShowTagPicker(null)}
+                className="px-0.5 py-0 text-[7px] rounded border border-slate-200 text-slate-400 hover:bg-slate-100"
+              >✕</button>
+            </div>
+          </div>
+        );
+      })()}
                           </div>
                           <div className="text-[5px] text-slate-300 mt-0.5 leading-none">
                             <span className="mr-1">●●●●● = BIG rock (adjust tiny)</span>

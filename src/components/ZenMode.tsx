@@ -1266,11 +1266,13 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 setFoundationDrag({ fid: f.id, offsetX: e.clientX - pos.x, offsetY: e.clientY - pos.y });
               }}
               onTouchStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const t = e.touches[0];
                 setFoundationDrag({ fid: f.id, offsetX: t.clientX - pos.x, offsetY: t.clientY - pos.y });
               }}
               className={`w-36 rounded-2xl border-2 flex flex-col items-center select-none cursor-grab active:cursor-grabbing shadow-sm px-3 py-2.5 transition-all duration-150 ${lockedFoundations.includes(f.id) ? 'bg-white/40 opacity-50 border-slate-200 shadow-none' : 'bg-white/90 shadow-sm'} ${hoverDot === f.id ? 'shadow-md shadow-blue-200/50' : ''}`}
-              style={{ borderColor: lockedFoundations.includes(f.id) ? '#e2e8f0' : (hoverDot === f.id ? '#3b82f6' : f.color + '60') }}
+              style={{ borderColor: lockedFoundations.includes(f.id) ? '#e2e8f0' : (hoverDot === f.id ? '#3b82f6' : f.color + '60'), touchAction: 'none' }}
             >
               <div className="flex items-center gap-1.5 w-full">
                 <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[7px] font-bold text-white"

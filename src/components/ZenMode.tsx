@@ -865,7 +865,11 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     mouseRef.current = { x: e.clientX, y: e.clientY };
     if (foundationDrag) {
-      setFoundationPositions(prev => ({ ...prev, [foundationDrag.fid]: { x: e.clientX - foundationDrag.offsetX, y: e.clientY - foundationDrag.offsetY } }));
+      const clamped = {
+        x: Math.max(8, Math.min(e.clientX - foundationDrag.offsetX, window.innerWidth - 160)),
+        y: Math.max(76, Math.min(e.clientY - foundationDrag.offsetY, window.innerHeight - 110))
+      };
+      setFoundationPositions(prev => ({ ...prev, [foundationDrag.fid]: clamped }));
     }
     if (dragging) {
       const scroll = scrollRef.current;
@@ -873,8 +877,14 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       const cr = scroll.getBoundingClientRect();
       const sx = scroll.scrollLeft;
       const sy = scroll.scrollTop;
+      const canvasW = Math.max(1200, scroll.scrollWidth);
+      const canvasH = Math.max(150 * window.innerHeight / 100, scroll.scrollHeight);
       setNotes(prev => prev.map(n =>
-        n.id === dragging.noteId ? { ...n, x: e.clientX - cr.left + sx - dragging.offsetX, y: e.clientY - cr.top + sy - dragging.offsetY } : n
+        n.id === dragging.noteId ? {
+          ...n,
+          x: Math.max(0, Math.min(e.clientX - cr.left + sx - dragging.offsetX, canvasW - 200)),
+          y: Math.max(0, Math.min(e.clientY - cr.top + sy - dragging.offsetY, canvasH - 100))
+        } : n
       ));
     }
     if (connecting) {
@@ -915,7 +925,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       });
       setHoverDot(closest);
     }
-  }, [dragging, connecting]);
+  }, [dragging, connecting, foundationDrag]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     if (connecting) {
@@ -973,7 +983,11 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
     mouseRef.current = { x: t.clientX, y: t.clientY };
     if (foundationDrag) {
       e.preventDefault();
-      setFoundationPositions(prev => ({ ...prev, [foundationDrag.fid]: { x: t.clientX - foundationDrag.offsetX, y: t.clientY - foundationDrag.offsetY } }));
+      const clamped = {
+        x: Math.max(8, Math.min(t.clientX - foundationDrag.offsetX, window.innerWidth - 160)),
+        y: Math.max(76, Math.min(t.clientY - foundationDrag.offsetY, window.innerHeight - 110))
+      };
+      setFoundationPositions(prev => ({ ...prev, [foundationDrag.fid]: clamped }));
     }
     if (dragging) {
       e.preventDefault();
@@ -982,8 +996,14 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       const cr = scroll.getBoundingClientRect();
       const sx = scroll.scrollLeft;
       const sy = scroll.scrollTop;
+      const canvasW = Math.max(1200, scroll.scrollWidth);
+      const canvasH = Math.max(150 * window.innerHeight / 100, scroll.scrollHeight);
       setNotes(prev => prev.map(n =>
-        n.id === dragging.noteId ? { ...n, x: t.clientX - cr.left + sx - dragging.offsetX, y: t.clientY - cr.top + sy - dragging.offsetY } : n
+        n.id === dragging.noteId ? {
+          ...n,
+          x: Math.max(0, Math.min(t.clientX - cr.left + sx - dragging.offsetX, canvasW - 200)),
+          y: Math.max(0, Math.min(t.clientY - cr.top + sy - dragging.offsetY, canvasH - 100))
+        } : n
       ));
     }
     if (connecting) {
@@ -1009,7 +1029,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       });
       setHoverDot(closest);
     }
-  }, [dragging, connecting]);
+  }, [dragging, connecting, foundationDrag]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     if (connecting) {
@@ -1162,6 +1182,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
           <button onClick={() => { setShowFoundations(p => !p); }}
             className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100"
           >{showFoundations ? '🧭 Hide' : '🧭 Show'}</button>
+          <button onClick={() => setFoundationPositions({})}
+            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100"
+          >↺ Restore</button>
           <button onClick={() => { setNotes([]); setArrows([]); }}
             className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
           >Clear</button>
@@ -1196,6 +1219,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                   fill="none" stroke="#3b82f6" strokeWidth={6} strokeDasharray={arrowStyle(a.color)} opacity={0.2}
                 />
               )}
+              <path d={arrowPath(fromP.x, fromP.y, toP.x, toP.y)}
+                fill="none" stroke="white" strokeWidth={4.5} strokeDasharray={arrowStyle(a.color)} opacity={0.8}
+              />
               <path d={arrowPath(fromP.x, fromP.y, toP.x, toP.y)}
                 fill="none" stroke={arrowColor(a)} strokeWidth={2.5} strokeDasharray={arrowStyle(a.color)}
               />
@@ -1244,7 +1270,11 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
       {/* Foundations — individually fixed-positioned, freely draggable */}
       {showFoundations && FOUNDATIONS.map(f => {
-        const pos = foundationPositions[f.id] || { x: Math.max(300, (typeof window !== 'undefined' ? window.innerWidth : 1400) - 200), y: 130 + FOUNDATIONS.indexOf(f) * 150 };
+        const raw = foundationPositions[f.id] || { x: Math.max(300, (typeof window !== 'undefined' ? window.innerWidth : 1400) - 200), y: 130 + FOUNDATIONS.indexOf(f) * 150 };
+        const pos = {
+          x: Math.max(8, Math.min(raw.x, window.innerWidth - 160)),
+          y: Math.max(76, Math.min(raw.y, window.innerHeight - 110))
+        };
         return (
           <div key={f.id}
             className="fixed z-30 flex items-center gap-0 pointer-events-auto"

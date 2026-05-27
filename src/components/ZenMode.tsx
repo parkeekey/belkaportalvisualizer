@@ -17,9 +17,12 @@ interface ZenNote {
   grind: number;
   grindLow: number;
   grindHigh: number;
+  grindMax: number;
   temp: number;
   ratio: number;
   turbulence: number;
+  score: number;
+  scoreMax: number;
 }
 
 interface ZenArrow {
@@ -75,7 +78,7 @@ const TAG_DIRECTION: Record<string, 'under' | 'over' | ''> = {
   time: '', temp: '', grindsize: '', ratio: '', turbulence: '',
   equipment: '', grinder: '', 'water ppm': '', 'dripper flowrate': '',
   clogged: '', 'muddy bed': '', channeling: '', 'fast drawdown': '', stalling: '', 'even bed': '',
-  counter: '', pct: '',
+  counter: '', pct: '', score: '',
 };
 
 const UNDER_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === 'under').map(([t]) => t);
@@ -83,7 +86,7 @@ const OVER_TAGS = Object.entries(TAG_DIRECTION).filter(([, d]) => d === 'over').
 const RECIPE_TAGS = ['time', 'temp', 'grindsize', 'ratio', 'turbulence'];
 const EQUIPMENT_TAGS = ['equipment', 'grinder', 'water ppm', 'dripper flowrate'];
 const BED_TAGS = ['clogged', 'muddy bed', 'channeling', 'fast drawdown', 'stalling', 'even bed'];
-const UTILITY_TAGS = ['counter', 'pct'];
+const UTILITY_TAGS = ['counter', 'pct', 'score'];
 
 type TagGroup = { name: string; icon: string; base: string; active: string; hover: string; tags: string[] };
 const TAG_GROUPS: TagGroup[] = [
@@ -757,13 +760,22 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
     if (saved && Object.keys(saved).length) return saved;
     const defaults: Record<string, {x: number; y: number}> = {};
     const vw = typeof window !== 'undefined' ? window.innerWidth : 1400;
-    const startX = vw - 200;
-    FOUNDATIONS.forEach((f, i) => { defaults[f.id] = { x: startX, y: 100 + i * 130 }; });
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
+    const startY = vh - 110;
+    const spacing = Math.min(170, (vw - 120) / FOUNDATIONS.length);
+    FOUNDATIONS.forEach((f, i) => { defaults[f.id] = { x: 40 + i * spacing, y: startY }; });
     return defaults;
   });
   const [viewMode, setViewMode] = useState<'canvas' | 'layout'>('canvas');
   const [layoutMode, setLayoutMode] = useState<'feed' | '2x2' | '3x3'>('feed');
   const [dragLock, setDragLock] = useState<string | null>(null);
+  // dragLock design choice (2026-05-27):
+  // Mobile touch conflates "scroll canvas" and "drag note" into one gesture.
+  // Instead of fighting the browser with e.preventDefault() heuristics (which
+  // break on many phones), the user explicitly toggles drag mode via the ...
+  // handle. While active, the locked note gets touch-action: none so the
+  // browser steps aside — note touch = drag, canvas touch = scroll. Clean
+  // separation, no scroll/drag conflict.
 
   // Auto-expand first priority when 💡 opens, clear when it closes
   useEffect(() => {
@@ -828,7 +840,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       pct: 50,
       x: 60 + (noteCounter % 5) * 40,
       y: 100 + (noteCounter % 4) * 80,
-      timeM: 0, timeS: 0, grind: 0, grindLow: 0, grindHigh: 0, temp: 0, ratio: 0, turbulence: 0,
+      timeM: 0, timeS: 0, grind: 0, grindLow: 0, grindHigh: 0, grindMax: 30, temp: 0, ratio: 0, turbulence: 0, score: 5, scoreMax: 10,
     };
     setNotes(prev => [...prev, note]);
     setSelectedArrow(null);
@@ -997,6 +1009,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     const t = e.touches[0];
     mouseRef.current = { x: t.clientX, y: t.clientY };
+    if (dragLock) { e.preventDefault(); if (!dragging && !foundationDrag && !connecting) return; }
     if (foundationDrag) {
       e.preventDefault();
       const clamped = {
@@ -1045,7 +1058,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       });
       setHoverDot(closest);
     }
-  }, [dragging, connecting, foundationDrag]);
+  }, [dragging, connecting, foundationDrag, dragLock]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     if (connecting) {
@@ -1302,7 +1315,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
       {/* Foundations — individually fixed-positioned, freely draggable */}
       {viewMode === 'canvas' && showFoundations && FOUNDATIONS.map(f => {
-        const raw = foundationPositions[f.id] || { x: Math.max(300, (typeof window !== 'undefined' ? window.innerWidth : 1400) - 200), y: 130 + FOUNDATIONS.indexOf(f) * 150 };
+        const raw = foundationPositions[f.id] || (() => { const vw = window.innerWidth; const vh = window.innerHeight; const i = FOUNDATIONS.indexOf(f); return { x: 40 + i * Math.min(170, (vw - 120) / FOUNDATIONS.length), y: vh - 110 }; })();
         const pos = {
           x: Math.max(8, Math.min(raw.x, window.innerWidth - 160)),
           y: Math.max(76, Math.min(raw.y, window.innerHeight - 110))
@@ -1451,8 +1464,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                             const cy = rect.top + rect.height / 2;
                             let angle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90;
                             if (angle < 0) angle += 360;
-                            const val = Math.round((angle / 360) * 30);
-                            updateNote(note.id, { grind: Math.min(30, Math.max(0, val)) });
+                            const max = note.grindMax ?? 30;
+                            const val = Math.round((angle / 360) * max);
+                            updateNote(note.id, { grind: Math.min(max, Math.max(0, val)) });
                           }}
                           onMouseMove={e => {
                             if (e.buttons === 1 && grindDragRef.current === note.id) {
@@ -1461,8 +1475,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                               const cy = rect.top + rect.height / 2;
                               let angle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90;
                               if (angle < 0) angle += 360;
-                              const val = Math.round((angle / 360) * 30);
-                              updateNote(note.id, { grind: Math.min(30, Math.max(0, val)) });
+                              const max = note.grindMax ?? 30;
+                              const val = Math.round((angle / 360) * max);
+                              updateNote(note.id, { grind: Math.min(max, Math.max(0, val)) });
                             }
                           }}
                           onMouseUp={() => { grindDragRef.current = null; }}
@@ -1474,30 +1489,39 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                           {(note.grindLow ?? 0) > 0 && (note.grindHigh ?? 0) > (note.grindLow ?? 0) && (() => {
                             const low = note.grindLow ?? 0;
                             const high = note.grindHigh ?? 0;
-                            const a1 = ((low / 30) * 360 - 90) * Math.PI / 180;
-                            const a2 = ((high / 30) * 360 - 90) * Math.PI / 180;
+                            const max = note.grindMax ?? 30;
+                            const a1 = ((low / max) * 360 - 90) * Math.PI / 180;
+                            const a2 = ((high / max) * 360 - 90) * Math.PI / 180;
                             const x1 = 50 + 42 * Math.cos(a1), y1 = 50 + 42 * Math.sin(a1);
                             const x2 = 50 + 42 * Math.cos(a2), y2 = 50 + 42 * Math.sin(a2);
-                            const large = high - low > 15 ? 1 : 0;
+                            const large = high - low > max / 2 ? 1 : 0;
                             return <path d={`M 50 50 L ${x1} ${y1} A 42 42 0 ${large} 1 ${x2} ${y2} Z`} fill="#86efac" fillOpacity="0.35" />;
                           })()}
-                          {/* Tick marks — every 5 with label */}
-                          {[0,5,10,15,20,25,30].map(v => {
-                            const a = ((v / 30) * 360 - 90) * Math.PI / 180;
-                            const cos = Math.cos(a), sin = Math.sin(a);
-                            return (
-                              <g key={v}>
-                                <line x1={50 + 42 * cos} y1={50 + 42 * sin} x2={50 + 37 * cos} y2={50 + 37 * sin}
-                                  stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-                                <text x={50 + 49 * cos} y={50 + 49 * sin} textAnchor="middle" dominantBaseline="central"
-                                  className="text-[6px]" fill="#94a3b8">{v}</text>
-                              </g>
-                            );
-                          })}
+                          {/* Tick marks -- every ~5 with label */}
+                          {(() => {
+                            const max = note.grindMax ?? 30;
+                            const step = max <= 20 ? 2 : 5;
+                            const ticks: number[] = [];
+                            for (let v = 0; v <= max; v += step) ticks.push(v);
+                            if (ticks[ticks.length - 1] !== max) ticks.push(max);
+                            return ticks.map(v => {
+                              const a = ((v / max) * 360 - 90) * Math.PI / 180;
+                              const cos = Math.cos(a), sin = Math.sin(a);
+                              return (
+                                <g key={v}>
+                                  <line x1={50 + 42 * cos} y1={50 + 42 * sin} x2={50 + 37 * cos} y2={50 + 37 * sin}
+                                    stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
+                                  <text x={50 + 49 * cos} y={50 + 49 * sin} textAnchor="middle" dominantBaseline="central"
+                                    className="text-[6px]" fill="#94a3b8">{v}</text>
+                                </g>
+                              );
+                            });
+                          })()}
                           {/* Needle */}
                           {(() => {
                             const g = note.grind ?? 0;
-                            const a = ((g / 30) * 360 - 90) * Math.PI / 180;
+                            const max = note.grindMax ?? 30;
+                            const a = ((g / max) * 360 - 90) * Math.PI / 180;
                             const cos = Math.cos(a), sin = Math.sin(a);
                             return (
                               <>
@@ -1510,18 +1534,30 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                           {/* Center dot */}
                           <circle cx="50" cy="50" r="3" fill="#475569" />
                         </svg>
-                        <div className="flex items-center gap-1 text-[7px] text-slate-400">
+                        <div className="flex items-center gap-1 text-[7px] text-slate-400 w-full justify-center">
+                          <span className="text-[7px] font-medium text-slate-400">max</span>
+                          <input type="number" min={1} max={200} value={note.grindMax ?? 30}
+                            onChange={e => updateNote(note.id, { grindMax: Math.max(1, parseInt(e.target.value, 10) || 1), grind: 0, grindLow: 0, grindHigh: 0 })}
+                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spinner-button]:appearance-none"
+                          />
+                          <span className="mx-1 text-slate-300">|</span>
                           <span>zone</span>
-                          <input type="number" min={0} max={30} value={note.grindLow ?? 0}
-                            onChange={e => updateNote(note.id, { grindLow: Math.min(30, Math.max(0, +e.target.value || 0)) })}
-                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          <input type="number" min={0} max={note.grindMax ?? 30} step={0.1} value={note.grindLow ?? 0}
+                            onChange={e => updateNote(note.id, { grindLow: Math.min(note.grindMax ?? 30, Math.max(0, parseFloat(e.target.value) || 0)) })}
+                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spinner-button]:appearance-none"
                           />
                           <span>—</span>
-                          <input type="number" min={0} max={30} value={note.grindHigh ?? 0}
-                            onChange={e => updateNote(note.id, { grindHigh: Math.min(30, Math.max(0, +e.target.value || 0)) })}
-                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          <input type="number" min={0} max={note.grindMax ?? 30} step={0.1} value={note.grindHigh ?? 0}
+                            onChange={e => updateNote(note.id, { grindHigh: Math.min(note.grindMax ?? 30, Math.max(0, parseFloat(e.target.value) || 0)) })}
+                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 rounded text-slate-600 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spinner-button]:appearance-none"
                           />
-                          <span className="font-medium ml-1" style={{ color: '#22c55e' }}>#{(note.grind ?? 0)}</span>
+                          <button onClick={() => updateNote(note.id, { grind: Math.max(0, (note.grind ?? 0) - 1) })}
+                            className="px-1 py-0 text-[10px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100 leading-none"
+                          >−</button>
+                          <span className="font-medium" style={{ color: '#22c55e' }}>{(note.grind ?? 0)}</span>
+                          <button onClick={() => updateNote(note.id, { grind: Math.min(note.grindMax ?? 30, (note.grind ?? 0) + 1) })}
+                            className="px-1 py-0 text-[10px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100 leading-none"
+                          >+</button>
                         </div>
                       </div>
                     </>}
@@ -1567,6 +1603,29 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                         className="w-20 h-1 accent-slate-500"
                       />
                       <span className="text-[10px] font-semibold text-slate-700 min-w-[32px] text-right">{note.pct ?? 50}%</span>
+                    </>}
+                    {note.tag === 'score' && <>
+                      <span className="text-[9px] text-slate-500 font-medium">★</span>
+                      <div className="flex items-center gap-1">
+                        <span className={`text-[8px] font-semibold ${(note.score ?? 5) <= 3 ? 'text-red-500' : (note.score ?? 5) <= 7 ? 'text-amber-500' : 'text-green-600'}`}>
+                          {(note.score ?? 5) <= 3 ? 'Low' : (note.score ?? 5) <= 7 ? 'Med' : 'High'}
+                        </span>
+                        <button onClick={() => updateNote(note.id, { score: Math.max(0, (note.score ?? 5) - 1) })}
+                          className="px-1 py-0 text-[10px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100 leading-none"
+                        >−</button>
+                        <input type="number" min={0} max={note.scoreMax ?? 10} value={note.score ?? 5}
+                          onChange={e => { const v = Math.min(note.scoreMax ?? 10, Math.max(0, parseInt(e.target.value, 10) || 0)); updateNote(note.id, { score: v }); }}
+                          className="w-8 px-0.5 py-0 text-[9px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button onClick={() => updateNote(note.id, { score: Math.min(note.scoreMax ?? 10, (note.score ?? 5) + 1) })}
+                          className="px-1 py-0 text-[10px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100 leading-none"
+                        >+</button>
+                        <span className="text-[7px] text-slate-400">/</span>
+                        <input type="number" min={1} max={999} value={note.scoreMax ?? 10}
+                          onChange={e => { const v = Math.max(1, parseInt(e.target.value, 10) || 1); updateNote(note.id, { scoreMax: v, score: Math.min(v, note.score ?? 5) }); }}
+                          className="w-6 px-0.5 py-0 text-[7px] text-center border border-slate-200 rounded text-slate-400 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                      </div>
                     </>}
                     </div>
                   )}

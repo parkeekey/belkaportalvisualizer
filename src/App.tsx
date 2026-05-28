@@ -6,8 +6,9 @@ import SetupProfile, { type SetupProfileHandle } from './components/SetupProfile
 import CoffeeChat from './components/CoffeeChat';
 import BedVisual from './components/BedVisual';
 import ZenMode from './components/ZenMode';
+import Diagnostic from './components/Diagnostic';
 
-type AppPage = 'digitizer' | 'ultrakoki-parser' | 'setup-profile' | 'zen';
+type AppPage = 'digitizer' | 'ultrakoki-parser' | 'setup-profile' | 'zen' | 'diagnostic';
 
 const ACTIVE_PAGE_STORAGE_KEY = 'belka.activePage';
 
@@ -41,7 +42,7 @@ function App() {
   const [activePage, setActivePage] = useState<AppPage>(() => {
     try {
       const savedPage = localStorage.getItem(ACTIVE_PAGE_STORAGE_KEY);
-      return savedPage === 'ultrakoki-parser' ? 'ultrakoki-parser' : 'digitizer';
+      return savedPage === 'ultrakoki-parser' || savedPage === 'diagnostic' ? savedPage : 'digitizer';
     } catch {
       return 'digitizer';
     }
@@ -153,7 +154,7 @@ function App() {
       if (parsed.setupProfile) {
         setupProfileRef.current?.importProfile(parsed.setupProfile as unknown as Parameters<typeof setupProfileRef.current.importProfile>[0]);
       }
-      setActivePage(parsed.activePage === 'ultrakoki-parser' || parsed.activePage === 'setup-profile' || parsed.activePage === 'zen' ? parsed.activePage : 'digitizer');
+      setActivePage(parsed.activePage === 'ultrakoki-parser' || parsed.activePage === 'setup-profile' || parsed.activePage === 'zen' || parsed.activePage === 'diagnostic' ? parsed.activePage : 'digitizer');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load workspace profile.';
       window.alert(message);
@@ -209,6 +210,13 @@ function App() {
                 title="Zen Mode — connect taste to fundamentals"
               >
                 ☯ Zen
+              </button>
+              <button
+                onClick={() => setActivePage('diagnostic')}
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${activePage === 'diagnostic' ? 'bg-rose-700 border-rose-700 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                title="Diagnostic — score profile analysis"
+              >
+                🔍 Diagnostic
               </button>
               <button
                 onClick={() => setChatOpen(v => !v)}
@@ -423,6 +431,9 @@ function App() {
         </div>
         {activePage === 'zen' && (
           <ZenMode onClose={() => setActivePage('digitizer')} />
+        )}
+        {activePage === 'diagnostic' && (
+          <Diagnostic onClose={() => setActivePage('digitizer')} />
         )}
       </main>
 

@@ -21,8 +21,8 @@ interface ZenNote {
   temp: number;
   ratio: number;
   turbulence: number;
-  score: number;
-  scoreMax: number;
+  scores: { label: string; value: number; max: number }[];
+  scoreIdx: number;
 }
 
 interface ZenArrow {
@@ -48,6 +48,7 @@ const FOUNDATIONS = [
 ];
 
 const ZEN_KEY = 'belka.zenMode';
+const SAVES_KEY = 'belka.zenMode.saves';
 const KNOWLEDGE_KEY = 'belka.zenKnowledge';
 // ── Bean Defect Knowledge ────────────────────────────────────
 // Some taste symptoms are bean defects, not extraction problems.
@@ -713,7 +714,9 @@ const MECHANISM_KNOWLEDGE: Record<string, {
   },
 };
 
-function loadState() {
+type ZenState = { notes: ZenNote[]; arrows: ZenArrow[]; lockedFoundations: string[]; foundationPositions: Record<string, {x: number; y: number}> };
+
+function loadState(): ZenState {
   try {
     const raw = localStorage.getItem(ZEN_KEY);
     if (raw) return JSON.parse(raw);
@@ -721,8 +724,35 @@ function loadState() {
   return { notes: [], arrows: [], lockedFoundations: [], foundationPositions: {} };
 }
 
-function saveState(state: { notes: ZenNote[]; arrows: ZenArrow[]; lockedFoundations: string[]; foundationPositions: Record<string, {x: number; y: number}> }) {
+function saveState(state: ZenState) {
   localStorage.setItem(ZEN_KEY, JSON.stringify(state));
+}
+
+function getSaves(): string[] {
+  try {
+    const raw = localStorage.getItem(SAVES_KEY);
+    if (raw) return Object.keys(JSON.parse(raw));
+  } catch {}
+  return [];
+}
+
+function getSaveData(name: string): ZenState | null {
+  try {
+    const all = JSON.parse(localStorage.getItem(SAVES_KEY) || '{}');
+    return all[name] || null;
+  } catch { return null; }
+}
+
+function putSave(name: string, state: ZenState) {
+  const all = JSON.parse(localStorage.getItem(SAVES_KEY) || '{}');
+  all[name] = state;
+  localStorage.setItem(SAVES_KEY, JSON.stringify(all));
+}
+
+function deleteSave(name: string) {
+  const all = JSON.parse(localStorage.getItem(SAVES_KEY) || '{}');
+  delete all[name];
+  localStorage.setItem(SAVES_KEY, JSON.stringify(all));
 }
 
 function loadKnowledge(): TagKnowledge {
@@ -748,6 +778,10 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const [hoverDot, setHoverDot] = useState<string | null>(null);
   const [knowledge, setKnowledge] = useState<TagKnowledge>(() => loadKnowledge());
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [saves, setSaves] = useState<string[]>(() => getSaves());
   const noteElsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const [showTagPicker, setShowTagPicker] = useState<string | null>(null);
   const [selectedArrow, setSelectedArrow] = useState<string | null>(null);
@@ -769,6 +803,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const [viewMode, setViewMode] = useState<'canvas' | 'layout'>('canvas');
   const [layoutMode, setLayoutMode] = useState<'feed' | '2x2' | '3x3'>('feed');
   const [dragLock, setDragLock] = useState<string | null>(null);
+  const [collision, setCollision] = useState(false);
   // dragLock design choice (2026-05-27):
   // Mobile touch conflates "scroll canvas" and "drag note" into one gesture.
   // Instead of fighting the browser with e.preventDefault() heuristics (which
@@ -840,7 +875,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       pct: 50,
       x: 60 + (noteCounter % 5) * 40,
       y: 100 + (noteCounter % 4) * 80,
-      timeM: 0, timeS: 0, grind: 0, grindLow: 0, grindHigh: 0, grindMax: 30, temp: 0, ratio: 0, turbulence: 0, score: 5, scoreMax: 10,
+      timeM: 0, timeS: 0, grind: 0, grindLow: 0, grindHigh: 0, grindMax: 30, temp: 0, ratio: 0, turbulence: 0, scores: [], scoreIdx: 0,
     };
     setNotes(prev => [...prev, note]);
     setSelectedArrow(null);
@@ -869,6 +904,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   }, [notes]);
 
   const startDragTouch = useCallback((noteId: string, e: React.TouchEvent) => {
+    if (dragLock !== noteId) return;
     const target = e.target as HTMLElement;
     if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.tagName === 'BUTTON') return;
     e.preventDefault();
@@ -881,7 +917,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
     const sx = scroll.scrollLeft;
     const sy = scroll.scrollTop;
     setDragging({ noteId, offsetX: t.clientX - cr.left + sx - note.x, offsetY: t.clientY - cr.top + sy - note.y });
-  }, [notes]);
+  }, [notes, dragLock]);
 
   const startConnect = useCallback((noteId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -907,13 +943,32 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       const sy = scroll.scrollTop;
       const canvasW = Math.max(1200, scroll.scrollWidth);
       const canvasH = Math.max(150 * window.innerHeight / 100, scroll.scrollHeight);
-      setNotes(prev => prev.map(n =>
-        n.id === dragging.noteId ? {
-          ...n,
-          x: Math.max(0, Math.min(e.clientX - cr.left + sx - dragging.offsetX, canvasW - 200)),
-          y: Math.max(0, Math.min(e.clientY - cr.top + sy - dragging.offsetY, canvasH - 100))
-        } : n
-      ));
+      let nx = Math.max(0, Math.min(e.clientX - cr.left + sx - dragging.offsetX, canvasW - 200));
+      let ny = Math.max(0, Math.min(e.clientY - cr.top + sy - dragging.offsetY, canvasH - 100));
+      const el = noteElsRef.current.get(dragging.noteId);
+      const nw = el?.offsetWidth ?? 200;
+      const nh = el?.offsetHeight ?? 80;
+      if (collision) { setNotes(prev => {
+        for (const n of prev) {
+          if (n.id === dragging.noteId) continue;
+          const el2 = noteElsRef.current.get(n.id);
+          const ow = el2?.offsetWidth ?? 200;
+          const oh = el2?.offsetHeight ?? 80;
+          if (nx < n.x + ow && nx + nw > n.x && ny < n.y + oh && ny + nh > n.y) {
+            const ol = (nx + nw) - n.x;
+            const or2 = (n.x + ow) - nx;
+            const ot = (ny + nh) - n.y;
+            const ob = (n.y + oh) - ny;
+            const minO = Math.min(ol, or2, ot, ob);
+            if (minO === ol) nx = n.x - nw;
+            else if (minO === or2) nx = n.x + ow;
+            else if (minO === ot) ny = n.y - nh;
+            else ny = n.y + oh;
+            break;
+          }
+        }
+        return prev.map(n => n.id === dragging.noteId ? { ...n, x: Math.max(0, Math.min(nx, canvasW - 200)), y: Math.max(0, Math.min(ny, canvasH - 100)) } : n);
+      }); } else { setNotes(prev => prev.map(n => n.id === dragging.noteId ? { ...n, x: nx, y: ny } : n)); }
     }
     if (connecting) {
       const cx = e.clientX;
@@ -1009,7 +1064,6 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     const t = e.touches[0];
     mouseRef.current = { x: t.clientX, y: t.clientY };
-    if (dragLock) { e.preventDefault(); if (!dragging && !foundationDrag && !connecting) return; }
     if (foundationDrag) {
       e.preventDefault();
       const clamped = {
@@ -1027,13 +1081,32 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       const sy = scroll.scrollTop;
       const canvasW = Math.max(1200, scroll.scrollWidth);
       const canvasH = Math.max(150 * window.innerHeight / 100, scroll.scrollHeight);
-      setNotes(prev => prev.map(n =>
-        n.id === dragging.noteId ? {
-          ...n,
-          x: Math.max(0, Math.min(t.clientX - cr.left + sx - dragging.offsetX, canvasW - 200)),
-          y: Math.max(0, Math.min(t.clientY - cr.top + sy - dragging.offsetY, canvasH - 100))
-        } : n
-      ));
+      let nx = Math.max(0, Math.min(t.clientX - cr.left + sx - dragging.offsetX, canvasW - 200));
+      let ny = Math.max(0, Math.min(t.clientY - cr.top + sy - dragging.offsetY, canvasH - 100));
+      const el = noteElsRef.current.get(dragging.noteId);
+      const nw = el?.offsetWidth ?? 200;
+      const nh = el?.offsetHeight ?? 80;
+      if (collision) { setNotes(prev => {
+        for (const n of prev) {
+          if (n.id === dragging.noteId) continue;
+          const el2 = noteElsRef.current.get(n.id);
+          const ow = el2?.offsetWidth ?? 200;
+          const oh = el2?.offsetHeight ?? 80;
+          if (nx < n.x + ow && nx + nw > n.x && ny < n.y + oh && ny + nh > n.y) {
+            const ol = (nx + nw) - n.x;
+            const or2 = (n.x + ow) - nx;
+            const ot = (ny + nh) - n.y;
+            const ob = (n.y + oh) - ny;
+            const minO = Math.min(ol, or2, ot, ob);
+            if (minO === ol) nx = n.x - nw;
+            else if (minO === or2) nx = n.x + ow;
+            else if (minO === ot) ny = n.y - nh;
+            else ny = n.y + oh;
+            break;
+          }
+        }
+        return prev.map(n => n.id === dragging.noteId ? { ...n, x: Math.max(0, Math.min(nx, canvasW - 200)), y: Math.max(0, Math.min(ny, canvasH - 100)) } : n);
+      }); } else { setNotes(prev => prev.map(n => n.id === dragging.noteId ? { ...n, x: nx, y: ny } : n)); }
     }
     if (connecting) {
       const cx = t.clientX;
@@ -1058,7 +1131,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       });
       setHoverDot(closest);
     }
-  }, [dragging, connecting, foundationDrag, dragLock]);
+  }, [dragging, connecting, foundationDrag]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     if (connecting) {
@@ -1206,8 +1279,14 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => { saveState({ notes, arrows, lockedFoundations, foundationPositions }); }}
-            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100"
-          >Save</button>
+            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-slate-100"
+          >💾</button>
+          <button onClick={() => { setSaveName(''); setShowSaveDialog(true); setShowLoadDialog(false); }}
+            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-slate-100"
+          >Save As</button>
+          <button onClick={() => { setSaves(getSaves()); setShowLoadDialog(true); setShowSaveDialog(false); }}
+            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-slate-100"
+          >Load</button>
           <button onClick={() => { setShowFoundations(p => !p); }}
             className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100"
           >{showFoundations ? '🧭 Hide' : '🧭 Show'}          </button>
@@ -1227,6 +1306,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
               ))}
             </div>
           )}
+          <button onClick={() => setCollision(p => !p)}
+            className={`px-2 py-1 text-[10px] font-semibold border rounded-md transition-colors ${collision ? 'bg-slate-700 text-white border-slate-700' : 'border-slate-300 text-slate-500 hover:bg-slate-100'}`}
+          >⊡ Snap</button>
           <button onClick={() => setFoundationPositions({})}
             className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100"
           >↺ Restore</button>
@@ -1389,7 +1471,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
               className={`absolute z-40 bg-white rounded-xl shadow-lg border select-none transition-shadow ${note.locked ? 'border-slate-200 opacity-70 cursor-default' : note.starred ? 'border-amber-300 ring-2 ring-amber-200/60' : dragLock === note.id ? 'border-amber-400 ring-2 ring-amber-300/50 shadow-amber-200/50' : 'border-slate-300'} ${dragLock === note.id ? 'cursor-grab' : 'cursor-grab active:cursor-grabbing'}`}
               style={{ left: note.x, top: note.y, touchAction: dragLock === note.id ? 'none' as const : undefined } as React.CSSProperties}
               onMouseDown={(e) => startDrag(note.id, e)}
-              onTouchStart={(e) => { e.preventDefault(); startDragTouch(note.id, e); }}
+              onTouchStart={(e) => { startDragTouch(note.id, e); }}
             >
                 {linkedFoundations.length > 0 && (
                   <div className="h-1 rounded-t-xl overflow-hidden flex">
@@ -1604,29 +1686,48 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       />
                       <span className="text-[10px] font-semibold text-slate-700 min-w-[32px] text-right">{note.pct ?? 50}%</span>
                     </>}
-                    {note.tag === 'score' && <>
-                      <span className="text-[9px] text-slate-500 font-medium">★</span>
-                      <div className="flex items-center gap-1">
-                        <span className={`text-[8px] font-semibold ${(note.score ?? 5) <= 3 ? 'text-red-500' : (note.score ?? 5) <= 7 ? 'text-amber-500' : 'text-green-600'}`}>
-                          {(note.score ?? 5) <= 3 ? 'Low' : (note.score ?? 5) <= 7 ? 'Med' : 'High'}
-                        </span>
-                        <button onClick={() => updateNote(note.id, { score: Math.max(0, (note.score ?? 5) - 1) })}
-                          className="px-1 py-0 text-[10px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100 leading-none"
-                        >−</button>
-                        <input type="number" min={0} max={note.scoreMax ?? 10} value={note.score ?? 5}
-                          onChange={e => { const v = Math.min(note.scoreMax ?? 10, Math.max(0, parseInt(e.target.value, 10) || 0)); updateNote(note.id, { score: v }); }}
-                          className="w-8 px-0.5 py-0 text-[9px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                        <button onClick={() => updateNote(note.id, { score: Math.min(note.scoreMax ?? 10, (note.score ?? 5) + 1) })}
-                          className="px-1 py-0 text-[10px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100 leading-none"
-                        >+</button>
-                        <span className="text-[7px] text-slate-400">/</span>
-                        <input type="number" min={1} max={999} value={note.scoreMax ?? 10}
-                          onChange={e => { const v = Math.max(1, parseInt(e.target.value, 10) || 1); updateNote(note.id, { scoreMax: v, score: Math.min(v, note.score ?? 5) }); }}
-                          className="w-6 px-0.5 py-0 text-[7px] text-center border border-slate-200 rounded text-slate-400 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </div>
-                    </>}
+                    {note.tag === 'score' && (() => {
+                      const ss = note.scores ?? [];
+                      const si = note.scoreIdx ?? 0;
+                      const cur = ss[si];
+                      const labels = ['Acidity', 'Sweetness', 'Body', 'Balance', 'Intensity', 'Aroma', 'Aftertaste', 'Uniformity', 'Clean cup'];
+                      return <>
+                        <div className="flex items-center gap-1 mb-0.5" onMouseDown={e => e.stopPropagation()}>
+                          <button onClick={() => {
+                            const next = (si + 1) % (ss.length + 1);
+                            if (next >= ss.length) {
+                              const taken = new Set(ss.map(s => s.label));
+                              const nextLabel = labels.find(l => !taken.has(l)) || 'Score';
+                              updateNote(note.id, { scoreIdx: ss.length, scores: [...ss, { label: nextLabel, value: 5, max: 10 }] });
+                            } else {
+                              updateNote(note.id, { scoreIdx: next });
+                            }
+                          }}
+                            className="text-[8px] font-semibold text-slate-500 hover:text-slate-700 leading-none px-0.5"
+                          >★ {cur ? cur.label : '+ Score'}</button>
+                          {cur && <>
+                            <button onClick={() => { const c = [...ss]; c[si] = { ...c[si], value: Math.max(0, c[si].value - 1) }; updateNote(note.id, { scores: c }); }}
+                              className="px-1 py-0 text-[9px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100 leading-none"
+                            >−</button>
+                            <input type="number" min={0} max={cur.max} value={cur.value}
+                              onChange={e => { const c = [...ss]; c[si] = { ...c[si], value: Math.min(cur.max, Math.max(0, parseInt(e.target.value, 10) || 0)) }; updateNote(note.id, { scores: c }); }}
+                              className="w-6 px-0.5 py-0 text-[8px] text-center border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <button onClick={() => { const c = [...ss]; c[si] = { ...c[si], value: Math.min(cur.max, c[si].value + 1) }; updateNote(note.id, { scores: c }); }}
+                              className="px-1 py-0 text-[9px] font-bold text-slate-500 border border-slate-200 rounded hover:bg-slate-100 leading-none"
+                            >+</button>
+                            <span className="text-[6px] text-slate-300">/</span>
+                            <input type="number" min={1} max={999} value={cur.max}
+                              onChange={e => { const c = [...ss]; const nm = Math.max(1, parseInt(e.target.value, 10) || 1); c[si] = { ...c[si], max: nm, value: Math.min(nm, c[si].value) }; updateNote(note.id, { scores: c }); }}
+                              className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 rounded text-slate-400 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            {ss.length > 1 && <button onClick={() => { const c = [...ss]; c.splice(si, 1); updateNote(note.id, { scores: c, scoreIdx: Math.min(si, c.length - 1) }); }}
+                              className="px-0.5 py-0 text-[6px] text-slate-300 hover:text-red-400 leading-none"
+                            >✕</button>}
+                          </>}
+                        </div>
+                      </>;
+                    })()}
                     </div>
                   )}
                   <div className="flex items-start justify-between gap-1">
@@ -2059,11 +2160,11 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         const px = Math.min(r.right + 8, window.innerWidth - 260);
         const py = Math.max(4, r.top);
         return (
-          <div className="fixed z-[100] bg-white border border-slate-200 rounded-xl shadow-xl px-2 py-1.5 pointer-events-auto max-w-[260px]"
-            style={{ left: px, top: py }}
-            onMouseDown={e => e.stopPropagation()}
-            onTouchStart={e => e.stopPropagation()}
-          >
+          <>
+            <div className="fixed inset-0 z-[99]" onMouseDown={() => setShowTagPicker(null)} onTouchStart={() => setShowTagPicker(null)} />
+            <div className="fixed z-[100] bg-white border border-slate-200 rounded-xl shadow-xl px-2 py-1.5 pointer-events-auto max-w-[260px]"
+              style={{ left: px, top: py }}
+            >
             <div className="grid grid-cols-2 gap-1 mb-1">
               {TAG_GROUPS.slice(0, 2).map(g => (
                 <div key={g.name}>
@@ -2111,8 +2212,59 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
               >✕</button>
             </div>
           </div>
-        );
+        </>
+      );
       })()}
+
+      {/* Save As dialog */}
+      {showSaveDialog && (
+        <div className="fixed inset-0 z-[200] flex items-start justify-center pt-20" onClick={() => setShowSaveDialog(false)}>
+          <div className="bg-white border border-slate-200 rounded-xl shadow-xl px-3 py-2 w-64" onClick={e => e.stopPropagation()}>
+            <div className="text-[10px] font-semibold text-slate-600 mb-1.5">Save current board as...</div>
+            <input type="text" value={saveName} placeholder="profile name"
+              onChange={e => setSaveName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && saveName.trim()) { putSave(saveName.trim(), { notes, arrows, lockedFoundations, foundationPositions }); setSaves(getSaves()); setShowSaveDialog(false); } }}
+              className="w-full px-1.5 py-1 text-[10px] border border-slate-200 rounded text-slate-700 outline-none focus:border-slate-400 mb-1.5"
+              autoFocus
+            />
+            <div className="flex items-center gap-1 justify-end">
+              <button onClick={() => setShowSaveDialog(false)}
+                className="px-2 py-0.5 text-[9px] border border-slate-200 rounded text-slate-400 hover:bg-slate-100"
+              >Cancel</button>
+              <button onClick={() => { if (saveName.trim()) { putSave(saveName.trim(), { notes, arrows, lockedFoundations, foundationPositions }); setSaves(getSaves()); setShowSaveDialog(false); } }}
+                className="px-2 py-0.5 text-[9px] font-semibold bg-slate-700 text-white border border-slate-700 rounded hover:bg-slate-800"
+              >Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Load dialog */}
+      {showLoadDialog && (
+        <div className="fixed inset-0 z-[200] flex items-start justify-center pt-20" onClick={() => setShowLoadDialog(false)}>
+          <div className="bg-white border border-slate-200 rounded-xl shadow-xl px-3 py-2 w-64 max-h-48 overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="text-[10px] font-semibold text-slate-600 mb-1.5">Saved profiles</div>
+            {saves.length === 0 ? (
+              <p className="text-[9px] text-slate-400 italic">No saved profiles yet</p>
+            ) : saves.map(name => (
+              <div key={name} className="flex items-center justify-between py-1 border-b border-slate-50 last:border-0">
+                <span className="text-[10px] text-slate-700">{name}</span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => { const data = getSaveData(name); if (data) { setNotes(data.notes); setArrows(data.arrows); setLockedFoundations(data.lockedFoundations); setFoundationPositions(data.foundationPositions); setShowLoadDialog(false); } }}
+                    className="px-1.5 py-0.5 text-[8px] font-semibold bg-slate-700 text-white border border-slate-700 rounded hover:bg-slate-800"
+                  >Load</button>
+                  <button onClick={() => { if (confirm(`Delete "${name}"?`)) { deleteSave(name); setSaves(getSaves()); } }}
+                    className="px-1 py-0.5 text-[8px] border border-slate-200 text-slate-400 rounded hover:bg-red-50 hover:text-red-500"
+                  >✕</button>
+                </div>
+              </div>
+            ))}
+            <button onClick={() => setShowLoadDialog(false)}
+              className="w-full mt-1 px-2 py-0.5 text-[9px] border border-slate-200 rounded text-slate-400 hover:bg-slate-100"
+            >Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

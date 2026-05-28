@@ -1275,22 +1275,22 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-white/70 shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-slate-700 uppercase tracking-widest">☯ Zen</span>
-          <span className="text-[10px] text-slate-400 italic">connect your taste to the fundamentals</span>
+          <span className="text-[10px] text-slate-400 italic hidden sm:inline">connect your taste to the fundamentals</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto">
           <button onClick={() => { saveState({ notes, arrows, lockedFoundations, foundationPositions }); }}
-            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-slate-100"
+            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-slate-100 shrink-0"
           >💾</button>
           <button onClick={() => { setSaveName(''); setShowSaveDialog(true); setShowLoadDialog(false); }}
-            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-slate-100"
+            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-slate-100 shrink-0"
           >Save As</button>
           <button onClick={() => { setSaves(getSaves()); setShowLoadDialog(true); setShowSaveDialog(false); }}
-            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-slate-100"
+            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-slate-100 shrink-0"
           >Load</button>
           <button onClick={() => { setShowFoundations(p => !p); }}
-            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100"
-          >{showFoundations ? '🧭 Hide' : '🧭 Show'}          </button>
-          <div className="flex items-center gap-0.5 border-l border-slate-200 pl-2">
+            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100 shrink-0"
+          >{showFoundations ? '🧭 Hide' : '🧭 Show'}</button>
+          <div className="flex items-center gap-0.5 border-l border-slate-200 pl-2 shrink-0">
             {(['canvas', 'layout'] as const).map(v => (
               <button key={v} onClick={() => setViewMode(v)}
                 className={`px-2 py-1 text-[10px] font-semibold border rounded-md transition-colors ${viewMode === v ? 'bg-slate-700 text-white border-slate-700' : 'border-slate-300 text-slate-500 hover:bg-slate-100'}`}
@@ -1313,15 +1313,18 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
             className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100"
           >↺ Restore</button>
           <button onClick={() => { setNotes([]); setArrows([]); }}
-            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 shrink-0"
           >Clear</button>
-          {onClose && (
-            <button onClick={onClose}
-              className="px-3 py-1 text-[11px] font-semibold border border-slate-300 rounded-md text-slate-600 hover:bg-slate-100"
-            >× Exit</button>
-          )}
         </div>
       </div>
+
+      {/* Floating close button — always visible top-right */}
+      {onClose && (
+        <button onClick={onClose}
+          className="fixed top-2 right-2 z-[60] w-7 h-7 rounded-full bg-white/90 border border-slate-300 shadow-sm flex items-center justify-center text-[13px] text-slate-500 hover:text-red-500 hover:border-red-300 transition-colors"
+          title="Exit Zen Mode"
+        >✕</button>
+      )}
 
       {/* Instructions */}
       <div className="px-4 py-1.5 text-[10px] text-slate-400 italic border-b border-slate-100 bg-[#f8f6f0] shrink-0 select-none">

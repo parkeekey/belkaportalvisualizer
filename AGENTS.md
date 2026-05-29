@@ -61,3 +61,9 @@ Commands:
 1. Does the regex anchor after `:` (with `/:(\d+)/` or similar)?
 2. If you see `extractionRatio.match(/(\d+)/)` — it's wrong. Fix it.
 3. Same for any `"1:X"` string — always grab X, not the literal `1`.
+
+## Git Deployment Rule
+
+When committing to a branch that serves docs/ (GitHub Pages), every file referenced by `docs/index.html` must be tracked and committed together. If you update the HTML to point to a new hash-named JS/CSS asset, verify that asset exists in the working tree AND is staged in the same commit. Orphaned assets → blank page.
+
+Likewise, never rely on untracked files — `git status` will show them; if they're build output referenced by committed files, they must be included.

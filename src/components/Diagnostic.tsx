@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { getReferenceTDS, getReferenceTDSRange } from '../utils/tdsReference';
+import shadowJudgeData from '../data/shadowJudge';
 import TDSHUD from './TDSHUD';
 
 type Score = number;
@@ -251,6 +252,79 @@ const BREW_FACTORS: BrewFactor[] = [
 const AXES = ['acidity', 'sweetness', 'flavor', 'mouthfeel', 'aftertaste', 'overall'] as const;
 const AXIS_LABELS: Record<string, string> = { acidity: 'Acidity', sweetness: 'Sweetness', flavor: 'Flavor', mouthfeel: 'Mouthfeel', aftertaste: 'Aftertaste', overall: 'Overall' };
 
+const AXIS_CHIPS: Record<string, { primary: { label: string; score: number }[]; reasons: string[] }> = {
+  acidity: {
+    primary: [
+      { label: 'Sour / Sharp', score: 2 },
+      { label: 'Bright / Lively', score: 7 },
+      { label: 'Winey / Tart', score: 6 },
+      { label: 'Mellow / Smooth', score: 5 },
+      { label: 'Round / Balanced', score: 6 },
+      { label: 'Mild / Gentle', score: 4 },
+      { label: 'Flat / Dull', score: 3 },
+    ],
+    reasons: ['Citrus', 'Berry', 'Green Apple', 'Lemon', 'Vinegary', 'Soft', 'Brief'],
+  },
+  sweetness: {
+    primary: [
+      { label: 'Caramel / Rich', score: 7 },
+      { label: 'Honeyed', score: 6 },
+      { label: 'Fruity Sweet', score: 6 },
+      { label: 'Brown Sugar', score: 5 },
+      { label: 'Cereal / Grain', score: 4 },
+      { label: 'Dry / Tart', score: 3 },
+      { label: 'Bitter Sweet', score: 2 },
+    ],
+    reasons: ['Vanilla', 'Maple', 'Molasses', 'Stone Fruit', 'Floral', 'Raw Sugar', 'Clean'],
+  },
+  flavor: {
+    primary: [
+      { label: 'Fruity / Berry', score: 7 },
+      { label: 'Floral / Tea', score: 6 },
+      { label: 'Chocolate / Cocoa', score: 7 },
+      { label: 'Nutty / Toast', score: 6 },
+      { label: 'Spicy / Herbal', score: 5 },
+      { label: 'Grainy / Cereal', score: 4 },
+      { label: 'Rubbery / Smoky', score: 3 },
+      { label: 'Musty / Dirty', score: 2 },
+    ],
+    reasons: ['Winey', 'Earthy', 'Tobacco', 'Cedar', 'Cinnamon', 'Baker\'s Chocolate', 'Tea-like'],
+  },
+  mouthfeel: {
+    primary: [
+      { label: 'Silky / Smooth', score: 7 },
+      { label: 'Creamy / Buttery', score: 7 },
+      { label: 'Syrupy / Heavy', score: 8 },
+      { label: 'Full / Round', score: 6 },
+      { label: 'Medium / Clean', score: 5 },
+      { label: 'Light / Tea-like', score: 4 },
+      { label: 'Watery / Thin', score: 3 },
+    ],
+    reasons: ['Juicy', 'Velvety', 'Sharp', 'Drying', 'Puckering', 'Greasy', 'Metallic'],
+  },
+  aftertaste: {
+    primary: [
+      { label: 'Long / Lingering', score: 7 },
+      { label: 'Clean / Sweet', score: 6 },
+      { label: 'Pleasant Finish', score: 6 },
+      { label: 'Short / Quick', score: 4 },
+      { label: 'Bitter Finish', score: 3 },
+      { label: 'Astringent / Dry', score: 2 },
+    ],
+    reasons: ['Chocolatey', 'Smoky', 'Floral', 'Crisp', 'Dull', 'Harsh', 'Metallic'],
+  },
+  overall: {
+    primary: [
+      { label: 'Excellent', score: 8 },
+      { label: 'Very Good', score: 7 },
+      { label: 'Good', score: 6 },
+      { label: 'Fair', score: 5 },
+      { label: 'Poor', score: 3 },
+    ],
+    reasons: ['Balanced', 'Complex', 'Clean', 'Wrong', 'Flat', 'Muddy', 'Astringent'],
+  },
+};
+
 interface Symptom {
   name: string;
   desc: string;
@@ -368,6 +442,11 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
   const [profile, setProfile] = useState<Profile>({ acidity: 5, sweetness: 5, flavor: 5, mouthfeel: 5, aftertaste: 5, overall: 5 });
   const [expandedIntegrity, setExpandedIntegrity] = useState<string | null>(null);
   const [improveTo, setImproveTo] = useState(5);
+  const [profileMode, setProfileMode] = useState<'slider' | 'chip'>('slider');
+  const [judgeSummoned, setJudgeSummoned] = useState(false);
+  const [chipReasons, setChipReasons] = useState<Record<string, string[]>>({});
+  const [chipAwards, setChipAwards] = useState<Record<string, boolean>>({});
+  const [notedDescriptors, setNotedDescriptors] = useState<Record<string, string | null>>({});
   const [tab, setTab] = useState<'profile' | 'extraction' | 'internal' | 'timing' | 'hidden' | 'external' | 'symptoms'>('profile');
   const [focusAxes, setFocusAxes] = useState<string[]>([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
@@ -545,6 +624,16 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
       extractionDose, extractionRatio, tds, eyMin, eyMax, yieldOut
     }));
   }, [extractionDose, extractionRatio, tds, eyMin, eyMax, yieldOut]);
+  useEffect(() => {
+    const awarded = Object.entries(chipAwards).filter(([_, v]) => v).map(([k]) => k);
+    if (awarded.length > 0) {
+      setProfile(p => {
+        const next = { ...p };
+        for (const k of awarded) next[k as keyof Profile] = improveTo;
+        return next;
+      });
+    }
+  }, [improveTo]);
 
   const handleSave = () => {
     const data = { profile, improveTo, focusAxes, selectedSymptoms, snapshots, equipment, tds, brewYield, bloomTime, mainPourTime, drawdownTime, deliveryTime, extractionDose, extractionRatio, tdsGoal, eyGoal, eyMin, eyMax, yieldOut };
@@ -588,6 +677,79 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
   };
 
   const setScore = (key: keyof Profile, val: number) => setProfile(p => ({ ...p, [key]: Math.max(1, Math.min(9, val)) }));
+  const toggleReason = (axis: string, reason: string) => {
+    setChipReasons(prev => {
+      const current = prev[axis] || [];
+      return { ...prev, [axis]: current.includes(reason) ? current.filter(r => r !== reason) : [...current, reason] };
+    });
+  };
+  const toggleAward = (axis: string) => {
+    setChipAwards(prev => {
+      const awarded = !prev[axis];
+      setScore(axis as keyof Profile, awarded ? improveTo : 1);
+      return { ...prev, [axis]: awarded };
+    });
+  };
+
+  const shadowJudge = useMemo(() => {
+    const p = profile;
+    const lines: { axis: string; score: number; text: string; tone: 'cheer' | 'neutral' | 'pressure' }[] = [];
+    const notes: string[] = [];
+
+    for (const k of AXES) {
+      const axisData = shadowJudgeData.axes[k];
+      if (!axisData) continue;
+      const s = p[k];
+      const desc = axisData.descriptions.find(d => s >= d.scoreMin && s <= d.scoreMax);
+      if (desc) lines.push({ axis: k, score: s, text: desc.text, tone: desc.tone });
+    }
+
+    for (const pat of shadowJudgeData.patterns) {
+      try {
+        const fn = new Function('p', 'return ' + pat.condition);
+        if (fn(p)) notes.push(pat.text);
+      } catch {}
+    }
+
+    const hasFlags = notes.some(o => o.startsWith('⚠'));
+    const cheerCount = lines.filter(l => l.tone === 'cheer').length;
+    const pressureCount = lines.filter(l => l.tone === 'pressure').length;
+    let verdict = shadowJudgeData.verdicts.find(v =>
+      cheerCount >= v.cheerMin &&
+      pressureCount >= v.pressureMin &&
+      (v.hasFlags === 'any' || v.hasFlags === hasFlags)
+    )?.text || 'Solid and balanced. Reliable work. Now push one axis to great.';
+
+    const axisTips: Record<string, string> = {
+      acidity: 'adjust your ratio or water temp to shift brightness.',
+      sweetness: 'this is mostly bean-origin and roast — try a different coffee or push development.',
+      flavor: 'check your dose and contact time — more extraction = more flavour.',
+      mouthfeel: 'grind finer or increase dose for more body; go coarser if it\'s too heavy.',
+      aftertaste: 'extend contact time or raise temp to develop the finish.',
+      overall: 'focus on the lowest attribute — everything else follows.',
+    };
+    const planAxes = [...AXES]
+      .map(k => ({ axis: k, score: p[k], label: AXIS_LABELS[k], tip: axisTips[k] || 'review your process.' }))
+      .filter(a => a.score < Math.min(improveTo, 6))
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 3);
+    const plan: { axis: string; label: string; tip: string }[] = planAxes.length > 0 ? planAxes : [];
+
+    const opener = shadowJudgeData.transcript.openers[Math.floor(Math.random() * shadowJudgeData.transcript.openers.length)];
+    const closer = shadowJudgeData.transcript.closers[Math.floor(Math.random() * shadowJudgeData.transcript.closers.length)];
+    const segments: { text: string; tone: string }[] = [{ text: opener, tone: 'opener' }];
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i];
+      const label = AXIS_LABELS[l.axis];
+      segments.push({ text: `${label}: ${l.text}`, tone: l.tone });
+    }
+    segments.push({ text: closer, tone: 'closer' });
+
+    const drinkRule = [...shadowJudgeData.drinkability].sort((a, b) => b.scoreMin - a.scoreMin).find(r => p.overall >= r.scoreMin);
+    const drinkability = drinkRule || { text: '', icon: '' };
+
+    return { lines, notes, verdict, segments, drinkability, plan };
+  }, [profile]);
 
   const integrityCheck = useMemo(() => {
     const entries: { key: string; label: string; score: number; context: string }[] = [];
@@ -733,7 +895,17 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
         {tab === 'profile' && (
           <>
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <h2 className="text-sm font-bold text-slate-700 mb-3">Score Profile</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-slate-700">Score Profile</h2>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setProfileMode('slider')}
+                    className={`px-2 py-0.5 text-[9px] font-semibold rounded transition-colors ${profileMode === 'slider' ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-400 hover:text-slate-600'}`}
+                  >🎚 Sliders</button>
+                  <button onClick={() => setProfileMode('chip')}
+                    className={`px-2 py-0.5 text-[9px] font-semibold rounded transition-colors ${profileMode === 'chip' ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-400 hover:text-slate-600'}`}
+                  >🏷 Chips</button>
+                </div>
+              </div>
               <div className="flex items-center gap-3 mb-3 p-2 bg-slate-50 rounded-lg border border-slate-100">
                 <span className="text-xs font-semibold text-slate-600">🎯 Aim for</span>
                 <div className="flex items-center gap-1">
@@ -789,32 +961,142 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     </div>
                   )}
                 </div>
-                <div className="flex-1 w-full space-y-2.5">
-                  {AXES.map(k => {
-                    const ctx = scoreContext(profile[k]);
-                    return (
-                      <div key={k}>
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-xs font-semibold text-slate-600 capitalize">{AXIS_LABELS[k]}</span>
-                          <span className="text-[11px] font-bold" style={{ color: ctx.color }}>{profile[k]} <span className="font-normal text-slate-400 text-[10px]">({ctx.label})</span></span>
+                {profileMode === 'chip' ? (
+                  <div className="flex flex-wrap gap-3">
+                    {AXES.map(k => {
+                      const chips = AXIS_CHIPS[k];
+                      const selectedReasons = chipReasons[k] || [];
+                      return (
+                        <div key={k} className="flex flex-col items-center gap-1.5">
+                          <button onClick={() => toggleAward(k)}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${chipAwards[k] ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
+                          >{AXIS_LABELS[k]}</button>
+                          {chipAwards[k] && (
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="flex items-center gap-1.5 w-28">
+                                <span className="text-[7px] text-slate-400 font-mono w-2 text-right">0</span>
+                                <input type="range" min={0} max={9} value={profile[k as keyof Profile]} onChange={e => setScore(k as keyof Profile, parseInt(e.target.value))}
+                                  className="flex-1 h-1 appearance-none rounded-full bg-slate-200 accent-amber-600 cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-600 [&::-webkit-slider-thumb]:shadow-sm"
+                                />
+                                <span className="text-[7px] text-slate-400 font-mono w-2">9</span>
+                              </div>
+                              {chips && chips.reasons.length > 0 && (
+                                <div className="flex flex-wrap gap-1 justify-center max-w-[140px]">
+                                  {chips.reasons.map(reason => (
+                                    <button key={reason} onClick={() => toggleReason(k, reason)}
+                                      className={`px-1.5 py-0.5 text-[8px] font-medium rounded transition-colors ${selectedReasons.includes(reason) ? 'bg-slate-200 text-slate-700' : 'bg-white border border-dashed border-slate-200 text-slate-400 hover:bg-slate-50'}`}
+                                    >{reason}</button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] text-slate-400 font-mono w-3 text-right">0</span>
-                          <input type="range" min={0} max={9} value={profile[k]} onChange={e => setScore(k, parseInt(e.target.value))}
-                            className="flex-1 h-1.5 appearance-none rounded-full bg-slate-200 accent-amber-600 cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-600 [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
-                          />
-                          <span className="text-[9px] text-slate-400 font-mono w-3">9</span>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex-1 w-full space-y-2.5">
+                    {AXES.map(k => {
+                      const chips = AXIS_CHIPS[k];
+                      const selectedReasons = chipReasons[k] || [];
+                      return (
+                        <div key={k}>
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-semibold text-slate-600 capitalize">{AXIS_LABELS[k]}</span>
+                            <span className="text-[11px] font-bold" style={{ color: scoreContext(profile[k]).color }}>{profile[k]} <span className="font-normal text-slate-400 text-[10px]">({scoreContext(profile[k]).label})</span></span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-slate-400 font-mono w-3 text-right">0</span>
+                            <input type="range" min={0} max={9} value={profile[k]} onChange={e => setScore(k, parseInt(e.target.value))}
+                              className="flex-1 h-1.5 appearance-none rounded-full bg-slate-200 accent-amber-600 cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-600 [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
+                            />
+                            <span className="text-[9px] text-slate-400 font-mono w-3">9</span>
+                          </div>
+                          {chips && (
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {chips.primary.map(chip => (
+                                  <button key={chip.label} onClick={() => {
+                                    setNotedDescriptors(prev => ({ ...prev, [k]: prev[k] === chip.label ? null : chip.label }));
+                                  }}
+                                    className={`px-2 py-0.5 text-[9px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === chip.label ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'}`}
+                                  >{chip.label}{notedDescriptors[k] === chip.label ? ' ✓' : ''}</button>
+                                ))}
+                                {chips.reasons.length > 0 && <span className="text-[8px] text-slate-400 font-medium mt-0.5 mx-0.5">·</span>}
+                                {chips.reasons.map(reason => (
+                                  <button key={reason} onClick={() => toggleReason(k, reason)}
+                                    className={`px-1.5 py-0.5 text-[8px] font-medium rounded transition-colors ${selectedReasons.includes(reason) ? 'bg-slate-200 text-slate-700' : 'bg-white border border-dashed border-slate-200 text-slate-400 hover:bg-slate-50'}`}
+                                  >{reason}</button>
+                                ))}
+                              </div>
+                          )}
                         </div>
+                      );
+                    })}
+                    <div className="pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-500">Mean Score</span>
+                        <span className="text-lg font-bold text-slate-700">{total.toFixed(1)} <span className="text-xs font-normal text-slate-400">/ 9</span></span>
                       </div>
-                    );
-                  })}
-                  <div className="pt-2 border-t border-slate-100">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-500">Mean Score</span>
-                      <span className="text-lg font-bold text-slate-700">{total.toFixed(1)} <span className="text-xs font-normal text-slate-400">/ 9</span></span>
                     </div>
                   </div>
+                )}
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mt-3">
+                <div className="text-[10px] font-bold text-slate-500 mb-1.5">🎭 Shadow Judge</div>
+                {!judgeSummoned ? (
+                  <button onClick={() => setJudgeSummoned(true)}
+                    className="text-[9px] text-slate-500 hover:text-amber-700 bg-white border border-dashed border-slate-300 hover:border-amber-400 rounded-lg px-3 py-2 w-full transition-colors"
+                  >🔮 Summon Shadow Judge</button>
+                ) : (
+                  <>
+                {shadowJudge.lines.length > 0 && (
+                  <div className="space-y-0.5 mb-2">
+                    {shadowJudge.lines.map((l, i) => (
+                      <div key={i} className="flex items-start gap-1.5 text-[9px]">
+                        <span className="font-semibold text-slate-500 shrink-0 w-14">{AXIS_LABELS[l.axis]}</span>
+                        <span className={`${l.tone === 'cheer' ? 'text-emerald-700' : l.tone === 'pressure' ? 'text-red-600' : 'text-slate-500'}`}>{l.score} — {l.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {shadowJudge.notes.length > 0 && (
+                  <div className="space-y-0.5 mb-2 pt-1.5 border-t border-slate-200">
+                    {shadowJudge.notes.map((n, i) => (
+                      <div key={i} className={`text-[9px] ${n.startsWith('⚠') ? 'text-amber-700' : 'text-slate-600'}`}>{n}</div>
+                    ))}
+                  </div>
+                )}
+                {shadowJudge.drinkability.text && (
+                  <div className="text-[9px] text-slate-600 pt-1.5 border-t border-slate-200 mb-1.5">
+                    <span className="mr-1">{shadowJudge.drinkability.icon}</span>
+                    {shadowJudge.drinkability.text}
+                  </div>
+                )}
+                <div className={`text-[9px] font-semibold pt-1.5 border-t border-slate-200 ${shadowJudge.verdict.includes('Solid work') || shadowJudge.verdict.includes('Strong profile') ? 'text-emerald-600' : shadowJudge.verdict.includes('too many weak') ? 'text-red-600' : 'text-amber-600'}`}>{shadowJudge.verdict}</div>
+                <div className="pt-1.5 border-t border-slate-200 space-y-1">
+                  <div className="text-[8px] text-slate-400 font-medium">Adjustment Advice</div>
+                  {shadowJudge.plan.length > 0 ? shadowJudge.plan.map((step, i) => (
+                    <div key={step.axis} className="text-[9px] text-slate-600">{i + 1}. <span className="font-medium">{step.label}</span> — {step.tip}</div>
+                  )) : (
+                    <div className="text-[9px] text-slate-500 italic">Everything's in a good place. Pick one area and push it further — you're on the right track.</div>
+                  )}
                 </div>
+                <div className="pt-1 border-t border-slate-200">
+                  <p className="text-[8px] italic leading-relaxed mt-1">
+                    <span className="text-[8px] text-slate-400 font-medium mr-1">📜</span>
+                    {shadowJudge.segments.map((s, i) => (
+                      <span key={i} className={
+                        s.tone === 'cheer' ? 'text-emerald-600' :
+                        s.tone === 'pressure' ? 'text-red-600' :
+                        s.tone === 'opener' || s.tone === 'closer' ? 'text-slate-400' :
+                        'text-slate-500'
+                      }>{s.text}{i < shadowJudge.segments.length - 1 ? ' ' : ''}</span>
+                    ))}
+                  </p>
+                </div>
+                  </>
+                )}
               </div>
               <div className="mt-4 border-t border-slate-100 pt-3">
                 <button onClick={() => setShowEquipment(prev => !prev)}
@@ -978,74 +1260,55 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
             </div>
 
             {/* Optimization Plan */}
-            {(integrityCheck.lowest.axis || focusAxes.length > 0) && (() => {
-              const primaryAxis = focusAxes.length > 0 ? focusAxes[0] : integrityCheck.lowest.axis;
-              const primaryLabel = AXIS_LABELS[primaryAxis];
-              const primaryScore = profile[primaryAxis as keyof Profile];
-              const gap = improveTo - primaryScore;
-              const isWinnable = primaryScore >= 3;
-              const relatedHidden = HIDDEN_VARS
-                .map(h => ({ ...h, match: h.symptomPattern(profile) }))
-                .filter(h => h.match > 0 && h.relatedAxes.includes(primaryAxis))
-                .sort((a, b) => b.match - a.match);
-              const topFoundation = relatedHidden.length > 0
-                ? [...new Set(relatedHidden.map(h => h.foundation))].sort((a, b) => {
-                    const aScore = relatedHidden.filter(h => h.foundation === a).reduce((s, h) => s + h.match, 0);
-                    const bScore = relatedHidden.filter(h => h.foundation === b).reduce((s, h) => s + h.match, 0);
-                    return bScore - aScore;
-                  })[0]
-                : integrityCheck.direction.includes('Under') ? 'Grind'
-                : integrityCheck.direction.includes('Over') ? 'Temp / Time'
-                : 'Grind';
-              return (
+            {focusAxes.length > 0 && (
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-bold text-slate-700">🎯 Optimization Plan</h2>
-                  <span className="text-[9px] text-amber-600 font-semibold">Start here → {primaryLabel}</span>
+                  <span className="text-[9px] text-slate-400">{focusAxes.length} priorit{focusAxes.length > 1 ? 'ies' : 'y'}</span>
                 </div>
-                <div className="space-y-2">
-                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
-                    <p className="text-xs font-bold text-amber-800">WHAT — Improve <span className="capitalize">{primaryLabel}</span> from {primaryScore} → {improveTo}</p>
-                    <p className="text-[10px] text-amber-700 mt-0.5">Gap: {gap} point{gap !== 1 ? 's' : ''} below target</p>
-                  </div>
-                  <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-xs font-bold text-blue-800">WHY — <span className="capitalize">{primaryLabel}</span> is the primary gap</p>
-                    <p className="text-[10px] text-blue-700 mt-0.5">{integrityCheck.direction || 'Affects overall cup quality and balance'}</p>
-                  </div>
-                  <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
-                    <p className="text-xs font-bold text-emerald-800">HOW — Adjust <span className="font-mono">{FOUNDATION_ICONS[topFoundation] || '■'} {topFoundation}</span></p>
-                    <p className="text-[10px] text-emerald-700 mt-0.5">
-                      {topFoundation === 'Grind' && (extractionStatus.label === 'Increase extraction' ? 'Grind finer for more surface area and extraction' : extractionStatus.label === 'Decrease extraction' ? 'Grind coarser to reduce extraction rate' : 'Check particle distribution')}
-                      {topFoundation === 'Temp / Time' && (extractionStatus.label === 'Increase extraction' ? 'Increase water temp or extend contact time' : extractionStatus.label === 'Decrease extraction' ? 'Decrease water temp or shorten contact time' : 'Verify thermal stability')}
-                      {topFoundation === 'Turbulence' && 'Adjust pour height, flow rate, or WDT for even bed agitation'}
-                      {topFoundation === 'Ratio' && (profile.mouthfeel <= 4 ? 'Increase dose for more body and structure' : 'Check if filter media is stripping oils')}
-                      {!['Grind', 'Temp / Time', 'Turbulence', 'Ratio'].includes(topFoundation) && 'Review hidden variables for targeted adjustment'}
-                    </p>
-                    {relatedHidden.length > 0 && (
-                      <p className="text-[9px] text-emerald-600 mt-1">↙ See Hidden tab for {relatedHidden.length} related variable{relatedHidden.length > 1 ? 's' : ''}</p>
-                    )}
-                  </div>
+                <div className="space-y-1.5">
+                  {focusAxes.map((axis, idx) => {
+                    const label = AXIS_LABELS[axis];
+                    const score = profile[axis as keyof Profile];
+                    const gap = improveTo - score;
+                    const isWinnable = score >= 3;
+                    const relatedHidden = HIDDEN_VARS
+                      .map(h => ({ ...h, match: h.symptomPattern(profile) }))
+                      .filter(h => h.match > 0 && h.relatedAxes.includes(axis))
+                      .sort((a, b) => b.match - a.match);
+                    const topFoundation = relatedHidden.length > 0
+                      ? [...new Set(relatedHidden.map(h => h.foundation))].sort((a, b) => {
+                          const aScore = relatedHidden.filter(h => h.foundation === a).reduce((s, h) => s + h.match, 0);
+                          const bScore = relatedHidden.filter(h => h.foundation === b).reduce((s, h) => s + h.match, 0);
+                          return bScore - aScore;
+                        })[0]
+                      : integrityCheck.direction?.includes('Under') ? 'Grind'
+                      : integrityCheck.direction?.includes('Over') ? 'Temp / Time'
+                      : 'Grind';
+                    return (
+                      <div key={axis} className={`flex items-center gap-2 p-2 rounded-lg ${idx === 0 ? 'bg-amber-50 border border-amber-200' : 'bg-white border border-slate-100'}`}>
+                        <span className="text-[9px] font-bold text-slate-400 w-4 shrink-0">{idx + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-semibold text-slate-700 capitalize">{label}</span>
+                            <span className="text-[9px] font-mono text-slate-500">{score} → {improveTo}</span>
+                            <span className="text-[8px] font-medium text-amber-600">+{gap}</span>
+                            {!isWinnable && <span className="text-[7px] text-slate-400 bg-slate-100 px-1 rounded">tough</span>}
+                          </div>
+                          <div className="flex items-center gap-1 text-[8px] text-slate-500 mt-0.5">
+                            <span>Adjust <span className="font-mono">{FOUNDATION_ICONS[topFoundation] || '■'} {topFoundation}</span></span>
+                            {relatedHidden.length > 0 && (
+                              <span className="text-emerald-600">· {relatedHidden.length} variable{relatedHidden.length > 1 ? 's' : ''}</span>
+                            )}
+                            {idx === 0 && <span className="text-amber-600 font-semibold ml-auto">★ Priority</span>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                {!isWinnable && (
-                  <div className="mt-2 p-2 bg-slate-100 rounded-lg">
-                    <p className="text-[9px] text-slate-600 font-semibold">This one is tough. That's okay.</p>
-                    <p className="text-[8px] text-slate-500 mt-0.5">Some gaps need equipment changes. For now, focus on a different aspect — progress over perfection.</p>
-                  </div>
-                )}
-                {focusAxes.length > 1 && (
-                  <div className="mt-2 pt-2 border-t border-slate-100">
-                    <p className="text-[9px] text-slate-500 font-semibold">Also selected ({focusAxes.length - 1} more):</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {focusAxes.slice(1).map(ax => (
-                        <span key={ax} className="text-[8px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">{AXIS_LABELS[ax]}</span>
-                      ))}
-                    </div>
-                    <p className="text-[8px] text-slate-400 mt-1">Tackle these after the primary focus shows improvement.</p>
-                  </div>
-                )}
               </div>
-              );
-            })()}
+            )}
 
             {/* Strategy — Choose Your Fight */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">

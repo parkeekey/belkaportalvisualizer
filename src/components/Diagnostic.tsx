@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { getReferenceTDS, getReferenceTDSRange } from '../utils/tdsReference';
+import TDSHUD from './TDSHUD';
 
 type Score = number;
 
@@ -361,16 +363,229 @@ function MiniRadar({ profile, label }: { profile: Profile; label?: string }) {
 }
 
 export default function Diagnostic({ onClose }: { onClose: () => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const ratioDraft = useRef('');
   const [profile, setProfile] = useState<Profile>({ acidity: 5, sweetness: 5, flavor: 5, mouthfeel: 5, aftertaste: 5, overall: 5 });
   const [expandedIntegrity, setExpandedIntegrity] = useState<string | null>(null);
   const [improveTo, setImproveTo] = useState(5);
-  const [tab, setTab] = useState<'profile' | 'internal' | 'hidden' | 'external' | 'symptoms'>('profile');
+  const [tab, setTab] = useState<'profile' | 'extraction' | 'internal' | 'timing' | 'hidden' | 'external' | 'symptoms'>('profile');
   const [focusAxes, setFocusAxes] = useState<string[]>([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [snapshots, setSnapshots] = useState<SnapshotData[]>([]);
   const [showSnapshots, setShowSnapshots] = useState(true);
   const [equipment, setEquipment] = useState<Equipment>({ dripper: '', paper: '', mod: '', burrType: '', burrSize: '', finesFeel: 5, grindEffort: 5, grindSetting: 5, dose: 18, ratio: '1:16', planTime: '', timeFinished: '' });
   const [showEquipment, setShowEquipment] = useState(false);
+  const [tds, setTds] = useState('1.35');
+  const [brewYield, setBrewYield] = useState('');
+  const [bloomTime, setBloomTime] = useState('');
+  const [mainPourTime, setMainPourTime] = useState('');
+  const [drawdownTime, setDrawdownTime] = useState('');
+  const [deliveryTime, setDeliveryTime] = useState('');
+  const [extractionDose, setExtractionDose] = useState('18');
+  const [extractionRatio, setExtractionRatio] = useState('1:16');
+  const [tdsGoal, setTdsGoal] = useState('1.35');
+  const [eyGoal, setEyGoal] = useState('20');
+  const [eyMin, setEyMin] = useState('18');
+  const [eyMax, setEyMax] = useState('22');
+  const [yieldOut, setYieldOut] = useState('');
+  const ratioInputRef = useRef<HTMLInputElement>(null);
+
+  const ratioNum = useMemo(() => {
+    const m = extractionRatio.match(/:(\d+(?:\.\d+)?)/);
+    return m ? parseFloat(m[1]) : 0;
+  }, [extractionRatio]);
+
+  const ext = useMemo(() => {
+    const tdsNum = parseFloat(tds) || 0;
+    const doseNum = parseFloat(extractionDose) || 0;
+    const eyMinNum = parseFloat(eyMin) || 18;
+    const eyMaxNum = parseFloat(eyMax) || 22;
+    const eyTarget = (eyMinNum + eyMaxNum) / 2;
+    const waterIn = doseNum * ratioNum;
+    const yieldOutNum = parseFloat(yieldOut) || 0;
+    const waterOut = yieldOutNum > 0 ? yieldOutNum : Math.max(0, waterIn - doseNum * 2);
+    const ey = tdsNum > 0 && doseNum > 0 && waterOut > 0 ? tdsNum * waterOut / doseNum : 0;
+    const validRatio = ratioNum >= 10 && ratioNum <= 30;
+    const scaRange = validRatio ? getReferenceTDSRange(ratioNum, 18, 22) : null;
+    const scaLo = scaRange?.tdsMin ?? 0;
+    const scaHi = scaRange?.tdsMax ?? 0;
+    const tdsInSCA = tdsNum > 0 && scaLo > 0 && tdsNum >= scaLo && tdsNum <= scaHi;
+    const tdsUnderSCA = tdsNum > 0 && scaLo > 0 && tdsNum < scaLo;
+    const tdsOverSCA = tdsNum > 0 && scaHi > 0 && tdsNum > scaHi;
+    const eyUnder = ey > 0 && ey < eyMinNum;
+    const eyOver = ey > eyMaxNum;
+
+    const lowScores: Array<keyof Profile> = [];
+    for (const k of AXES) { if (profile[k] < improveTo) lowScores.push(k); }
+    const hasLowScores = lowScores.length > 0;
+
+    const beforeAfterNote = hasLowScores && tdsNum > 0 && ey >= eyMinNum && ey <= eyMaxNum
+      ? 'Sensory scores are low but extraction measures on target. Before/after gap — the issue may be post-extraction (bypass, cooling, staling) or pre-extraction (green quality, roast). Check Foundations for hidden variables.'
+      : null;
+
+    const extractionStatus = ey > 0 && eyMinNum > 0 && eyMaxNum > 0
+      ? ey < eyMinNum ? 'under' : ey > eyMaxNum ? 'over' : 'ideal'
+      : null;
+
+    const useScaForTds = ratioNum >= 14 && ratioNum <= 22;
+    const tdsRefLo = useScaForTds ? scaLo : (validRatio ? getReferenceTDS(ratioNum, eyMinNum) : 0);
+    const tdsRefHi = useScaForTds ? scaHi : (validRatio ? getReferenceTDS(ratioNum, eyMaxNum) : 0);
+    const tdsStrength = tdsNum > 0 && tdsRefLo > 0
+      ? tdsNum < tdsRefLo ? 'weak' : tdsNum > tdsRefHi ? 'strong' : 'ideal'
+      : null;
+
+    const selectedSymptomData = selectedSymptoms.map(sn => SYMPTOMS.find(s => s.name === sn)).filter(Boolean) as Symptom[];
+    const underSymptoms = selectedSymptomData.filter(s => s.likelyExtraction === 'under' || s.likelyExtraction === 'both');
+    const overSymptoms = selectedSymptomData.filter(s => s.likelyExtraction === 'over' || s.likelyExtraction === 'both');
+
+    const diagnosis = (() => {
+      if (!extractionStatus || !tdsStrength || !validRatio) return null;
+      const statusMap: Record<string, string> = { under: 'Underextracted', over: 'Overextracted', ideal: 'Ideal' };
+      const strengthMap: Record<string, string> = { weak: 'Weak', strong: 'Strong', ideal: 'Balanced' };
+      const s = extractionStatus;
+      const t = tdsStrength;
+      const hasUnderSx = underSymptoms.length > 0;
+      const hasOverSx = overSymptoms.length > 0;
+      const sx = hasUnderSx ? underSymptoms.map(s => s.name).join(', ') : hasOverSx ? overSymptoms.map(s => s.name).join(', ') : '';
+      let narrative = '';
+      let badgeColor = '#22c55e';
+
+      if (s === 'under' && t === 'strong') {
+        badgeColor = '#f59e0b';
+        narrative = `Strong TDS but low EY — the brew is concentrated from a tight ratio, not from dissolving coffee solids effectively.`;
+        if (hasUnderSx) narrative += ` Selected under-extraction symptoms (${sx}) match this pattern.`;
+        if (lowScores.includes('acidity')) narrative += ` Low acidity score fits — tight ratio brews often mute bright notes.`;
+        narrative += ` Widen the ratio (more water) to improve extraction yield while keeping body.`;
+      } else if (s === 'under' && t === 'weak') {
+        badgeColor = '#ef4444';
+        narrative = `Both TDS and EY are low — the brew is weak and underextracted.`;
+        if (hasUnderSx) narrative += ` Under-extraction symptoms (${sx}) confirm the direction.`;
+        narrative += ` Grind finer, increase contact time, or raise temperature to dissolve more solids.`;
+      } else if (s === 'under' && t === 'ideal') {
+        badgeColor = '#f59e0b';
+        narrative = `TDS is in range but EY is low — the ratio may be too tight, limiting how much coffee dissolves relative to water.`;
+        if (hasUnderSx) narrative += ` Symptoms suggest under-extraction (${sx}).`;
+        narrative += ` Widen the ratio slightly or increase extraction time.`;
+      } else if (s === 'over' && t === 'strong') {
+        badgeColor = '#ef4444';
+        narrative = `Both TDS and EY are high — over-extracting coffee solids.`;
+        if (hasOverSx) narrative += ` Over-extraction symptoms (${sx}) are consistent.`;
+        narrative += ` Grind coarser or shorten contact time to reduce extraction.`;
+      } else if (s === 'over' && t === 'weak') {
+        badgeColor = '#f59e0b';
+        narrative = `EY is high but TDS is low — dilution from too wide a ratio inflates yield while weakening strength.`;
+        if (hasOverSx) narrative += ` Over-extraction symptoms (${sx}) support this.`;
+        narrative += ` Tighten the ratio (less water) to increase concentration.`;
+      } else if (s === 'over' && t === 'ideal') {
+        badgeColor = '#f59e0b';
+        narrative = `TDS is in range but EY is high — slightly over-extracting.`;
+        if (hasOverSx) narrative += ` Symptoms (${sx}) align.`;
+        narrative += ` Reduce contact time or grind slightly coarser.`;
+      } else if (s === 'ideal' && t !== 'ideal') {
+        badgeColor = '#f59e0b';
+        narrative = `EY is on target but TDS is ${t === 'weak' ? 'low' : 'high'} — adjust ratio to dial in strength.`;
+        narrative += t === 'weak' ? ' Tighten the ratio.' : ' Widen the ratio.';
+      } else if (s === 'ideal' && t === 'ideal') {
+        badgeColor = '#22c55e';
+        narrative = `Extraction measures are balanced.`;
+        if (hasLowScores) narrative += ` Sensory issues may be from pre/post-extraction factors (green quality, roast, bypass, staling).`;
+        else narrative += ` The brew should taste well-extracted.`;
+      }
+      const label = `${strengthMap[t]} · ${statusMap[s]}`;
+      return { label, badge: statusMap[s], badgeColor, narrative };
+    })();
+
+    // Sensory direction from symptoms + low scores
+    const underSxCount = selectedSymptomData.filter(s => s.likelyExtraction === 'under' || s.likelyExtraction === 'both').length;
+    const overSxCount = selectedSymptomData.filter(s => s.likelyExtraction === 'over' || s.likelyExtraction === 'both').length;
+    const lowAcidity = lowScores.includes('acidity');
+    const lowFlavor = lowScores.includes('flavor');
+    let direction = 'stay';
+    if (selectedSymptomData.length > 0) {
+      if (underSxCount > overSxCount) direction = 'increase';
+      else if (overSxCount > underSxCount) direction = 'decrease';
+    } else if (lowAcidity && lowFlavor) {
+      direction = 'increase';
+    }
+
+    return {
+      tdsNum, doseNum, ratioNum, eyTarget, eyMinNum, eyMaxNum, waterIn, waterOut, ey,
+      validRatio, scaLo, scaHi, tdsInSCA, tdsUnderSCA, tdsOverSCA,
+      eyUnder, eyOver, lowScores, hasLowScores, beforeAfterNote,
+      extractionStatus, useScaForTds, tdsStrength, selectedSymptomData, diagnosis, direction,
+    };
+  }, [tds, extractionDose, extractionRatio, eyMin, eyMax, yieldOut, ratioNum, selectedSymptoms, profile, improveTo]);
+
+  useEffect(() => {
+    const ey = parseFloat(eyGoal) || 20;
+    if (ratioNum > 0) {
+      const t = getReferenceTDS(ratioNum, ey);
+      setTdsGoal(t.toFixed(2));
+    }
+  }, [eyGoal, ratioNum]);
+
+  // Persist extraction inputs across page loads
+  const STORAGE_KEY = 'diagnostic-extraction';
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.extractionDose !== undefined) setExtractionDose(d.extractionDose);
+        if (d.extractionRatio !== undefined) setExtractionRatio(d.extractionRatio);
+        if (d.tds !== undefined) setTds(d.tds);
+        if (d.eyMin !== undefined) setEyMin(d.eyMin);
+        if (d.eyMax !== undefined) setEyMax(d.eyMax);
+        if (d.yieldOut !== undefined) setYieldOut(d.yieldOut);
+      }
+    } catch {}
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      extractionDose, extractionRatio, tds, eyMin, eyMax, yieldOut
+    }));
+  }, [extractionDose, extractionRatio, tds, eyMin, eyMax, yieldOut]);
+
+  const handleSave = () => {
+    const data = { profile, improveTo, focusAxes, selectedSymptoms, snapshots, equipment, tds, brewYield, bloomTime, mainPourTime, drawdownTime, deliveryTime, extractionDose, extractionRatio, tdsGoal, eyGoal, eyMin, eyMax, yieldOut };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `diagnostic-${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
+  const handleLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const d = JSON.parse(reader.result as string);
+        if (d.profile) setProfile(d.profile);
+        if (d.improveTo) setImproveTo(d.improveTo);
+        if (d.focusAxes) setFocusAxes(d.focusAxes);
+        if (d.selectedSymptoms) setSelectedSymptoms(d.selectedSymptoms);
+        if (d.snapshots) setSnapshots(d.snapshots.map((s: any) => ({ ...s, time: new Date(s.time) })));
+        if (d.equipment) setEquipment(d.equipment);
+        if (d.tds !== undefined) setTds(d.tds);
+        if (d.brewYield !== undefined) setBrewYield(d.brewYield);
+        if (d.bloomTime !== undefined) setBloomTime(d.bloomTime);
+        if (d.mainPourTime !== undefined) setMainPourTime(d.mainPourTime);
+        if (d.drawdownTime !== undefined) setDrawdownTime(d.drawdownTime);
+        if (d.deliveryTime !== undefined) setDeliveryTime(d.deliveryTime);
+        if (d.extractionDose !== undefined) setExtractionDose(d.extractionDose);
+        if (d.extractionRatio !== undefined) setExtractionRatio(d.extractionRatio);
+        if (d.tdsGoal !== undefined) setTdsGoal(d.tdsGoal);
+        if (d.eyGoal !== undefined) setEyGoal(d.eyGoal);
+        if (d.eyMin !== undefined) setEyMin(d.eyMin);
+        if (d.eyMax !== undefined) setEyMax(d.eyMax);
+        if (d.yieldOut !== undefined) setYieldOut(d.yieldOut);
+      } catch {}
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   const setScore = (key: keyof Profile, val: number) => setProfile(p => ({ ...p, [key]: Math.max(1, Math.min(9, val)) }));
 
@@ -401,9 +616,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
     const net = underScore - overScore;
     const absNet = Math.abs(net);
     let label: string, directive: string, color: string, major: boolean;
-    if (absNet <= 2) { label = 'Extraction Balanced'; directive = 'Refine precision — focus on hidden variable tuning'; color = '#22c55e'; major = false; }
-    else if (net > 0) { label = 'Under-extracted'; directive = '↑ Increase extraction — finer grind / longer contact / higher temp'; color = '#3b82f6'; major = absNet >= 8; }
-    else { label = 'Over-extracted'; directive = '↓ Decrease extraction — coarser grind / shorter contact / lower temp'; color = '#ef4444'; major = absNet >= 8; }
+    if (absNet <= 2) { label = 'Stay'; directive = 'Refine precision — focus on hidden variable tuning'; color = '#22c55e'; major = false; }
+    else if (net > 0) { label = 'Increase extraction'; directive = 'Finer grind / longer contact / higher temp'; color = '#3b82f6'; major = absNet >= 8; }
+    else { label = 'Decrease extraction'; directive = 'Coarser grind / shorter contact / lower temp'; color = '#ef4444'; major = absNet >= 8; }
     return { label, directive, color, major, barPos: ((net + maxScore) / (maxScore * 2)) * 100, underScore, overScore };
   }, [profile]);
 
@@ -474,14 +689,43 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
       <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <h1 className="text-lg font-bold text-slate-800">🔍 Diagnostic</h1>
-          <button onClick={onClose} className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100">✕ Close</button>
+          <div className="flex items-center gap-1.5">
+            <input ref={fileRef} type="file" accept=".json" onChange={handleLoad} className="hidden" />
+            <button onClick={handleSave} className="px-2 py-1 text-[10px] font-semibold border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-100">Save</button>
+            <button onClick={() => fileRef.current?.click()} className="px-2 py-1 text-[10px] font-semibold border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-100">Load</button>
+            <button onClick={onClose} className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100">✕ Close</button>
+          </div>
         </div>
-        <div className="max-w-4xl mx-auto px-4 flex gap-1">
-          <button onClick={() => setTab('profile')} className={`px-4 py-2 text-xs font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'profile' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>📊 Profile</button>
-          <button onClick={() => setTab('internal')} className={`px-4 py-2 text-xs font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'internal' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>🧠 Internal</button>
-          <button onClick={() => setTab('hidden')} className={`px-4 py-2 text-xs font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'hidden' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>👁 Hidden</button>
-          <button onClick={() => setTab('external')} className={`px-4 py-2 text-xs font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'external' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>🌍 External</button>
-          <button onClick={() => setTab('symptoms')} className={`px-4 py-2 text-xs font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'symptoms' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>☣ Symptoms</button>
+        {/* Hierarchy bar — 5-layer workflow model */}
+        <div className="max-w-4xl mx-auto px-4 pb-1.5">
+          <div className="flex items-center gap-0.5 text-[8px] font-semibold">
+            {[
+              { id: 'profile', label: 'Sensory', icon: '📊' },
+              { id: 'extraction', label: 'Extraction', icon: '📐' },
+              { id: 'internal', label: 'Foundations', icon: '🧠' },
+              { id: 'timing', label: 'Timing', icon: '⏱' },
+              { id: 'hidden', label: 'Hidden Physics', icon: '👁' },
+            ].map((layer, i) => (
+              <button key={layer.id} onClick={() => setTab(layer.id as typeof tab)}
+                className={`flex items-center gap-0.5 px-1.5 py-1 rounded transition-colors ${
+                  tab === layer.id ? 'bg-amber-100 text-amber-800' : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <span>{layer.icon}</span>
+                <span>{layer.label}</span>
+                {i < 4 && <span className="text-slate-300 mx-0.5">→</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="max-w-4xl mx-auto px-4 flex gap-1 flex-wrap">
+          <button onClick={() => setTab('profile')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'profile' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>📊 Sensory</button>
+          <button onClick={() => setTab('extraction')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'extraction' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>📐 Extraction</button>
+          <button onClick={() => setTab('internal')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'internal' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>🧠 Foundations</button>
+          <button onClick={() => setTab('timing')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'timing' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>⏱ Timing</button>
+          <button onClick={() => setTab('hidden')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'hidden' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>👁 Hidden Physics</button>
+          <button onClick={() => setTab('external')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'external' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>🌍 External</button>
+          <button onClick={() => setTab('symptoms')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'symptoms' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>☣ Symptoms</button>
         </div>
       </header>
 
@@ -771,8 +1015,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
                     <p className="text-xs font-bold text-emerald-800">HOW — Adjust <span className="font-mono">{FOUNDATION_ICONS[topFoundation] || '■'} {topFoundation}</span></p>
                     <p className="text-[10px] text-emerald-700 mt-0.5">
-                      {topFoundation === 'Grind' && (extractionStatus.label === 'Under-extracted' ? 'Grind finer for more surface area and extraction' : extractionStatus.label === 'Over-extracted' ? 'Grind coarser to reduce extraction rate' : 'Check particle distribution')}
-                      {topFoundation === 'Temp / Time' && (extractionStatus.label === 'Under-extracted' ? 'Increase water temp or extend contact time' : extractionStatus.label === 'Over-extracted' ? 'Decrease water temp or shorten contact time' : 'Verify thermal stability')}
+                      {topFoundation === 'Grind' && (extractionStatus.label === 'Increase extraction' ? 'Grind finer for more surface area and extraction' : extractionStatus.label === 'Decrease extraction' ? 'Grind coarser to reduce extraction rate' : 'Check particle distribution')}
+                      {topFoundation === 'Temp / Time' && (extractionStatus.label === 'Increase extraction' ? 'Increase water temp or extend contact time' : extractionStatus.label === 'Decrease extraction' ? 'Decrease water temp or shorten contact time' : 'Verify thermal stability')}
                       {topFoundation === 'Turbulence' && 'Adjust pour height, flow rate, or WDT for even bed agitation'}
                       {topFoundation === 'Ratio' && (profile.mouthfeel <= 4 ? 'Increase dose for more body and structure' : 'Check if filter media is stripping oils')}
                       {!['Grind', 'Temp / Time', 'Turbulence', 'Ratio'].includes(topFoundation) && 'Review hidden variables for targeted adjustment'}
@@ -859,10 +1103,10 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-sm font-bold text-slate-700">Extraction Status</h2>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${extractionStatus.major ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`} style={{ color: extractionStatus.color }}>{extractionStatus.label}</span>
+                <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full ${extractionStatus.label === 'Increase extraction' ? 'bg-blue-100 text-blue-700' : extractionStatus.label === 'Decrease extraction' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>{extractionStatus.label === 'Increase extraction' ? '↑ Increase extraction' : extractionStatus.label === 'Decrease extraction' ? '↓ Decrease extraction' : 'Stay'}</span>
               </div>
               <div className="relative h-5 bg-gradient-to-r from-blue-100 via-emerald-100 to-red-100 rounded-full overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 font-medium"><span>Under</span><span>Balanced</span><span>Over</span></div>
+                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 font-medium"><span>Increase</span><span>Stay</span><span>Decrease</span></div>
                 <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-sm rounded-full transition-all duration-200" style={{ left: `${extractionStatus.barPos}%` }} />
                 <div className="absolute top-0.5 bottom-0.5 w-1.5 rounded-full bg-white border-2 shadow-sm transition-all duration-200" style={{ left: `calc(${extractionStatus.barPos}% - 3px)`, borderColor: extractionStatus.color }} />
               </div>
@@ -896,6 +1140,446 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               </div>
               {foundationPlan.length === 0 && <p className="text-[10px] text-slate-400 italic">No foundations impacted.</p>}
             </div>
+            {ext.diagnosis && (
+              <div className="p-3 rounded-lg border" style={{ backgroundColor: ext.diagnosis.badgeColor + '12', borderColor: ext.diagnosis.badgeColor + '30' }}>
+                {ext.validRatio && ext.eyMinNum > 0 && ext.eyMaxNum > 0 && (
+                  <div className="text-[9px] text-slate-400 text-center mb-2">
+                    EY {ext.eyMinNum}–{ext.eyMaxNum}% at 1:{ext.ratioNum} → TDS{' '}
+                    <span className="font-bold text-emerald-700">{getReferenceTDS(ext.ratioNum, ext.eyMinNum).toFixed(2)}–{getReferenceTDS(ext.ratioNum, ext.eyMaxNum).toFixed(2)}%</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                  {ext.direction !== 'stay' && (
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded text-white" style={{ backgroundColor: ext.direction === 'increase' ? '#0ea5e9' : '#ef4444' }}>
+                      {ext.direction === 'increase' ? '↑ Increase extraction' : '↓ Decrease extraction'}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded text-white" style={{ backgroundColor: ext.diagnosis.badgeColor }}>{ext.diagnosis.label}</span>
+                  <span className="text-[8px] text-slate-400">from Extraction tab</span>
+                </div>
+                <p className="text-[9px]" style={{ color: ext.diagnosis.badgeColor }}>{ext.diagnosis.narrative}</p>
+                {ext.lowScores.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    <span className="text-[7px] font-semibold text-slate-400 uppercase">Low Scores:</span>
+                    {ext.lowScores.map(k => (
+                      <span key={k} className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">{AXIS_LABELS[k]} {profile[k]}</span>
+                    ))}
+                  </div>
+                )}
+                {ext.selectedSymptomData.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    <span className="text-[7px] font-semibold text-slate-400 uppercase">Symptoms:</span>
+                    {ext.selectedSymptomData.map(s => (
+                      <span key={s.name} className={`text-[8px] px-1.5 py-0.5 rounded font-medium ${s.likelyExtraction === 'under' ? 'bg-blue-100 text-blue-700' : s.likelyExtraction === 'over' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>{s.name}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {ext.tdsNum > 0 && ext.doseNum > 0 && ext.ratioNum > 0 && ext.validRatio && (
+              <div className="bg-white rounded-lg border border-slate-200 p-2">
+                <div className="text-[8px] font-semibold text-slate-400 uppercase text-center mb-1.5">TDS × EY at 1:{ext.ratioNum}</div>
+                <div className="grid grid-cols-4 gap-px bg-slate-200 text-[8px]">
+                  <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold"></div>
+                  <div className="bg-slate-50 p-1 text-center text-blue-600 font-semibold">Under EY<br /><span className="text-[7px] font-normal">&lt;{ext.eyMinNum}%</span></div>
+                  <div className="bg-slate-50 p-1 text-center text-emerald-600 font-semibold">Ideal EY<br /><span className="text-[7px] font-normal">{ext.eyMinNum}–{ext.eyMaxNum}%</span></div>
+                  <div className="bg-slate-50 p-1 text-center text-red-600 font-semibold">Over EY<br /><span className="text-[7px] font-normal">&gt;{ext.eyMaxNum}%</span></div>
+                        {(['weak', 'balanced', 'strong'] as const).map(tdsCat => {
+                          const refMin = getReferenceTDS(ext.ratioNum, ext.eyMinNum);
+                          const refMax = getReferenceTDS(ext.ratioNum, ext.eyMaxNum);
+                          const tdsRange = tdsCat === 'weak' ? `<${refMin.toFixed(2)}` : tdsCat === 'balanced' ? `${refMin.toFixed(2)}–${refMax.toFixed(2)}` : `>${refMax.toFixed(2)}`;
+                          const tdsLabel = tdsCat === 'weak' ? 'Weak' : tdsCat === 'balanced' ? 'Balanced' : 'Strong';
+                          const eyLabelMap: Record<string, string> = { under: 'Under EY', ideal: 'Ideal EY', over: 'Over EY' };
+                          return (
+                            <div key={tdsCat} className="contents">
+                              <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold flex items-center justify-center text-[7px] leading-tight">
+                                {tdsLabel}<br />TDS {tdsRange}%
+                              </div>
+                              {(['under', 'ideal', 'over'] as const).map(eyCat => {
+                                const isCurrentTds = (tdsCat === 'weak' && ext.tdsUnderSCA) || (tdsCat === 'balanced' && !ext.tdsUnderSCA && !ext.tdsOverSCA) || (tdsCat === 'strong' && ext.tdsOverSCA);
+                                const isCurrentEy = (eyCat === 'under' && ext.eyUnder) || (eyCat === 'ideal' && !ext.eyUnder && !ext.eyOver) || (eyCat === 'over' && ext.eyOver);
+                                const highlighted = isCurrentTds && isCurrentEy;
+                                const colorMap: Record<string, string> = { weak: '#0ea5e9', balanced: '#22c55e', strong: '#ef4444' };
+                                const eyInfo = eyCat === 'under'
+                                  ? { range: `< ${ext.eyMinNum}%`, action: `→ target ${ext.eyMinNum}%+` }
+                                  : eyCat === 'ideal'
+                                  ? { range: `${ext.eyMinNum}–${ext.eyMaxNum}%`, action: '✓' }
+                                  : { range: `> ${ext.eyMaxNum}%`, action: `→ target ≤${ext.eyMaxNum}%` };
+                                return (
+                                  <div key={`${tdsCat}-${eyCat}`} className={`p-1 text-center bg-white ${highlighted ? 'font-bold' : ''}`} style={highlighted ? { backgroundColor: colorMap[tdsCat] + '20', color: colorMap[tdsCat], border: `1.5px solid ${colorMap[tdsCat]}` } : {}}>
+                                    <div className="text-[6px] leading-tight">{tdsLabel} · {eyLabelMap[eyCat]}</div>
+                                    <div className="text-[7px] leading-tight font-mono">TDS {tdsRange}%</div>
+                                    <div className="text-[6px] leading-tight" style={{ color: eyCat === 'ideal' ? '#16a34a' : '#ef4444' }}>{eyInfo.action}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+                {ext.tdsNum > 0 && (
+                  <div className="text-[7px] text-slate-400 text-center mt-1">
+                    Current: TDS {ext.tdsNum.toFixed(2)}% · EY {ext.ey.toFixed(1)}%
+                    {(() => {
+                      const x = ext.tdsUnderSCA ? 'Weak' : ext.tdsOverSCA ? 'Strong' : 'Balanced';
+                      const y = ext.eyUnder ? 'Under' : ext.eyOver ? 'Over' : 'Ideal';
+                      return <span> → <strong className="text-slate-600">{x} · {y}</strong></span>;
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {tab === 'extraction' && (() => {
+          const {
+            tdsNum, doseNum, eyTarget, eyMinNum, eyMaxNum, waterIn, waterOut, ey,
+            validRatio, scaLo, scaHi, tdsInSCA, tdsUnderSCA, tdsOverSCA,
+            eyUnder, eyOver, lowScores, beforeAfterNote,
+            useScaForTds, selectedSymptomData, diagnosis, direction,
+          } = ext;
+          const yieldOutNum = parseFloat(yieldOut) || 0;
+          const scaRange = validRatio ? { tdsMin: scaLo, tdsMax: scaHi } : null;
+
+          let foundationTip = '';
+          let foundationColor = '#94a3b8';
+          if (tdsNum > 0 && doseNum > 0 && validRatio) {
+            if (eyUnder && tdsUnderSCA) { foundationTip = 'Grind finer — increase surface area to raise both TDS and EY'; foundationColor = '#ef4444'; }
+            else if (eyUnder && tdsOverSCA) { foundationTip = 'Widen ratio (more water) — TDS is high because water volume is low relative to dose'; foundationColor = '#f59e0b'; }
+            else if (eyUnder) { foundationTip = 'Increase extraction — grind finer, longer contact, or higher temp'; foundationColor = '#f59e0b'; }
+            else if (eyOver && tdsUnderSCA) { foundationTip = 'Tighten ratio (less water) — EY is inflated by dilution'; foundationColor = '#f59e0b'; }
+            else if (eyOver && tdsOverSCA) { foundationTip = 'Grind coarser or reduce contact time — both EY and TDS are high'; foundationColor = '#ef4444'; }
+            else if (tdsUnderSCA) { foundationTip = 'Tighten ratio or increase dose — TDS is below SCA zone for this ratio'; foundationColor = '#f59e0b'; }
+            else if (tdsOverSCA) { foundationTip = 'Widen ratio — TDS is above SCA zone for this ratio'; foundationColor = '#f59e0b'; }
+            else { foundationTip = 'On target — fine-tune by taste'; foundationColor = '#22c55e'; }
+          }
+
+          return (
+            <div className="space-y-3">
+              {/* TDSHUD slider — always visible */}
+              <TDSHUD
+                tdsMin={scaLo || 1.15}
+                tdsMax={scaHi || 1.55}
+                currentTDS={tdsNum || 1.35}
+                eyTarget={ey || eyTarget}
+                onTDSChange={(v) => setTds(String(v))}
+                scaTdsMin={scaLo || undefined}
+                scaTdsMax={scaHi || undefined}
+              />
+              {/* Compact input row */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-bold text-slate-700">📐 Extraction Theory</h2>
+                </div>
+                <div className="flex items-end gap-1.5 mb-3">
+                  <div className="flex-1">
+                    <label className="text-[8px] font-semibold text-slate-500 block mb-0.5">Dose (g)</label>
+                    <div className="flex items-center gap-0.5">
+                      <button onClick={() => { const v = parseFloat(extractionDose) || 0; if (v > 0) setExtractionDose(Math.max(0, v - 0.5).toFixed(1)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">−</button>
+                      <input type="text" inputMode="decimal" value={extractionDose} onChange={e => setExtractionDose(e.target.value)} placeholder="18" className="w-full text-[10px] border border-slate-200 rounded px-1 py-1.5 text-slate-700 bg-white font-mono text-center" />
+                      <button onClick={() => { const v = parseFloat(extractionDose) || 0; setExtractionDose((v + 0.5).toFixed(1)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">+</button>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[8px] font-semibold text-slate-500 block mb-0.5">Ratio</label>
+                    <div className="flex items-center gap-0.5">
+                      <button onClick={() => { const v = ratioNum || 0; if (v > 5) setExtractionRatio(`1:${Math.max(5, v - 0.5)}`); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">−</button>
+                      <span className="text-[10px] text-slate-400 font-mono">1:</span>
+                      <input ref={ratioInputRef} type="text" inputMode="decimal" key={extractionRatio}
+                        defaultValue={extractionRatio.split(':')[1] || ''}
+                        onFocus={(e) => { ratioDraft.current = e.target.value; }}
+                        onChange={(e) => { ratioDraft.current = e.target.value; }}
+                        onBlur={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v) && v >= 5) { setExtractionRatio(`1:${Math.min(30, v)}`); } else { e.target.value = extractionRatio.split(':')[1] || ''; } } }
+                        placeholder="16"
+                        className="w-full text-[10px] border border-sky-300 rounded px-1 py-1.5 text-sky-800 bg-white font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                      <button onClick={() => { const v = ratioNum || 0; setExtractionRatio(`1:${Math.min(30, v + 0.5)}`); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">+</button>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[8px] font-semibold text-slate-500 block mb-0.5">TDS (%)</label>
+                    <div className="flex items-center gap-0.5">
+                      <button onClick={() => { const v = parseFloat(tds) || 0; if (v > 0) setTds(Math.max(0, v - 0.05).toFixed(2)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">−</button>
+                      <input type="text" inputMode="decimal" value={tds} onChange={e => setTds(e.target.value)} placeholder="1.35" className="w-full text-[10px] border border-slate-200 rounded px-1 py-1.5 text-slate-700 bg-white font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                      <button onClick={() => { const v = parseFloat(tds) || 0; setTds((v + 0.05).toFixed(2)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">+</button>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[8px] font-semibold text-slate-500 block mb-0.5">EY Range (%)</label>
+                    <div className="flex items-center gap-0.5">
+                      <input type="text" inputMode="decimal" value={eyMin} onChange={e => setEyMin(e.target.value)} placeholder="18" className="w-full text-[10px] border border-amber-300 rounded px-1 py-1.5 text-amber-800 bg-white font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                      <span className="text-[8px] text-slate-400 shrink-0">–</span>
+                      <input type="text" inputMode="decimal" value={eyMax} onChange={e => setEyMax(e.target.value)} placeholder="22" className="w-full text-[10px] border border-amber-300 rounded px-1 py-1.5 text-amber-800 bg-white font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                    </div>
+                  </div>
+                  {doseNum > 0 && ratioNum > 0 && (
+                    <div className="text-[8px] text-slate-400 text-center pb-0.5 shrink-0">
+                      <span className="block">Water In</span>
+                      <span className="font-mono font-bold text-slate-600">{waterIn.toFixed(0)}g</span>
+                      <span className="block mt-0.5 text-slate-300">Out</span>
+                      <div className="relative">
+                        <input type="text" inputMode="decimal" value={yieldOut} onChange={e => setYieldOut(e.target.value)} placeholder={`≈${waterOut.toFixed(0)}`}
+                          className="w-full text-[10px] border border-dashed border-slate-200 rounded px-1 py-0.5 text-emerald-600 bg-white font-mono font-bold text-center focus:outline-none focus:ring-1 focus:ring-emerald-400" />
+                        {yieldOutNum > 0 && (
+                          <button onClick={() => setYieldOut('')} className="absolute -top-1 -right-1 w-3 h-3 flex items-center justify-center rounded-full text-[7px] bg-slate-200 text-slate-500 hover:bg-red-200 hover:text-red-600" title="Clear">✕</button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Integrated diagnosis card */}
+                {tdsNum > 0 && doseNum > 0 && ratioNum > 0 && diagnosis && (
+                  <div className="p-3 rounded-lg border" style={{ backgroundColor: diagnosis.badgeColor + '12', borderColor: diagnosis.badgeColor + '30' }}>
+                    {validRatio && eyMinNum > 0 && eyMaxNum > 0 && (
+                      <div className="text-[9px] text-slate-400 text-center mb-2">
+                        EY {eyMinNum}–{eyMaxNum}% at 1:{ratioNum} → TDS{' '}
+                        <span className="font-bold text-emerald-700">{getReferenceTDS(ratioNum, eyMinNum).toFixed(2)}–{getReferenceTDS(ratioNum, eyMaxNum).toFixed(2)}%</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                      {direction !== 'stay' && (
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded text-white" style={{ backgroundColor: direction === 'increase' ? '#0ea5e9' : '#ef4444' }}>
+                          {direction === 'increase' ? '↑ Increase extraction' : '↓ Decrease extraction'}
+                        </span>
+                      )}
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded text-white" style={{ backgroundColor: diagnosis.badgeColor }}>{diagnosis.label}</span>
+                      {useScaForTds ? (
+                        <span className="text-[8px] text-slate-400">SCA zone reference</span>
+                      ) : (
+                        <span className="text-[8px] text-slate-400">Calculated reference ({ratioNum < 14 ? 'tight' : 'wide'} ratio)</span>
+                      )}
+                    </div>
+                    <p className="text-[9px]" style={{ color: diagnosis.badgeColor }}>{diagnosis.narrative}</p>
+                    {lowScores.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        <span className="text-[7px] font-semibold text-slate-400 uppercase">Low Scores:</span>
+                        {lowScores.map(k => (
+                          <span key={k} className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">{AXIS_LABELS[k]} {profile[k]}</span>
+                        ))}
+                      </div>
+                    )}
+                    {selectedSymptoms.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        <span className="text-[7px] font-semibold text-slate-400 uppercase">Symptoms:</span>
+                        {selectedSymptomData.map(s => (
+                          <span key={s.name} className={`text-[8px] px-1.5 py-0.5 rounded font-medium ${s.likelyExtraction === 'under' ? 'bg-blue-100 text-blue-700' : s.likelyExtraction === 'over' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>{s.name}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* TDS × EY matrix */}
+                {tdsNum > 0 && doseNum > 0 && ratioNum > 0 && validRatio && (
+                  <div className="bg-white rounded-lg border border-slate-200 p-2">
+                    <div className="text-[8px] font-semibold text-slate-400 uppercase text-center mb-1.5">TDS × EY at 1:{ratioNum}</div>
+                    <div className="grid grid-cols-4 gap-px bg-slate-200 text-[8px]">
+                      <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold"></div>
+                      <div className="bg-slate-50 p-1 text-center text-blue-600 font-semibold">Under EY<br /><span className="text-[7px] font-normal">&lt;{eyMinNum}%</span></div>
+                      <div className="bg-slate-50 p-1 text-center text-emerald-600 font-semibold">Ideal EY<br /><span className="text-[7px] font-normal">{eyMinNum}–{eyMaxNum}%</span></div>
+                      <div className="bg-slate-50 p-1 text-center text-red-600 font-semibold">Over EY<br /><span className="text-[7px] font-normal">&gt;{eyMaxNum}%</span></div>
+                        {(['weak', 'balanced', 'strong'] as const).map(tdsCat => {
+                          const refMin = getReferenceTDS(ratioNum, eyMinNum);
+                          const refMax = getReferenceTDS(ratioNum, eyMaxNum);
+                          const tdsRange = tdsCat === 'weak' ? `<${refMin.toFixed(2)}` : tdsCat === 'balanced' ? `${refMin.toFixed(2)}–${refMax.toFixed(2)}` : `>${refMax.toFixed(2)}`;
+                          const tdsLabel = tdsCat === 'weak' ? 'Weak' : tdsCat === 'balanced' ? 'Balanced' : 'Strong';
+                          const eyLabelMap: Record<string, string> = { under: 'Under EY', ideal: 'Ideal EY', over: 'Over EY' };
+                          return (
+                            <div key={tdsCat} className="contents">
+                              <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold flex items-center justify-center text-[7px] leading-tight">
+                                {tdsLabel}<br />TDS {tdsRange}%
+                              </div>
+                              {(['under', 'ideal', 'over'] as const).map(eyCat => {
+                                const isCurrentTds = (tdsCat === 'weak' && tdsUnderSCA) || (tdsCat === 'balanced' && !tdsUnderSCA && !tdsOverSCA) || (tdsCat === 'strong' && tdsOverSCA);
+                                const isCurrentEy = (eyCat === 'under' && eyUnder) || (eyCat === 'ideal' && !eyUnder && !eyOver) || (eyCat === 'over' && eyOver);
+                                const highlighted = isCurrentTds && isCurrentEy;
+                                const colorMap: Record<string, string> = { weak: '#0ea5e9', balanced: '#22c55e', strong: '#ef4444' };
+                                 const eyInfo = eyCat === 'under'
+                                   ? { range: `< ${eyMinNum}%`, action: `→ target ${eyMinNum}%+` }
+                                   : eyCat === 'ideal'
+                                   ? { range: `${eyMinNum}–${eyMaxNum}%`, action: '✓' }
+                                   : { range: `> ${eyMaxNum}%`, action: `→ target ≤${eyMaxNum}%` };
+                                 return (
+                                   <div key={`${tdsCat}-${eyCat}`} className={`p-1 text-center bg-white ${highlighted ? 'font-bold' : ''}`} style={highlighted ? { backgroundColor: colorMap[tdsCat] + '20', color: colorMap[tdsCat], border: `1.5px solid ${colorMap[tdsCat]}` } : {}}>
+                                     <div className="text-[6px] leading-tight">{tdsLabel} · {eyLabelMap[eyCat]}</div>
+                                     <div className="text-[7px] leading-tight font-mono">TDS {tdsRange}%</div>
+                                     <div className="text-[6px] leading-tight" style={{ color: eyCat === 'ideal' ? '#16a34a' : '#ef4444' }}>{eyInfo.action}</div>
+                                   </div>
+                                 );
+                               })}
+                             </div>
+                           );
+                         })}
+                      </div>
+                     {tdsNum > 0 && (
+                      <div className="text-[7px] text-slate-400 text-center mt-1">
+                        Current: TDS {tdsNum.toFixed(2)}% · EY {ey.toFixed(1)}%
+                        {(() => {
+                          const x = tdsUnderSCA ? 'Weak' : tdsOverSCA ? 'Strong' : 'Balanced';
+                          const y = eyUnder ? 'Under' : eyOver ? 'Over' : 'Ideal';
+                          return <span> → <strong className="text-slate-600">{x} · {y}</strong></span>;
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Results — compact dual status */}
+                {tdsNum > 0 && doseNum > 0 && ratioNum > 0 ? (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className={`p-2.5 rounded-lg border ${!eyUnder && !eyOver ? 'bg-emerald-50 border-emerald-200' : eyUnder ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[8px] font-semibold text-slate-500 uppercase">EY</span>
+                            <span className="text-xs font-bold font-mono" style={{ color: !eyUnder && !eyOver ? '#16a34a' : eyUnder ? '#0284c7' : '#dc2626' }}>
+                              {ey.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (ey / 30) * 100)}%`, backgroundColor: !eyUnder && !eyOver ? '#22c55e' : eyUnder ? '#0ea5e9' : '#ef4444' }} />
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[8px] text-slate-400">Range {eyMinNum}–{eyMaxNum}%</span>
+                            <span className={`text-[8px] font-semibold ${!eyUnder && !eyOver ? 'text-emerald-600' : eyUnder ? 'text-blue-600' : 'text-red-600'}`}>
+                              {!eyUnder && !eyOver ? '✓ In range' : eyUnder ? `↓ ${(eyMinNum - ey).toFixed(1)}% low` : `↑ ${(ey - eyMaxNum).toFixed(1)}% high`}
+                            </span>
+                          </div>
+                        </div>
+                        <div className={`p-2.5 rounded-lg border ${tdsInSCA ? 'bg-emerald-50 border-emerald-200' : tdsUnderSCA ? 'bg-blue-50 border-blue-200' : tdsOverSCA ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[8px] font-semibold text-slate-500 uppercase">TDS</span>
+                            <span className="text-xs font-bold font-mono" style={{ color: tdsInSCA ? '#16a34a' : tdsUnderSCA ? '#0284c7' : tdsOverSCA ? '#dc2626' : '#94a3b8' }}>
+                              {tdsNum.toFixed(2)}%
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (tdsNum / 2) * 100)}%`, backgroundColor: tdsInSCA ? '#22c55e' : tdsUnderSCA ? '#0ea5e9' : tdsOverSCA ? '#ef4444' : '#94a3b8' }} />
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[8px] text-slate-400">SCA {scaRange && `${scaLo.toFixed(2)}–${scaHi.toFixed(2)}%`}</span>
+                            <span className={`text-[8px] font-semibold ${tdsInSCA ? 'text-emerald-600' : tdsUnderSCA ? 'text-blue-600' : tdsOverSCA ? 'text-red-600' : 'text-slate-400'}`}>
+                              {tdsInSCA ? '✓ In zone' : tdsUnderSCA ? `↓ ${(scaLo - tdsNum).toFixed(2)}` : tdsOverSCA ? `↑ ${(tdsNum - scaHi).toFixed(2)}` : '—'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Summary line */}
+                      <div className="flex items-center justify-center gap-3 text-[8px] text-slate-400 font-mono bg-slate-50 rounded-lg px-2.5 py-2">
+                        <span>{doseNum.toFixed(1)}g × 1:{ratioNum} = {waterIn.toFixed(0)}g water in → ~{waterOut.toFixed(0)}g out</span>
+                        <span className="text-slate-300">|</span>
+                        <span>TDS {tdsNum.toFixed(2)}% × {waterOut.toFixed(0)}g ÷ {doseNum.toFixed(1)}g = EY {ey.toFixed(1)}%</span>
+                      </div>
+
+                      {/* Foundation advice */}
+                      <div className="p-2.5 rounded-lg border flex items-center gap-2" style={{ backgroundColor: foundationColor + '15', borderColor: foundationColor + '40' }}>
+                        <span className="text-[8px] font-semibold uppercase tracking-wider shrink-0" style={{ color: foundationColor }}>Adjust</span>
+                        <span className="text-[10px]" style={{ color: foundationColor }}>{foundationTip} → see <strong>Foundations</strong> tab</span>
+                      </div>
+
+                      {/* Before/after context */}
+                      {beforeAfterNote && (
+                        <div className="p-2.5 rounded-lg border border-purple-200 bg-purple-50">
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-[9px] mt-0.5">🔁</span>
+                            <div>
+                              <span className="text-[8px] font-bold text-purple-700 uppercase">Before vs After</span>
+                              <p className="text-[8px] text-purple-600 mt-0.5">{beforeAfterNote}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 italic text-center">Enter dose, ratio, and TDS above to check extraction status.</p>
+                  )}
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-[9px] text-amber-800 font-semibold">↓ Goes into <strong>Foundations</strong></p>
+                <p className="text-[8px] text-amber-700 mt-0.5">Extraction Theory tells you <em>how much</em> to extract. Foundations (grind, ratio, temp, agitation) is where you make the change.</p>
+              </div>
+            </div>
+          );
+        })()}
+
+        {tab === 'timing' && (
+          <>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <h2 className="text-sm font-bold text-slate-700 mb-3">⏱ Timing & Decision</h2>
+              <p className="text-[10px] text-slate-500 mb-3">Time is the variable that determines <strong>which hidden physics</strong> occur. Each phase controls different extraction mechanisms.</p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {[
+                  { key: 'bloom', label: 'Bloom', desc: 'CO₂ release, first wetting — determines even extraction start', val: bloomTime, set: setBloomTime, placeholder: '0:30' },
+                  { key: 'main', label: 'Main Pour', desc: 'Bulk extraction — controls turbulence & contact', val: mainPourTime, set: setMainPourTime, placeholder: '1:00' },
+                  { key: 'drawdown', label: 'Drawdown', desc: 'Fines migration, bed settling — determines clarity', val: drawdownTime, set: setDrawdownTime, placeholder: '1:00' },
+                  { key: 'delivery', label: 'Delivery', desc: 'Pre-wet to first drip — affects bypass', val: deliveryTime, set: setDeliveryTime, placeholder: '0:10' },
+                ].map(phase => (
+                  <div key={phase.key} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <label className="text-[8px] font-semibold text-slate-500 block">{phase.label}</label>
+                    <input type="text" value={phase.val} onChange={e => phase.set(e.target.value)} placeholder={phase.placeholder} className="w-full text-[10px] border border-slate-200 rounded px-1.5 py-1 text-slate-700 bg-white mt-0.5 font-mono" />
+                    <p className="text-[7px] text-slate-400 mt-0.5">{phase.desc}</p>
+                  </div>
+                ))}
+              </div>
+              {(() => {
+                const toSec = (v: string) => /^\d{1,2}:\d{2}$/.test(v) ? (([m, s]) => m * 60 + s)(v.split(':').map(Number)) : null;
+                const bloom = toSec(bloomTime);
+                const main = toSec(mainPourTime);
+                const drawdown = toSec(drawdownTime);
+                const total = (bloom ?? 0) + (main ?? 0) + (drawdown ?? 0);
+                if (bloom !== null && main !== null && drawdown !== null) {
+                  return (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-semibold text-slate-600">Total Contact Time:</span>
+                        <span className="text-sm font-bold text-slate-700 font-mono">{Math.floor(total / 60)}:{String(total % 60).padStart(2, '0')}</span>
+                        <span className="text-[8px] text-slate-400">({bloom}s bloom + {main}s main + {drawdown}s drawdown)</span>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-3">
+                    <p className="text-[9px] text-slate-400 italic">Enter bloom, main pour, and drawdown times (m:ss) to see total contact time.</p>
+                  </div>
+                );
+              })()}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                <p className="text-[8px] font-semibold text-slate-500 mb-1">Plan vs Actual (from Equipment tab)</p>
+                <div className="flex items-center gap-2 text-[9px] text-slate-600">
+                  <span>Plan: {equipment.planTime || '—'}</span>
+                  <span>Actual: {equipment.timeFinished || '—'}</span>
+                  {timeStatus && <span className="text-[8px] font-semibold px-1 py-0.5 rounded" style={{ color: timeDelta! <= -20 ? '#3b82f6' : timeDelta! <= -5 ? '#22c55e' : timeDelta! <= 15 ? '#22c55e' : timeDelta! <= 40 ? '#f59e0b' : '#ef4444', backgroundColor: (timeDelta! <= -20 ? '#3b82f6' : timeDelta! <= -5 ? '#22c55e' : timeDelta! <= 15 ? '#22c55e' : timeDelta! <= 40 ? '#f59e0b' : '#ef4444') + '15' }}>{timeStatus}</span>}
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <h3 className="text-[11px] font-bold text-slate-700 mb-2">What Each Phase Controls</h3>
+              <div className="space-y-2">
+                <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <span className="text-[8px] font-bold text-blue-700">Bloom</span>
+                  <p className="text-[7px] text-blue-600 mt-0.5">Short bloom (&lt;20s) → Channeling risk, uneven extraction. Long bloom (&gt;60s) → Temperature drop, stalled degassing.</p>
+                </div>
+                <div className="p-2 bg-green-50 border border-green-200 rounded-lg">
+                  <span className="text-[8px] font-bold text-green-700">Main Pour</span>
+                  <p className="text-[7px] text-green-600 mt-0.5">Pour speed & height determine turbulence. Aggressive → agitation extraction + fines migration. Gentle → lower extraction, clearer bed.</p>
+                </div>
+                <div className="p-2 bg-purple-50 border border-purple-200 rounded-lg">
+                  <span className="text-[8px] font-bold text-purple-700">Drawdown</span>
+                  <p className="text-[7px] text-purple-600 mt-0.5">Fast (&lt;60s) → Bypass, weak body. Slow (&gt;120s) → Fines clogging, over-extraction, astringency. Stalled → Total clog, stalled extraction.</p>
+                </div>
+                <div className="p-2 bg-orange-50 border border-orange-200 rounded-lg">
+                  <span className="text-[8px] font-bold text-orange-700">Delivery Time</span>
+                  <p className="text-[7px] text-orange-600 mt-0.5">Fast first drip (&lt;5s) → Channeling/bed gap. Slow (&gt;15s) → Paper resistance, grind too fine.</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+              <p className="text-[9px] text-indigo-800 font-semibold">↓ Goes into <strong>Hidden Physics</strong></p>
+              <p className="text-[8px] text-indigo-700 mt-0.5">Your timing decisions determine which hidden physics (channeling, clogging, bypass, etc.) occur during the brew.</p>
+            </div>
           </>
         )}
 
@@ -915,8 +1599,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               <p className="text-[10px] text-slate-500 mb-3">Internal factors you control directly. Each foundation has a primary adjustment direction based on your score profile.</p>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {[ 
-                  { icon: '⚙', name: 'Grind', desc: 'Particle size & distribution', dir: extractionStatus.label === 'Under-extracted' ? 'Finer' : extractionStatus.label === 'Over-extracted' ? 'Coarser' : 'Check uniformity' },
-                  { icon: '🌡', name: 'Temp / Time', desc: 'Water temp & contact duration', dir: extractionStatus.label === 'Under-extracted' ? '↑ Temp or ↑ Time' : extractionStatus.label === 'Over-extracted' ? '↓ Temp or ↓ Time' : 'Verify stability' },
+                  { icon: '⚙', name: 'Grind', desc: 'Particle size & distribution', dir: extractionStatus.label === 'Increase extraction' ? 'Finer' : extractionStatus.label === 'Decrease extraction' ? 'Coarser' : 'Check uniformity' },
+                  { icon: '🌡', name: 'Temp / Time', desc: 'Water temp & contact duration', dir: extractionStatus.label === 'Increase extraction' ? '↑ Temp or ↑ Time' : extractionStatus.label === 'Decrease extraction' ? '↓ Temp or ↓ Time' : 'Verify stability' },
                   { icon: '🌊', name: 'Turbulence', desc: 'Pour flow, height & bed agitation', dir: 'Adjust pour + WDT' },
                   { icon: '⚖', name: 'Ratio', desc: 'Coffee dose to water ratio', dir: profile.mouthfeel <= 4 ? '↑ Dose for body' : 'Check filter media' },
                 ].map(f => (
@@ -941,10 +1625,10 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-sm font-bold text-slate-700">Extraction Status</h2>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${extractionStatus.major ? 'bg-red-100' : 'bg-slate-100'}`} style={{ color: extractionStatus.color }}>{extractionStatus.label}</span>
+                <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full ${extractionStatus.label === 'Increase extraction' ? 'bg-blue-100 text-blue-700' : extractionStatus.label === 'Decrease extraction' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>{extractionStatus.label === 'Increase extraction' ? '↑ Increase extraction' : extractionStatus.label === 'Decrease extraction' ? '↓ Decrease extraction' : 'Stay'}</span>
               </div>
               <div className="relative h-5 bg-gradient-to-r from-blue-100 via-emerald-100 to-red-100 rounded-full overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 font-medium"><span>Under</span><span>Balanced</span><span>Over</span></div>
+                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 font-medium"><span>Increase</span><span>Stay</span><span>Decrease</span></div>
                 <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-sm rounded-full transition-all duration-200" style={{ left: `${extractionStatus.barPos}%` }} />
                 <div className="absolute top-0.5 bottom-0.5 w-1.5 rounded-full bg-white border-2 shadow-sm transition-all duration-200" style={{ left: `calc(${extractionStatus.barPos}% - 3px)`, borderColor: extractionStatus.color }} />
               </div>
@@ -991,8 +1675,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 </div>
                 <div className="mt-3 pt-2 border-t border-slate-100">
                   <p className="text-[10px] text-slate-500 italic">
-                    {f.name === 'Grind' && (extractionStatus.label === 'Under-extracted' ? '⇒ Grind finer to increase extraction surface area' : extractionStatus.label === 'Over-extracted' ? '⇒ Grind coarser to reduce extraction surface area' : '⇒ Check particle distribution uniformity')}
-                    {f.name === 'Temp / Time' && (extractionStatus.label !== 'Extraction Balanced' ? `⇒ ${extractionStatus.label === 'Under-extracted' ? 'Increase water temp or extend contact time' : 'Decrease water temp or shorten contact time'}` : '⇒ Verify thermal stability across the brew')}
+                    {f.name === 'Grind' && (extractionStatus.label === 'Increase extraction' ? '⇒ Grind finer to increase extraction surface area' : extractionStatus.label === 'Decrease extraction' ? '⇒ Grind coarser to reduce extraction surface area' : '⇒ Check particle distribution uniformity')}
+                    {f.name === 'Temp / Time' && (extractionStatus.label !== 'Stay' ? `⇒ ${extractionStatus.label === 'Increase extraction' ? 'Increase water temp or extend contact time' : 'Decrease water temp or shorten contact time'}` : '⇒ Verify thermal stability across the brew')}
                     {f.name === 'Turbulence' && '⇒ Adjust pour flow rate, height, or WDT to improve bed uniformity'}
                     {f.name === 'Ratio' && (profile.mouthfeel <= 4 ? '⇒ Increase dose for more body and structure' : '⇒ Check if filter media is stripping oils')}
                   </p>

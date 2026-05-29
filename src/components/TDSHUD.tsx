@@ -15,11 +15,14 @@ export default function TDSHUD({ tdsMin, tdsMax, currentTDS, eyTarget, onTDSChan
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(String(currentTDS));
 
+  const SLIDER_MIN = 0;
+  const SLIDER_RANGE = 3;
+
   const status = currentTDS < tdsMin ? 'UNDER' : currentTDS > tdsMax ? 'OVER' : 'IDEAL';
   const statusColor = status === 'UNDER' ? '#38bdf8' : status === 'OVER' ? '#ef4444' : '#22d65e';
-  const idealStart = Math.max(0, (tdsMin - 0.7) / 1.4 * 100);
-  const idealEnd = Math.min(100, (tdsMax - 0.7) / 1.4 * 100);
-  const markerPct = Math.max(0, Math.min(100, (currentTDS - 0.7) / 1.4 * 100));
+  const idealStart = Math.max(0, (tdsMin - SLIDER_MIN) / SLIDER_RANGE * 100);
+  const idealEnd = Math.min(100, (tdsMax - SLIDER_MIN) / SLIDER_RANGE * 100);
+  const markerPct = Math.max(0, Math.min(100, (currentTDS - SLIDER_MIN) / SLIDER_RANGE * 100));
 
   const handleBarClick = useCallback((e: React.MouseEvent) => {
     const bar = barRef.current;
@@ -27,7 +30,7 @@ export default function TDSHUD({ tdsMin, tdsMax, currentTDS, eyTarget, onTDSChan
     const rect = bar.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    const tds = 0.7 + (pct / 100) * 1.4;
+    const tds = SLIDER_MIN + (pct / 100) * SLIDER_RANGE;
     onTDSChange(parseFloat(tds.toFixed(2)));
   }, [onTDSChange]);
 
@@ -39,7 +42,7 @@ export default function TDSHUD({ tdsMin, tdsMax, currentTDS, eyTarget, onTDSChan
     const moveHandler = (ev: PointerEvent) => {
       const x = ev.clientX - rect.left;
       const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-      const tds = 0.7 + (pct / 100) * 1.4;
+      const tds = SLIDER_MIN + (pct / 100) * SLIDER_RANGE;
       onTDSChange(parseFloat(tds.toFixed(2)));
     };
     const upHandler = () => {
@@ -78,8 +81,8 @@ export default function TDSHUD({ tdsMin, tdsMax, currentTDS, eyTarget, onTDSChan
 
         {/* SCA ideal zone overlay */}
         {scaTdsMin != null && scaTdsMax != null && (() => {
-          const left = Math.max(0, (scaTdsMin - 0.7) / 1.4 * 100);
-          const right = Math.min(100, (scaTdsMax - 0.7) / 1.4 * 100);
+          const left = Math.max(0, (scaTdsMin - SLIDER_MIN) / SLIDER_RANGE * 100);
+          const right = Math.min(100, (scaTdsMax - SLIDER_MIN) / SLIDER_RANGE * 100);
           return (
             <div
               className="absolute top-0 bottom-0 z-[5] pointer-events-none transition-all duration-300"
@@ -94,8 +97,8 @@ export default function TDSHUD({ tdsMin, tdsMax, currentTDS, eyTarget, onTDSChan
         })()}
 
         {/* Tick marks */}
-        {[0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0].map((v) => {
-          const pct = (v - 0.7) / 1.4 * 100;
+        {[0.5, 1.0, 1.5, 2.0, 2.5, 3.0].map((v) => {
+          const pct = (v - SLIDER_MIN) / SLIDER_RANGE * 100;
           return (
             <div key={v} className="absolute top-0 bottom-0" style={{ left: `${pct}%` }}>
               <div className="w-px h-full bg-emerald-500/20" />

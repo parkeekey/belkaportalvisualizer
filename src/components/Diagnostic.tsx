@@ -1178,55 +1178,73 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
             )}
             {ext.tdsNum > 0 && ext.doseNum > 0 && ext.ratioNum > 0 && ext.validRatio && (
               <div className="bg-white rounded-lg border border-slate-200 p-2">
-                <div className="text-[8px] font-semibold text-slate-400 uppercase text-center mb-1.5">TDS × EY at 1:{ext.ratioNum}</div>
-                <div className="grid grid-cols-4 gap-px bg-slate-200 text-[8px]">
-                  <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold"></div>
-                  <div className="bg-slate-50 p-1 text-center text-blue-600 font-semibold">Under EY<br /><span className="text-[7px] font-normal">&lt;{ext.eyMinNum}%</span></div>
-                  <div className="bg-slate-50 p-1 text-center text-emerald-600 font-semibold">Ideal EY<br /><span className="text-[7px] font-normal">{ext.eyMinNum}–{ext.eyMaxNum}%</span></div>
-                  <div className="bg-slate-50 p-1 text-center text-red-600 font-semibold">Over EY<br /><span className="text-[7px] font-normal">&gt;{ext.eyMaxNum}%</span></div>
-                        {(['weak', 'balanced', 'strong'] as const).map(tdsCat => {
-                          const refMin = getReferenceTDS(ext.ratioNum, ext.eyMinNum);
-                          const refMax = getReferenceTDS(ext.ratioNum, ext.eyMaxNum);
-                          const tdsRange = tdsCat === 'weak' ? `<${refMin.toFixed(2)}` : tdsCat === 'balanced' ? `${refMin.toFixed(2)}–${refMax.toFixed(2)}` : `>${refMax.toFixed(2)}`;
-                          const tdsLabel = tdsCat === 'weak' ? 'Weak' : tdsCat === 'balanced' ? 'Balanced' : 'Strong';
-                          const eyLabelMap: Record<string, string> = { under: 'Under EY', ideal: 'Ideal EY', over: 'Over EY' };
+                <div className="text-[8px] font-semibold text-slate-400 uppercase text-center mb-1.5">Ratio 1:{ext.ratioNum} — EY {ext.eyMinNum}–{ext.eyMaxNum}%</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {/* EY → TDS reference */}
+                  <div>
+                    <div className="flex flex-col gap-px bg-slate-200 rounded overflow-hidden text-[8px]">
+                      {(() => {
+                        const rows: { ey: number; tds: number }[] = [];
+                        for (let ey = ext.eyMinNum; ey <= ext.eyMaxNum; ey++) {
+                          rows.push({ ey, tds: getReferenceTDS(ext.ratioNum, ey) });
+                        }
+                        return rows.map(r => {
+                          const closeToCurrent = Math.abs(ext.tdsNum - r.tds) < 0.01;
                           return (
-                            <div key={tdsCat} className="contents">
-                              <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold flex items-center justify-center text-[7px] leading-tight">
-                                {tdsLabel}<br />TDS {tdsRange}%
-                              </div>
-                              {(['under', 'ideal', 'over'] as const).map(eyCat => {
-                                const isCurrentTds = (tdsCat === 'weak' && ext.tdsUnderSCA) || (tdsCat === 'balanced' && !ext.tdsUnderSCA && !ext.tdsOverSCA) || (tdsCat === 'strong' && ext.tdsOverSCA);
-                                const isCurrentEy = (eyCat === 'under' && ext.eyUnder) || (eyCat === 'ideal' && !ext.eyUnder && !ext.eyOver) || (eyCat === 'over' && ext.eyOver);
-                                const highlighted = isCurrentTds && isCurrentEy;
-                                const colorMap: Record<string, string> = { weak: '#0ea5e9', balanced: '#22c55e', strong: '#ef4444' };
-                                const eyInfo = eyCat === 'under'
-                                  ? { range: `< ${ext.eyMinNum}%`, action: `→ target ${ext.eyMinNum}%+` }
-                                  : eyCat === 'ideal'
-                                  ? { range: `${ext.eyMinNum}–${ext.eyMaxNum}%`, action: '✓' }
-                                  : { range: `> ${ext.eyMaxNum}%`, action: `→ target ≤${ext.eyMaxNum}%` };
-                                return (
-                                  <div key={`${tdsCat}-${eyCat}`} className={`p-1 text-center bg-white ${highlighted ? 'font-bold' : ''}`} style={highlighted ? { backgroundColor: colorMap[tdsCat] + '20', color: colorMap[tdsCat], border: `1.5px solid ${colorMap[tdsCat]}` } : {}}>
-                                    <div className="text-[6px] leading-tight">{tdsLabel} · {eyLabelMap[eyCat]}</div>
-                                    <div className="text-[7px] leading-tight font-mono">TDS {tdsRange}%</div>
-                                    <div className="text-[6px] leading-tight" style={{ color: eyCat === 'ideal' ? '#16a34a' : '#ef4444' }}>{eyInfo.action}</div>
-                                  </div>
-                                );
-                              })}
+                            <div key={r.ey} className={`flex items-center justify-between px-2 py-1 ${closeToCurrent ? 'bg-emerald-100 font-bold text-emerald-800' : 'bg-white text-slate-600'}`}>
+                              <span className="font-mono">EY {r.ey}%</span>
+                              <span className="font-mono">→ TDS {r.tds.toFixed(2)}%</span>
+                              {closeToCurrent && <span className="text-[7px] text-emerald-600 ml-1">← your TDS</span>}
                             </div>
                           );
-                        })}
-                      </div>
-                {ext.tdsNum > 0 && (
-                  <div className="text-[7px] text-slate-400 text-center mt-1">
-                    Current: TDS {ext.tdsNum.toFixed(2)}% · EY {ext.ey.toFixed(1)}%
-                    {(() => {
-                      const x = ext.tdsUnderSCA ? 'Weak' : ext.tdsOverSCA ? 'Strong' : 'Balanced';
-                      const y = ext.eyUnder ? 'Under' : ext.eyOver ? 'Over' : 'Ideal';
-                      return <span> → <strong className="text-slate-600">{x} · {y}</strong></span>;
-                    })()}
+                        });
+                      })()}
+                    </div>
                   </div>
-                )}
+                  {/* 3×3 TDS × EY grid */}
+                  <div>
+                    <div className="grid grid-cols-4 gap-px bg-slate-200 text-[8px]">
+                      <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold"></div>
+                      <div className="bg-slate-50 p-1 text-center text-blue-600 font-semibold">Under<br /><span className="text-[7px] font-normal">&lt;{ext.eyMinNum}%</span></div>
+                      <div className="bg-slate-50 p-1 text-center text-emerald-600 font-semibold">Ideal<br /><span className="text-[7px] font-normal">{ext.eyMinNum}–{ext.eyMaxNum}%</span></div>
+                      <div className="bg-slate-50 p-1 text-center text-red-600 font-semibold">Over<br /><span className="text-[7px] font-normal">&gt;{ext.eyMaxNum}%</span></div>
+                      {(['weak', 'balanced', 'strong'] as const).map(tdsCat => {
+                        const refMin = getReferenceTDS(ext.ratioNum, ext.eyMinNum);
+                        const refMax = getReferenceTDS(ext.ratioNum, ext.eyMaxNum);
+                        const tdsRange = tdsCat === 'weak' ? `<${refMin.toFixed(2)}` : tdsCat === 'balanced' ? `${refMin.toFixed(2)}–${refMax.toFixed(2)}` : `>${refMax.toFixed(2)}`;
+                        const tdsLabel = tdsCat === 'weak' ? 'Weak' : tdsCat === 'balanced' ? 'Balanced' : 'Strong';
+                        const eyLabelMap: Record<string, string> = { under: 'Under EY', ideal: 'Ideal EY', over: 'Over EY' };
+                        return (
+                          <div key={tdsCat} className="contents">
+                            <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold flex items-center justify-center text-[7px] leading-tight">
+                              {tdsLabel}<br />{tdsRange}%
+                            </div>
+                            {(['under', 'ideal', 'over'] as const).map(eyCat => {
+                              const isCurrentTds = (tdsCat === 'weak' && ext.tdsUnderSCA) || (tdsCat === 'balanced' && !ext.tdsUnderSCA && !ext.tdsOverSCA) || (tdsCat === 'strong' && ext.tdsOverSCA);
+                              const isCurrentEy = (eyCat === 'under' && ext.eyUnder) || (eyCat === 'ideal' && !ext.eyUnder && !ext.eyOver) || (eyCat === 'over' && ext.eyOver);
+                              const highlighted = isCurrentTds && isCurrentEy;
+                              const colorMap: Record<string, string> = { weak: '#0ea5e9', balanced: '#22c55e', strong: '#ef4444' };
+                              const action = eyCat === 'under' ? `→ ${ext.eyMinNum}%+` : eyCat === 'ideal' ? '✓' : `→ ≤${ext.eyMaxNum}%`;
+                              return (
+                                <div key={`${tdsCat}-${eyCat}`} className={`p-1 text-center bg-white ${highlighted ? 'font-bold' : ''}`} style={highlighted ? { backgroundColor: colorMap[tdsCat] + '20', color: colorMap[tdsCat] } : {}}>
+                                  <div className="text-[6px] leading-tight">{tdsLabel} · {eyLabelMap[eyCat]}</div>
+                                  <div className="text-[7px] leading-tight font-mono">TDS {tdsRange}%</div>
+                                  <div className="text-[6px] leading-tight" style={{ color: eyCat === 'ideal' ? '#16a34a' : '#ef4444' }}>{action}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[7px] text-slate-400 text-center mt-1">
+                  Current: TDS {ext.tdsNum.toFixed(2)}% · EY {ext.ey.toFixed(1)}%
+                  {ext.eyUnder && <span className="text-blue-500"> — below range</span>}
+                  {ext.eyOver && <span className="text-red-500"> — above range</span>}
+                  {!ext.eyUnder && !ext.eyOver && <span className="text-emerald-600"> — in range</span>}
+                </div>
               </div>
             )}
           </>
@@ -1370,58 +1388,76 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   </div>
                 )}
 
-                {/* TDS × EY matrix */}
+                {/* EY → TDS reference + 3×3 grid */}
                 {tdsNum > 0 && doseNum > 0 && ratioNum > 0 && validRatio && (
                   <div className="bg-white rounded-lg border border-slate-200 p-2">
-                    <div className="text-[8px] font-semibold text-slate-400 uppercase text-center mb-1.5">TDS × EY at 1:{ratioNum}</div>
-                    <div className="grid grid-cols-4 gap-px bg-slate-200 text-[8px]">
-                      <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold"></div>
-                      <div className="bg-slate-50 p-1 text-center text-blue-600 font-semibold">Under EY<br /><span className="text-[7px] font-normal">&lt;{eyMinNum}%</span></div>
-                      <div className="bg-slate-50 p-1 text-center text-emerald-600 font-semibold">Ideal EY<br /><span className="text-[7px] font-normal">{eyMinNum}–{eyMaxNum}%</span></div>
-                      <div className="bg-slate-50 p-1 text-center text-red-600 font-semibold">Over EY<br /><span className="text-[7px] font-normal">&gt;{eyMaxNum}%</span></div>
-                        {(['weak', 'balanced', 'strong'] as const).map(tdsCat => {
-                          const refMin = getReferenceTDS(ratioNum, eyMinNum);
-                          const refMax = getReferenceTDS(ratioNum, eyMaxNum);
-                          const tdsRange = tdsCat === 'weak' ? `<${refMin.toFixed(2)}` : tdsCat === 'balanced' ? `${refMin.toFixed(2)}–${refMax.toFixed(2)}` : `>${refMax.toFixed(2)}`;
-                          const tdsLabel = tdsCat === 'weak' ? 'Weak' : tdsCat === 'balanced' ? 'Balanced' : 'Strong';
-                          const eyLabelMap: Record<string, string> = { under: 'Under EY', ideal: 'Ideal EY', over: 'Over EY' };
-                          return (
-                            <div key={tdsCat} className="contents">
-                              <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold flex items-center justify-center text-[7px] leading-tight">
-                                {tdsLabel}<br />TDS {tdsRange}%
+                    <div className="text-[8px] font-semibold text-slate-400 uppercase text-center mb-1.5">Ratio 1:{ratioNum} — EY {eyMinNum}–{eyMaxNum}%</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {/* EY → TDS reference */}
+                      <div>
+                        <div className="flex flex-col gap-px bg-slate-200 rounded overflow-hidden text-[8px]">
+                          {(() => {
+                            const rows: { ey: number; tds: number }[] = [];
+                            for (let ey = eyMinNum; ey <= eyMaxNum; ey++) {
+                              rows.push({ ey, tds: getReferenceTDS(ratioNum, ey) });
+                            }
+                            return rows.map(r => {
+                              const closeToCurrent = Math.abs(tdsNum - r.tds) < 0.01;
+                              return (
+                                <div key={r.ey} className={`flex items-center justify-between px-2 py-1 ${closeToCurrent ? 'bg-emerald-100 font-bold text-emerald-800' : 'bg-white text-slate-600'}`}>
+                                  <span className="font-mono">EY {r.ey}%</span>
+                                  <span className="font-mono">→ TDS {r.tds.toFixed(2)}%</span>
+                                  {closeToCurrent && <span className="text-[7px] text-emerald-600 ml-1">← your TDS</span>}
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                      {/* 3×3 TDS × EY grid */}
+                      <div>
+                        <div className="grid grid-cols-4 gap-px bg-slate-200 text-[8px]">
+                          <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold"></div>
+                          <div className="bg-slate-50 p-1 text-center text-blue-600 font-semibold">Under<br /><span className="text-[7px] font-normal">&lt;{eyMinNum}%</span></div>
+                          <div className="bg-slate-50 p-1 text-center text-emerald-600 font-semibold">Ideal<br /><span className="text-[7px] font-normal">{eyMinNum}–{eyMaxNum}%</span></div>
+                          <div className="bg-slate-50 p-1 text-center text-red-600 font-semibold">Over<br /><span className="text-[7px] font-normal">&gt;{eyMaxNum}%</span></div>
+                          {(['weak', 'balanced', 'strong'] as const).map(tdsCat => {
+                            const refMin = getReferenceTDS(ratioNum, eyMinNum);
+                            const refMax = getReferenceTDS(ratioNum, eyMaxNum);
+                            const tdsRange = tdsCat === 'weak' ? `<${refMin.toFixed(2)}` : tdsCat === 'balanced' ? `${refMin.toFixed(2)}–${refMax.toFixed(2)}` : `>${refMax.toFixed(2)}`;
+                            const tdsLabel = tdsCat === 'weak' ? 'Weak' : tdsCat === 'balanced' ? 'Balanced' : 'Strong';
+                            const eyLabelMap: Record<string, string> = { under: 'Under EY', ideal: 'Ideal EY', over: 'Over EY' };
+                            return (
+                              <div key={tdsCat} className="contents">
+                                <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold flex items-center justify-center text-[7px] leading-tight">
+                                  {tdsLabel}<br />{tdsRange}%
+                                </div>
+                                {(['under', 'ideal', 'over'] as const).map(eyCat => {
+                                  const isCurrentTds = (tdsCat === 'weak' && tdsUnderSCA) || (tdsCat === 'balanced' && !tdsUnderSCA && !tdsOverSCA) || (tdsCat === 'strong' && tdsOverSCA);
+                                  const isCurrentEy = (eyCat === 'under' && eyUnder) || (eyCat === 'ideal' && !eyUnder && !eyOver) || (eyCat === 'over' && eyOver);
+                                  const highlighted = isCurrentTds && isCurrentEy;
+                                  const colorMap: Record<string, string> = { weak: '#0ea5e9', balanced: '#22c55e', strong: '#ef4444' };
+                                  const action = eyCat === 'under' ? `→ ${eyMinNum}%+` : eyCat === 'ideal' ? '✓' : `→ ≤${eyMaxNum}%`;
+                                  return (
+                                    <div key={`${tdsCat}-${eyCat}`} className={`p-1 text-center bg-white ${highlighted ? 'font-bold' : ''}`} style={highlighted ? { backgroundColor: colorMap[tdsCat] + '20', color: colorMap[tdsCat] } : {}}>
+                                      <div className="text-[6px] leading-tight">{tdsLabel} · {eyLabelMap[eyCat]}</div>
+                                      <div className="text-[7px] leading-tight font-mono">TDS {tdsRange}%</div>
+                                      <div className="text-[6px] leading-tight" style={{ color: eyCat === 'ideal' ? '#16a34a' : '#ef4444' }}>{action}</div>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                              {(['under', 'ideal', 'over'] as const).map(eyCat => {
-                                const isCurrentTds = (tdsCat === 'weak' && tdsUnderSCA) || (tdsCat === 'balanced' && !tdsUnderSCA && !tdsOverSCA) || (tdsCat === 'strong' && tdsOverSCA);
-                                const isCurrentEy = (eyCat === 'under' && eyUnder) || (eyCat === 'ideal' && !eyUnder && !eyOver) || (eyCat === 'over' && eyOver);
-                                const highlighted = isCurrentTds && isCurrentEy;
-                                const colorMap: Record<string, string> = { weak: '#0ea5e9', balanced: '#22c55e', strong: '#ef4444' };
-                                 const eyInfo = eyCat === 'under'
-                                   ? { range: `< ${eyMinNum}%`, action: `→ target ${eyMinNum}%+` }
-                                   : eyCat === 'ideal'
-                                   ? { range: `${eyMinNum}–${eyMaxNum}%`, action: '✓' }
-                                   : { range: `> ${eyMaxNum}%`, action: `→ target ≤${eyMaxNum}%` };
-                                 return (
-                                   <div key={`${tdsCat}-${eyCat}`} className={`p-1 text-center bg-white ${highlighted ? 'font-bold' : ''}`} style={highlighted ? { backgroundColor: colorMap[tdsCat] + '20', color: colorMap[tdsCat], border: `1.5px solid ${colorMap[tdsCat]}` } : {}}>
-                                     <div className="text-[6px] leading-tight">{tdsLabel} · {eyLabelMap[eyCat]}</div>
-                                     <div className="text-[7px] leading-tight font-mono">TDS {tdsRange}%</div>
-                                     <div className="text-[6px] leading-tight" style={{ color: eyCat === 'ideal' ? '#16a34a' : '#ef4444' }}>{eyInfo.action}</div>
-                                   </div>
-                                 );
-                               })}
-                             </div>
-                           );
-                         })}
+                            );
+                          })}
+                        </div>
                       </div>
-                     {tdsNum > 0 && (
-                      <div className="text-[7px] text-slate-400 text-center mt-1">
-                        Current: TDS {tdsNum.toFixed(2)}% · EY {ey.toFixed(1)}%
-                        {(() => {
-                          const x = tdsUnderSCA ? 'Weak' : tdsOverSCA ? 'Strong' : 'Balanced';
-                          const y = eyUnder ? 'Under' : eyOver ? 'Over' : 'Ideal';
-                          return <span> → <strong className="text-slate-600">{x} · {y}</strong></span>;
-                        })()}
-                      </div>
-                    )}
+                    </div>
+                    <div className="text-[7px] text-slate-400 text-center mt-1">
+                      Current: TDS {tdsNum.toFixed(2)}% · EY {ey.toFixed(1)}%
+                      {eyUnder && <span className="text-blue-500"> — below range</span>}
+                      {eyOver && <span className="text-red-500"> — above range</span>}
+                      {!eyUnder && !eyOver && <span className="text-emerald-600"> — in range</span>}
+                    </div>
                   </div>
                 )}
 

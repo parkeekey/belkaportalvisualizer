@@ -456,6 +456,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
   const [focusAxes, setFocusAxes] = useState<string[]>([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [composition, setComposition] = useState<Record<string, number>>({ acidity: 0, sweetness: 0, flavor: 0, mouthfeel: 0, aftertaste: 0, overall: 0 });
+  const [axisPresent, setAxisPresent] = useState<Record<string, boolean>>({ acidity: true, sweetness: true, flavor: true, mouthfeel: true, aftertaste: true, overall: true });
   const [snapshots, setSnapshots] = useState<SnapshotData[]>([]);
   const [showSnapshots, setShowSnapshots] = useState(true);
   const [equipment, setEquipment] = useState<Equipment>({ dripper: '', paper: '', mod: '', burrType: '', burrSize: '', finesFeel: 5, grindEffort: 5, grindSetting: 5, dose: 18, ratio: '1:16', planTime: '', timeFinished: '' });
@@ -1585,51 +1586,90 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               </div>
             </div>
             {(() => {
+              const R = 5;
               const layers = [
-                { key: 'mouthfeel', emoji: '🥖', label: 'Body', desc: 'Too thin or too heavy', negative: 'Too light', positive: 'Too heavy' },
-                { key: 'acidity', emoji: '🍅', label: 'Acidity', desc: 'Needs more or less brightness', negative: 'Too flat', positive: 'Too sharp' },
-                { key: 'sweetness', emoji: '🧀', label: 'Sweetness', desc: 'Lacking or overwhelming', negative: 'Too little', positive: 'Too much' },
-                { key: 'flavor', emoji: '🥩', label: 'Flavor', desc: 'Under or over expressed', negative: 'Too muted', positive: 'Too intense' },
-                { key: 'aftertaste', emoji: '🌿', label: 'Aftertaste', desc: 'Finish too short or too long', negative: 'Too short', positive: 'Too lingering' },
-                { key: 'overall', emoji: '🥗', label: 'Overall', desc: 'The whole composition', negative: 'Underbuilt', positive: 'Overbuilt' },
+                { key: 'mouthfeel', emoji: '🥖', label: 'Body', neg: 'Light', pos: 'Heavy' },
+                { key: 'acidity', emoji: '🍅', label: 'Acidity', neg: 'Flat', pos: 'Sharp' },
+                { key: 'sweetness', emoji: '🧀', label: 'Sweetness', neg: 'Little', pos: 'Bitter' },
+                { key: 'flavor', emoji: '🥩', label: 'Flavor', neg: 'Muted', pos: 'Intense' },
+                { key: 'aftertaste', emoji: '🌿', label: 'Aftertaste', neg: 'Short', pos: 'Long ✦', oneWay: true },
+                { key: 'overall', emoji: '🥗', label: 'Overall', neg: 'Under', pos: 'Built ✦', oneWay: true },
               ];
-              return layers.map(layer => {
+              const netBalance = AXES.reduce((sum, k) => sum + (composition[k] || 0), 0);
+              const balancePct = ((netBalance / (R * AXES.length)) + 1) / 2 * 100;
+              return (<>
+              {layers.map(layer => {
                 const sensoryScore = profile[layer.key as keyof Profile];
                 const adj = composition[layer.key] || 0;
-                const adjPct = ((adj + 3) / 6) * 100;
+                const range = R;
+                const min = layer.oneWay ? 0 : -range;
+                const adjPct = layer.oneWay ? (adj / range) * 100 : ((adj + range) / (range * 2)) * 100;
                 return (
-                  <div key={layer.key} className="mb-3 pb-2 border-b border-slate-50 last:border-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-semibold text-slate-600">{layer.emoji} {AXIS_LABELS[layer.key]} <span className="font-normal text-slate-400">— {layer.desc}</span></span>
-                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full`} style={{ backgroundColor: scoreContext(sensoryScore).color + '20', color: scoreContext(sensoryScore).color }}>Sensory {sensoryScore}/9</span>
+                  <div key={layer.key} className="mb-2 pb-2 border-b border-slate-50 last:border-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[10px] font-semibold text-slate-600">{layer.emoji} {AXIS_LABELS[layer.key]}<span className="font-normal text-slate-400"> : Quality</span> <span className={`font-bold`} style={{ color: scoreContext(sensoryScore).color }}>{axisPresent[layer.key] ? sensoryScore : '—'}<span className="font-normal text-slate-400">/9</span></span></span>
+                      <button onClick={() => setAxisPresent(p => {
+                          const next = { ...p, [layer.key]: !p[layer.key] };
+                          setComposition(c => ({ ...c, [layer.key]: next[layer.key] ? 0 : layer.oneWay ? 0 : 3 }));
+                          return next;
+                        })}
+                          className={`text-[7px] font-bold px-1 py-0.5 rounded transition-colors ${axisPresent[layer.key] ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}
+                        >{axisPresent[layer.key] ? '👁' : '✖'}</button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[8px] w-12 text-right leading-tight ${adj < 0 ? 'text-blue-600 font-semibold' : 'text-slate-400'}`}>{layer.negative}</span>
-                      <div className="flex-1 relative h-6">
-                        <div className="absolute inset-0 rounded-full overflow-hidden">
-                          <div className="absolute inset-0 bg-slate-100 rounded-full" />
-                          <div className="absolute top-0 bottom-0 left-0 rounded-full bg-gradient-to-r from-blue-400 to-blue-500 transition-all duration-200" style={{ width: adj < 0 ? `${(-adj / 3) * 50}%` : '0%', opacity: adj < 0 ? 0.9 : 0 }} />
-                          <div className="absolute top-0 bottom-0 right-0 rounded-full bg-gradient-to-l from-orange-400 to-orange-500 transition-all duration-200" style={{ width: adj > 0 ? `${(adj / 3) * 50}%` : '0%', right: 0, opacity: adj > 0 ? 0.9 : 0 }} />
+                    <div className="flex items-center gap-1">
+                      <span className={`text-[7px] w-8 text-right shrink-0 ${!axisPresent[layer.key] ? 'text-slate-300' : layer.oneWay ? 'text-blue-600 font-semibold' : adj < 0 ? 'text-blue-600 font-semibold' : 'text-slate-400'}`}>{axisPresent[layer.key] ? (layer.oneWay ? `0 ${layer.neg}` : adj < 0 ? `${adj} ${layer.neg}` : layer.neg) : '—'}</span>
+                      <div className="flex-1 relative h-6 mx-3">
+                        <div className="absolute inset-0 bg-slate-100 rounded-full overflow-hidden">
+                          {!layer.oneWay && <div className="absolute top-0 bottom-0 left-0 rounded-full bg-gradient-to-r from-blue-400 to-blue-500 transition-all duration-200" style={{ width: adj < 0 ? `${(-adj / range) * 50}%` : '0%', opacity: adj < 0 ? 0.85 : 0 }} />}
+                          {layer.oneWay ? (
+                            <div className="absolute top-0 bottom-0 left-0 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 transition-all duration-200" style={{ width: adj > 0 ? `${(adj / range) * 100}%` : '0%', opacity: adj > 0 ? 0.85 : 0 }} />
+                          ) : (
+                            <div className="absolute top-0 bottom-0 right-0 rounded-full bg-gradient-to-l from-orange-400 to-orange-500 transition-all duration-200" style={{ width: adj > 0 ? `${(adj / range) * 50}%` : '0%', opacity: adj > 0 ? 0.85 : 0 }} />
+                          )}
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <span className="text-[10px] font-bold drop-shadow-sm" style={{ color: adj === 0 ? '#64748b' : adj < 0 ? '#1e40af' : '#c2410c' }}>{adj > 0 ? '+' : ''}{adj}</span>
+                          <span className="text-[10px] font-bold drop-shadow-sm" style={{ color: !axisPresent[layer.key] ? '#cbd5e1' : layer.oneWay ? (adj <= 2 ? '#1e40af' : '#c2410c') : adj === 0 ? '#64748b' : adj < 0 ? '#1e40af' : '#c2410c' }}>{axisPresent[layer.key] ? (adj > 0 ? '+' : '') + adj : '—'}</span>
                         </div>
                         <div className="absolute top-0.5 h-5 w-5 rounded-full bg-white border-[3px] shadow-md transition-all duration-200 z-10 pointer-events-none" style={{
                           left: `calc(${adjPct}% - 10px)`,
-                          borderColor: adj === 0 ? '#94a3b8' : adj < 0 ? '#3b82f6' : '#f97316'
+                          borderColor: !axisPresent[layer.key] ? '#cbd5e1' : layer.oneWay ? (adj <= 2 ? '#3b82f6' : '#f97316') : adj === 0 ? '#94a3b8' : adj < 0 ? '#3b82f6' : '#f97316'
                         }} />
-                        <input type="range" min={-3} max={3} step={1} value={adj} onChange={e => setComposition(p => ({ ...p, [layer.key]: parseInt(e.target.value) }))}
+                        <input type="range" min={min} max={range} step={1} value={adj} onChange={e => setComposition(p => ({ ...p, [layer.key]: parseInt(e.target.value) }))}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                         />
                       </div>
-                      <span className={`text-[8px] w-12 leading-tight ${adj > 0 ? 'text-orange-600 font-semibold' : 'text-slate-400'}`}>{layer.positive}</span>
+                      <span className={`text-[7px] w-8 shrink-0 ${!axisPresent[layer.key] ? 'text-slate-300' : adj > 0 ? 'text-orange-600 font-semibold' : 'text-slate-400'}`}>{axisPresent[layer.key] ? (adj > 0 ? `+${adj} ${layer.pos}` : layer.pos) : '—'}</span>
                     </div>
                     {adj !== 0 && (
-                      <div className="mt-1 text-[7px] italic text-slate-400 pl-12">{adj < 0 ? `Your sensory score (${sensoryScore}) suggests you pick up on it — but structurally you feel it needs less presence. The ingredient needs dialing back.` : `Your sensory score (${sensoryScore}) registers it — but structurally you feel it needs more presence. The ingredient needs dialing up.`}</div>
+                      <div className="text-[7px] italic text-slate-400 text-center mt-0.5">{axisPresent[layer.key] ? (layer.oneWay ? (adj <= 2 ? 'Needs more structure — feels underbuilt' : 'Well-constructed — the composition holds together') : `Feels structurally ${adj > 0 ? 'overbuilt — dial it back' : 'underbuilt — give it more'} (sensory: ${sensoryScore}/9)`) : 'Not perceived — structurally missing from the cup'}</div>
                     )}
                   </div>
                 );
-              });
+              })}
+              <div className="pt-3 mt-1 border-t border-slate-100">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[9px] font-semibold text-slate-500">⚖️ Balance</span>
+                  <span className="text-[8px] text-slate-400">{netBalance === 0 ? 'Neutral' : netBalance < 0 ? 'Under-extracted' : 'Over-extracted'} ({netBalance > 0 ? '+' : ''}{netBalance})</span>
+                </div>
+                <div className="relative h-5 rounded-full overflow-hidden bg-gradient-to-r from-blue-100 via-slate-100 to-orange-100">
+                  <div className="absolute inset-0 flex items-center justify-between px-2 text-[7px] text-slate-500 font-medium">
+                    <span className={netBalance < 0 ? 'text-blue-700 font-semibold' : ''}>Missing</span>
+                    <span className={netBalance === 0 ? 'text-slate-700 font-semibold' : ''}>Balanced</span>
+                    <span className={netBalance > 0 ? 'text-orange-700 font-semibold' : ''}>Too much</span>
+                  </div>
+                  {netBalance !== 0 && (
+                    <div className="absolute top-0 bottom-0 rounded-full bg-white/60 shadow-inner transition-all duration-200" style={{
+                      left: netBalance < 0 ? `${balancePct}%` : '50%',
+                      right: netBalance > 0 ? `${100 - balancePct}%` : '50%',
+                    }} />
+                  )}
+                  <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white border-[3px] shadow-md transition-all duration-200" style={{
+                    left: `calc(${balancePct}% - 8px)`,
+                    borderColor: netBalance === 0 ? '#94a3b8' : netBalance < 0 ? '#3b82f6' : '#f97316'
+                  }} />
+                </div>
+              </div>
+              </>);
             })()}
           </div>
         )}

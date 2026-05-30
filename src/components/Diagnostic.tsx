@@ -1046,8 +1046,18 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                                   {SENSORY_VOCAB[k].categories.map((cat, catIdx) => (
                                     <div key={cat.name} className={`flex flex-wrap gap-0.5 items-baseline w-full ${catIdx === 0 ? 'bg-amber-50/50 rounded p-1 mb-0.5 border border-amber-200/30' : ''}`}>
                             <span className={`text-[6px] font-semibold uppercase tracking-wider ${POLARITY_COLORS[cat.polarity] || 'text-slate-400'}`}>{catIdx === 0 && '⚙️ '}{cat.name}{cat.acidType && cat.words.some(w => w.label === notedDescriptors[k]) && <span className="ml-1 text-[5px] text-slate-400 font-normal">({cat.acidType})</span>}</span>
-                                       {cat.words.map(w => (
-                                         <button key={w.label} onClick={() => setNotedDescriptors(prev => ({ ...prev, [k]: prev[k] === w.label ? null : w.label }))}
+                                        {cat.words.map(w => (
+                                          <button key={w.label} onClick={() => {
+                                            setNotedDescriptors(prev => {
+                                              const next = prev[k] === w.label ? null : w.label;
+                                              setVocabCats(vp => {
+                                                const axisV = { ...(vp[k] || {}) };
+                                                if (next === null) { delete axisV[cat.name]; } else { axisV[cat.name] = w.label; }
+                                                return { ...vp, [k]: axisV };
+                                              });
+                                              return { ...prev, [k]: next };
+                                            });
+                                          }}
                                           className={`px-1 py-0.5 text-[7px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === w.label ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300'}`}
                                         >{w.emoji} {w.label}{notedDescriptors[k] === w.label ? ' ✓' : ''}</button>
                                       ))}
@@ -1759,7 +1769,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                           left: `calc(${adjPct}% - 10px)`,
                           borderColor: !axisPresent[layer.key] ? '#cbd5e1' : layer.oneWay ? (adj <= 2 ? '#3b82f6' : '#f97316') : adj === 0 ? '#94a3b8' : adj < 0 ? '#3b82f6' : '#f97316'
                         }} />
-                        <input type="range" min={min} max={range} step={1} value={adj} onChange={e => { setComposition(p => ({ ...p, [layer.key]: parseInt(e.target.value) })); if (SENSORY_VOCAB[layer.key] && autoComp[layer.key]) setVocabCats(p => { const n = { ...p }; delete n[layer.key]; return n; }); }}
+                        <input type="range" min={min} max={range} step={1} value={adj} onChange={e => { setComposition(p => ({ ...p, [layer.key]: parseInt(e.target.value) })); if (SENSORY_VOCAB[layer.key] && autoComp[layer.key]) { setVocabCats(p => { const n = { ...p }; delete n[layer.key]; return n; }); setNotedDescriptors(p => ({ ...p, [layer.key]: null })); } }}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                         />
                       </div>
@@ -1811,6 +1821,11 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                                           axisCats[cat.name] = w.label;
                                         }
                                         const next = { ...prev, [layer.key]: axisCats };
+                                        if (Object.keys(axisCats).length === 0) {
+                                          setNotedDescriptors(p => ({ ...p, [layer.key]: null }));
+                                        } else {
+                                          setNotedDescriptors(p => ({ ...p, [layer.key]: w.label }));
+                                        }
                                         const vocab = SENSORY_VOCAB[layer.key];
                                         if (vocab && autoComp[layer.key]) {
                                           const entries = Object.entries(axisCats);

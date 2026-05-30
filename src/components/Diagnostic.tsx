@@ -21,6 +21,18 @@ interface SnapshotData {
   time: Date;
 }
 
+interface CompSnapshot {
+  name: string;
+  rating: number;
+  date: Date;
+  composition: Record<string, number>;
+  vocabCats: Record<string, Record<string, string>>;
+  notedDescriptors: Record<string, string | null>;
+  profile: Profile;
+  ci: number;
+  balance: number;
+}
+
 interface Equipment {
   dripper: string;
   paper: string;
@@ -463,6 +475,11 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
   const [flavorNotes, setFlavorNotes] = useState<Record<string, string[]>>({});
   const [showSummary, setShowSummary] = useState(true);
   const [showVocabChips, setShowVocabChips] = useState(true);
+  const [showSaveLoad, setShowSaveLoad] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [snapName, setSnapName] = useState('');
+  const [snapRating, setSnapRating] = useState(3);
+  const [compSnapshots, setCompSnapshots] = useState<CompSnapshot[]>(() => { try { return JSON.parse(localStorage.getItem('comp-snapshots-belka') || '[]'); } catch { return []; } });
   const [snapshots, setSnapshots] = useState<SnapshotData[]>([]);
   const [showSnapshots, setShowSnapshots] = useState(true);
   const [equipment, setEquipment] = useState<Equipment>({ dripper: '', paper: '', mod: '', burrType: '', burrSize: '', finesFeel: 5, grindEffort: 5, grindSetting: 5, dose: 18, ratio: '1:16', planTime: '', timeFinished: '' });
@@ -665,6 +682,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
     window.speechSynthesis.onvoiceschanged = load;
     return () => { window.speechSynthesis.onvoiceschanged = null; };
   }, []);
+
+  useEffect(() => { localStorage.setItem('comp-snapshots-belka', JSON.stringify(compSnapshots)); }, [compSnapshots]);
 
   const playTranscript = (text: string) => {
     if (!window.speechSynthesis) return;
@@ -1662,6 +1681,12 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 </button>
                 {showSummary && (<>
                 <div className="relative h-5 rounded-full overflow-hidden bg-gradient-to-r from-blue-100 via-slate-100 to-orange-100 mb-2">
+                  {/* Zone markers: | at 0 (center), | at ±1 (has/hasn't), | at ±3 (careful adjustment) */}
+                  <div className="absolute top-0 bottom-0 w-px bg-slate-400/50 z-10" style={{ left: '50%' }} />
+                  <div className="absolute top-0 bottom-0 w-px bg-slate-300/30 z-10" style={{ left: `${50 - 100/30}%` }} />
+                  <div className="absolute top-0 bottom-0 w-px bg-slate-300/30 z-10" style={{ left: `${50 + 100/30}%` }} />
+                  <div className="absolute top-0 bottom-0 w-px bg-amber-400/40 z-10" style={{ left: `${50 - 300/30}%` }} />
+                  <div className="absolute top-0 bottom-0 w-px bg-amber-400/40 z-10" style={{ left: `${50 + 300/30}%` }} />
                   <div className="absolute inset-0 flex items-center justify-between px-2 text-[7px] text-slate-500 font-medium">
                     <span className={netBalance < 0 ? 'text-blue-700 font-semibold' : ''}>Missing</span>
                     <span className={netBalance === 0 ? 'text-slate-700 font-semibold' : ''}>Balanced</span>
@@ -1678,17 +1703,60 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     borderColor: netBalance === 0 ? '#94a3b8' : netBalance < 0 ? '#3b82f6' : '#f97316'
                   }} />
                 </div>
+                <div className="flex items-center justify-center gap-2 text-[6px] text-slate-300 mb-1">
+                  <span className="text-slate-400">|</span>
+                  <span>0</span>
+                  <span className="text-slate-300">|</span>
+                  <span>±1 has/hasn't</span>
+                  <span className="text-amber-400">|</span>
+                  <span className="text-amber-500">±3 careful</span>
+                </div>
                 <div className="flex justify-between items-center mb-2 mt-1">
                   <div>
                     <span className="text-[9px] text-slate-400">Composition Index of this cup: </span>
                     <span className="text-[11px] font-bold text-slate-600">{AXES.reduce((s, k) => s + Math.abs(composition[k] || 0), 0)}</span>
+                    <span className="text-[7px] text-slate-300 ml-1">/30</span>
                   </div>
                   <div className="text-right">
                     <span className="text-[9px] text-slate-400">Balance Index of this cup: </span>
                     <span className={`text-[11px] font-bold ${netBalance === 0 ? 'text-slate-600' : netBalance < 0 ? 'text-blue-600' : 'text-orange-600'}`}>
                       {netBalance > 0 ? '+' : ''}{netBalance}
                     </span>
+                    <span className="text-[7px] text-slate-300 ml-1">/±30</span>
                   </div>
+                </div>
+                {(() => {
+                  const avgScore = AXES.reduce((s, k) => s + (profile[k as keyof Profile] || 0), 0) / AXES.length;
+                  return <div className={`mb-1.5 text-[7px] ${avgScore >= 7 ? 'text-emerald-600' : avgScore >= 5 ? 'text-amber-600' : 'text-red-500'}`}>
+                    <span className="font-semibold">Quality: </span>
+                    {avgScore >= 7 ? 'Good' : avgScore >= 5 ? 'Average' : 'Low'}
+                    <span className="text-slate-300 mx-0.5">·</span>
+                    Avg {avgScore.toFixed(1)}/9
+                    {avgScore < 6 && <span className="text-red-400 ml-1">← composition doesn't fix low sensory scores</span>}
+                  </div>;
+                })()}
+                <div className="mb-1.5">
+                  <button onClick={() => setShowGuide(p => !p)} className="flex items-center gap-1 text-[7px] text-slate-400 hover:text-slate-600">
+                    <span className={`w-3 h-3 rounded-full border border-current flex items-center justify-center text-[6px] font-bold`}>i</span>
+                    CI &amp; BI Guide
+                  </button>
+                  {showGuide && <div className="text-[7px] text-slate-500 mt-1 space-y-0.5 bg-slate-50 rounded border border-slate-100 p-1.5">
+                    <div className="font-semibold text-slate-600">Composition Index (0–30):</div>
+                    <div className="flex gap-1 items-baseline"><span className="text-emerald-600 font-bold">0–5</span> <span className="text-slate-400">=</span> <span className="text-slate-600">tight, precise brew — everything close to zero</span></div>
+                    <div className="flex gap-1 items-baseline"><span className="text-amber-600 font-bold">6–14</span> <span className="text-slate-400">=</span> <span className="text-slate-600">moderate — some movement but coherent</span></div>
+                    <div className="flex gap-1 items-baseline"><span className="text-red-500 font-bold">15+</span> <span className="text-slate-400">=</span> <span className="text-slate-600">wide — lots of adjustment needed, likely uneven extraction</span></div>
+                    <div className="font-semibold text-slate-600 mt-1">Balance Index (–30 to +30):</div>
+                    <div className="flex gap-1 items-baseline"><span className="text-slate-600 font-bold">±0–7</span> <span className="text-slate-400">=</span> <span className="text-slate-600">neutral — cup is balanced directionally</span></div>
+                    <div className="flex gap-1 items-baseline"><span className="text-blue-600 font-bold">±8+</span> <span className="text-slate-400">=</span> <span className="text-slate-600">leaning clearly underbuilt or overbuilt — recipe change needed</span></div>
+                  </div>}
+                </div>
+                <div className="flex items-center gap-2 text-[6px] text-slate-300 mb-1.5 justify-center">
+                  <span className="text-slate-400">|</span>
+                  <span>±0</span>
+                  <span className="text-slate-300">|</span>
+                  <span>±1 has/hasn't</span>
+                  <span className="text-amber-400">|</span>
+                  <span className="text-amber-500">±3 careful</span>
                 </div>
                 <div className="flex flex-col gap-1.5">
                 {layers.map(l => {
@@ -1700,6 +1768,12 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     <div key={l.key} className="flex items-center gap-2">
                       <span className="text-[10px] font-semibold text-slate-500 w-14 shrink-0 text-right">{l.label}</span>
                       <div className="flex-1 relative h-4 rounded-full overflow-hidden bg-slate-100">
+                        {/* Zone markers: 0 (center), ±1, ±3 */}
+                        <div className="absolute top-0 bottom-0 w-px bg-slate-400/40 z-10" style={{ left: '50%' }} />
+                        <div className="absolute top-0 bottom-0 w-px bg-slate-300/20 z-10" style={{ left: '40%' }} />
+                        <div className="absolute top-0 bottom-0 w-px bg-slate-300/20 z-10" style={{ left: '60%' }} />
+                        <div className="absolute top-0 bottom-0 w-px bg-amber-400/30 z-10" style={{ left: '20%' }} />
+                        <div className="absolute top-0 bottom-0 w-px bg-amber-400/30 z-10" style={{ left: '80%' }} />
                         <div className={`absolute inset-y-0 rounded-full transition-all duration-200 ${v === 0 ? '' : v < 0 ? 'bg-blue-300' : 'bg-orange-300'}`}
                           style={v === 0 ? {} : { width: `${Math.abs(pct - 50)}%`, left: v < 0 ? `${pct}%` : '50%' }}
                         />
@@ -1709,12 +1783,67 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                         }} />
                       </div>
                       <span className={`text-[10px] font-bold w-5 text-center ${v === 0 ? 'text-slate-300' : v < 0 ? 'text-blue-600' : 'text-orange-600'}`}>{v > 0 ? '+' : ''}{v}</span>
+                      <span className={`text-[6px] font-semibold ${v === 0 ? 'text-slate-300' : v < 0 ? 'text-blue-500' : 'text-orange-500'}`}>{v === 0 ? '—' : Math.abs(v) <= 2 ? 'slight' : Math.abs(v) <= 4 ? 'intense' : 'extreme'}</span>
                       {selLabel && <span className="text-[8px] text-slate-400 truncate max-w-16">{selLabel}</span>}
                     </div>
                   );
                 })}
                 </div>
                 </>)}
+              </div>
+
+              {/* Save/Load */}
+              <div className="mb-2">
+                <button onClick={() => setShowSaveLoad(p => !p)} className="flex items-center gap-1 text-[8px] font-semibold text-slate-500 mb-1">
+                  <span className="text-[6px]">{showSaveLoad ? '▼' : '▶'}</span>
+                  Save / Load
+                </button>
+                {showSaveLoad && (<div className="bg-slate-50 rounded-lg border border-slate-100 p-2 space-y-2">
+                  {/* Save form */}
+                  <div className="flex items-center gap-1.5">
+                    <input value={snapName} onChange={e => setSnapName(e.target.value)} placeholder="Cup name..."
+                      className="flex-1 text-[8px] px-1.5 py-1 rounded border border-slate-200 bg-white outline-none focus:border-amber-300" />
+                    <div className="flex gap-0.5">{[1,2,3,4,5].map(r => (
+                      <button key={r} onClick={() => setSnapRating(r)}
+                        className={`text-[10px] ${r <= snapRating ? 'text-amber-400' : 'text-slate-200'}`}>{r <= snapRating ? '★' : '☆'}</button>
+                    ))}</div>
+                    <button onClick={() => {
+                      if (!snapName.trim()) return;
+                      const s: CompSnapshot = {
+                        name: snapName.trim(), rating: snapRating, date: new Date(),
+                        composition: {...composition}, vocabCats: JSON.parse(JSON.stringify(vocabCats)),
+                        notedDescriptors: {...notedDescriptors}, profile: {...profile},
+                        ci: AXES.reduce((sum, k) => sum + Math.abs(composition[k] || 0), 0),
+                        balance: AXES.reduce((sum, k) => sum + (composition[k] || 0), 0),
+                      };
+                      setCompSnapshots(prev => [s, ...prev]);
+                      setSnapName(''); setSnapRating(3);
+                    }}
+                      className="text-[8px] font-semibold px-2 py-1 rounded bg-amber-100 text-amber-700 hover:bg-amber-200"
+                    >Save</button>
+                  </div>
+                  {/* Saved list */}
+                  {compSnapshots.length > 0 && <div className="space-y-1 max-h-40 overflow-y-auto">
+                    {compSnapshots.map((s, i) => (
+                      <div key={i} className="flex items-center gap-1.5 text-[7px] bg-white rounded border border-slate-100 px-1.5 py-1">
+                        <span className="font-semibold text-slate-600 w-16 truncate">{s.name}</span>
+                        <span className="text-amber-400">{'★'.repeat(s.rating)}{'☆'.repeat(5 - s.rating)}</span>
+                        <span className="text-slate-300 ml-auto">CI {s.ci}  {s.balance >= 0 ? '+' : ''}{s.balance}</span>
+                        <button onClick={() => {
+                          setComposition(s.composition);
+                          setVocabCats(JSON.parse(JSON.stringify(s.vocabCats)));
+                          setNotedDescriptors(s.notedDescriptors);
+                          setProfile(s.profile);
+                        }}
+                          className="text-[7px] px-1 py-0.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold"
+                        >Load</button>
+                        <button onClick={() => { if (confirm('Delete ' + s.name + '?')) setCompSnapshots(prev => prev.filter((_, j) => j !== i)); }}
+                          className="text-[7px] px-1 py-0.5 rounded text-slate-400 hover:text-red-500"
+                        >✕</button>
+                      </div>
+                    ))}
+                  </div>}
+                </div>)}
               </div>
 
               {/* Adjustment section */}

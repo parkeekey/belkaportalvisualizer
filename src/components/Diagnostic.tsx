@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { getReferenceTDS, getReferenceTDSRange } from '../utils/tdsReference';
 import shadowJudgeData from '../data/shadowJudge';
+import { SENSORY_VOCAB, POLARITY_COLORS } from '../data/sensoryVocab';
 import TDSHUD from './TDSHUD';
 
 type Score = number;
@@ -457,6 +458,11 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [composition, setComposition] = useState<Record<string, number>>({ acidity: 0, sweetness: 0, flavor: 0, mouthfeel: 0, aftertaste: 0, overall: 0 });
   const [axisPresent, setAxisPresent] = useState<Record<string, boolean>>({ acidity: true, sweetness: true, flavor: true, mouthfeel: true, aftertaste: true, overall: true });
+  const [vocabCats, setVocabCats] = useState<Record<string, Record<string, string>>>({});
+  const [autoComp, setAutoComp] = useState<Record<string, boolean>>({ acidity: true, sweetness: true, flavor: true, mouthfeel: true, aftertaste: true, overall: true });
+  const [flavorNotes, setFlavorNotes] = useState<Record<string, string[]>>({});
+  const [showSummary, setShowSummary] = useState(true);
+  const [showVocabChips, setShowVocabChips] = useState(true);
   const [snapshots, setSnapshots] = useState<SnapshotData[]>([]);
   const [showSnapshots, setShowSnapshots] = useState(true);
   const [equipment, setEquipment] = useState<Equipment>({ dripper: '', paper: '', mod: '', burrType: '', burrSize: '', finesFeel: 5, grindEffort: 5, grindSetting: 5, dose: 18, ratio: '1:16', planTime: '', timeFinished: '' });
@@ -1035,7 +1041,21 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                                   ))}
                                 </div>
                               )}
-                            </div>
+                              {SENSORY_VOCAB[k] && (
+                                <div className="flex flex-wrap gap-1 justify-center mt-0.5 max-w-[200px]">
+                                  {SENSORY_VOCAB[k].categories.map((cat, catIdx) => (
+                                    <div key={cat.name} className={`flex flex-wrap gap-0.5 items-baseline w-full ${catIdx === 0 ? 'bg-amber-50/50 rounded p-1 mb-0.5 border border-amber-200/30' : ''}`}>
+                            <span className={`text-[6px] font-semibold uppercase tracking-wider ${POLARITY_COLORS[cat.polarity] || 'text-slate-400'}`}>{catIdx === 0 && '⚙️ '}{cat.name}{cat.acidType && cat.words.some(w => w.label === notedDescriptors[k]) && <span className="ml-1 text-[5px] text-slate-400 font-normal">({cat.acidType})</span>}</span>
+                                       {cat.words.map(w => (
+                                         <button key={w.label} onClick={() => setNotedDescriptors(prev => ({ ...prev, [k]: prev[k] === w.label ? null : w.label }))}
+                                          className={`px-1 py-0.5 text-[7px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === w.label ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300'}`}
+                                        >{w.emoji} {w.label}{notedDescriptors[k] === w.label ? ' ✓' : ''}</button>
+                                      ))}
+                                    </div>
+                                  ))}
+                </div>
+                )}
+              </div>
                           )}
                         </div>
                       );
@@ -1061,22 +1081,35 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                           </div>
                           {chips && (
                               <div className="flex flex-wrap gap-1 mt-1.5">
-                                {chips.primary.map(chip => (
-                                  <button key={chip.label} onClick={() => {
-                                    setNotedDescriptors(prev => ({ ...prev, [k]: prev[k] === chip.label ? null : chip.label }));
-                                  }}
-                                    className={`px-2 py-0.5 text-[9px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === chip.label ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'}`}
-                                  >{chip.label}{notedDescriptors[k] === chip.label ? ' ✓' : ''}</button>
-                                ))}
+                                {SENSORY_VOCAB[k] ? (
+                                  SENSORY_VOCAB[k].categories.map((cat, catIdx) => (
+                                    <div key={cat.name} className={`flex flex-wrap gap-0.5 items-baseline w-full ${catIdx === 0 ? 'bg-amber-50/50 rounded p-1 mb-0.5 border border-amber-200/30' : ''}`}>
+                                       <span className={`text-[7px] font-semibold mr-0.5 ${POLARITY_COLORS[cat.polarity] || 'text-slate-400'}`}>{catIdx === 0 && '⚙️ '}{cat.name}{cat.acidType && cat.words.some(w => w.label === notedDescriptors[k]) && <span className="ml-1 text-[5px] text-slate-400 font-normal">({cat.acidType})</span>}</span>
+                                      {cat.words.map(w => (
+                                        <button key={w.label} onClick={() => setNotedDescriptors(prev => ({ ...prev, [k]: prev[k] === w.label ? null : w.label }))}
+                                          className={`px-1.5 py-0.5 text-[8px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === w.label ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'}`}
+                                        >{w.emoji} {w.label}{notedDescriptors[k] === w.label ? ' ✓' : ''}</button>
+                                      ))}
+                                    </div>
+                                  ))
+                                ) : (
+                                  chips.primary.map(chip => (
+                                    <button key={chip.label} onClick={() => {
+                                      setNotedDescriptors(prev => ({ ...prev, [k]: prev[k] === chip.label ? null : chip.label }));
+                                    }}
+                                      className={`px-2 py-0.5 text-[9px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === chip.label ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'}`}
+                                    >{chip.label}{notedDescriptors[k] === chip.label ? ' ✓' : ''}</button>
+                                  ))
+                                )}
                                 {chips.reasons.length > 0 && <span className="text-[8px] text-slate-400 font-medium mt-0.5 mx-0.5">·</span>}
                                 {chips.reasons.map(reason => (
                                   <button key={reason} onClick={() => toggleReason(k, reason)}
                                     className={`px-1.5 py-0.5 text-[8px] font-medium rounded transition-colors ${selectedReasons.includes(reason) ? 'bg-slate-200 text-slate-700' : 'bg-white border border-dashed border-slate-200 text-slate-400 hover:bg-slate-50'}`}
                                   >{reason}</button>
                                 ))}
-                              </div>
-                          )}
-                        </div>
+                </div>
+                )}
+              </div>
                       );
                     })}
                     <div className="pt-2 border-t border-slate-100">
@@ -1587,34 +1620,126 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
             </div>
             {(() => {
               const R = 5;
+              const flavorFamilies: { emoji: string; name: string; axes: string[] }[] = [
+                { emoji: '🌸', name: 'Herb & Flowery', axes: ['flavor', 'aftertaste'] },
+                { emoji: '🍋', name: 'Citrus Fruits', axes: ['acidity'] },
+                { emoji: '🥭', name: 'Tropical Fruits', axes: ['acidity', 'sweetness', 'flavor'] },
+                { emoji: '🍑', name: 'Stonefruits', axes: ['acidity', 'sweetness'] },
+                { emoji: '🍓', name: 'Berry-like', axes: ['acidity', 'flavor'] },
+                { emoji: '🌾', name: 'Cereal & Nuts', axes: ['sweetness', 'aftertaste'] },
+                { emoji: '🍫', name: 'Caramel & Chocolate', axes: ['sweetness', 'aftertaste'] },
+                { emoji: '🌶️', name: 'Spices & Other', axes: ['sweetness', 'flavor', 'aftertaste'] },
+                { emoji: '🥦', name: 'Vegetable', axes: ['acidity'] },
+                { emoji: '🧄', name: 'Savory', axes: ['flavor'] },
+                { emoji: '🌀', name: 'Others', axes: ['flavor'] },
+              ];
               const layers = [
                 { key: 'mouthfeel', emoji: '🥖', label: 'Body', neg: 'Light', pos: 'Heavy' },
                 { key: 'acidity', emoji: '🍅', label: 'Acidity', neg: 'Flat', pos: 'Sharp' },
                 { key: 'sweetness', emoji: '🧀', label: 'Sweetness', neg: 'Little', pos: 'Bitter' },
                 { key: 'flavor', emoji: '🥩', label: 'Flavor', neg: 'Muted', pos: 'Intense' },
-                { key: 'aftertaste', emoji: '🌿', label: 'Aftertaste', neg: 'Short', pos: 'Long ✦', oneWay: true },
+                { key: 'aftertaste', emoji: '🌿', label: 'Aftertaste', neg: 'Short', pos: 'Long' },
                 { key: 'overall', emoji: '🥗', label: 'Overall', neg: 'Under', pos: 'Built ✦', oneWay: true },
               ];
               const netBalance = AXES.reduce((sum, k) => sum + (composition[k] || 0), 0);
               const balancePct = ((netBalance / (R * AXES.length)) + 1) / 2 * 100;
               return (<>
+              {/* Summary section */}
+              <div className="mb-3">
+                <button onClick={() => setShowSummary(p => !p)} className="flex items-center gap-1 text-[8px] font-semibold text-slate-500 mb-1">
+                  <span className="text-[6px]">{showSummary ? '▼' : '▶'}</span>
+                  Summary
+                  <span className={`text-[6px] font-bold px-1 py-0.5 rounded ${netBalance === 0 ? 'text-slate-400 bg-slate-100' : netBalance < 0 ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50'}`}>
+                    Net {netBalance > 0 ? '+' : ''}{netBalance}
+                  </span>
+                </button>
+                {showSummary && (<>
+                <div className="relative h-5 rounded-full overflow-hidden bg-gradient-to-r from-blue-100 via-slate-100 to-orange-100 mb-2">
+                  <div className="absolute inset-0 flex items-center justify-between px-2 text-[7px] text-slate-500 font-medium">
+                    <span className={netBalance < 0 ? 'text-blue-700 font-semibold' : ''}>Missing</span>
+                    <span className={netBalance === 0 ? 'text-slate-700 font-semibold' : ''}>Balanced</span>
+                    <span className={netBalance > 0 ? 'text-orange-700 font-semibold' : ''}>Too much</span>
+                  </div>
+                  {netBalance !== 0 && (
+                    <div className="absolute top-0 bottom-0 rounded-full bg-white/60 shadow-inner transition-all duration-200" style={{
+                      left: netBalance < 0 ? `${balancePct}%` : '50%',
+                      right: netBalance > 0 ? `${100 - balancePct}%` : '50%',
+                    }} />
+                  )}
+                  <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white border-[3px] shadow-md transition-all duration-200" style={{
+                    left: `calc(${balancePct}% - 8px)`,
+                    borderColor: netBalance === 0 ? '#94a3b8' : netBalance < 0 ? '#3b82f6' : '#f97316'
+                  }} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                {layers.map(l => {
+                  const v = composition[l.key] || 0;
+                  const pct = l.oneWay ? (v / 5) * 100 : ((v + 5) / 10) * 100;
+                  const activeCats = vocabCats[l.key] || {};
+                  const selLabel = Object.values(activeCats)[0] || '';
+                  return (
+                    <div key={l.key} className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold text-slate-500 w-14 shrink-0 text-right">{l.label}</span>
+                      <div className="flex-1 relative h-4 rounded-full overflow-hidden bg-slate-100">
+                        <div className={`absolute inset-y-0 rounded-full transition-all duration-200 ${v === 0 ? '' : v < 0 ? 'bg-blue-300' : 'bg-orange-300'}`}
+                          style={v === 0 ? {} : { width: `${Math.abs(pct - 50)}%`, left: v < 0 ? `${pct}%` : '50%' }}
+                        />
+                        <div className="absolute top-0.5 h-3 w-3 rounded-full bg-white border-[3px] shadow-sm transition-all duration-200" style={{
+                          left: `calc(${pct}% - 6px)`,
+                          borderColor: v === 0 ? '#94a3b8' : v < 0 ? '#3b82f6' : '#f97316'
+                        }} />
+                      </div>
+                      <span className={`text-[10px] font-bold w-5 text-center ${v === 0 ? 'text-slate-300' : v < 0 ? 'text-blue-600' : 'text-orange-600'}`}>{v > 0 ? '+' : ''}{v}</span>
+                      {selLabel && <span className="text-[8px] text-slate-400 truncate max-w-16">{selLabel}</span>}
+                    </div>
+                  );
+                })}
+                </div>
+                </>)}
+              </div>
+
+              {/* Adjustment section */}
+              <div className="text-[8px] font-semibold text-slate-500 mb-2 pb-1 border-b border-slate-100">Adjustment</div>
               {layers.map(layer => {
                 const sensoryScore = profile[layer.key as keyof Profile];
                 const adj = composition[layer.key] || 0;
                 const range = R;
                 const min = layer.oneWay ? 0 : -range;
                 const adjPct = layer.oneWay ? (adj / range) * 100 : ((adj + range) / (range * 2)) * 100;
+                const activeCats = vocabCats[layer.key] || {};
+                let posCnt = 0, negCnt = 0;
+                const vocab = SENSORY_VOCAB[layer.key];
+                if (vocab) {
+                  for (const [cn, label] of Object.entries(activeCats)) {
+                    const cat = vocab.categories.find(c => c.name === cn);
+                    if (cat) { const w = cat.words.find(x => x.label === label); if (w) { const p = w.polarity ?? cat.polarity; p === 'positive' ? posCnt++ : p === 'negative' ? negCnt++ : 0; } }
+                  }
+                }
                 return (
                   <div key={layer.key} className="mb-2 pb-2 border-b border-slate-50 last:border-0">
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[10px] font-semibold text-slate-600">{layer.emoji} {AXIS_LABELS[layer.key]}<span className="font-normal text-slate-400"> : Quality</span> <span className={`font-bold`} style={{ color: scoreContext(sensoryScore).color }}>{axisPresent[layer.key] ? sensoryScore : '—'}<span className="font-normal text-slate-400">/9</span></span></span>
+                      <span className="text-[10px] font-semibold text-slate-600">{layer.emoji} {AXIS_LABELS[layer.key]}<span className="font-normal text-slate-400"> : Quality</span> <span className={`font-bold`} style={{ color: scoreContext(sensoryScore).color }}>{axisPresent[layer.key] ? sensoryScore : '—'}<span className="font-normal text-slate-400">/9</span></span>{(posCnt > 0 || negCnt > 0) && <><span className="text-[8px] text-emerald-500 ml-1">✅{posCnt}</span><span className="text-[8px] text-red-400 ml-0.5">⚠️{negCnt}</span></>}</span>
+                      <div className="flex items-center gap-1">
+                      {SENSORY_VOCAB[layer.key] && <div className="flex rounded overflow-hidden border border-slate-200 text-[8px] font-semibold">
+                        <button onClick={() => setAutoComp(p => ({ ...p, [layer.key]: true }))}
+                          className={`px-1.5 py-0.5 transition-colors ${autoComp[layer.key] ? 'bg-amber-100 text-amber-700' : 'bg-white text-slate-400'}`}
+                        >🔄</button>
+                        <span className="w-px bg-slate-200" />
+                        <button onClick={() => setAutoComp(p => ({ ...p, [layer.key]: false }))}
+                          className={`px-1.5 py-0.5 transition-colors ${!autoComp[layer.key] ? 'bg-slate-200 text-slate-600' : 'bg-white text-slate-400'}`}
+                        >✋</button>
+                      </div>}
+                      {SENSORY_VOCAB[layer.key] && <button onClick={() => setShowVocabChips(p => !p)}
+                        className={`text-[6px] px-1 py-0.5 rounded font-semibold ${showVocabChips ? 'bg-slate-100 text-slate-500' : 'bg-white text-slate-300 border border-slate-200'}`}
+                      >Chips</button>}
                       <button onClick={() => setAxisPresent(p => {
                           const next = { ...p, [layer.key]: !p[layer.key] };
                           setComposition(c => ({ ...c, [layer.key]: next[layer.key] ? 0 : layer.oneWay ? 0 : 3 }));
                           return next;
                         })}
-                          className={`text-[7px] font-bold px-1 py-0.5 rounded transition-colors ${axisPresent[layer.key] ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}
+                          className={`text-[7px] font-bold px-1.5 py-1 rounded transition-colors ${axisPresent[layer.key] ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}
                         >{axisPresent[layer.key] ? '👁' : '✖'}</button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1">
                       <span className={`text-[7px] w-8 text-right shrink-0 ${!axisPresent[layer.key] ? 'text-slate-300' : layer.oneWay ? 'text-blue-600 font-semibold' : adj < 0 ? 'text-blue-600 font-semibold' : 'text-slate-400'}`}>{axisPresent[layer.key] ? (layer.oneWay ? `0 ${layer.neg}` : adj < 0 ? `${adj} ${layer.neg}` : layer.neg) : '—'}</span>
@@ -1634,41 +1759,121 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                           left: `calc(${adjPct}% - 10px)`,
                           borderColor: !axisPresent[layer.key] ? '#cbd5e1' : layer.oneWay ? (adj <= 2 ? '#3b82f6' : '#f97316') : adj === 0 ? '#94a3b8' : adj < 0 ? '#3b82f6' : '#f97316'
                         }} />
-                        <input type="range" min={min} max={range} step={1} value={adj} onChange={e => setComposition(p => ({ ...p, [layer.key]: parseInt(e.target.value) }))}
+                        <input type="range" min={min} max={range} step={1} value={adj} onChange={e => { setComposition(p => ({ ...p, [layer.key]: parseInt(e.target.value) })); if (SENSORY_VOCAB[layer.key] && autoComp[layer.key]) setVocabCats(p => { const n = { ...p }; delete n[layer.key]; return n; }); }}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                         />
                       </div>
                       <span className={`text-[7px] w-8 shrink-0 ${!axisPresent[layer.key] ? 'text-slate-300' : adj > 0 ? 'text-orange-600 font-semibold' : 'text-slate-400'}`}>{axisPresent[layer.key] ? (adj > 0 ? `+${adj} ${layer.pos}` : layer.pos) : '—'}</span>
                     </div>
                     {adj !== 0 && (
-                      <div className="text-[7px] italic text-slate-400 text-center mt-0.5">{axisPresent[layer.key] ? (layer.oneWay ? (adj <= 2 ? 'Needs more structure — feels underbuilt' : 'Well-constructed — the composition holds together') : `Feels structurally ${adj > 0 ? 'overbuilt — dial it back' : 'underbuilt — give it more'} (sensory: ${sensoryScore}/9)`) : 'Not perceived — structurally missing from the cup'}</div>
+                      <div className="mt-0.5">
+                        <div className={`text-[7px] italic text-center ${!axisPresent[layer.key] ? 'text-slate-400' : posCnt > negCnt ? 'text-emerald-600' : negCnt > posCnt ? 'text-red-500' : 'text-slate-400'}`}>{axisPresent[layer.key] ? (layer.oneWay ? (adj <= 2 ? 'Needs more structure — feels underbuilt' : posCnt > negCnt ? `✅ ${vocab?.posLabel || 'Positive'} dominates — ${vocab?.posVerdict || 'this works'} (sensory: ${sensoryScore}/9)` : negCnt > posCnt ? `⚠️ ${vocab?.negLabel || 'Negative'} dominates — ${vocab?.negVerdict || 'dial it back'} (sensory: ${sensoryScore}/9)` : 'Overbuilt — the composition is too heavy (sensory: ' + sensoryScore + '/9)') : posCnt > negCnt ? `✅ ${vocab?.posLabel || 'Positive'} dominates — ${vocab?.posVerdict || 'this works'} (sensory: ${sensoryScore}/9)` : negCnt > posCnt ? `⚠️ ${vocab?.negLabel || 'Negative'} dominates — ${vocab?.negVerdict || 'dial it back'} (sensory: ${sensoryScore}/9)` : `Feels structurally ${adj > 0 ? 'overbuilt — dial it back' : 'underbuilt — give it more'} (sensory: ${sensoryScore}/9)`) : 'Not perceived — structurally missing from the cup'}</div>
+                        {axisPresent[layer.key] && adj !== 0 && (() => {
+                          const guides: Record<string, { over: string[]; under: string[] }> = {
+                            mouthfeel: { over: ['Switch to paper filter (absorbs oils)', 'Lower water hardness (softer water)', 'Coarsen grind'], under: ['Switch to metal/cloth filter', 'Increase water hardness (add minerals)', 'Finer grind for more body'] },
+                            acidity: { over: ['Raise water temp (fully extracts acids)', 'Finer grind (more surface area)', 'Darker roast (breaks down acids)'], under: ['Lower water temp (preserves brightness)', 'Coarser grind', 'Lighter roast (retains acidity)'] },
+                            sweetness: { over: ['Lower water temp (reduces Maillard)', 'Coarser grind (less extraction of bitter compounds)', 'Shorten contact time'], under: ['Raise water temp', 'Finer grind for more extraction', 'Check water chemistry (add Ca/Mg for sweetness)', 'Longer contact time'] },
+                            flavor: { over: ['Reduce dose slightly', 'Coarser grind', 'Lower water temp', 'Less agitation (gentler pour)'], under: ['Increase dose', 'Finer grind', 'Higher water temp', 'More agitation (stir/bloom)'] },
+                            aftertaste: { over: [], under: ['Raise water temp for longer finish', 'Finer grind extends aftertaste', 'Longer drawdown time', 'Use paper filter (cleaner finish)'] },
+                            overall: { over: ['Dial back every variable — grind coarser, lower temp, shorter contact'], under: ['Push one variable at a time — start with grind, then temp, then ratio'] },
+                          };
+                          const g = guides[layer.key];
+                          if (!g) return null;
+                          const tips = adj > 0 ? g.over : g.under;
+                          if (tips.length === 0) return null;
+                          return (
+                            <div className="text-[7px] text-slate-400 text-center mt-0.5 space-y-0.5">
+                              {tips.map((t, i) => <div key={i} className="text-[6px]">→ {t}</div>)}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                    {axisPresent[layer.key] && (
+                      <div className="flex flex-wrap gap-1 justify-center mt-1">
+                        {SENSORY_VOCAB[layer.key] ? (<>
+                          {SENSORY_VOCAB[layer.key].categories.map((cat, catIdx) => (
+                            <div key={cat.name} className={`flex flex-wrap gap-0.5 items-baseline w-full ${catIdx === 0 ? 'bg-amber-50/50 rounded p-1 mb-0.5 border border-amber-200/30' : ''}`}
+                              style={{ display: catIdx === 0 || showVocabChips ? '' : 'none' }}
+                            >
+                              <span className={`text-[6px] font-semibold uppercase tracking-wider ${POLARITY_COLORS[cat.polarity] || 'text-slate-400'}`}>{catIdx === 0 && '⚙️ '}{cat.name}{cat.acidType && vocabCats[layer.key]?.[cat.name] && <span className="ml-1 text-[5px] text-slate-400 font-normal">({cat.acidType})</span>}</span>
+                              <div className="flex flex-wrap gap-1">
+                                {cat.words.map(w => {
+                                  const catSel = vocabCats[layer.key] || {};
+                                  const isActive = catSel[cat.name] === w.label;
+                                  return (
+                                    <button key={w.label} onClick={() => {
+                                      setVocabCats(prev => {
+                                        const axisCats = { ...(prev[layer.key] || {}) };
+                                        if (axisCats[cat.name] === w.label) {
+                                          delete axisCats[cat.name];
+                                        } else {
+                                          axisCats[cat.name] = w.label;
+                                        }
+                                        const next = { ...prev, [layer.key]: axisCats };
+                                        const vocab = SENSORY_VOCAB[layer.key];
+                                        if (vocab && autoComp[layer.key]) {
+                                          const entries = Object.entries(axisCats);
+                                          if (entries.length === 0) {
+                                            setComposition(p => ({ ...p, [layer.key]: 0 }));
+                                          } else {
+                                            let sum = 0;
+                                            for (const [, label] of entries) {
+                                              for (const c of vocab.categories) {
+                                                const found = c.words.find(w2 => w2.label === label);
+                                                if (found) { sum += found.weight; break; }
+                                              }
+                                            }
+                                            setComposition(p => ({ ...p, [layer.key]: Math.round(sum / entries.length) }));
+                                          }
+                                        }
+                                        return next;
+                                      });
+                                    }}
+                                      className={`text-[7px] px-1.5 py-0.5 rounded-full border transition-colors ${isActive ? 'bg-amber-50 border-amber-300 text-amber-700 font-semibold' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                                    >{w.emoji} {w.label} <span className="text-[6px] opacity-60">{w.weight > 0 ? '+' : ''}{w.weight}</span></button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                          {(posCnt + negCnt > 0) && (() => {
+                            const pl = vocab?.posLabel || 'Pos';
+                            const nl = vocab?.negLabel || 'Neg';
+                            return (
+                            <div className="w-full mt-0.5 px-2 space-y-0.5">
+                              <div className="flex items-center gap-1">
+                                {negCnt > 0 && <span className="text-[6px] text-red-400 font-semibold shrink-0">⚠️ {nl} {negCnt}</span>}
+                                {posCnt > 0 && <span className="text-[6px] text-emerald-500 font-semibold shrink-0">✅ {pl} {posCnt}</span>}
+                                {posCnt > 0 && negCnt > 0 && <span className="text-[5px] text-slate-300 ml-auto">{posCnt > negCnt ? pl + ' wins' : nl + ' wins'}</span>}
+                              </div>
+                              <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-100">
+                                {negCnt > 0 && <div className="h-full bg-gradient-to-r from-red-300 to-red-400" style={{ width: (negCnt / (posCnt + negCnt)) * 100 + '%' }} />}
+                                {posCnt > 0 && <div className="h-full bg-gradient-to-r from-emerald-300 to-emerald-400" style={{ width: (posCnt / (posCnt + negCnt)) * 100 + '%' }} />}
+                              </div>
+                              <div className="text-[6px] text-slate-400 font-medium">{posCnt >= negCnt ? '✓ ' + pl + ' — ' + (vocab?.posVerdict || 'good') : '✗ ' + nl + ' — ' + (vocab?.negVerdict || 'adjust')}</div>
+                            </div>
+                            );
+                          })()}
+                        </>) : (
+                          flavorFamilies.filter(f => f.axes.includes(layer.key)).map(f => {
+                            const active = (flavorNotes[layer.key] || []).includes(f.name);
+                            return (
+                              <button key={f.name} onClick={() => setFlavorNotes(p => {
+                                const curr = p[layer.key] || [];
+                                const next = curr.includes(f.name) ? curr.filter(x => x !== f.name) : [...curr, f.name];
+                                return { ...p, [layer.key]: next };
+                              })}
+                                className={`text-[7px] px-1.5 py-0.5 rounded-full border transition-colors ${active ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                              >{f.emoji} {f.name}</button>
+                            );
+                          })
+                        )}
+                      </div>
                     )}
                   </div>
                 );
               })}
-              <div className="pt-3 mt-1 border-t border-slate-100">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[9px] font-semibold text-slate-500">⚖️ Balance</span>
-                  <span className="text-[8px] text-slate-400">{netBalance === 0 ? 'Neutral' : netBalance < 0 ? 'Under-extracted' : 'Over-extracted'} ({netBalance > 0 ? '+' : ''}{netBalance})</span>
-                </div>
-                <div className="relative h-5 rounded-full overflow-hidden bg-gradient-to-r from-blue-100 via-slate-100 to-orange-100">
-                  <div className="absolute inset-0 flex items-center justify-between px-2 text-[7px] text-slate-500 font-medium">
-                    <span className={netBalance < 0 ? 'text-blue-700 font-semibold' : ''}>Missing</span>
-                    <span className={netBalance === 0 ? 'text-slate-700 font-semibold' : ''}>Balanced</span>
-                    <span className={netBalance > 0 ? 'text-orange-700 font-semibold' : ''}>Too much</span>
-                  </div>
-                  {netBalance !== 0 && (
-                    <div className="absolute top-0 bottom-0 rounded-full bg-white/60 shadow-inner transition-all duration-200" style={{
-                      left: netBalance < 0 ? `${balancePct}%` : '50%',
-                      right: netBalance > 0 ? `${100 - balancePct}%` : '50%',
-                    }} />
-                  )}
-                  <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white border-[3px] shadow-md transition-all duration-200" style={{
-                    left: `calc(${balancePct}% - 8px)`,
-                    borderColor: netBalance === 0 ? '#94a3b8' : netBalance < 0 ? '#3b82f6' : '#f97316'
-                  }} />
-                </div>
-              </div>
               </>);
             })()}
           </div>

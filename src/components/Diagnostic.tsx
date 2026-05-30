@@ -444,12 +444,18 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
   const [improveTo, setImproveTo] = useState(5);
   const [profileMode, setProfileMode] = useState<'slider' | 'chip'>('slider');
   const [judgeSummoned, setJudgeSummoned] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>('');
+  const voiceSetRef = useRef(false);
+  const [showTranscript, setShowTranscript] = useState(true);
   const [chipReasons, setChipReasons] = useState<Record<string, string[]>>({});
   const [chipAwards, setChipAwards] = useState<Record<string, boolean>>({});
   const [notedDescriptors, setNotedDescriptors] = useState<Record<string, string | null>>({});
-  const [tab, setTab] = useState<'profile' | 'extraction' | 'internal' | 'timing' | 'hidden' | 'external' | 'symptoms'>('profile');
+  const [tab, setTab] = useState<'profile' | 'composition' | 'extraction' | 'internal' | 'timing' | 'hidden' | 'external' | 'symptoms'>('profile');
   const [focusAxes, setFocusAxes] = useState<string[]>([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [composition, setComposition] = useState<Record<string, number>>({ acidity: 0, sweetness: 0, flavor: 0, mouthfeel: 0, aftertaste: 0, overall: 0 });
   const [snapshots, setSnapshots] = useState<SnapshotData[]>([]);
   const [showSnapshots, setShowSnapshots] = useState(true);
   const [equipment, setEquipment] = useState<Equipment>({ dripper: '', paper: '', mod: '', burrType: '', burrSize: '', finesFeel: 5, grindEffort: 5, grindSetting: 5, dose: 18, ratio: '1:16', planTime: '', timeFinished: '' });
@@ -635,6 +641,43 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
     }
   }, [improveTo]);
 
+  // Load browser voices, exclude David
+  useEffect(() => {
+    let attempts = 0;
+    const load = () => {
+      const all = window.speechSynthesis.getVoices().filter((v: SpeechSynthesisVoice) => !/david/i.test(v.name));
+      if (all.length === 0 && attempts < 5) { attempts++; setTimeout(load, 300); return; }
+      setVoices(all);
+      if (!voiceSetRef.current && all.length > 0) {
+        const prefer = all.find(v => /zira|mark|natural|neural/i.test(v.name));
+        setSelectedVoice(prefer ? prefer.name : all[0].name);
+        voiceSetRef.current = true;
+      }
+    };
+    load();
+    window.speechSynthesis.onvoiceschanged = load;
+    return () => { window.speechSynthesis.onvoiceschanged = null; };
+  }, []);
+
+  const playTranscript = (text: string) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const voice = voices.find(v => v.name === selectedVoice);
+    if (voice) u.voice = voice;
+    u.rate = 0.85;
+    u.pitch = /zira/i.test(selectedVoice) ? 1.2 : 0.7;
+    u.onstart = () => setIsSpeaking(true);
+    u.onend = () => setIsSpeaking(false);
+    u.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(u);
+  };
+
+  const stopTranscript = () => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
+
   const handleSave = () => {
     const data = { profile, improveTo, focusAxes, selectedSymptoms, snapshots, equipment, tds, brewYield, bloomTime, mainPourTime, drawdownTime, deliveryTime, extractionDose, extractionRatio, tdsGoal, eyGoal, eyMin, eyMax, yieldOut };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -741,7 +784,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
     for (let i = 0; i < lines.length; i++) {
       const l = lines[i];
       const label = AXIS_LABELS[l.axis];
-      segments.push({ text: `${label}: ${l.text}`, tone: l.tone });
+      const desc = notedDescriptors[l.axis];
+      segments.push({ text: `${label}${desc ? ` — ${desc.toLowerCase()}` : ''}: ${l.text}`, tone: l.tone });
     }
     segments.push({ text: closer, tone: 'closer' });
 
@@ -749,7 +793,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
     const drinkability = drinkRule || { text: '', icon: '' };
 
     return { lines, notes, verdict, segments, drinkability, plan };
-  }, [profile]);
+  }, [profile, notedDescriptors]);
 
   const integrityCheck = useMemo(() => {
     const entries: { key: string; label: string; score: number; context: string }[] = [];
@@ -882,6 +926,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
         </div>
         <div className="max-w-4xl mx-auto px-4 flex gap-1 flex-wrap">
           <button onClick={() => setTab('profile')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'profile' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>📊 Sensory</button>
+          <button onClick={() => setTab('composition')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'composition' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>🥪 Composition</button>
           <button onClick={() => setTab('extraction')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'extraction' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>📐 Extraction</button>
           <button onClick={() => setTab('internal')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'internal' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>🧠 Foundations</button>
           <button onClick={() => setTab('timing')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'timing' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>⏱ Timing</button>
@@ -970,7 +1015,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                         <div key={k} className="flex flex-col items-center gap-1.5">
                           <button onClick={() => toggleAward(k)}
                             className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${chipAwards[k] ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
-                          >{AXIS_LABELS[k]}</button>
+                          >{AXIS_LABELS[k]}{k === 'overall' && <span className="ml-1 text-[8px] font-normal text-slate-400">|</span>}{k === 'overall' && <button onClick={e => { e.stopPropagation(); setProfile(p => ({ ...p, overall: Math.round((p.acidity + p.sweetness + p.flavor + p.mouthfeel + p.aftertaste) / 5) })); }} className="ml-0.5 text-[8px] text-slate-400 hover:text-amber-600" title="Set as mean of all scores">∑</button>}</button>
                           {chipAwards[k] && (
                             <div className="flex flex-col items-center gap-1">
                               <div className="flex items-center gap-1.5 w-28">
@@ -1004,7 +1049,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                         <div key={k}>
                           <div className="flex items-center justify-between mb-0.5">
                             <span className="text-xs font-semibold text-slate-600 capitalize">{AXIS_LABELS[k]}</span>
-                            <span className="text-[11px] font-bold" style={{ color: scoreContext(profile[k]).color }}>{profile[k]} <span className="font-normal text-slate-400 text-[10px]">({scoreContext(profile[k]).label})</span></span>
+                            <span className="flex items-center gap-1"><span className="text-[11px] font-bold" style={{ color: scoreContext(profile[k]).color }}>{profile[k]} <span className="font-normal text-slate-400 text-[10px]">({scoreContext(profile[k]).label})</span></span>{k === 'overall' && <button onClick={() => setProfile(p => ({ ...p, overall: Math.round((p.acidity + p.sweetness + p.flavor + p.mouthfeel + p.aftertaste) / 5) }))} className="text-[8px] text-slate-400 hover:text-amber-600 border border-slate-200 hover:border-amber-400 rounded px-1 py-0.5" title="Set as mean of all scores">∑</button>}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-[9px] text-slate-400 font-mono w-3 text-right">0</span>
@@ -1055,7 +1100,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     {shadowJudge.lines.map((l, i) => (
                       <div key={i} className="flex items-start gap-1.5 text-[9px]">
                         <span className="font-semibold text-slate-500 shrink-0 w-14">{AXIS_LABELS[l.axis]}</span>
-                        <span className={`${l.tone === 'cheer' ? 'text-emerald-700' : l.tone === 'pressure' ? 'text-red-600' : 'text-slate-500'}`}>{l.score} — {l.text}</span>
+                        <span className={`${l.tone === 'cheer' ? 'text-emerald-700' : l.tone === 'pressure' ? 'text-red-600' : 'text-amber-600'}`}>{l.tone === 'cheer' ? '🟢 ' : l.tone === 'pressure' ? '🔴 ' : '🟡 '}{l.score} — {l.text}</span>
                       </div>
                     ))}
                   </div>
@@ -1083,6 +1128,22 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   )}
                 </div>
                 <div className="pt-1 border-t border-slate-200">
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => setShowTranscript(p => !p)} className="text-[10px] text-slate-400 hover:text-slate-600 mr-1">{showTranscript ? '▼' : '▶'} 📜 Transcript</button>
+                    {showTranscript && (<>
+                    <select value={selectedVoice} onChange={e => setSelectedVoice(e.target.value)}
+                      className="text-[8px] border border-slate-200 rounded px-1 py-0.5 text-slate-500 max-w-[120px]"
+                    >{voices.map(v => (
+                      <option key={v.name} value={v.name}>{v.name.replace(/Microsoft|Desktop|Online|\(Natural\)|\(Neural\)/g,'').trim()}</option>
+                    ))}</select>
+                    <button onClick={() => {
+                      const txt = shadowJudge.segments.map(s => s.text).join(' ');
+                      isSpeaking ? stopTranscript() : playTranscript(txt);
+                    }} className="text-[10px] px-1.5 py-0.5 rounded border border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-400"
+                    >{isSpeaking ? '⏹' : '▶'}</button>
+                    </>)}
+                  </div>
+                  {showTranscript && (
                   <p className="text-[8px] italic leading-relaxed mt-1">
                     <span className="text-[8px] text-slate-400 font-medium mr-1">📜</span>
                     {shadowJudge.segments.map((s, i) => (
@@ -1090,10 +1151,11 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                         s.tone === 'cheer' ? 'text-emerald-600' :
                         s.tone === 'pressure' ? 'text-red-600' :
                         s.tone === 'opener' || s.tone === 'closer' ? 'text-slate-400' :
-                        'text-slate-500'
-                      }>{s.text}{i < shadowJudge.segments.length - 1 ? ' ' : ''}</span>
+                        'text-amber-600'
+                      }>{s.tone === 'cheer' ? '🟢 ' : s.tone === 'pressure' ? '🔴 ' : s.tone === 'neutral' ? '🟡 ' : ''}{s.text}{i < shadowJudge.segments.length - 1 ? ' ' : ''}</span>
                     ))}
                   </p>
+                  )}
                 </div>
                   </>
                 )}
@@ -1369,7 +1431,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full ${extractionStatus.label === 'Increase extraction' ? 'bg-blue-100 text-blue-700' : extractionStatus.label === 'Decrease extraction' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>{extractionStatus.label === 'Increase extraction' ? '↑ Increase extraction' : extractionStatus.label === 'Decrease extraction' ? '↓ Decrease extraction' : 'Stay'}</span>
               </div>
               <div className="relative h-5 bg-gradient-to-r from-blue-100 via-emerald-100 to-red-100 rounded-full overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 font-medium"><span>Increase</span><span>Stay</span><span>Decrease</span></div>
+                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 font-medium"><span>Decrease</span><span>Stay</span><span>Increase</span></div>
                 <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-sm rounded-full transition-all duration-200" style={{ left: `${extractionStatus.barPos}%` }} />
                 <div className="absolute top-0.5 bottom-0.5 w-1.5 rounded-full bg-white border-2 shadow-sm transition-all duration-200" style={{ left: `calc(${extractionStatus.barPos}% - 3px)`, borderColor: extractionStatus.color }} />
               </div>
@@ -1511,6 +1573,65 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               </div>
             )}
           </>
+        )}
+
+        {tab === 'composition' && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">🥪</span>
+              <div>
+                <h2 className="text-sm font-bold text-slate-700">Composition</h2>
+                <p className="text-[8px] text-slate-400">Adjust each layer by how much you feel it needs — independent of your sensory score</p>
+              </div>
+            </div>
+            {(() => {
+              const layers = [
+                { key: 'mouthfeel', emoji: '🥖', label: 'Body', desc: 'Too thin or too heavy', negative: 'Too light', positive: 'Too heavy' },
+                { key: 'acidity', emoji: '🍅', label: 'Acidity', desc: 'Needs more or less brightness', negative: 'Too flat', positive: 'Too sharp' },
+                { key: 'sweetness', emoji: '🧀', label: 'Sweetness', desc: 'Lacking or overwhelming', negative: 'Too little', positive: 'Too much' },
+                { key: 'flavor', emoji: '🥩', label: 'Flavor', desc: 'Under or over expressed', negative: 'Too muted', positive: 'Too intense' },
+                { key: 'aftertaste', emoji: '🌿', label: 'Aftertaste', desc: 'Finish too short or too long', negative: 'Too short', positive: 'Too lingering' },
+                { key: 'overall', emoji: '🥗', label: 'Overall', desc: 'The whole composition', negative: 'Underbuilt', positive: 'Overbuilt' },
+              ];
+              return layers.map(layer => {
+                const sensoryScore = profile[layer.key as keyof Profile];
+                const adj = composition[layer.key] || 0;
+                const adjPct = ((adj + 3) / 6) * 100;
+                return (
+                  <div key={layer.key} className="mb-3 pb-2 border-b border-slate-50 last:border-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-semibold text-slate-600">{layer.emoji} {AXIS_LABELS[layer.key]} <span className="font-normal text-slate-400">— {layer.desc}</span></span>
+                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full`} style={{ backgroundColor: scoreContext(sensoryScore).color + '20', color: scoreContext(sensoryScore).color }}>Sensory {sensoryScore}/9</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[8px] w-12 text-right leading-tight ${adj < 0 ? 'text-blue-600 font-semibold' : 'text-slate-400'}`}>{layer.negative}</span>
+                      <div className="flex-1 relative h-6">
+                        <div className="absolute inset-0 rounded-full overflow-hidden">
+                          <div className="absolute inset-0 bg-slate-100 rounded-full" />
+                          <div className="absolute top-0 bottom-0 left-0 rounded-full bg-gradient-to-r from-blue-400 to-blue-500 transition-all duration-200" style={{ width: adj < 0 ? `${(-adj / 3) * 50}%` : '0%', opacity: adj < 0 ? 0.9 : 0 }} />
+                          <div className="absolute top-0 bottom-0 right-0 rounded-full bg-gradient-to-l from-orange-400 to-orange-500 transition-all duration-200" style={{ width: adj > 0 ? `${(adj / 3) * 50}%` : '0%', right: 0, opacity: adj > 0 ? 0.9 : 0 }} />
+                        </div>
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <span className="text-[10px] font-bold drop-shadow-sm" style={{ color: adj === 0 ? '#64748b' : adj < 0 ? '#1e40af' : '#c2410c' }}>{adj > 0 ? '+' : ''}{adj}</span>
+                        </div>
+                        <div className="absolute top-0.5 h-5 w-5 rounded-full bg-white border-[3px] shadow-md transition-all duration-200 z-10 pointer-events-none" style={{
+                          left: `calc(${adjPct}% - 10px)`,
+                          borderColor: adj === 0 ? '#94a3b8' : adj < 0 ? '#3b82f6' : '#f97316'
+                        }} />
+                        <input type="range" min={-3} max={3} step={1} value={adj} onChange={e => setComposition(p => ({ ...p, [layer.key]: parseInt(e.target.value) }))}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                        />
+                      </div>
+                      <span className={`text-[8px] w-12 leading-tight ${adj > 0 ? 'text-orange-600 font-semibold' : 'text-slate-400'}`}>{layer.positive}</span>
+                    </div>
+                    {adj !== 0 && (
+                      <div className="mt-1 text-[7px] italic text-slate-400 pl-12">{adj < 0 ? `Your sensory score (${sensoryScore}) suggests you pick up on it — but structurally you feel it needs less presence. The ingredient needs dialing back.` : `Your sensory score (${sensoryScore}) registers it — but structurally you feel it needs more presence. The ingredient needs dialing up.`}</div>
+                    )}
+                  </div>
+                );
+              });
+            })()}
+          </div>
         )}
 
         {tab === 'extraction' && (() => {
@@ -1927,7 +2048,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full ${extractionStatus.label === 'Increase extraction' ? 'bg-blue-100 text-blue-700' : extractionStatus.label === 'Decrease extraction' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>{extractionStatus.label === 'Increase extraction' ? '↑ Increase extraction' : extractionStatus.label === 'Decrease extraction' ? '↓ Decrease extraction' : 'Stay'}</span>
               </div>
               <div className="relative h-5 bg-gradient-to-r from-blue-100 via-emerald-100 to-red-100 rounded-full overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 font-medium"><span>Increase</span><span>Stay</span><span>Decrease</span></div>
+                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 font-medium"><span>Decrease</span><span>Stay</span><span>Increase</span></div>
                 <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-sm rounded-full transition-all duration-200" style={{ left: `${extractionStatus.barPos}%` }} />
                 <div className="absolute top-0.5 bottom-0.5 w-1.5 rounded-full bg-white border-2 shadow-sm transition-all duration-200" style={{ left: `calc(${extractionStatus.barPos}% - 3px)`, borderColor: extractionStatus.color }} />
               </div>

@@ -1659,9 +1659,6 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 <button onClick={() => setShowSummary(p => !p)} className="flex items-center gap-1 text-[8px] font-semibold text-slate-500 mb-1">
                   <span className="text-[6px]">{showSummary ? '▼' : '▶'}</span>
                   Summary
-                  <span className={`text-[6px] font-bold px-1 py-0.5 rounded ${netBalance === 0 ? 'text-slate-400 bg-slate-100' : netBalance < 0 ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50'}`}>
-                    Net {netBalance > 0 ? '+' : ''}{netBalance}
-                  </span>
                 </button>
                 {showSummary && (<>
                 <div className="relative h-5 rounded-full overflow-hidden bg-gradient-to-r from-blue-100 via-slate-100 to-orange-100 mb-2">
@@ -1680,6 +1677,18 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     left: `calc(${balancePct}% - 8px)`,
                     borderColor: netBalance === 0 ? '#94a3b8' : netBalance < 0 ? '#3b82f6' : '#f97316'
                   }} />
+                </div>
+                <div className="flex justify-between items-center mb-2 mt-1">
+                  <div>
+                    <span className="text-[9px] text-slate-400">Composition Index of this cup: </span>
+                    <span className="text-[11px] font-bold text-slate-600">{AXES.reduce((s, k) => s + Math.abs(composition[k] || 0), 0)}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9px] text-slate-400">Balance Index of this cup: </span>
+                    <span className={`text-[11px] font-bold ${netBalance === 0 ? 'text-slate-600' : netBalance < 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                      {netBalance > 0 ? '+' : ''}{netBalance}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
                 {layers.map(l => {

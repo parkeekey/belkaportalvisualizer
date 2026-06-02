@@ -67,3 +67,14 @@ Commands:
 When committing to a branch that serves docs/ (GitHub Pages), every file referenced by `docs/index.html` must be tracked and committed together. If you update the HTML to point to a new hash-named JS/CSS asset, verify that asset exists in the working tree AND is staged in the same commit. Orphaned assets → blank page.
 
 Likewise, never rely on untracked files — `git status` will show them; if they're build output referenced by committed files, they must be included.
+
+## Design Philosophy — Human Experience First
+
+Before writing UI code, always ask: **how would a human actually use this?**
+
+Specific rules:
+1. If you don't have a clear picture of how the interaction works in the real world — **search the internet or ask me**. Don't guess.
+2. Visual feedback must be instantly readable at a glance. If someone has to squint, do mental math, or parse decimals to understand state — the design is wrong.
+3. Containers/borders must give visual context. A floating bar with no container is confusing — a bar inside a bordered well shows "how full" at a glance.
+4. Input must match physical intuition. If the real action feels like "tapping particles into a sieve slot", the UI should feel like that — not "incrementing a counter."
+5. When frustrated, the user is usually right about the *problem* even if wrong about the *solution*. Listen to the complaint, not the fix.

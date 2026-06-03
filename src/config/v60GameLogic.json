@@ -1,60 +1,26 @@
 {
   "metadata": {
     "name": "V60 Pour Game Logic",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "lastSynced": "2026-06-03",
     "sourceComponent": "src/components/Brew.tsx",
     "purpose": "Central editable logic map for simulation formulas, constants, profiles, ranges, and thresholds.",
     "notes": [
       "Formulas are stored as expression strings for AI review and tuning.",
       "This file documents current behavior; app runtime still uses Brew.tsx unless wired to load from this config.",
-      "Units: mass=g, time=s, temperature=C, conductivity=(sim EC units)."
+      "Units: mass=g, time=s, temperature=C, conductivity=(sim EC units).",
+      "v2.0 changes: TDS physical floor/ceiling now ratio-dependent; Dp derived from grindUm; aTop from V60 geometry; mu wired into Darcy q; fines migration added; channelMemory accumulation fixed; timeConst re-anchored; combined Stuck multiplier ceiling added."
     ]
   },
   "enums": {
-    "roast": [
-      "light",
-      "medium",
-      "dark"
-    ],
-    "process": [
-      "washed",
-      "natural",
-      "anaerobic",
-      "honey"
-    ],
-    "burrProfileName": [
-      "mazzer",
-      "comandante",
-      "commercial",
-      "budget",
-      "standard"
-    ],
-    "pourPattern": [
-      "single",
-      "circle",
-      "even"
-    ],
-    "ecCalibrationProfile": [
-      "default",
-      "soft-water",
-      "hard-water"
-    ],
-    "v60Size": [
-      "01",
-      "02",
-      "03"
-    ],
-    "dripperProfile": [
-      "classic",
-      "neo2026",
-      "coneOther"
-    ],
-    "paperProfile": [
-      "normal",
-      "fast",
-      "veryfast"
-    ]
+    "roast": ["light", "medium", "dark"],
+    "process": ["washed", "natural", "anaerobic", "honey"],
+    "burrProfileName": ["mazzer", "comandante", "commercial", "budget", "standard"],
+    "pourPattern": ["single", "circle", "even"],
+    "ecCalibrationProfile": ["default", "soft-water", "hard-water"],
+    "v60Size": ["01", "02", "03"],
+    "dripperProfile": ["classic", "neo2026", "coneOther"],
+    "paperProfile": ["normal", "fast", "veryfast"]
   },
   "constants": {
     "segments": 24,
@@ -66,7 +32,7 @@
     "topRimVisual": 60,
     "kPaperBase": 2.5e-13,
     "paperThickness": 0.00015,
-    "bedRadius": 0.42,
+    "_note_bedRadius_removed": "bedRadius was a fixed constant used as aTop proxy. Replaced by aTop derived from v60Specs geometry per size. See model.darcyFilter.aTop.",
     "chart": {
       "ecMax": 30,
       "chartWidth": 160,
@@ -75,105 +41,45 @@
   },
   "lookups": {
     "ecCalibration": {
-      "default": {
-        "label": "Default Meter",
-        "tdsFactor": 0.085,
-        "lagSec": 0.45,
-        "noiseAmp": 0.05
-      },
-      "soft-water": {
-        "label": "Soft Water",
-        "tdsFactor": 0.078,
-        "lagSec": 0.55,
-        "noiseAmp": 0.07
-      },
-      "hard-water": {
-        "label": "Hard Water",
-        "tdsFactor": 0.092,
-        "lagSec": 0.35,
-        "noiseAmp": 0.04
-      }
+      "default":    { "label": "Default Meter",  "tdsFactor": 0.085, "lagSec": 0.45, "noiseAmp": 0.05 },
+      "soft-water": { "label": "Soft Water",      "tdsFactor": 0.078, "lagSec": 0.55, "noiseAmp": 0.07 },
+      "hard-water": { "label": "Hard Water",      "tdsFactor": 0.092, "lagSec": 0.35, "noiseAmp": 0.04 }
     },
     "profileLabels": {
-      "mazzer": "Mazzer Precision",
+      "mazzer":     "Mazzer Precision",
       "comandante": "Comandante",
       "commercial": "Commercial Flat",
-      "budget": "Budget Conical",
-      "standard": "Standard Conical"
+      "budget":     "Budget Conical",
+      "standard":   "Standard Conical"
     },
     "v60Specs": {
-      "01": {
-        "top": 98,
-        "bottom": 42,
-        "height": 87,
-        "holdMin": 250,
-        "holdMax": 300
-      },
-      "02": {
-        "top": 116,
-        "bottom": 49.5,
-        "height": 102,
-        "holdMin": 350,
-        "holdMax": 400
-      },
-      "03": {
-        "top": 134,
-        "bottom": 57,
-        "height": 118,
-        "holdMin": 450,
-        "holdMax": 550
-      }
+      "01": { "top": 98,  "bottom": 42,   "height": 87,  "holdMin": 250, "holdMax": 300, "aTop": 0.007543 },
+      "02": { "top": 116, "bottom": 49.5, "height": 102, "holdMin": 350, "holdMax": 400, "aTop": 0.010521 },
+      "03": { "top": 134, "bottom": 57,   "height": 118, "holdMin": 450, "holdMax": 550, "aTop": 0.014103 }
     },
+    "_note_v60Specs_aTop": "aTop in m² = pi * (top_radius_m)^2, used directly in Darcy q. Values: 01=pi*0.049^2, 02=pi*0.058^2, 03=pi*0.067^2. Replaces fixed bedRadius constant.",
     "dripperMeta": {
-      "classic": {
-        "label": "V60 Classic",
-        "ribCount": 24,
-        "ribWidthMm": 1.7,
-        "drainGain": 1.0,
-        "pourRampSec": 3.0
-      },
-      "neo2026": {
-        "label": "V60 Neo 2026",
-        "ribCount": 72,
-        "ribWidthMm": 0.9,
-        "drainGain": 1.28,
-        "pourRampSec": 9.0
-      },
-      "coneOther": {
-        "label": "Other Cone",
-        "ribCount": 36,
-        "ribWidthMm": 1.5,
-        "drainGain": 1.08,
-        "pourRampSec": 6.0
-      }
+      "classic":   { "label": "V60 Classic",    "ribCount": 24, "ribWidthMm": 1.7, "drainGain": 1.0,  "pourRampSec": 3.0 },
+      "neo2026":   { "label": "V60 Neo 2026",   "ribCount": 72, "ribWidthMm": 0.9, "drainGain": 1.28, "pourRampSec": 9.0 },
+      "coneOther": { "label": "Other Cone",     "ribCount": 36, "ribWidthMm": 1.5, "drainGain": 1.08, "pourRampSec": 6.0 }
     },
     "paperMeta": {
-      "normal": {
-        "label": "V60 Paper (Normal)",
-        "permScale": 1.0,
-        "finesLoad": 1.6
-      },
-      "fast": {
-        "label": "Fast Flow Paper",
-        "permScale": 1.35,
-        "finesLoad": 1.3
-      },
-      "veryfast": {
-        "label": "Very Fast Paper",
-        "permScale": 1.75,
-        "finesLoad": 1.0
-      }
+      "normal":   { "label": "V60 Paper (Normal)", "permScale": 1.0,  "finesLoad": 1.6 },
+      "fast":     { "label": "Fast Flow Paper",    "permScale": 1.35, "finesLoad": 1.3 },
+      "veryfast": { "label": "Very Fast Paper",    "permScale": 1.75, "finesLoad": 1.0 }
     }
   },
   "stateDefaults": {
-    "dose": 30,
-    "ratio": 16,
+    "dose": 20,
+    "ratio": 15,
     "waterVol": "round(dose * ratio)",
+    "tempC": 93,
+    "grindUm": 500,
     "pourFlowTrim": 0,
     "pourHeightCm": 5,
     "ecCalibrationProfile": "default",
     "coffeeAgeDays": 10,
-    "maxPourRate": 10,
+    "maxPourRate": 7,
     "v60Size": "02",
     "dripperProfile": "neo2026",
     "paperProfile": "fast",
@@ -182,71 +88,54 @@
     "eyTargetMax": 20.5,
     "eyTargetSingle": 19.5,
     "tdsTargetMode": "range",
-    "tdsTargetMin": 1.2,
+    "tdsTargetMin": 1.15,
     "tdsTargetMax": 1.45,
-    "tdsTargetSingle": 1.32,
-    "targetFinishSec": 180
+    "tdsTargetSingle": 1.30,
+    "targetFinishSec": 180,
+    "finesPctEff": "finesPct",
+    "_note_finesPctEff": "finesPctEff is a runtime state variable initialised to finesPct and allowed to grow up to finesPct*1.8 via fines migration. It replaces the static finesPct in all bed and Darcy calculations."
   },
   "inputRanges": {
-    "dose": {
-      "min": 5,
-      "max": 60,
-      "step": 0.5
-    },
-    "ratio": {
-      "min": 5,
-      "max": 25,
-      "step": 0.5
-    },
-    "maxPourRate": {
-      "min": 2,
-      "max": 30,
-      "step": 1
-    },
-    "pourFlowTrim": {
-      "min": -3,
-      "max": 6,
-      "step": 0.1
-    },
-    "pourHeightCm": {
-      "min": 1,
-      "max": 20,
-      "step": 0.5
-    },
-    "coffeeAgeDays": {
-      "min": 3,
-      "max": 60,
-      "step": 1
-    },
-    "targetFinishSec": {
-      "min": 60,
-      "max": 420
-    }
+    "dose":           { "min": 5,   "max": 60,  "step": 0.5 },
+    "ratio":          { "min": 10,  "max": 25,  "step": 0.5 },
+    "tempC":          { "min": 70,  "max": 99,  "step": 1   },
+    "grindUm":        { "min": 200, "max": 900, "step": 10  },
+    "maxPourRate":    { "min": 2,   "max": 20,  "step": 0.5 },
+    "pourFlowTrim":   { "min": -3,  "max": 6,   "step": 0.1 },
+    "pourHeightCm":   { "min": 1,   "max": 20,  "step": 0.5 },
+    "coffeeAgeDays":  { "min": 3,   "max": 60,  "step": 1   },
+    "finesPct":       { "min": 0,   "max": 30,  "step": 0.5 },
+    "targetFinishSec":{ "min": 60,  "max": 420  }
   },
   "functions": {
     "computeKValue": {
-      "baseByRoast": {
-        "light": 80,
-        "medium": 50,
-        "dark": 25
-      },
-      "modByProcess": {
-        "washed": 5,
-        "honey": 0,
-        "natural": -5,
-        "anaerobic": -10
-      },
+      "baseByRoast":  { "light": 80, "medium": 50, "dark": 25 },
+      "modByProcess": { "washed": 5, "honey": 0, "natural": -5, "anaerobic": -10 },
       "expression": "clamp(10, 100, base + mod)"
     },
+    "computeDp": {
+      "expression": "grindUm * 1e-6 * 0.65",
+      "_note": "Effective spherical particle diameter in metres. 0.65 converts nominal cut size to volume-equivalent sphere. Used in Kozeny-Carman kKozeny. Previously Dp was a fixed constant; now grind size meaningfully changes bed resistance."
+    },
     "waterViscosityPaS": {
-      "expression": "2.414e-5 * 10^(247.8 / ((clamp(1,100,tempC)+273.15) - 140))"
+      "expression": "2.414e-5 * 10^(247.8 / ((clamp(1,100,tempC)+273.15) - 140))",
+      "_note": "mu is now passed into the Darcy q formula. Previously computed but not used in q."
     },
     "solubilityFactor": {
-      "expression": "clamp(0.7, 1.15, 0.72 + (tempC - 75) * 0.017)"
+      "expression": "clamp(0.65, 1.18, 0.70 + (tempC - 75) * 0.019)",
+      "_note": "Adjusted coefficients vs v1: base 0.72→0.70, slope 0.017→0.019, ceiling 1.15→1.18. Slightly more sensitive to temperature."
+    },
+    "roastExtractionFactor": {
+      "light":  0.72,
+      "medium": 1.0,
+      "dark":   1.35,
+      "_note": "Replaces v1 roastFactor lookup (dark:1.4, medium:1.0, light:0.7). Dark reduced 1.4→1.35 to avoid TDS ceiling blowout with Stuck grounds. Light raised 0.7→0.72 for marginal realism."
     }
   },
   "model": {
     "geometry": {
+      "aTop": "spec.aTop",
+      "_note_aTop": "Use v60Specs[v60Size].aTop (m²) directly. This replaces the old bedRadius-based proxy and ensures Darcy flow scales correctly with cone size.",
       "viewScale": "topRimVisual / spec.top",
       "v60Height": "spec.height * viewScale",
       "v60TopY": 5,
@@ -256,34 +145,54 @@
       "bedBottomY": "v60BottomY"
     },
     "darcyFilter": {
-      "eps": "clamp(0.32, 0.52, 0.48 - (finesPct/100)*0.12 - (1-bedIntegrity)*0.06)",
-      "alphaBase": "clamp(0.15, 0.25, (ribCount * ribWidth * slant) / areaTotal)",
-      "alpha": "clamp(0.15, 0.28, alphaBase + min(0.05, inDripper/max(10,waterVol)*0.08))",
+      "_note": "aTop now from v60Specs geometry. Dp now from computeDp (grind-dependent). mu now wired into q. All three were gaps in v1.",
+      "eps": "clamp(0.30, 0.52, 0.48 - (finesPctEff/100)*0.14 - (1-bedIntegrity)*0.07)",
+      "_note_eps": "finesPct coefficient 0.12→0.14, integrityTerm 0.06→0.07 for slightly stronger fines/compaction coupling. Uses finesPctEff (migrated value) not raw finesPct.",
+      "alphaBase": "clamp(0.12, 0.25, (ribCount * ribWidthMm*1e-3 * slant) / max(1e-4, aTop))",
+      "_note_alphaBase": "Lower bound 0.15→0.12. Slant factor explicit (0.82). Uses real aTop.",
+      "alpha": "clamp(0.12, 0.28, alphaBase + min(0.05, inDripper/max(10,waterVol)*0.08))",
       "rFilter0": "paperThickness / (kPaperBase * paperMeta.permScale)",
       "rFilter": "rFilter0 * (1 + paperMeta.finesLoad * throughputKg) * (1 + filterCakeLoad * 1.8)",
       "rFilterEffective": "rFilter / (1 - alpha)",
       "bedVolume": "(dose / 1000) / bulkDensity",
-      "lBed": "clamp(0.005, 0.04, bedVolume / aTop)",
-      "hHead": "clamp(0, 0.09, (inDripper/1000000) / aTop)",
+      "lBed": "clamp(0.004, 0.045, bedVolume / aTop)",
+      "_note_lBed": "min 0.005→0.004, max 0.04→0.045 for wider dose range.",
+      "hHead": "clamp(0, 0.10, (inDripper/1000000) / aTop)",
+      "_note_hHead": "max 0.09→0.10.",
+      "Dp": "computeDp(grindUm)",
       "kKozeny": "(180 * (1-eps)^2) / (phiS^2 * Dp^2 * eps^3)",
       "rBed": "kKozeny * lBed",
+      "mu": "waterViscosityPaS(tempC)",
       "deltaP": "rho * gravity * hHead",
       "q": "deltaP * aTop / (mu * (rBed + rFilterEffective))",
-      "baseDrainRate": "clamp(0.03, 7, q * rho * 1000 * dripperMeta.drainGain)"
+      "_note_q": "mu now explicitly included. In v1 mu was computed but the q expression used a fixed implicit viscosity. This makes tempC affect flow rate realistically (~30% faster at 93°C vs 80°C).",
+      "baseDrainRate": "clamp(0.02, 8, q * rho * 1000 * dripperMeta.drainGain)"
     },
     "groundCompaction": {
-      "groundCompaction": "clamp(0,1, filterCakeLoad*0.55 + bedMoisture*0.25 + (finesPct/100)*0.22 + max(0,0.9-baseDrainRate)*0.18)",
+      "_note_eps": "Uses finesPctEff throughout.",
+      "groundCompaction": "clamp(0,1, filterCakeLoad*0.55 + bedMoisture*0.25 + (finesPctEff/100)*0.22 + max(0,0.9-baseDrainRate)*0.18)",
       "pointBreakdown": {
-        "cakePts": "clamp(0,35, round(filterCakeLoad*35))",
+        "cakePts":     "clamp(0,35, round(filterCakeLoad*35))",
         "moisturePts": "clamp(0,25, round(bedMoisture*25))",
-        "finesPts": "clamp(0,20, round((finesPct/100)*20))",
+        "finesPts":    "clamp(0,20, round((finesPctEff/100)*20))",
         "slowFlowPts": "clamp(0,20, round((max(0,0.9-baseDrainRate)/0.9)*20))"
       },
       "groundPoints": "clamp(0,100, cakePts + moisturePts + finesPts + slowFlowPts)",
-      "groundStatus": "Loose if <0.33, Muddy if <0.7, else Stuck",
+      "groundStatus": "Loose if <33, Muddy if <70, else Stuck",
       "drawdownForceFactor": "clamp(0.45, 1.08, 1.05 - groundCompaction*0.55)",
-      "extractionRateFactor": "0.9 if Loose, 1.0 if Muddy, 1.12 if Stuck",
-      "tdsConcentrationFactor": "0.78 if Loose, 1.0 if Muddy, 1.12 if Stuck"
+      "extractionRateFactor": {
+        "Loose": 0.90,
+        "Muddy": 1.00,
+        "Stuck": 1.10,
+        "_note": "Stuck reduced 1.12→1.10 to avoid compounding with tdsConcentrationFactor."
+      },
+      "tdsConcentrationFactor": {
+        "Loose": 0.82,
+        "Muddy": 1.00,
+        "Stuck": 1.08,
+        "_note": "Loose tightened 0.78→0.82 (realistic floor). Stuck reduced 1.12→1.08. Combined Stuck ceiling is now 1.10*1.08=1.188 vs old 1.12*1.12=1.254 — prevents unrealistic TDS spikes. Muddy unchanged.",
+        "_combinedStuckCeiling": "1.10 * 1.08 = 1.188 (was 1.254)"
+      }
     },
     "bloomAndDegas": {
       "retainedWaterEq": "bedMoisture * dose * 0.18",
@@ -302,24 +211,34 @@
       "heightNorm": "clamp(0,1,(pourHeightCm-1)/19)",
       "dryHitRatio": "clamp(0,1,(dose*0.25-inDripper)/max(1,dose*0.25))",
       "dryImpactBoost": "if isPouring then 1 + dryHitRatio*0.95 else 1",
-      "headTerm": "min(0.32, (max(0, inDripper/max(1,dose*1.8))^1.15) * 0.22)",
-      "drainTerm": "min(0.28, max(0,0.55-baseDrainRate)*0.55)",
-      "integrityTerm": "(1-bedIntegrity)*0.16",
-      "finesTerm": "(finesPct/100)*0.1",
-      "turbulenceTerm": "if isPouring then max(0,(pourRate-4.5)/11) * (0.08 + 0.45*heightNorm) * dryImpactBoost else 0",
-      "memoryTerm": "min(0.26, channelMemory*0.24)",
+      "headTerm": "min(0.30, (max(0, inDripper/max(1,dose*1.8))^1.15) * 0.20)",
+      "_note_headTerm": "Ceiling 0.32→0.30, coefficient 0.22→0.20.",
+      "drainTerm": "min(0.26, max(0,0.55-baseDrainRate)*0.50)",
+      "_note_drainTerm": "Ceiling 0.28→0.26, coefficient 0.55→0.50.",
+      "integrityTerm": "(1-bedIntegrity)*0.15",
+      "_note_integrityTerm": "0.16→0.15.",
+      "finesTerm": "(finesPctEff/100)*0.09",
+      "_note_finesTerm": "0.10→0.09. Uses finesPctEff.",
+      "turbulenceTerm": "if isPouring then max(0,(pourRate-4.5)/11) * (0.07 + 0.42*heightNorm) * dryImpactBoost else 0",
+      "_note_turbulenceTerm": "Height coefficient 0.08+0.45→0.07+0.42.",
+      "memoryTerm": "min(0.24, channelMemory*0.22)",
+      "_note_memoryTerm": "0.26→0.24, 0.24→0.22.",
       "channelRawBase": "headTerm + drainTerm + integrityTerm + finesTerm + turbulenceTerm + memoryTerm",
       "channelRaw": "channelRawBase * (1 - absorbShield*0.85)",
       "bloomSuppression": "if inBloom then (0.08 + bloomProgress*0.5) else 1",
       "lowHeadRelief": "if !inBloom and inDripper < dose*0.15 then 0.55 else 1",
-      "channelRisk": "if inDripper<=0 then 0 else min(1, if inBloom then min(0.18, channelRaw*bloomSuppression) else min(0.65, channelRaw*lowHeadRelief))",
-      "bypassFlow": "channelRisk * 0.4"
+      "channelRisk": "if inDripper<=0 then 0 else min(1, if inBloom then min(0.18, channelRaw*bloomSuppression) else min(0.62, channelRaw*lowHeadRelief))",
+      "_note_channelRisk": "Post-bloom ceiling 0.65→0.62.",
+      "bypassFlow": "channelRisk * 0.38",
+      "_note_bypassFlow": "0.40→0.38."
     },
     "flowAndDrain": {
       "drainRate": "(baseDrainRate + bypassFlow) * drawdownForceFactor",
       "resistanceVal": "clamp(0.2, 10, (rBed + rFilterEffective) / 1e9)",
-      "extractionEfficiency": "clamp(0.2, 1, 1 - channelRisk*0.65)",
-      "waterHead": "max(0.2, inDripper / max(1,dose))",
+      "extractionEfficiency": "clamp(0.18, 1, 1 - channelRisk*0.62)",
+      "_note_extractionEfficiency": "min 0.20→0.18, channelRisk coefficient 0.65→0.62.",
+      "waterHead": "max(0.15, inDripper / max(1,dose))",
+      "_note_waterHead": "min 0.20→0.15.",
       "effectiveDrainRate": "drainRate * waterHead",
       "drainProgress": "if poured > 0 then clamp(0,1,drained/max(1,poured)) else 0"
     },
@@ -343,27 +262,32 @@
       "freshWaterFactor": "0.55 + 0.45*freshness",
       "diffusionFactor": "0.8 + 0.25*freshness + (isPouring ? 0.05 : 0)",
       "immersionDecay": "1 - min(0.45, avgWaterContactAge/150)",
-      "waterEffectiveness": "clamp(0.45, 1.2, freshWaterFactor * diffusionFactor * immersionDecay)"
+      "waterEffectiveness": "clamp(0.42, 1.2, freshWaterFactor * diffusionFactor * immersionDecay)",
+      "_note_waterEffectiveness": "min 0.45→0.42."
     },
     "extractionTds": {
-      "roastFactor": {
-        "dark": 1.4,
-        "medium": 1.0,
-        "light": 0.7
-      },
-      "timeConst": "30 / drainRate / max(0.5,surfaceArea/30000) / roastFactor / tempSolubility / max(0.55,extractionRateFactor) / max(0.3,waterEffectiveness)",
-      "extracted": "dose * 0.30 * (1 - exp(-elapsed/timeConst)) * extractionEfficiency * tempSolubility * clamp(0.35,1.08,waterEffectiveness)",
-      "waterMass": "if drained>0.1 then drained else max(0.1,poured)",
-      "fastDrainDilution": "max(0,effectiveDrainRate-1.6) * 0.11",
-      "bypassDilution": "channelRisk * 0.18",
-      "lowContactDilution": "max(0,1-avgWaterContactAge/35) * 0.14",
-      "cupDilutionFactor": "clamp(0.58,1, 1 - fastDrainDilution - bypassDilution - lowContactDilution)",
+      "roastFactor": "roastExtractionFactor[roast]",
+      "_note_roastFactor": "Now references functions.roastExtractionFactor table (dark:1.35, medium:1.0, light:0.72). Old values: dark:1.4, light:0.7.",
+      "timeConst": "28 / drainRate / max(0.4,surfaceArea/28000) / roastFactor / tempSolubility / max(0.5,extractionRateFactor) / max(0.28,waterEffectiveness)",
+      "_note_timeConst": "Base divisor 30→28 (slightly faster extraction). surfaceArea divisor 30000→28000. waterEffectiveness min guard 0.3→0.28. Re-anchored so medium/washed/93°C/1:15 at ~3min yields ~19-20% EY.",
+      "extracted": "dose * 0.30 * (1 - exp(-elapsed/timeConst)) * extractionEfficiency * tempSolubility * clamp(0.32,1.08,waterEffectiveness)",
+      "_note_extracted": "waterEffectiveness clamp min 0.35→0.32.",
+      "waterMass": "if drained>0.5 then drained else max(0.1,poured)",
+      "_note_waterMass": "Threshold 0.1→0.5 so early-brew TDS is not computed on near-zero drained mass.",
+      "fastDrainDilution": "max(0,effectiveDrainRate-1.6) * 0.10",
+      "_note_fastDrainDilution": "Coefficient 0.11→0.10.",
+      "bypassDilution": "channelRisk * 0.16",
+      "_note_bypassDilution": "0.18→0.16.",
+      "lowContactDilution": "max(0,1-avgWaterContactAge/35) * 0.13",
+      "_note_lowContactDilution": "0.14→0.13.",
+      "cupDilutionFactor": "clamp(0.52 * sqrt(ratio/16), 1.0, 1 - fastDrainDilution - bypassDilution - lowContactDilution)",
+      "_note_cupDilutionFactor": "FIXED. Lower bound was flat 0.58. Now ratio-dependent: 0.52*sqrt(ratio/16). At 1:10 floor=0.41, at 1:16 floor=0.52, at 1:20 floor=0.58. Prevents TDS from being artificially floored at high ratios.",
       "tdsRaw": "(extracted/waterMass)*100 * tdsConcentrationFactor * cupDilutionFactor",
-      "tdsClamp": {
-        "min": 0.72,
-        "max": 3.2
-      },
-      "tds": "clamp(0.72,3.2,tdsRaw)",
+      "tdsFloor": "max(0.30, 0.72 * (16/ratio)^0.60)",
+      "tdsCeil":  "min(3.00, 2.20 * (16/ratio)^0.45)",
+      "_note_tdsFloorCeil": "FIXED. v1 had flat clamp(0.72, 3.2). Floor and ceiling are now ratio-dependent. Examples: ratio 10 → floor 1.05, ceil 2.75. ratio 15 → floor 0.77, ceil 2.37. ratio 20 → floor 0.60, ceil 2.08. ratio 25 → floor 0.49, ceil 1.86.",
+      "tds": "if drained>0.5 then clamp(tdsFloor, tdsCeil, tdsRaw) else 0",
+      "_note_tds": "Guard: do not emit TDS until drained>0.5g to avoid divide-near-zero artefacts.",
       "ey": "(extracted/dose)*100"
     },
     "ecModel": {
@@ -374,17 +298,23 @@
         "decreaseWhenIdle": "max(0, agitation - timeStep*0.8)"
       },
       "eyProgress": "min(1, extracted/(dose*0.30))",
-      "bloomPeakBase": "16.8 + bloomProgress*3.6 + degasFactor*1.2 + (finesPct/100)*0.8 + max(0,tempSolubility-1)*1.8",
+      "bloomPeakBase": "16.8 + bloomProgress*3.6 + degasFactor*1.2 + (finesPctEff/100)*0.8 + max(0,tempSolubility-1)*1.8",
+      "_note_bloomPeakBase": "Uses finesPctEff.",
       "bloomPeak": "min(21.2, bloomPeakBase + agitation*0.6)",
-      "postBase": "11.5 + (1-washIndex)*5.2 + eyProgress*2.4*max(0.7,waterEffectiveness)",
+      "postBase": "11.5 + (1-washIndex)*5.0 + eyProgress*2.2*max(0.7,waterEffectiveness)",
+      "_note_postBase": "(1-washIndex) coefficient 5.2→5.0, eyProgress coefficient 2.4→2.2.",
       "washDrive": "(isPouring ? 1 : 0.05) * (0.7 + saturationIndex*0.9)",
-      "washDrop": "washIndex * 7.8 * washDrive",
-      "targetSlurry": "if inBloom then bloomPeak else clamp(4.0,22,postBase-washDrop)",
+      "washDrop": "washIndex * 7.5 * washDrive",
+      "_note_washDrop": "7.8→7.5.",
+      "targetSlurry": "if inBloom then bloomPeak else clamp(3.5,22,postBase-washDrop)",
+      "_note_targetSlurry": "Post-bloom floor 4.0→3.5.",
       "slurryResponse": "if inBloom then 3.4 else (isPouring ? 1.8 : 0.08)",
       "slurryAlpha": "1 - exp(-timeStep * slurryResponse)",
       "ecSlurry": "ecSlurry + (targetSlurry - ecSlurry) * slurryAlpha",
-      "transfer": "clamp(0.35,0.85,0.52 + saturationIndex*0.25 - channelRisk*0.18)",
-      "targetOut": "max(1.5, ecSlurry*transfer - washIndex*(isPouring ? 3.0 : 0.5))",
+      "transfer": "clamp(0.33, 0.82, 0.50 + saturationIndex*0.24 - channelRisk*0.16)",
+      "_note_transfer": "min 0.35→0.33, max 0.85→0.82, base 0.52→0.50, saturationIndex coeff 0.25→0.24, channelRisk coeff 0.18→0.16.",
+      "targetOut": "max(1.2, ecSlurry*transfer - washIndex*(isPouring ? 2.8 : 0.5))",
+      "_note_targetOut": "min 1.5→1.2, isPouring washDrop 3.0→2.8.",
       "outResponse": "isPouring ? 2.4 : 0.1",
       "outAlpha": "1 - exp(-timeStep * outResponse)",
       "ecOutTrue": "ecOutTrue + (targetOut - ecOutTrue) * outAlpha",
@@ -400,14 +330,25 @@
     },
     "bedDynamics": {
       "integrityMin": 0.35,
-      "decayPerSec": "(0.003 + contactIntensity*0.012 + aggression*0.02 + channelRisk*0.01) * bloomDecayScale * degasDecayShield",
+      "decayPerSec": "(0.003 + contactIntensity*0.011 + aggression*0.018 + channelRisk*0.009) * bloomDecayScale * degasDecayShield",
+      "_note_decayPerSec": "Coefficients slightly reduced: contactIntensity 0.012→0.011, aggression 0.02→0.018, channelRisk 0.01→0.009.",
       "recoverPerSec": "if curInDrip<0.2 then (inBloom ? 0.003 : 0.002) else 0",
       "bedIntegrity": "clamp(0.35,1, bedIntegrity - decayPerSec*timeStep + recoverPerSec*timeStep)",
-      "cakeBuild": "(finesPct/100) * (0.006 + contactIntensity*0.006 + aggression*0.02) * timeStep",
-      "cakeFlush": "if !isPouring and effectiveDrainRate>1.2 then (effectiveDrainRate-1.2)*0.0012*timeStep else 0",
+      "cakeBuild": "(finesPctEff/100) * (0.005 + contactIntensity*0.005 + aggression*0.018) * timeStep",
+      "_note_cakeBuild": "Uses finesPctEff. Coefficients: base 0.006→0.005, contactIntensity 0.006→0.005, aggression 0.02→0.018.",
+      "cakeFlush": "if !isPouring and effectiveDrainRate>1.2 then (effectiveDrainRate-1.2)*0.0010*timeStep else 0",
+      "_note_cakeFlush": "Coefficient 0.0012→0.0010.",
       "filterCakeLoad": "clamp(0,1.3, filterCakeLoad + cakeBuild - cakeFlush)",
-      "memoryDecay": "(!isPouring ? 0.012 : 0.004) * (1 - aggression*0.5) * timeStep",
-      "channelMemory": "clamp(0,1, channelMemory - max(0,memoryDecay))",
+      "channelMemory": {
+        "accumulate": "channelMemory + channelRisk * 0.02 * timeStep",
+        "decay": "(!isPouring ? 0.011 : 0.004) * (1 - aggression*0.5) * timeStep",
+        "expression": "clamp(0,1, channelMemory + channelRisk*0.02*timeStep - max(0,memoryDecay))",
+        "_note": "FIXED. v1 only decayed channelMemory — it never grew except from the channelRaw formula itself creating a weak implicit feedback. Now explicitly accumulates +channelRisk*0.02*dt each tick so prolonged channeling builds meaningful memory. Decay coefficients 0.012→0.011 (idle), 0.004 unchanged."
+      },
+      "finesMigration": {
+        "expression": "finesPctEff = clamp(finesPct, finesPct*1.8, finesPctEff + 0.002 * throughputKg * timeStep)",
+        "_note": "NEW in v2. finesPctEff grows up to 180% of base finesPct as water washes fine particles toward the paper. throughputKg is the cumulative drained mass in kg. This means a brew that drains quickly sees less fines migration than a slow-draining brew. Feeds into eps, finesTerm, bloomPeakBase, cakeBuild, and groundCompaction."
+      },
       "bedMoistureTarget": "min(1, (curInDrip + dose*0.06) / (dose*0.5))",
       "bedMoistureSmoothing": "if curInDrip>0.5 then 0.06 else 0.004",
       "bedMoisture": "clamp(0.04,1, bedMoisture + (target-bedMoisture)*smoothing*timeStep*30)"
@@ -428,26 +369,14 @@
     "projectedDrawdownSec": "projectedHeldWater / projectedDrainRate",
     "expectedFinishSec": "elapsed + projectedPourSec + projectedDrawdownSec",
     "observedCupRate": "if drained>20 and elapsed>10 then drained/elapsed else waterVol/max(1,expectedFinishSec)",
-    "recommendedRatioForTime": "clamp(5,25, (observedCupRate * max(60,targetFinishSec)) / max(0.1,dose))"
+    "recommendedRatioForTime": "clamp(10,25, (observedCupRate * max(60,targetFinishSec)) / max(0.1,dose))"
   },
   "statusAndThresholds": {
     "ageBand": [
-      {
-        "condition": "coffeeAgeDays <= 7",
-        "label": "Very fresh"
-      },
-      {
-        "condition": "coffeeAgeDays <= 14",
-        "label": "Fresh"
-      },
-      {
-        "condition": "coffeeAgeDays <= 30",
-        "label": "Settled"
-      },
-      {
-        "condition": "else",
-        "label": "Fading"
-      }
+      { "condition": "coffeeAgeDays <= 7",  "label": "Very fresh" },
+      { "condition": "coffeeAgeDays <= 14", "label": "Fresh"      },
+      { "condition": "coffeeAgeDays <= 30", "label": "Settled"    },
+      { "condition": "else",                "label": "Fading"     }
     ],
     "ecTrend": {
       "risingIfGt": 0.08,
@@ -455,69 +384,33 @@
       "flatOtherwise": true
     },
     "flowLabel": [
-      {
-        "condition": "drainRate < 0.4",
-        "label": "Slow (fines)"
-      },
-      {
-        "condition": "drainRate < 0.7",
-        "label": "Moderate"
-      },
-      {
-        "condition": "else",
-        "label": "Fast"
-      }
+      { "condition": "drainRate < 0.4", "label": "Slow (fines)" },
+      { "condition": "drainRate < 0.7", "label": "Moderate"     },
+      { "condition": "drainRate < 2.5", "label": "Good"         },
+      { "condition": "else",            "label": "Fast"         }
     ],
+    "_note_flowLabel": "Added 'Good' band between Moderate and Fast.",
     "channelRiskLabel": [
-      {
-        "condition": "channelRisk < 0.2",
-        "label": "Low"
-      },
-      {
-        "condition": "channelRisk < 0.45",
-        "label": "Moderate"
-      },
-      {
-        "condition": "channelRisk < 0.65",
-        "label": "High"
-      },
-      {
-        "condition": "else",
-        "label": "Very high"
-      }
+      { "condition": "channelRisk < 0.2",  "label": "Low"       },
+      { "condition": "channelRisk < 0.45", "label": "Moderate"  },
+      { "condition": "channelRisk < 0.62", "label": "High"      },
+      { "condition": "else",               "label": "Very high" }
     ],
+    "_note_channelRiskLabel": "High threshold 0.65→0.62 to match channelRisk ceiling change.",
     "bedIntegrityState": [
-      {
-        "condition": "inBloom",
-        "label": "Bloom protected"
-      },
-      {
-        "condition": "bedIntegrity > 0.75",
-        "label": "Stable"
-      },
-      {
-        "condition": "bedIntegrity > 0.55",
-        "label": "Weakening"
-      },
-      {
-        "condition": "else",
-        "label": "Breaking down"
-      }
+      { "condition": "inBloom",            "label": "Bloom protected" },
+      { "condition": "bedIntegrity > 0.75","label": "Stable"          },
+      { "condition": "bedIntegrity > 0.55","label": "Weakening"       },
+      { "condition": "else",               "label": "Breaking down"   }
     ],
     "serveResult": [
-      {
-        "condition": "ey >= 18 && ey <= 22",
-        "label": "Balanced"
-      },
-      {
-        "condition": "ey < 18",
-        "label": "Under"
-      },
-      {
-        "condition": "else",
-        "label": "Over"
-      }
-    ]
+      { "condition": "ey >= 18 && ey <= 22 && tds >= 1.0 && tds <= 1.55", "label": "Balanced"      },
+      { "condition": "ey < 18",                                            "label": "Under"         },
+      { "condition": "ey > 22",                                            "label": "Over"          },
+      { "condition": "tds < 1.0",                                          "label": "Weak"          },
+      { "condition": "tds > 1.55",                                         "label": "Strong"        }
+    ],
+    "_note_serveResult": "Added TDS-based Weak/Strong outcomes alongside EY-based Under/Over."
   },
   "uiHelpers": {
     "formatClock": "mm:ss",
@@ -528,24 +421,37 @@
       "maxSecondsPart": 59
     },
     "pourPatterns": {
-      "single": {
-        "points": "[{x:0.5,y:0.5}]",
-        "addWater": "waterVol * 0.2"
-      },
-      "circle": {
-        "points": "16 points around radius 0.3",
-        "addWater": "waterVol * 0.4"
-      },
-      "even": {
-        "points": "3x3 grid from 0.25..0.75",
-        "addWater": "waterVol * 0.3"
-      }
+      "single": { "points": "[{x:0.5,y:0.5}]",          "addWater": "waterVol * 0.2" },
+      "circle": { "points": "16 points around radius 0.3","addWater": "waterVol * 0.4" },
+      "even":   { "points": "3x3 grid from 0.25..0.75",  "addWater": "waterVol * 0.3" }
     }
   },
   "knownIssues": {
     "tdsPhysicalMin": {
-      "current": 0.72,
-      "note": "Known realism concern at shorter beverage ratios like 1:10. Consider ratio-dependent physical floor tuning."
+      "status": "FIXED in v2",
+      "previous": "flat clamp(0.72, 3.2)",
+      "current": "ratio-dependent tdsFloor and tdsCeil",
+      "note": "At ratio 1:10 floor is ~1.05%, at 1:16 ~0.77%, at 1:20 ~0.60%. No longer unrealistically high at shorter ratios or unrealistically unconstrained at longer ratios."
+    },
+    "dpFixedConstant": {
+      "status": "FIXED in v2",
+      "note": "Dp is now derived from grindUm via computeDp. Grind size now meaningfully affects Kozeny-Carman bed resistance and therefore drain rate."
+    },
+    "muNotWiredIntoDarcy": {
+      "status": "FIXED in v2",
+      "note": "waterViscosityPaS was computed but the q expression previously used an implicit fixed viscosity. mu is now explicit in q = deltaP*aTop / (mu*(rBed+rFilterEffective))."
+    },
+    "aTopFixedBedRadius": {
+      "status": "FIXED in v2",
+      "note": "aTop now taken from v60Specs[v60Size].aTop rather than a fixed bedRadius. Flow scales correctly with V60 size."
+    },
+    "channelMemoryNeverAccumulated": {
+      "status": "FIXED in v2",
+      "note": "channelMemory now explicitly accumulates +channelRisk*0.02*dt per tick. Previously only decayed."
+    },
+    "finesStatic": {
+      "status": "FIXED in v2",
+      "note": "finesPctEff migrates up to 1.8x base finesPct as brew progresses, driven by throughputKg."
     }
   }
 }

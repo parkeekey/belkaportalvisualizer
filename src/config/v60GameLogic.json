@@ -53,9 +53,9 @@
       "standard":   "Standard Conical"
     },
     "v60Specs": {
-      "01": { "top": 98,  "bottom": 42,   "height": 87,  "holdMin": 250, "holdMax": 300, "aTop": 0.007543 },
-      "02": { "top": 116, "bottom": 49.5, "height": 102, "holdMin": 350, "holdMax": 400, "aTop": 0.010521 },
-      "03": { "top": 134, "bottom": 57,   "height": 118, "holdMin": 450, "holdMax": 550, "aTop": 0.014103 }
+      "01": { "top": 98,  "bottom": 42,   "height": 87,  "holdMax": 360, "aTop": 0.007543 },
+      "02": { "top": 116, "bottom": 49.5, "height": 102, "holdMax": 600, "aTop": 0.010521 },
+      "03": { "top": 134, "bottom": 57,   "height": 118, "holdMax": 1000, "aTop": 0.014103 }
     },
     "_note_v60Specs_aTop": "aTop in m² = pi * (top_radius_m)^2, used directly in Darcy q. Values: 01=pi*0.049^2, 02=pi*0.058^2, 03=pi*0.067^2. Replaces fixed bedRadius constant.",
     "dripperMeta": {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import FoundationEfficiency from './FoundationEfficiency';
 
 type Roast = 'light' | 'medium' | 'dark';
 type Process = 'washed' | 'natural' | 'anaerobic' | 'honey';
@@ -67,9 +68,6 @@ export default function Brew({
   const [elapsed, setElapsed] = useState(0);
   const [tds, setTds] = useState(0);
   const [ey, setEy] = useState(0);
-  const [ecTdsEst, setEcTdsEst] = useState(0);
-  const [ecEyEst, setEcEyEst] = useState(0);
-  const [ecExtractedEst, setEcExtractedEst] = useState(0);
   const [served, setServed] = useState(false);
   const [bedProfile, setBedProfile] = useState<number[]>(() => Array(SEGMENTS).fill(1));
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
@@ -104,6 +102,9 @@ export default function Brew({
   const [showLabels, setShowLabels] = useState(false);
   const [showPourTrace, setShowPourTrace] = useState(true);
   const [showAdvancedDetails, setShowAdvancedDetails] = useState(false);
+  const [showTdsReport, setShowTdsReport] = useState(false);
+  const [showFoundationEff, setShowFoundationEff] = useState(true);
+  const [immersionGrindUm, setImmersionGrindUm] = useState(micronSetting);
   const [wetRipples, setWetRipples] = useState<{ x: number; y: number; birth: number; strength: number }[]>([]);
 
   const pouredRef = useRef(0);
@@ -124,7 +125,7 @@ export default function Brew({
   const wetContactRef = useRef(0);
   const agitationRef = useRef(0);
   const extractedRef = useRef(0);
-  const ecExtractedRef = useRef(0);
+  const tdsBreakdownRef = useRef({ extracted: 0, waterMass: 0, concFactor: 1, fastDrainDil: 0, bypassDil: 0, lowContactDil: 0, cupDilution: 1, rawTds: 0, floor: 0.9, ceil: 3.2, finalTds: 0 });
   const ecSlurryRef = useRef(0);
   const ecOutTrueRef = useRef(0);
   const ecOutRef = useRef(0);
@@ -145,9 +146,9 @@ export default function Brew({
 
   // V60 dimensions (real mm)
   const V60_SPECS = {
-    '01': { top: 98, bottom: 42, height: 87, holdMin: 250, holdMax: 300 },
-    '02': { top: 116, bottom: 49.5, height: 102, holdMin: 350, holdMax: 400 },
-    '03': { top: 134, bottom: 57, height: 118, holdMin: 450, holdMax: 550 },
+    '01': { top: 98, bottom: 42, height: 87, holdMax: 360 },
+    '02': { top: 116, bottom: 49.5, height: 102, holdMax: 600 },
+    '03': { top: 134, bottom: 57, height: 118, holdMax: 1000 },
   } as const;
   const DRIPPER_META = {
     classic: { label: 'V60 Classic', ribCount: 24, ribWidthMm: 1.7, drainGain: 1.0, pourRampSec: 3.0 },
@@ -179,6 +180,7 @@ export default function Brew({
   const g = 9.81;
   const mu = waterViscosityPaS(waterTempC);
   const tempSolubility = solubilityFactor(waterTempC);
+  const roastFactor = roast === 'dark' ? 1.4 : roast === 'medium' ? 1.0 : 0.7;
   const phiS = 0.75;
   const Dp = Math.max(120e-6, micronSetting * 1e-6);
   const eps = Math.max(0.32, Math.min(0.52, 0.48 - (finesPct / 100) * 0.12 - (1 - bedIntegrity) * 0.06));
@@ -454,20 +456,32 @@ export default function Brew({
 
       // Extraction & TDS (what's in the cup)
       if (pouredRef.current > 0) {
-        const roastFactor = roast === 'dark' ? 1.4 : roast === 'medium' ? 1.0 : 0.7;
-        const timeConst = 30 / drainRate / Math.max(0.5, surfaceArea / 30000) / roastFactor / tempSolubility / Math.max(0.55, extractionRateFactor) / Math.max(0.3, waterEffectivenessNow);
-        const extracted = dose * 0.30 * (1 - Math.exp(-elapsedRef.current / timeConst))
-          * extractionEfficiency * tempSolubility * Math.max(0.35, Math.min(1.08, waterEffectivenessNow));
-        extractedRef.current = extracted;
+        const maxExtractable = dose * 0.30 * extractionEfficiency;
+        // Immersion base rate: direct model — τ scales with grind (SA ∝ 1/grind)
+        const immersionBaseTc = IMMERSION_REF_TIMECONST * micronSetting / IMMERSION_REF_MICRON / roastFactor / tempSolubility;
+        // V60-specific turbulence multipliers on top of immersion baseline
+        const drainBoost = 1 + Math.min(0.3, drainRate * 0.08);
+        const turbulenceMultiplier = waterEffectivenessNow * drainBoost * Math.max(0.55, extractionRateFactor);
+        const remaining = Math.max(0, maxExtractable - extractedRef.current);
+        const extractionRate = remaining / immersionBaseTc * turbulenceMultiplier;
+        extractedRef.current += extractionRate * timeStep;
+        const extracted = extractedRef.current;
         const waterMass = drainedRef.current > 0.1 ? drainedRef.current : Math.max(0.1, pouredRef.current);
         const fastDrainDilution = Math.max(0, effectiveDrainRateNow - 1.6) * 0.11;
         const bypassDilution = channelRisk * 0.18;
         const lowContactDilution = Math.max(0, 1 - avgWaterContactAgeRef.current / 35) * 0.14;
         const cupDilutionFactor = Math.max(0.58, Math.min(1, 1 - fastDrainDilution - bypassDilution - lowContactDilution));
         const tdsValRaw = (extracted / waterMass) * 100 * tdsConcentrationFactor * cupDilutionFactor;
-        const tdsPhysicalMin = 0.72;
-        const tdsVal = Math.max(tdsPhysicalMin, Math.min(3.2, tdsValRaw));
+        const tdsFloor = (elapsedRef.current > 60 && pouredRef.current > dose * 0.3) ? 1.1 : 0.9;
+        const tdsCeil = 3.2;
+        const tdsVal = Math.max(tdsFloor, Math.min(tdsCeil, tdsValRaw));
         const eyVal = (extracted / dose) * 100;
+        tdsBreakdownRef.current = {
+          extracted, waterMass, concFactor: tdsConcentrationFactor,
+          fastDrainDil: fastDrainDilution, bypassDil: bypassDilution,
+          lowContactDil: lowContactDilution, cupDilution: cupDilutionFactor,
+          rawTds: tdsValRaw, floor: tdsFloor, ceil: tdsCeil, finalTds: tdsVal,
+        };
         setTds(tdsVal);
         setEy(eyVal);
       }
@@ -524,15 +538,6 @@ export default function Brew({
         const ecOutRaw = Math.max(0, Math.min(23, ecOutRef.current + sensorNoise));
         const ecSlurry = Number.isFinite(ecSlurryRaw) ? ecSlurryRaw : 0;
         const ecOut = Number.isFinite(ecOutRaw) ? ecOutRaw : 0;
-
-        // EC-based extraction estimate from instantaneous outflow conductivity.
-        const tdsFromEcNow = Math.max(0, Math.min(4, ecOut * ecCalibration.tdsFactor));
-        const drainDelta = Math.max(0, effectiveDrainRateNow * timeStep);
-        const ecExtractDelta = drainDelta * (tdsFromEcNow / 100);
-        ecExtractedRef.current += ecExtractDelta;
-        setEcTdsEst(tdsFromEcNow);
-        setEcExtractedEst(ecExtractedRef.current);
-        setEcEyEst((ecExtractedRef.current / Math.max(0.1, dose)) * 100);
 
         if (elapsedRef.current - lastEcLogRef.current > 0.5) {
           lastEcLogRef.current = elapsedRef.current;
@@ -605,7 +610,7 @@ export default function Brew({
     };
     animRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animRef.current);
-  }, [isPouring, remaining, waterVol, drainRate, dose, surfaceArea, served, roast, maxPourRate, extractionEfficiency, pourFlowTrim, degasLevel, dripperProfile, ecCalibration]);
+  }, [isPouring, remaining, waterVol, drainRate, dose, micronSetting, served, roast, maxPourRate, extractionEfficiency, pourFlowTrim, degasLevel, dripperProfile, ecCalibration]);
 
   const serve = useCallback(() => { setServed(true); setIsPouring(false); }, []);
 
@@ -616,16 +621,16 @@ export default function Brew({
     pourRateRef.current = 0; lastFrameRef.current = 0; bedMoistureRef.current = 0;
     bedIntegrityRef.current = 1; wetContactRef.current = 0;
     agitationRef.current = 0; extractedRef.current = 0;
-    ecExtractedRef.current = 0;
     ecSlurryRef.current = 0; ecOutTrueRef.current = 0; ecOutRef.current = 0;
     filterCakeRef.current = 0; channelMemoryRef.current = 0; pourSectorHitsRef.current = Array(SEGMENTS).fill(0);
     avgWaterContactAgeRef.current = 0;
     wetRipplesRef.current = []; lastRippleStampRef.current = 0;
-    setPoured(0); setDrained(0); setElapsed(0); setTds(0); setEy(0); setEcTdsEst(0); setEcEyEst(0); setEcExtractedEst(0); setFilterCakeLoad(0); setChannelMemory(0); setWaterEffectiveness(1); setAvgWaterContactSec(0);
+    setPoured(0); setDrained(0); setElapsed(0); setTds(0); setEy(0); setFilterCakeLoad(0); setChannelMemory(0); setWaterEffectiveness(1); setAvgWaterContactSec(0);
     setWetRipples([]);
     setPourPoints([]); setBedProfile(Array(SEGMENTS).fill(1));
     setServed(false); setIsPouring(false); setEcPoints([]); setFlowPoints([]); setPourRate(0); setBedMoisture(0); setBedIntegrity(1); setPourFlowTrim(0); setEcZoom(1);
-  }, []);
+    setImmersionGrindUm(micronSetting);
+  }, [micronSetting]);
 
   const patternPour = useCallback((ptn: PourPattern) => {
     if (served || remaining <= 0 || isPouring) return;
@@ -672,13 +677,6 @@ export default function Brew({
         ? 'Settled'
         : 'Fading';
   const turbulencePct = Math.round(Math.min(100, turbulenceTerm * 220));
-  const grindAdvice = turbulenceTerm > 0.14 || channelRisk > 0.5
-    ? 'Go coarser 1-2 clicks and lower pour height/flow.'
-    : resistanceVal > 5 || drainRate < 0.45
-      ? 'Likely too fine: go coarser 1 click.'
-      : drainRate > 1.9 && (tds < 1.2 || ey < 18)
-        ? 'Likely too coarse: go finer 1 click.'
-        : 'Grind looks balanced for this pour.';
   const targetEyCenter = Math.max(17.5, Math.min(21.5, 19.2 + (ratio - 16) * 0.18));
   const suggestedEyLow = Math.max(16.8, targetEyCenter - 1.1);
   const suggestedEyHigh = Math.min(22.5, targetEyCenter + 1.1);
@@ -689,6 +687,9 @@ export default function Brew({
   const suggestedTdsHigh = Math.min(1.95, targetTdsCenter + 0.16);
   const tdsGoalLow = tdsTargetMode === 'single' ? tdsTargetSingle : Math.min(tdsTargetMin, tdsTargetMax);
   const tdsGoalHigh = tdsTargetMode === 'single' ? tdsTargetSingle : Math.max(tdsTargetMin, tdsTargetMax);
+  const eyCenter = (eyGoalLow + eyGoalHigh) / 2;
+  const tdsCenter = (tdsGoalLow + tdsGoalHigh) / 2;
+  const recommendedRatioFromTargets = Math.max(5, Math.min(25, 2 + eyCenter / tdsCenter));
   const targetPourRateNow = Math.max(0.2, maxPourRate + pourFlowTrim);
   const remainingToPour = Math.max(0, waterVol - poured);
   const projectedDrainRate = Math.max(0.25, effectiveDrainRate);
@@ -696,11 +697,18 @@ export default function Brew({
   const projectedHeldWater = inDripper + remainingToPour * 0.55;
   const projectedDrawdownSec = projectedHeldWater / projectedDrainRate;
   const expectedFinishSec = elapsed + projectedPourSec + projectedDrawdownSec;
-  const observedCupRate = drained > 20 && elapsed > 10
-    ? drained / elapsed
-    : waterVol / Math.max(1, expectedFinishSec);
-  const recommendedRatioForTime = Math.max(5, Math.min(25, (observedCupRate * Math.max(60, targetFinishSec)) / Math.max(0.1, dose)));
   const finishDeltaSec = expectedFinishSec - targetFinishSec;
+  // Immersion baseline: direct physical model, no coupling to V60 distribution
+  // τ scales linearly with grind (SA ∝ 1/grind, so τ ∝ grind)
+  const IMMERSION_REF_MICRON = 800;
+  const IMMERSION_REF_TIMECONST = 150;
+  const immersionTimeConst = IMMERSION_REF_TIMECONST * immersionGrindUm / IMMERSION_REF_MICRON / roastFactor / tempSolubility;
+  const immersionWaterMass = Math.max(0.1, dose * ratio - 2 * dose);
+  const immersionExtractedAt = (t: number) => dose * 0.30 * (1 - Math.exp(-t / immersionTimeConst));
+  const immersionTDSAt = (t: number) => (immersionExtractedAt(t) / immersionWaterMass) * 100;
+  const immersionAnchors = [60, 120, 180, 240].map(t => ({ sec: t, tds: immersionTDSAt(t) }));
+  const currentImmersionTDS = immersionTDSAt(elapsed);
+  const tdsDelta = tds - currentImmersionTDS;
   const formatClock = (sec: number) => {
     const s = Math.max(0, Math.round(sec));
     return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -789,207 +797,177 @@ export default function Brew({
         <span className="text-[6px] text-slate-300">{roast}/{process}</span>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 mb-2 text-[7px]">
-        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-          <div className="text-slate-400">Foundation: Grind</div>
-          <div className="font-bold text-slate-700">#{Math.round(grindSetting)} • {micronSetting}um</div>
+      <div className="bg-slate-50 border border-slate-200 rounded px-3 py-2 mb-2 text-[7px] space-y-1.5">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+          <span className="text-slate-500">Grind <strong className="text-slate-700">#{Math.round(grindSetting)}</strong> <span className="text-slate-400">{micronSetting}µm</span></span>
+          <span className="text-slate-300">|</span>
+          <span className="text-slate-500">Ratio <strong className="text-slate-700">1:{ratio.toFixed(1)}</strong> <span className="text-slate-400">({waterVol}g)</span></span>
+          {poured <= 0 && (
+            <button type="button" onClick={() => { const r = Number(recommendedRatioFromTargets.toFixed(1)); setRatio(r); setWaterVol(Math.round(dose * r)); }}
+              className="text-[6px] text-slate-500 underline decoration-dotted" title={`from EY/TDS: 1:${recommendedRatioFromTargets.toFixed(1)}`}>
+              Apply rec
+            </button>
+          )}
+          {waterVol > spec.holdMax && (
+            <span className="text-[6px] text-amber-600 font-semibold">⚠ {waterVol}g exceeds V60 {v60Size} max ({spec.holdMax}ml)</span>
+          )}
+          <span className="text-slate-300">|</span>
+          <span className="text-slate-500">Temp <strong className="text-slate-700">{waterTempC}°C</strong></span>
+          <span className="text-slate-300">|</span>
+          <span className="text-slate-500">⏱ <strong className="text-slate-700">{formatClock(expectedFinishSec)}</strong></span>
+          <span className={`${Math.abs(finishDeltaSec) < 12 ? 'text-emerald-600' : finishDeltaSec > 0 ? 'text-amber-600' : 'text-sky-600'}`}>
+            ({finishDeltaSec > 0 ? `+${Math.round(finishDeltaSec)}s` : `${Math.round(Math.abs(finishDeltaSec))}s`})
+          </span>
+          <span className="text-slate-300">|</span>
+          <span className="text-slate-500">Turb <strong className="text-slate-700">{turbulencePct}%</strong></span>
         </div>
-        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-          <div className="text-slate-400">Foundation: Ratio</div>
-          <div className="font-bold text-slate-700">1:{ratio.toFixed(1)} ({waterVol}g)</div>
-          <div className="text-[6px] text-slate-500 mt-0.5">Rec 1:{recommendedRatioForTime.toFixed(1)} for {formatClock(targetFinishSec)}</div>
-          <button
-            type="button"
-            disabled={poured > 0}
-            onClick={() => {
-              const nextRatio = Number(recommendedRatioForTime.toFixed(1));
-              setRatio(nextRatio);
-              setWaterVol(Math.round(dose * nextRatio));
-            }}
-            className="text-[6px] text-slate-500 underline decoration-dotted disabled:opacity-40"
-          >
-            Apply recommended ratio
+
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+          <span>Ground <strong className={`${groundStatus === 'Stuck' ? 'text-red-600' : groundStatus === 'Muddy' ? 'text-amber-600' : 'text-emerald-600'}`}>{groundStatus}</strong> <span className="text-slate-400">({groundPoints}pts)</span></span>
+          <span className="text-slate-300">|</span>
+          <span className="text-slate-500">Drain <strong className="text-slate-700">{drainRate.toFixed(1)} g/s</strong></span>
+          <span className="text-slate-300">|</span>
+          <span className="text-slate-500">Water <strong className="text-slate-700">{(waterEffectiveness * 100).toFixed(0)}%</strong></span>
+          <span className="text-slate-300">|</span>
+          <span className="text-slate-500">Contact <strong className="text-slate-700">{avgWaterContactSec.toFixed(0)}s</strong></span>
+          <span className="text-slate-300">|</span>
+          <span className="text-slate-500">Cake <strong>{Math.round(filterCakeLoad * 100)}%</strong> · Fines <strong>{finesPct.toFixed(0)}%</strong></span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 border-t border-slate-200">
+          <span className="text-slate-500 font-semibold">Targets:</span>
+
+          <select value={eyTargetMode} onChange={e => setEyTargetMode(e.target.value as 'range' | 'single')}
+            className="text-[7px] font-bold text-slate-700 bg-white border border-slate-200 rounded px-1 py-0.5">
+            <option value="range">EY</option>
+            <option value="single">EY</option>
+          </select>
+          {eyTargetMode === 'range' ? (
+            <>
+              <input type="number" min={15} max={25} step={0.1} value={eyTargetMin}
+                onChange={e => setEyTargetMin(Number(e.target.value))}
+                className="w-10 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5" />
+              <span className="text-slate-400">-</span>
+              <input type="number" min={15} max={25} step={0.1} value={eyTargetMax}
+                onChange={e => setEyTargetMax(Number(e.target.value))}
+                className="w-10 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5" />
+            </>
+          ) : (
+            <input type="number" min={15} max={25} step={0.1} value={eyTargetSingle}
+              onChange={e => setEyTargetSingle(Number(e.target.value))}
+              className="w-12 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5" />
+          )}
+          <span className="font-bold text-emerald-700">{eyGoalLow.toFixed(1)}{eyGoalLow === eyGoalHigh ? '' : `-${eyGoalHigh.toFixed(1)}`}%</span>
+
+          <span className="text-slate-300">|</span>
+
+          <select value={tdsTargetMode} onChange={e => setTdsTargetMode(e.target.value as 'range' | 'single')}
+            className="text-[7px] font-bold text-slate-700 bg-white border border-slate-200 rounded px-1 py-0.5">
+            <option value="range">TDS</option>
+            <option value="single">TDS</option>
+          </select>
+          {tdsTargetMode === 'range' ? (
+            <>
+              <input type="number" min={0.8} max={2.2} step={0.01} value={tdsTargetMin}
+                onChange={e => setTdsTargetMin(Number(e.target.value))}
+                className="w-11 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5" />
+              <span className="text-slate-400">-</span>
+              <input type="number" min={0.8} max={2.2} step={0.01} value={tdsTargetMax}
+                onChange={e => setTdsTargetMax(Number(e.target.value))}
+                className="w-11 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5" />
+            </>
+          ) : (
+            <input type="number" min={0.8} max={2.2} step={0.01} value={tdsTargetSingle}
+              onChange={e => setTdsTargetSingle(Number(e.target.value))}
+              className="w-12 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5" />
+          )}
+          <span className="font-bold text-blue-700">{tdsGoalLow.toFixed(2)}{tdsGoalLow === tdsGoalHigh ? '' : `-${tdsGoalHigh.toFixed(2)}`}%</span>
+
+          <span className="text-slate-300">|</span>
+
+          <span className="text-slate-500">⏱</span>
+          <input type="text" inputMode="numeric" value={targetFinishText}
+            onChange={e => { setTargetFinishText(e.target.value); const p = parseMmSs(e.target.value); if (p !== null) setTargetFinishSec(p); }}
+            onBlur={() => { const p = parseMmSs(targetFinishText); const f = p ?? targetFinishSec; setTargetFinishSec(f); setTargetFinishText(formatClock(f)); }}
+            className="w-14 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5" />
+        </div>
+
+        {/* Use suggestion buttons */}
+        <div className="flex gap-2">
+          <button type="button" onClick={() => { setEyTargetMode('range'); setEyTargetMin(Number(suggestedEyLow.toFixed(1))); setEyTargetMax(Number(suggestedEyHigh.toFixed(1))); }}
+            className="text-[6px] text-slate-500 underline decoration-dotted">
+            EY suggestion: {suggestedEyLow.toFixed(1)}-{suggestedEyHigh.toFixed(1)}%
+          </button>
+          <button type="button" onClick={() => { setTdsTargetMode('range'); setTdsTargetMin(Number(suggestedTdsLow.toFixed(2))); setTdsTargetMax(Number(suggestedTdsHigh.toFixed(2))); }}
+            className="text-[6px] text-slate-500 underline decoration-dotted">
+            TDS suggestion: {suggestedTdsLow.toFixed(2)}-{suggestedTdsHigh.toFixed(2)}%
           </button>
         </div>
-        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-          <div className="text-slate-400">Foundation: Temp</div>
-          <div className="font-bold text-slate-700">{waterTempC}C</div>
-        </div>
-        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-          <div className="text-slate-400">Foundation: Time</div>
-          <div className="font-bold text-slate-700">Now {formatClock(elapsed)}</div>
-          <div className="text-[6px] text-slate-600">Expected finish {formatClock(expectedFinishSec)}</div>
-          <div className={`text-[6px] ${Math.abs(finishDeltaSec) < 12 ? 'text-emerald-600' : finishDeltaSec > 0 ? 'text-amber-600' : 'text-sky-600'}`}>
-            {finishDeltaSec > 0 ? `+${Math.round(finishDeltaSec)}s slower` : `${Math.round(Math.abs(finishDeltaSec))}s faster`} vs target
-          </div>
-          <div className="flex items-center gap-1 mt-0.5">
-            <span className="text-[6px] text-slate-500">Target</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={targetFinishText}
-              onChange={e => {
-                const next = e.target.value;
-                setTargetFinishText(next);
-                const parsed = parseMmSs(next);
-                if (parsed !== null) setTargetFinishSec(parsed);
-              }}
-              onBlur={() => {
-                const parsed = parseMmSs(targetFinishText);
-                const finalSec = parsed ?? targetFinishSec;
-                setTargetFinishSec(finalSec);
-                setTargetFinishText(formatClock(finalSec));
-              }}
-              className="w-14 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5"
-            />
-            <span className="text-[6px] text-slate-500">mm:ss</span>
-          </div>
-        </div>
-        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 col-span-2">
-          <div className="text-slate-400">Foundation: Turbulence + Grind Advice</div>
-          <div className="font-bold text-slate-700">{turbulencePct}% • {grindAdvice}</div>
-        </div>
-        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 col-span-2 md:col-span-4">
-          <div className="text-slate-400">Coffee Ground Status Point Tool</div>
-          <div className={`font-bold ${groundStatus === 'Stuck' ? 'text-red-600' : groundStatus === 'Muddy' ? 'text-amber-600' : 'text-emerald-600'}`}>
-            {groundStatus} • {groundPoints}/100 pts
-          </div>
-          <div className="text-[6px] text-slate-500">
-            Drawdown x{drawdownForceFactor.toFixed(2)} • Extraction rate x{extractionRateFactor.toFixed(2)} • TDS conc x{tdsConcentrationFactor.toFixed(2)}
-          </div>
-          <div className="text-[6px] text-slate-500">
-            Points: Cake {cakePts} • Moisture {moisturePts} • Fines {finesPts} • Slow flow {slowFlowPts}
-          </div>
-          <div className="text-[6px] text-slate-500">
-            Water effectiveness {(waterEffectiveness * 100).toFixed(0)}% • avg contact {avgWaterContactSec.toFixed(0)}s
+      </div>
+
+      {/* Immersion baseline — cupping / French press TDS reference (no turbulence, no flow) */}
+      {waterVol > 0 && (
+        <div className="bg-amber-50/40 border border-amber-200/50 rounded px-3 py-1.5 mb-2 text-[7px]">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-amber-700 font-semibold whitespace-nowrap">Immersion baseline</span>
+            <span className="text-amber-400">|</span>
+            <span className="text-amber-800/70 whitespace-nowrap">Grind</span>
+            <input type="number" step={10} value={immersionGrindUm}
+              onChange={e => setImmersionGrindUm(Number(e.target.value))}
+              className="w-14 text-center font-bold text-amber-900 bg-amber-100/60 border border-amber-300/50 rounded py-0.5" />
+            <button type="button" onClick={() => setImmersionGrindUm(micronSetting)}
+              className="text-amber-500 text-[6px] hover:text-amber-700 underline decoration-dotted whitespace-nowrap cursor-pointer">
+              ↺ V60 {micronSetting}µm
+            </button>
+            <span className="text-amber-400">|</span>
+            {immersionAnchors.map((a, i) => (
+              <span key={a.sec} className="text-amber-800/80 whitespace-nowrap">
+                @{a.sec / 60}' <strong className="text-amber-900">{a.tds.toFixed(2)}%</strong>
+                {i < immersionAnchors.length - 1 && <span className="text-amber-300 ml-1">·</span>}
+              </span>
+            ))}
+            <span className="text-amber-400">|</span>
+            <span className="whitespace-nowrap">
+              V60 <strong className={tdsDelta > 0.02 ? 'text-emerald-600' : tdsDelta < -0.02 ? 'text-red-500' : 'text-slate-500'}>{tds.toFixed(2)}%</strong>
+              {elapsed > 0 && (
+                <span className={tdsDelta > 0.02 ? 'text-emerald-600' : tdsDelta < -0.02 ? 'text-red-500' : 'text-slate-400'}>
+                  {' '}{tdsDelta > 0 ? '▲' : tdsDelta < 0 ? '▼' : '◆'}{Math.abs(tdsDelta).toFixed(2)}
+                </span>
+              )}
+            </span>
           </div>
         </div>
-        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-          <div className="text-slate-400">Target EY input</div>
-          <div className="flex items-center gap-1 mt-0.5">
-            <select
-              value={eyTargetMode}
-              onChange={e => setEyTargetMode(e.target.value as 'range' | 'single')}
-              className="text-[7px] font-bold text-slate-700 bg-white border border-slate-200 rounded px-1 py-0.5"
-            >
-              <option value="range">Range</option>
-              <option value="single">Single</option>
-            </select>
-            {eyTargetMode === 'range' ? (
-              <>
-                <input
-                  type="number"
-                  min={15}
-                  max={25}
-                  step={0.1}
-                  value={eyTargetMin}
-                  onChange={e => setEyTargetMin(Number(e.target.value))}
-                  className="w-10 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5"
-                />
-                <span className="text-slate-400">to</span>
-                <input
-                  type="number"
-                  min={15}
-                  max={25}
-                  step={0.1}
-                  value={eyTargetMax}
-                  onChange={e => setEyTargetMax(Number(e.target.value))}
-                  className="w-10 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5"
-                />
-              </>
-            ) : (
-              <input
-                type="number"
-                min={15}
-                max={25}
-                step={0.1}
-                value={eyTargetSingle}
-                onChange={e => setEyTargetSingle(Number(e.target.value))}
-                className="w-12 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5"
-              />
-            )}
-          </div>
-          <div className="font-bold text-emerald-700 mt-0.5">
-            Goal {eyGoalLow.toFixed(1)}{eyGoalLow === eyGoalHigh ? '' : `-${eyGoalHigh.toFixed(1)}`}%
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setEyTargetMode('range');
-              setEyTargetMin(Number(suggestedEyLow.toFixed(1)));
-              setEyTargetMax(Number(suggestedEyHigh.toFixed(1)));
-            }}
-            className="text-[6px] text-slate-500 underline decoration-dotted"
-          >
-            Use ratio suggestion ({suggestedEyLow.toFixed(1)}-{suggestedEyHigh.toFixed(1)}%)
+      )}
+
+      <div className="mb-2">
+        <div className="flex items-center justify-between mb-0.5">
+          <button onClick={() => setShowFoundationEff(v => !v)}
+            className="text-[7px] text-slate-400 hover:text-slate-600 underline decoration-dotted cursor-pointer">
+            {showFoundationEff ? '− Hide Foundation Efficiency' : '+ Show Foundation Efficiency'}
           </button>
         </div>
-        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-          <div className="text-slate-400">Target TDS input</div>
-          <div className="flex items-center gap-1 mt-0.5">
-            <select
-              value={tdsTargetMode}
-              onChange={e => setTdsTargetMode(e.target.value as 'range' | 'single')}
-              className="text-[7px] font-bold text-slate-700 bg-white border border-slate-200 rounded px-1 py-0.5"
-            >
-              <option value="range">Range</option>
-              <option value="single">Single</option>
-            </select>
-            {tdsTargetMode === 'range' ? (
-              <>
-                <input
-                  type="number"
-                  min={0.8}
-                  max={2.2}
-                  step={0.01}
-                  value={tdsTargetMin}
-                  onChange={e => setTdsTargetMin(Number(e.target.value))}
-                  className="w-11 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5"
-                />
-                <span className="text-slate-400">to</span>
-                <input
-                  type="number"
-                  min={0.8}
-                  max={2.2}
-                  step={0.01}
-                  value={tdsTargetMax}
-                  onChange={e => setTdsTargetMax(Number(e.target.value))}
-                  className="w-11 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5"
-                />
-              </>
-            ) : (
-              <input
-                type="number"
-                min={0.8}
-                max={2.2}
-                step={0.01}
-                value={tdsTargetSingle}
-                onChange={e => setTdsTargetSingle(Number(e.target.value))}
-                className="w-12 text-[7px] text-center font-bold text-slate-700 bg-white border border-slate-200 rounded py-0.5"
-              />
-            )}
-          </div>
-          <div className="font-bold text-blue-700 mt-0.5">
-            Goal {tdsGoalLow.toFixed(2)}{tdsGoalLow === tdsGoalHigh ? '' : `-${tdsGoalHigh.toFixed(2)}`}%
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setTdsTargetMode('range');
-              setTdsTargetMin(Number(suggestedTdsLow.toFixed(2)));
-              setTdsTargetMax(Number(suggestedTdsHigh.toFixed(2)));
-            }}
-            className="text-[6px] text-slate-500 underline decoration-dotted"
-          >
-            Use ratio suggestion ({suggestedTdsLow.toFixed(2)}-{suggestedTdsHigh.toFixed(2)}%)
-          </button>
-        </div>
+        {showFoundationEff && (
+          <FoundationEfficiency
+            drainRate={drainRate}
+            finesPct={finesPct}
+            micronSetting={micronSetting}
+            grindSetting={grindSetting}
+            ratio={ratio}
+            waterVol={waterVol}
+            dose={dose}
+            pourHeightCm={pourHeightCm}
+            pourRate={pourRate}
+            channelRisk={channelRisk}
+            turbulenceTerm={turbulenceTerm}
+            waterTempC={waterTempC}
+          />
+        )}
       </div>
 
       {showAdvancedDetails && (
         <>
           <div className="text-[7px] text-slate-500 mb-2">
-            V60-{v60Size}: rim {spec.top}mm • base {spec.bottom}mm • h {spec.height}mm • hold ~{spec.holdMin}-{spec.holdMax}ml
+            V60-{v60Size}: rim {spec.top}mm • base {spec.bottom}mm • h {spec.height}mm • hold ~{spec.holdMax}ml max
           </div>
 
           <div className="text-[7px] text-slate-500 mb-2">
@@ -1365,7 +1343,7 @@ export default function Brew({
               <circle cx={75} cy={32} r="0.8" fill="#64748b" />
               <line x1={75} y1={32} x2={83} y2={32} stroke="#64748b" strokeWidth="0.4" />
               <text x="84" y="31.5" fontSize="2.5" fill="#64748b" fontFamily="sans-serif">
-                Hold ~{spec.holdMin}-{spec.holdMax}ml
+                Hold ~{spec.holdMax}ml max
               </text>
 
               <circle cx={64} cy={48} r="0.8" fill="#64748b" />
@@ -1695,20 +1673,34 @@ export default function Brew({
             <span className="text-slate-400">EY</span>
             <span className={`font-bold tabular-nums ${ey > 0 ? 'text-emerald-700' : 'text-slate-300'}`}>{ey.toFixed(1)}%</span>
           </div>
+          <button onClick={() => setShowTdsReport(v => !v)}
+            className="text-[6px] text-slate-400 hover:text-slate-600 underline decoration-dotted mt-0.5 text-left">
+            {showTdsReport ? '− TDS calc report' : '+ TDS calc report'}
+          </button>
+          {showTdsReport && tds > 0 && (() => {
+            const b = tdsBreakdownRef.current;
+            return (
+              <div className="text-[6px] text-slate-500 leading-relaxed mt-1 pt-1 border-t border-slate-200 space-y-0.5">
+                <div className="flex justify-between"><span>Extracted</span><span className="font-mono">{b.extracted.toFixed(4)} g</span></div>
+                <div className="flex justify-between"><span>Water mass</span><span className="font-mono">{b.waterMass.toFixed(2)} g</span></div>
+                <div className="flex justify-between"><span>Conc factor</span><span className="font-mono">×{b.concFactor.toFixed(3)}</span></div>
+                <div className="flex justify-between"><span>Dilution (fastDrain)</span><span className="font-mono">−{b.fastDrainDil.toFixed(3)}</span></div>
+                <div className="flex justify-between"><span>Dilution (bypass)</span><span className="font-mono">−{b.bypassDil.toFixed(3)}</span></div>
+                <div className="flex justify-between"><span>Dilution (lowContact)</span><span className="font-mono">−{b.lowContactDil.toFixed(3)}</span></div>
+                <div className="flex justify-between"><span>Total dilution</span><span className="font-mono">×{b.cupDilution.toFixed(3)}</span></div>
+                <div className="flex justify-between"><span>Raw TDS</span><span className="font-mono">{b.rawTds.toFixed(3)}%</span></div>
+                <div className="flex justify-between"><span>Floor applied</span><span className="font-mono">{b.floor.toFixed(1)}%</span></div>
+                <div className="flex justify-between font-bold text-slate-600"><span>Final TDS</span><span className="font-mono">{tds.toFixed(2)}%</span></div>
+              </div>
+            );
+          })()}
           <div className="flex items-center justify-between text-[8px]">
             <span className="text-slate-400">EC out</span>
             <span className={`font-bold tabular-nums ${liveOutEc > 0 ? 'text-sky-700' : 'text-slate-300'}`}>{liveOutEc.toFixed(2)}</span>
           </div>
           <div className="flex items-center justify-between text-[8px]">
-            <span className="text-slate-400">EC→TDS (est)</span>
-            <span className={`font-bold tabular-nums ${ecTdsEst > 0 ? 'text-indigo-700' : 'text-slate-300'}`}>{ecTdsEst.toFixed(2)}%</span>
-          </div>
-          <div className="flex items-center justify-between text-[8px]">
-            <span className="text-slate-400">EC EY (est)</span>
-            <span className={`font-bold tabular-nums ${ecEyEst > 0 ? 'text-indigo-700' : 'text-slate-300'}`}>{ecEyEst.toFixed(2)}%</span>
-          </div>
-          <div className="text-[6px] text-slate-400 -mt-0.5">
-            EC extract est: {ecExtractedEst.toFixed(2)}g solubles (EC*flow integral)
+            <span className="text-slate-400">EC × Flow</span>
+            <span className={`font-bold tabular-nums ${liveOutEc > 0 && effectiveDrainRate > 0 ? 'text-violet-700' : 'text-slate-300'}`}>{(liveOutEc * effectiveDrainRate).toFixed(2)}</span>
           </div>
 
           <div className="flex items-center justify-between text-[7px]">

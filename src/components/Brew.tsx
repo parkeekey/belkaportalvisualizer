@@ -106,6 +106,8 @@ export default function Brew({
   const [showFoundationEff, setShowFoundationEff] = useState(true);
   const [immersionGrindUm, setImmersionGrindUm] = useState(micronSetting);
   const [wetRipples, setWetRipples] = useState<{ x: number; y: number; birth: number; strength: number }[]>([]);
+  const [extractionDepthPct, setExtractionDepthPct] = useState(0);
+  const [extractionWarning, setExtractionWarning] = useState<'none' | 'exhausting' | 'tannin' | 'over'>('none');
 
   const pouredRef = useRef(0);
   const drainedRef = useRef(0);
@@ -456,16 +458,45 @@ export default function Brew({
 
       // Extraction & TDS (what's in the cup)
       if (pouredRef.current > 0) {
-        const maxExtractable = dose * 0.30 * extractionEfficiency;
+        const maxExtractable = dose * 0.32 * extractionEfficiency;
         // Immersion base rate: direct model — τ scales with grind (SA ∝ 1/grind)
         const immersionBaseTc = IMMERSION_REF_TIMECONST * micronSetting / IMMERSION_REF_MICRON / roastFactor / tempSolubility;
         // V60-specific turbulence multipliers on top of immersion baseline
         const drainBoost = 1 + Math.min(0.3, drainRate * 0.08);
         const turbulenceMultiplier = waterEffectivenessNow * drainBoost * Math.max(0.55, extractionRateFactor);
+
+        // Progress-stiffened extraction model:
+        //   Single pool, single time constant that grows as extraction progresses,
+        //   naturally modeling that deeper-bound compounds are harder to extract.
+        //   τ_eff = baseTC / turbMult × (1 + 5 × progress²)
+        //
+        //   Early (progress≈0):  τ ≈ baseTC / turbMult — fast, easy solubles
+        //   Mid  (progress≈0.6): τ ≈ 2.8× slower — good compounds depleted
+        //   Late (progress≈0.8): τ ≈ 4.2× slower — tannin/bitter region
+        //   Extreme (progress≈0.9+): τ ≈ 5×+ slower — gravity can't finish
+        //
+        //   This means 30%+ EY requires hours/days, not minutes — physically
+        //   correct for a gravity-only V60 (espresso pressure excluded).
         const remaining = Math.max(0, maxExtractable - extractedRef.current);
-        const extractionRate = remaining / immersionBaseTc * turbulenceMultiplier;
+        const progress = maxExtractable > 0
+          ? Math.min(1, extractedRef.current / maxExtractable)
+          : 0;
+        const stiffness = 1 + 5 * progress * progress;
+        const effectiveTc = immersionBaseTc * stiffness / turbulenceMultiplier;
+
+        const extractionRate = remaining / effectiveTc;
         extractedRef.current += extractionRate * timeStep;
         const extracted = extractedRef.current;
+
+        // Warnings based on extraction progress
+        const depthPct = progress * 100;
+        let warning: 'none' | 'exhausting' | 'tannin' | 'over' = 'none';
+        if (depthPct > 90) warning = 'over';
+        else if (depthPct > 80) warning = 'tannin';
+        else if (depthPct > 65) warning = 'exhausting';
+        setExtractionDepthPct(Math.min(100, depthPct));
+        setExtractionWarning(warning);
+
         const waterMass = drainedRef.current > 0.1 ? drainedRef.current : Math.max(0.1, pouredRef.current);
         const fastDrainDilution = Math.max(0, effectiveDrainRateNow - 1.6) * 0.11;
         const bypassDilution = channelRisk * 0.18;
@@ -498,7 +529,7 @@ export default function Brew({
           agitationRef.current = Math.max(0, agitationRef.current - timeStep * 0.8);
         }
 
-        const eyProgress = Math.min(1, extractedRef.current / (dose * 0.30));
+        const eyProgress = Math.min(1, extractedRef.current / (dose * 0.32));
 
         // Bloom concentration spike from bed swelling/gas release. Target ~20-21 in bloom.
         const bloomPeakBase = 16.8
@@ -629,6 +660,7 @@ export default function Brew({
     setWetRipples([]);
     setPourPoints([]); setBedProfile(Array(SEGMENTS).fill(1));
     setServed(false); setIsPouring(false); setEcPoints([]); setFlowPoints([]); setPourRate(0); setBedMoisture(0); setBedIntegrity(1); setPourFlowTrim(0); setEcZoom(1);
+    setExtractionDepthPct(0); setExtractionWarning('none');
     setImmersionGrindUm(micronSetting);
   }, [micronSetting]);
 
@@ -1694,6 +1726,39 @@ export default function Brew({
               </div>
             );
           })()}
+
+          {/* Extraction depth — shows how far into the solubles we are */}
+          {poured > 0 && (
+            <>
+              <div className="flex items-center justify-between text-[7px] mt-1">
+                <span className="text-slate-400">Extraction depth</span>
+                <span className={`font-bold ${extractionWarning === 'over' ? 'text-red-500' : extractionWarning === 'tannin' ? 'text-orange-500' : extractionWarning === 'exhausting' ? 'text-amber-500' : 'text-slate-400'}`}>
+                  {extractionDepthPct.toFixed(0)}%
+                </span>
+              </div>
+              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden relative">
+                <div className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, extractionDepthPct)}%`,
+                    backgroundColor: extractionWarning === 'over' ? '#dc2626' : extractionWarning === 'tannin' ? '#ea580c' : extractionWarning === 'exhausting' ? '#d97706' : '#3b82f6',
+                  }} />
+                <div className="absolute top-0 h-full w-0.5 bg-red-400/60" style={{ left: '65%' }} />
+                <div className="absolute top-0 h-full w-0.5 bg-black/20" style={{ left: '80%' }} />
+              </div>
+              {extractionWarning !== 'none' && (
+                <div className="flex items-center gap-1 mt-0.5">
+                  {extractionWarning === 'over' ? (
+                    <span className="text-[6px] text-red-500 font-bold">⛔ Over-extracted — tannins dominate, bitter/astringent cup</span>
+                  ) : extractionWarning === 'tannin' ? (
+                    <span className="text-[6px] text-orange-600 font-bold">⚠ Tannin release — good pool spent, pulling bitter compounds</span>
+                  ) : (
+                    <span className="text-[6px] text-amber-600">△ Good pool nearly depleted — tannin risk rising</span>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
           <div className="flex items-center justify-between text-[8px]">
             <span className="text-slate-400">EC out</span>
             <span className={`font-bold tabular-nums ${liveOutEc > 0 ? 'text-sky-700' : 'text-slate-300'}`}>{liveOutEc.toFixed(2)}</span>

@@ -7,8 +7,13 @@ import CoffeeChat from './components/CoffeeChat';
 import BedVisual from './components/BedVisual';
 import ZenMode from './components/ZenMode';
 import Diagnostic from './components/Diagnostic';
+import Simulation from './components/Simulation';
+import EcSandbox from './components/EcSandbox';
+import SensoryMemo from './sensory-memo/SensoryMemo';
+import CoffeeProfilePage from './sensory-memo/CoffeeProfile';
+import { RecipeGenerator } from './sensory-memo';
 
-type AppPage = 'digitizer' | 'ultrakoki-parser' | 'setup-profile' | 'zen' | 'diagnostic';
+type AppPage = 'digitizer' | 'ultrakoki-parser' | 'setup-profile' | 'zen' | 'diagnostic' | 'simulation' | 'sensory-memo' | 'coffee-profile' | 'recipe-generator';
 
 const ACTIVE_PAGE_STORAGE_KEY = 'belka.activePage';
 
@@ -42,7 +47,7 @@ function App() {
   const [activePage, setActivePage] = useState<AppPage>(() => {
     try {
       const savedPage = localStorage.getItem(ACTIVE_PAGE_STORAGE_KEY);
-      return savedPage === 'ultrakoki-parser' || savedPage === 'diagnostic' ? savedPage : 'digitizer';
+      return savedPage === 'ultrakoki-parser' || savedPage === 'diagnostic' || savedPage === 'simulation' || savedPage === 'sensory-memo' || savedPage === 'coffee-profile' ? savedPage : 'digitizer';
     } catch {
       return 'digitizer';
     }
@@ -60,6 +65,7 @@ function App() {
   const [redLightECInput, setRedLightECInput] = useState('3.0');
   const lastRLRef = useRef(0);
   const manualRLRef = useRef(false);
+  const [sandboxEnabled, setSandboxEnabled] = useState(false);
 
   // Live-poll digitizer for EC curve data + red light threshold
   useEffect(() => {
@@ -154,7 +160,7 @@ function App() {
       if (parsed.setupProfile) {
         setupProfileRef.current?.importProfile(parsed.setupProfile as unknown as Parameters<typeof setupProfileRef.current.importProfile>[0]);
       }
-      setActivePage(parsed.activePage === 'ultrakoki-parser' || parsed.activePage === 'setup-profile' || parsed.activePage === 'zen' || parsed.activePage === 'diagnostic' ? parsed.activePage : 'digitizer');
+      setActivePage(parsed.activePage === 'ultrakoki-parser' || parsed.activePage === 'setup-profile' || parsed.activePage === 'zen' || parsed.activePage === 'diagnostic' || parsed.activePage === 'simulation' || parsed.activePage === 'sensory-memo' || parsed.activePage === 'coffee-profile' ? parsed.activePage : 'digitizer');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load workspace profile.';
       window.alert(message);
@@ -219,6 +225,34 @@ function App() {
                 🔍 Diagnostic
               </button>
               <button
+                onClick={() => setActivePage('simulation')}
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${activePage === 'simulation' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                title="Simulation — EC bench"
+              >
+                🔬 Simulate
+              </button>
+              <button
+                onClick={() => setActivePage('sensory-memo')}
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${activePage === 'sensory-memo' ? 'bg-violet-600 border-violet-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                title="Sensory Memo — flavor reference"
+              >
+                📝 Memo
+              </button>
+              <button
+                onClick={() => setActivePage('coffee-profile')}
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${activePage === 'coffee-profile' ? 'bg-amber-600 border-amber-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                title="Coffee Profile — bag notes & flavor analysis"
+              >
+                ☕ Profile
+              </button>
+              <button
+                onClick={() => setActivePage('recipe-generator')}
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${activePage === 'recipe-generator' ? 'bg-teal-600 border-teal-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                title="Recipe Generator — brew recipe from sensory profile"
+              >
+                📋 Recipe
+              </button>
+              <button
                 onClick={() => setChatOpen(v => !v)}
                 className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${chatOpen ? 'border-purple-300 bg-purple-100 text-purple-800' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
                 title="Open Brew Chat — AI brew assistant"
@@ -268,6 +302,24 @@ function App() {
                 >
                   Load Profile
                 </button>
+                <button
+                  onClick={() => {
+                    fetch('/api/snapshot', { method: 'POST' })
+                      .then(r => r.json())
+                      .then(data => {
+                        if (data.ok) {
+                          window.alert(`📸 Snapshot saved as branch: ${data.branch}`)
+                        } else {
+                          window.alert(`Snapshot failed: ${data.error}`)
+                        }
+                      })
+                      .catch(err => window.alert(`Snapshot error: ${err.message}`))
+                  }}
+                  className="px-3 py-2 text-sm font-semibold rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                  title="Save a git snapshot of the entire project at this moment"
+                >
+                  📸 Snapshot
+                </button>
               </div>
             </div>
           </div>
@@ -287,6 +339,13 @@ function App() {
                   <span className={`text-[9px] font-semibold uppercase tracking-wider ${liveECPoints.length > 0 && ecSource === 'digitizer' ? 'text-emerald-600' : 'text-slate-400'}`}>
                     {liveECPoints.length > 0 && ecSource === 'digitizer' ? `● ${liveECPoints.length} pts` : 'preset'}
                   </span>
+                  <button
+                    onClick={() => setSandboxEnabled(v => !v)}
+                    className={`px-2 py-0.5 text-[9px] font-bold rounded border transition-colors ${sandboxEnabled ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                    title="Toggle EC dial-in sandbox"
+                  >
+                    🔬
+                  </button>
                 </div>
               </div>
 
@@ -422,6 +481,18 @@ function App() {
               </div>
             </div>
           </section>
+
+          {sandboxEnabled && (
+            <section className="max-w-6xl mx-auto px-6 pb-6">
+              <EcSandbox
+                ecPoints={liveECPoints}
+                redLightThreshold={redLightECThreshold}
+                targetBrewTimeSec={targetBrewTimeSec}
+                enabled={sandboxEnabled}
+                onToggle={() => setSandboxEnabled(v => !v)}
+              />
+            </section>
+          )}
         </div>
         <div className={activePage === 'ultrakoki-parser' ? 'block' : 'hidden'} aria-hidden={activePage !== 'ultrakoki-parser'}>
           <UltrakokiParserPage ref={ultrakokiParserRef} />
@@ -434,6 +505,18 @@ function App() {
         )}
         {activePage === 'diagnostic' && (
           <Diagnostic onClose={() => setActivePage('digitizer')} />
+        )}
+        {activePage === 'simulation' && (
+          <Simulation />
+        )}
+        {activePage === 'sensory-memo' && (
+          <SensoryMemo />
+        )}
+        {activePage === 'coffee-profile' && (
+          <CoffeeProfilePage />
+        )}
+        {activePage === 'recipe-generator' && (
+          <RecipeGenerator />
         )}
       </main>
 

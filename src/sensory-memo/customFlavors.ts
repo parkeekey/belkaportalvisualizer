@@ -1,4 +1,4 @@
-import { CustomFlavorEntry, AromaFamily, TasteProfile } from './types';
+import { CustomFlavorEntry, AromaFamily, TasteProfile, BigAromaCategory, BigAromaSubgroup } from './types';
 
 const STORAGE_KEY = 'belka.customFlavors';
 
@@ -18,14 +18,17 @@ export function createCustomFlavor(
   label: string,
   emoji: string,
   family: AromaFamily,
+  bigCategory: BigAromaCategory,
+  bigSubgroup: BigAromaSubgroup,
   taste: TasteProfile,
   description: string,
   createdBy: 'user' | 'ai' = 'user',
   subgroup?: string,
+  similarTo?: string,
 ): CustomFlavorEntry {
   const now = new Date().toISOString();
   const id = `custom_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  return { id, emoji, label, family, subgroup, taste, description, createdBy, createdAt: now, updatedAt: now };
+  return { id, emoji, label, family, subgroup, bigCategory, bigSubgroup, taste, description, createdBy, createdAt: now, updatedAt: now, similarTo };
 }
 
 export function updateCustomFlavor(

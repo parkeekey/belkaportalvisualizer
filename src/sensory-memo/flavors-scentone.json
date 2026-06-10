@@ -1,0 +1,1235 @@
+[
+  {
+    "id": "scentone_guava",
+    "emoji": "🫒",
+    "label": "Guava",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": {
+      "sour": 2,
+      "sweet": 2,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sweet-tart tropical fruit with floral and grassy notes, balancing acidity and mild sweetness.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_mangosteen",
+    "emoji": "🫐",
+    "label": "Mangosteen",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": {
+      "sour": 1,
+      "sweet": 3,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A delicate sweet-tart tropical fruit with a soft, juicy, and slightly floral profile.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_mango",
+    "emoji": "🥭",
+    "label": "Mango",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": {
+      "sour": 1,
+      "sweet": 4,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A rich sweet tropical fruit with a distinctive aromatic, honeyed, and luscious flesh.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_banana",
+    "emoji": "🍌",
+    "label": "Banana",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": {
+      "sour": 0,
+      "sweet": 4,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 1
+    },
+    "description": "A creamy sweet tropical fruit with a soft, mellow, and slightly starchy character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_passionfruit",
+    "emoji": "🍈",
+    "label": "Passionfruit",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": {
+      "sour": 4,
+      "sweet": 2,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sharply tart and intensely aromatic tropical fruit with bright acidity and floral notes.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_watermelon",
+    "emoji": "🍉",
+    "label": "Watermelon",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": {
+      "sour": 0,
+      "sweet": 3,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A light, subtly sweet and refreshingly watery melon with a mild, clean finish.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_papaya",
+    "emoji": "🥝",
+    "label": "Papaya",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": {
+      "sour": 0,
+      "sweet": 3,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 1
+    },
+    "description": "A soft sweet tropical fruit with a musky, creamy character and gentle earthy undertones.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_tropical-fruit",
+    "emoji": "🍍",
+    "label": "Tropical Fruit",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": {
+      "sour": 1,
+      "sweet": 3,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A complex blend of sweet and tangy tropical notes, evocative of mixed exotic fruits.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_melon",
+    "emoji": "🍈",
+    "label": "Melon",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": {
+      "sour": 0,
+      "sweet": 3,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A mildly sweet, honeyed melon with a soft, juicy, and subtly floral aroma.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_lychee",
+    "emoji": "🍑",
+    "label": "Lychee",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": {
+      "sour": 1,
+      "sweet": 4,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A perfumed sweet tropical fruit with floral, rose-like notes and a delicate juicy texture.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_aloe",
+    "emoji": "🌱",
+    "label": "Aloe",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 1,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A mild, watery, and slightly bitter green note with a light vegetal freshness.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_acerola",
+    "emoji": "🍒",
+    "label": "Acerola",
+    "family": "fruity",
+    "subgroup": "berry",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "berry-like",
+    "taste": {
+      "sour": 5,
+      "sweet": 1,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "An intensely tart cherry-like berry with extreme acidity and a very bright, sharp finish.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_blackcurrant",
+    "emoji": "🫐",
+    "label": "Blackcurrant",
+    "family": "fruity",
+    "subgroup": "berry",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "berry-like",
+    "taste": {
+      "sour": 3,
+      "sweet": 2,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A bold, tart dark berry with tangy acidity, slight sweetness, and a deep fruit-forward character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_muscat",
+    "emoji": "🍇",
+    "label": "Muscat",
+    "family": "fruity",
+    "subgroup": "citrus",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "citrus-other-fruit",
+    "taste": {
+      "sour": 1,
+      "sweet": 4,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sweet, floral wine grape with honeyed richness and a perfumed, luscious character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_citron",
+    "emoji": "🍋",
+    "label": "Citron / Yuzu",
+    "family": "fruity",
+    "subgroup": "citrus",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "citrus-other-fruit",
+    "taste": {
+      "sour": 4,
+      "sweet": 1,
+      "bitter": 2,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sharp, intensely aromatic citrus with high acidity, pronounced bitterness, and bright zest.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_chinese-quince",
+    "emoji": "🍐",
+    "label": "Chinese Quince",
+    "family": "fruity",
+    "subgroup": "citrus",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "citrus-other-fruit",
+    "taste": {
+      "sour": 3,
+      "sweet": 1,
+      "bitter": 2,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A tart, astringent fruit with woody undertones, firm acidity, and a dry, firm finish.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_bergamot",
+    "emoji": "🍊",
+    "label": "Bergamot",
+    "family": "fruity",
+    "subgroup": "citrus",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "citrus-other-fruit",
+    "taste": {
+      "sour": 2,
+      "sweet": 2,
+      "bitter": 1,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "An aromatic citrus with floral sweetness, gentle acidity, and a distinctive perfumed zest.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_plum",
+    "emoji": "🍑",
+    "label": "Plum",
+    "family": "fruity",
+    "subgroup": "stone-fruit",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "stone-fruit",
+    "taste": {
+      "sour": 2,
+      "sweet": 3,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sweet-tart stone fruit with dark, juicy flesh and a balanced acidity level.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_apricot",
+    "emoji": "🍊",
+    "label": "Apricot",
+    "family": "fruity",
+    "subgroup": "stone-fruit",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "stone-fruit",
+    "taste": {
+      "sour": 1,
+      "sweet": 4,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A soft sweet stone fruit with delicate floral undertones and a velvety, round character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_jujube",
+    "emoji": "🫘",
+    "label": "Jujube",
+    "family": "fruity",
+    "subgroup": "stone-fruit",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "stone-fruit",
+    "taste": {
+      "sour": 0,
+      "sweet": 4,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sweet date-like fruit with mild honeyed richness and a chewy, concentrated texture.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_walnut",
+    "emoji": "🥜",
+    "label": "Walnut",
+    "family": "nutty",
+    "bigCategory": "sugar-browning",
+    "bigSubgroup": "cereal-nut",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 2,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A nutty, slightly bitter kernel with oily richness and a dry, astringent finish.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_pine-nut",
+    "emoji": "🌰",
+    "label": "Pine Nut",
+    "family": "nutty",
+    "bigCategory": "sugar-browning",
+    "bigSubgroup": "cereal-nut",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 1,
+      "salty": 0,
+      "umami": 1
+    },
+    "description": "A buttery, mild nut with a soft resinous undertone and a subtle savory edge.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_pistachio",
+    "emoji": "🟢",
+    "label": "Pistachio Nut",
+    "family": "nutty",
+    "bigCategory": "sugar-browning",
+    "bigSubgroup": "cereal-nut",
+    "taste": {
+      "sour": 0,
+      "sweet": 2,
+      "bitter": 0,
+      "salty": 1,
+      "umami": 0
+    },
+    "description": "A sweet nut with a distinctive green hue, light saltiness, and a delicate creamy texture.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_sesame",
+    "emoji": "🫘",
+    "label": "Sesame",
+    "family": "nutty",
+    "bigCategory": "sugar-browning",
+    "bigSubgroup": "cereal-nut",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 1,
+      "salty": 0,
+      "umami": 1
+    },
+    "description": "A nutty, toasty seed with a warm oily character and subtle umami depth.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_red-bean",
+    "emoji": "🫘",
+    "label": "Red Bean",
+    "family": "cereal",
+    "bigCategory": "sugar-browning",
+    "bigSubgroup": "cereal-nut",
+    "taste": {
+      "sour": 0,
+      "sweet": 3,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sweet, earthy legume with a soft starchy texture and mild nutty undertones.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_scorched-rice",
+    "emoji": "🍚",
+    "label": "Scorched Rice",
+    "family": "cereal",
+    "bigCategory": "sugar-browning",
+    "bigSubgroup": "cereal-nut",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 2,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A toasty, nutty grain with a slightly bitter charred edge and warm cereal aroma.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_mocha",
+    "emoji": "☕",
+    "label": "Mocha",
+    "family": "cocoa",
+    "bigCategory": "sugar-browning",
+    "bigSubgroup": "caramel-chocolate",
+    "taste": {
+      "sour": 0,
+      "sweet": 2,
+      "bitter": 2,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A rich chocolate-coffee blend with deep roasted notes, balanced sweetness, and mild bitterness.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_vanilla",
+    "emoji": "🍦",
+    "label": "Vanilla",
+    "family": "sweet",
+    "bigCategory": "sugar-browning",
+    "bigSubgroup": "caramel-chocolate",
+    "taste": {
+      "sour": 0,
+      "sweet": 3,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sweet, creamy aromatic with warm, smooth, and delicately floral qualities.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_hawthorn",
+    "emoji": "🌿",
+    "label": "Hawthorn",
+    "family": "floral",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "herb-flowery",
+    "taste": {
+      "sour": 1,
+      "sweet": 2,
+      "bitter": 1,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A mildly tart, floral berry-like note with a soft herbal backdrop and gentle sweetness.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_basil",
+    "emoji": "🌿",
+    "label": "Basil",
+    "family": "spice",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "herb-flowery",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 1,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sweet aromatic herb with peppery, slightly anise-like notes and a fresh green character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_thyme",
+    "emoji": "🌿",
+    "label": "Thyme",
+    "family": "spice",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "herb-flowery",
+    "taste": {
+      "sour": 0,
+      "sweet": 0,
+      "bitter": 2,
+      "salty": 0,
+      "umami": 1
+    },
+    "description": "An earthy, slightly pungent herb with woody undertones and a warming savory aroma.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_earl-grey",
+    "emoji": "🫖",
+    "label": "Earl Grey",
+    "family": "floral",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "herb-flowery",
+    "taste": {
+      "sour": 1,
+      "sweet": 1,
+      "bitter": 1,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A floral black tea with distinctive bergamot citrus notes, mildly astringent and aromatic.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_acacia",
+    "emoji": "🌸",
+    "label": "Acacia",
+    "family": "floral",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "herb-flowery",
+    "taste": {
+      "sour": 0,
+      "sweet": 3,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sweet, honey-like floral with a delicate, soft, and gently perfumed character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_elderflower",
+    "emoji": "🌼",
+    "label": "Elderflower",
+    "family": "floral",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "herb-flowery",
+    "taste": {
+      "sour": 1,
+      "sweet": 3,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sweet floral with delicate sour undertones, light honeyed character and perfumed elegance.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_chrysanthemum",
+    "emoji": "🌼",
+    "label": "Chrysanthemum",
+    "family": "floral",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "herb-flowery",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 2,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A floral herbal note with mild sweetness, distinct bitterness, and a tea-like finish.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_hibiscus",
+    "emoji": "🌺",
+    "label": "Hibiscus",
+    "family": "floral",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "herb-flowery",
+    "taste": {
+      "sour": 3,
+      "sweet": 1,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A tart, vibrant floral with deep crimson color, cranberry-like acidity, and subtle sweetness.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_eucalyptus",
+    "emoji": "🌲",
+    "label": "Eucalyptus",
+    "family": "other",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "herb-flowery",
+    "taste": {
+      "sour": 0,
+      "sweet": 0,
+      "bitter": 2,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A cool, penetrating, medicinal note with a sharp, refreshing, and camphoraceous character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_cardamom",
+    "emoji": "🫚",
+    "label": "Cardamom",
+    "family": "spice",
+    "bigCategory": "dry-distillation",
+    "bigSubgroup": "spice-others",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 1,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A warm aromatic spice with sweet-citrusy undertones, slightly camphoraceous and complex.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_cumin",
+    "emoji": "🟤",
+    "label": "Cumin",
+    "family": "spice",
+    "bigCategory": "dry-distillation",
+    "bigSubgroup": "spice-others",
+    "taste": {
+      "sour": 0,
+      "sweet": 0,
+      "bitter": 2,
+      "salty": 1,
+      "umami": 0
+    },
+    "description": "An earthy, warm spice with a distinctly savory character, slight bitterness, and salty edge.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_black-pepper",
+    "emoji": "⚫",
+    "label": "Black Pepper",
+    "family": "spice",
+    "bigCategory": "dry-distillation",
+    "bigSubgroup": "spice-others",
+    "taste": {
+      "sour": 0,
+      "sweet": 0,
+      "bitter": 1,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A pungent, sharp spice with a hot, penetrating bite and woody aromatic notes.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_garlic",
+    "emoji": "🧄",
+    "label": "Garlic",
+    "family": "burnt-tobacco-green",
+    "bigCategory": "other",
+    "bigSubgroup": "vegetables",
+    "taste": {
+      "sour": 0,
+      "sweet": 0,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 1
+    },
+    "description": "A pungent, savory allium with a strong, penetrating aroma and umami-rich character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_ginger",
+    "emoji": "🫚",
+    "label": "Ginger",
+    "family": "spice",
+    "bigCategory": "other",
+    "bigSubgroup": "vegetables",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 1,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sharp, spicy root with a warm, pungent kick, slight sweetness, and citrusy undertones.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_pumpkin",
+    "emoji": "🎃",
+    "label": "Pumpkin",
+    "family": "burnt-tobacco-green",
+    "bigCategory": "other",
+    "bigSubgroup": "vegetables",
+    "taste": {
+      "sour": 0,
+      "sweet": 2,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A sweet, earthy gourd with a soft vegetal character and mild, comforting warmth.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_tomato",
+    "emoji": "🍅",
+    "label": "Tomato",
+    "family": "burnt-tobacco-green",
+    "bigCategory": "other",
+    "bigSubgroup": "vegetables",
+    "taste": {
+      "sour": 2,
+      "sweet": 1,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 1
+    },
+    "description": "A tangy, slightly sweet fruit-vegetable with bright acidity, umami depth, and fresh green notes.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_mushroom",
+    "emoji": "🍄",
+    "label": "Mushroom",
+    "family": "burnt-tobacco-green",
+    "bigCategory": "other",
+    "bigSubgroup": "vegetables",
+    "taste": {
+      "sour": 0,
+      "sweet": 0,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 3
+    },
+    "description": "An earthy, deeply savory fungus with rich umami flavor and a soft, woody aroma.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_taro",
+    "emoji": "🫓",
+    "label": "Taro",
+    "family": "cereal",
+    "bigCategory": "other",
+    "bigSubgroup": "vegetables",
+    "taste": {
+      "sour": 0,
+      "sweet": 2,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A starchy, sweet root vegetable with a mild nutty character and creamy, earthy undertones.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_kudzu",
+    "emoji": "🌿",
+    "label": "Kudzu",
+    "family": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "vegetables",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A starchy, mildly sweet root with a neutral, subtle earthy character and smooth texture.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_ginseng",
+    "emoji": "🌿",
+    "label": "Ginseng",
+    "family": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "vegetables",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 3,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "An earthy, medicinal root with pronounced bitterness, slight sweetness, and a woody depth.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_paprika",
+    "emoji": "🫑",
+    "label": "Paprika",
+    "family": "spice",
+    "bigCategory": "other",
+    "bigSubgroup": "vegetables",
+    "taste": {
+      "sour": 0,
+      "sweet": 1,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A mild sweet pepper with a gentle vegetal sweetness and warm, subtly earthy character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_soy-sauce",
+    "emoji": "🫗",
+    "label": "Soy Sauce",
+    "family": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "savory",
+    "taste": {
+      "sour": 0,
+      "sweet": 0,
+      "bitter": 0,
+      "salty": 4,
+      "umami": 3
+    },
+    "description": "A deeply savory, salty condiment with rich umami intensity and a complex fermented character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_mustard",
+    "emoji": "🟡",
+    "label": "Mustard",
+    "family": "spice",
+    "bigCategory": "other",
+    "bigSubgroup": "savory",
+    "taste": {
+      "sour": 1,
+      "sweet": 0,
+      "bitter": 1,
+      "salty": 1,
+      "umami": 0
+    },
+    "description": "A sharp, pungent condiment with a hot, sinus-clearing bite, mild acidity, and salty edge.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_mayonnaise",
+    "emoji": "🥚",
+    "label": "Mayonnaise",
+    "family": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "savory",
+    "taste": {
+      "sour": 1,
+      "sweet": 0,
+      "bitter": 0,
+      "salty": 1,
+      "umami": 0
+    },
+    "description": "A creamy, tangy emulsion with rich mouthfeel, mild acidity, and a subtle savory depth.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_yogurt",
+    "emoji": "🥛",
+    "label": "Yogurt",
+    "family": "sour-fermented",
+    "bigCategory": "other",
+    "bigSubgroup": "others-other",
+    "taste": {
+      "sour": 2,
+      "sweet": 1,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A tangy, creamy fermented dairy with bright acidity, mild sweetness, and smooth body.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_cheddar-cheese",
+    "emoji": "🧀",
+    "label": "Cheddar Cheese",
+    "family": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "others-other",
+    "taste": {
+      "sour": 0,
+      "sweet": 0,
+      "bitter": 0,
+      "salty": 2,
+      "umami": 2
+    },
+    "description": "A sharp, savory cheese with salty intensity, rich umami, and a creamy, tangy profile.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_musk",
+    "emoji": "🫎",
+    "label": "Musk",
+    "family": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "others-other",
+    "taste": {
+      "sour": 0,
+      "sweet": 0,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A warm, animalic, deeply resonant aroma with a rich, enveloping, and primal character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_amber",
+    "emoji": "🟠",
+    "label": "Amber",
+    "family": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "others-other",
+    "taste": {
+      "sour": 0,
+      "sweet": 2,
+      "bitter": 0,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "A warm, resinous, sweet note with a rich, honeyed depth and a soft, balsamic warmth.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_smoke",
+    "emoji": "💨",
+    "label": "Smoke",
+    "family": "roasted-smoke",
+    "bigCategory": "other",
+    "bigSubgroup": "others-other",
+    "taste": {
+      "sour": 0,
+      "sweet": 0,
+      "bitter": 3,
+      "salty": 0,
+      "umami": 0
+    },
+    "description": "An intense, charred, smoky aroma with a dry, ashy edge and a deeply roasted character.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_savory-beef",
+    "emoji": "🥩",
+    "label": "Savory Beef",
+    "family": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "others-other",
+    "taste": {
+      "sour": 0,
+      "sweet": 0,
+      "bitter": 0,
+      "salty": 1,
+      "umami": 3
+    },
+    "description": "A rich, meaty, umami-packed savory note with roasted depth, saltiness, and hearty complexity.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_cranberry",
+    "emoji": "🔴",
+    "label": "Cranberry",
+    "family": "fruity",
+    "subgroup": "berry",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "berry-like",
+    "taste": { "sour": 3, "sweet": 2, "bitter": 1, "salty": 0, "umami": 0 },
+    "description": "A tart, bright red berry with sharp acidity, subtle sweetness, and a hint of astringent bite.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_acai-berry",
+    "emoji": "🫐",
+    "label": "Acai Berry",
+    "family": "fruity",
+    "subgroup": "berry",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "berry-like",
+    "taste": { "sour": 1, "sweet": 2, "bitter": 2, "salty": 0, "umami": 1 },
+    "description": "An earthy, dark berry with subtle sweetness, mild acidity, and a hint of bitter cocoa richness.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_white-grape",
+    "emoji": "🍇",
+    "label": "White Grape",
+    "family": "fruity",
+    "subgroup": "citrus",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "citrus-other-fruit",
+    "taste": { "sour": 2, "sweet": 3, "bitter": 0, "salty": 0, "umami": 0 },
+    "description": "A sweet, light, and juicy grape note with mild acidity, crisp green tones, and a clean finish.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_chinese-pear",
+    "emoji": "🍐",
+    "label": "Chinese Pear",
+    "family": "fruity",
+    "subgroup": "other-fruit",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "citrus-other-fruit",
+    "taste": { "sour": 1, "sweet": 3, "bitter": 0, "salty": 0, "umami": 0 },
+    "description": "A crisp, lightly sweet pear with delicate floral notes, very low acidity, and a refreshing watery texture.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_dark-cherry",
+    "emoji": "🍒",
+    "label": "Dark Cherry",
+    "family": "fruity",
+    "subgroup": "stone-fruit",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "stone-fruit",
+    "taste": { "sour": 2, "sweet": 3, "bitter": 1, "salty": 0, "umami": 0 },
+    "description": "A rich, deep cherry with balanced tartness and sweetness and a subtle almond-like bitter edge.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_roasted-coffee-bean",
+    "emoji": "🫘",
+    "label": "Roasted Coffee Bean",
+    "family": "other",
+    "subgroup": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "others-other",
+    "taste": { "sour": 0, "sweet": 0, "bitter": 4, "salty": 0, "umami": 1 },
+    "description": "A deep, roasted aroma with pronounced bitterness, charred edges, and a subtle savory umami undertone.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_cream",
+    "emoji": "🥛",
+    "label": "Cream",
+    "family": "other",
+    "subgroup": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "others-other",
+    "taste": { "sour": 0, "sweet": 2, "bitter": 0, "salty": 0, "umami": 1 },
+    "description": "A rich, smooth, fatty dairy note with subtle sweetness and a velvety mouthfeel.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_butter",
+    "emoji": "🧈",
+    "label": "Butter",
+    "family": "other",
+    "subgroup": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "savory",
+    "taste": { "sour": 0, "sweet": 1, "bitter": 0, "salty": 2, "umami": 1 },
+    "description": "A rich, fatty dairy note with mild saltiness, creamy depth, and a touch of savory umami.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_pine",
+    "emoji": "🌲",
+    "label": "Pine",
+    "family": "other",
+    "subgroup": "other",
+    "bigCategory": "other",
+    "bigSubgroup": "others-other",
+    "taste": { "sour": 0, "sweet": 0, "bitter": 2, "salty": 0, "umami": 0 },
+    "description": "A sharp, resinous woody note with distinct pine needle character, subtle turpentine edge, and mild bitterness.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_star-anise",
+    "emoji": "⭐",
+    "label": "Star Anise",
+    "family": "spice",
+    "subgroup": "spice",
+    "bigCategory": "dry-distillation",
+    "bigSubgroup": "spice-others",
+    "taste": { "sour": 0, "sweet": 1, "bitter": 1, "salty": 0, "umami": 1 },
+    "description": "A sweet, aromatic spice with pronounced licorice-like notes, subtle warmth, and gentle bitterness.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_cucumber",
+    "emoji": "🥒",
+    "label": "Cucumber",
+    "family": "other",
+    "subgroup": "vegetables",
+    "bigCategory": "other",
+    "bigSubgroup": "vegetables",
+    "taste": { "sour": 0, "sweet": 1, "bitter": 0, "salty": 0, "umami": 0 },
+    "description": "A cool, refreshing green vegetative note with subtle sweetness, high water content, and a clean finish.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone T100"
+  },
+  {
+    "id": "scentone_rambutan",
+    "emoji": "🌰",
+    "label": "Rambutan",
+    "family": "fruity",
+    "subgroup": "tropical",
+    "bigCategory": "enzymatic",
+    "bigSubgroup": "tropical-fruit",
+    "taste": { "sour": 0, "sweet": 4, "bitter": 0, "salty": 0, "umami": 0 },
+    "description": "A sweet, juicy tropical fruit with delicate floral notes and creamy translucent flesh, milder in acidity than lychee.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone Theorem 144"
+  },
+  {
+    "id": "scentone_celery",
+    "emoji": "🥬",
+    "label": "Celery",
+    "family": "other",
+    "subgroup": "vegetables",
+    "bigCategory": "other",
+    "bigSubgroup": "vegetables",
+    "taste": { "sour": 0, "sweet": 0, "bitter": 1, "salty": 1, "umami": 0 },
+    "description": "A crisp, green vegetative note with mild saltiness, herbaceous freshness, and a subtle bitter edge.",
+    "wcr_ref": false,
+    "wcr_category": "Scentone Theorem 144"
+  }
+]

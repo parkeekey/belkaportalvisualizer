@@ -34,6 +34,33 @@ export default defineConfig({
           })
         })
       }
+    },
+    {
+      name: 'project-snapshot',
+      configureServer(server) {
+        server.middlewares.use('/api/snapshot', async (req, res) => {
+          if (req.method !== 'POST') {
+            res.statusCode = 405
+            res.end('POST only')
+            return
+          }
+          res.setHeader('Content-Type', 'application/json')
+          try {
+            const { execSync } = await import('child_process') as typeof import('child_process')
+            const now = new Date()
+            const ts = now.toISOString().replace(/[:.]/g, '-')
+            const branchName = `backup/snapshot-${ts}`
+            const currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim()
+            execSync('git stash push --include-untracked -m "snapshot"', { encoding: 'utf-8' })
+            execSync(`git stash branch ${branchName}`, { encoding: 'utf-8' })
+            execSync(`git checkout ${currentBranch}`, { encoding: 'utf-8' })
+            res.end(JSON.stringify({ ok: true, branch: branchName }))
+          } catch (e) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ ok: false, error: String(e) }))
+          }
+        })
+      }
     }
   ],
   base: '/belkaportalvisualizer/',

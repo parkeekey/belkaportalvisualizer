@@ -4,6 +4,8 @@ import TDSHUD from './TDSHUD';
 import AttemptLog, { type WaterMixSnapshot } from './AttemptLog';
 import { getReferenceTDS, getReferenceEY } from '../utils/tdsReference';
 import TurbulenceModel from './TurbulenceModel';
+import CoffeeOriginSelect from './CoffeeOriginSelect';
+import type { BrewProfile, CoffeeProfile } from '../sensory-memo/types';
 
 const PROCESS_GUIDE: {
   id: string; label: string; crease: string; appearance: string; aroma: string; flavor: string;
@@ -42,6 +44,15 @@ interface AttemptForTdsPrediction {
   waterTemp?: number;
   density?: number;
   process?: string;
+}
+
+function parseRoastToSlider(rl?: string): number {
+  if (!rl) return 40;
+  const m = rl.match(/(\d+)/);
+  if (!m) return 40;
+  const num = parseInt(m[1]);
+  if (num >= 1 && num <= 5) return Math.round((num / 5) * 100);
+  return Math.max(0, Math.min(100, num));
 }
 
 const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
@@ -129,6 +140,21 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const [coffeeName, setCoffeeName] = useState('');
   const [roastery, setRoastery] = useState('');
   const [beanProfileNameInput, setBeanProfileNameInput] = useState('');
+  const [showSensoryImport, setShowSensoryImport] = useState(false);
+  const sensoryProfiles = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem('belka.sensoryProfiles') || '[]'); } catch { return []; }
+  }, [showSensoryImport]);
+  const brewProfiles = useMemo<BrewProfile[]>(() => {
+    try { return JSON.parse(localStorage.getItem('belka.brewProfiles') || '[]'); } catch { return []; }
+  }, [showSensoryImport]);
+  const coffeeProfiles = useMemo<CoffeeProfile[]>(() => {
+    try { return JSON.parse(localStorage.getItem('belka.coffeeProfiles') || '[]'); } catch { return []; }
+  }, [showSensoryImport]);
+  const [activeTab, setActiveTab] = useState<'setup' | 'bean' | 'brew' | 'targets' | 'log'>('setup');
+  const [showImport, setShowImport] = useState(true);
+  const [importMsg, setImportMsg] = useState('');
+  const [selectedCoffeeId, setSelectedCoffeeId] = useState('');
+  const [selectedBrewId, setSelectedBrewId] = useState('');
   const [beanProfiles, setBeanProfiles] = useState<Record<string, {
     coffeeName: string; roastery: string; origin: string; process: string;
     roastLevel: number; density: number; altitude: number; defects: string[];
@@ -270,6 +296,30 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const [turbulenceLevel, setTurbulenceLevel] = useState(2);
   const [activeFactor, setActiveFactor] = useState<number | null>(null);
   const [symptom, setSymptom] = useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const toggleSection = useCallback((id: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const SectionCard = useCallback(({ id, title, headerClass, borderClass, children, headerRight, className = '' }: { id: string; title: React.ReactNode; headerClass: string; borderClass: string; children: React.ReactNode; headerRight?: React.ReactNode; className?: string }) => {
+    const collapsed = collapsedSections.has(id);
+    return (
+      <section className={`bg-white border rounded-xl shadow-sm transition-all ${collapsed ? 'shadow-none border-slate-200' : ''} ${borderClass} ${className}`}>
+        <button type="button" onClick={() => toggleSection(id)} className="w-full flex items-center justify-between px-4 pt-3 pb-2">
+          <h3 className={`text-sm font-bold uppercase tracking-wider ${headerClass}`}>{title}</h3>
+          <div className="flex items-center gap-2">
+            {headerRight}
+            <svg className={`w-3 h-3 text-slate-400 transition-transform ${collapsed ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+          </div>
+        </button>
+        {!collapsed && <div className="px-4 pb-4">{children}</div>}
+      </section>
+    );
+  }, [collapsedSections, toggleSection]);
 
   const waterMixCalc = useMemo(() => {
     const m = waterMineralRatio.trim().match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
@@ -320,22 +370,6 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     { id: 'salty', label: 'Salty' },
   ];
 
-  const brewImpactFactors = useMemo(() => {
-    const dose = parseFloat(localStorage.getItem('belkaDoseWeight') || '0') || 18;
-    const ratio = parseFloat(localStorage.getItem('belkaBrewRatio') || '0') || 16;
-    const wqLabel = waterQuality === 'soft' ? 'Soft' : waterQuality === 'hard' ? 'Hard' : 'Medium';
-    const turbLabel = turbulenceLevel <= 1 ? 'Low' : turbulenceLevel >= 3 ? 'High' : 'Med';
-    return [
-      { rank: 1, name: 'Ratio', value: `1:${ratio}`, detail: `${dose}g dose`, barPct: 100, color: 'bg-emerald-500', connects: [2, 4, 5, 7] },
-      { rank: 2, name: 'Grind', value: 'Set in Recipe', detail: '', barPct: 85, color: 'bg-emerald-400', connects: [3, 4, 6] },
-      { rank: 3, name: 'Temp', value: `${waterTemp}°C`, detail: '', barPct: 70, color: 'bg-emerald-300', connects: [4] },
-      { rank: 4, name: 'Time', value: `${Math.floor(brewTimeSec / 60)}:${String(brewTimeSec % 60).padStart(2, '0')}`, detail: '', barPct: 55, color: 'bg-amber-400', connects: [2, 3] },
-      { rank: 5, name: 'Water', value: wqLabel, detail: '', barPct: 40, color: 'bg-amber-300', connects: [3] },
-      { rank: 6, name: 'Turb.', value: turbLabel, detail: '', barPct: 25, color: 'bg-orange-400', connects: [2, 4] },
-      { rank: 7, name: 'Filter', value: filterName || filterType || 'Paper', detail: '', barPct: 10, color: 'bg-orange-300', connects: [2, 4] },
-    ];
-  }, [waterTemp, waterQuality, turbulenceLevel, brewTimeSec, filterName, filterType]);
-
   const beanAdvice = useMemo(() => {
     const roastScore = roastLevel <= 66 ? -80 + (roastLevel / 66) * 80 : ((roastLevel - 66) / 34) * 60;
     const densityScore = Math.round((50 - density) * 1.1);
@@ -364,6 +398,21 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     water: parseFloat(localStorage.getItem('belkaTotalWaterIn') || '0') || 288,
     grindSize: 0,
   }));
+  const brewImpactFactors = useMemo(() => {
+    const dose = recipeValues.dose;
+    const ratio = recipeValues.ratio;
+    const wqLabel = waterQuality === 'soft' ? 'Soft' : waterQuality === 'hard' ? 'Hard' : 'Medium';
+    const turbLabel = turbulenceLevel <= 1 ? 'Low' : turbulenceLevel >= 3 ? 'High' : 'Med';
+    return [
+      { rank: 1, name: 'Ratio', value: `1:${ratio}`, detail: `${dose}g dose`, barPct: 100, color: 'bg-emerald-500', connects: [2, 4, 5, 7] },
+      { rank: 2, name: 'Grind', value: 'Set in Recipe', detail: '', barPct: 85, color: 'bg-emerald-400', connects: [3, 4, 6] },
+      { rank: 3, name: 'Temp', value: `${waterTemp}°C`, detail: '', barPct: 70, color: 'bg-emerald-300', connects: [4] },
+      { rank: 4, name: 'Time', value: `${Math.floor(brewTimeSec / 60)}:${String(brewTimeSec % 60).padStart(2, '0')}`, detail: '', barPct: 55, color: 'bg-amber-400', connects: [2, 3] },
+      { rank: 5, name: 'Water', value: wqLabel, detail: '', barPct: 40, color: 'bg-amber-300', connects: [3] },
+      { rank: 6, name: 'Turb.', value: turbLabel, detail: '', barPct: 25, color: 'bg-orange-400', connects: [2, 4] },
+      { rank: 7, name: 'Filter', value: filterName || filterType || 'Paper', detail: '', barPct: 10, color: 'bg-orange-300', connects: [2, 4] },
+    ];
+  }, [recipeValues, waterTemp, waterQuality, turbulenceLevel, brewTimeSec, filterName, filterType]);
   const [currentPourPlan, setCurrentPourPlan] = useState<{ cumulativePercent: number; duration?: number }[]>([]);
   const [pourPlanStandby, setPourPlanStandby] = useState<{ cumulativePercent: number; duration?: number }[] | null>(null);
   const [pourPlanSentFeedback, setPourPlanSentFeedback] = useState(false);
@@ -559,17 +608,90 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   }), []);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-      <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Setup Profile</h2>
+    <div className="min-h-screen bg-[#f8f6f0] flex flex-col">
+      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-slate-200">
+        <div className="max-w-4xl mx-auto px-4 py-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-bold text-slate-800">⚙ Setup Profile</h1>
+            <button onClick={() => setShowImport(v => !v)} className="text-[9px] text-slate-400 hover:text-slate-600 font-semibold px-2 py-0.5 rounded border border-slate-200 hover:border-slate-300 transition-colors">{showImport ? '📥' : '📥'}</button>
+          </div>
+
+          {showImport && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[8px] font-semibold text-amber-700 uppercase tracking-wider">📥 Import</span>
+
+              {coffeeProfiles.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <select value={selectedCoffeeId} onChange={e => setSelectedCoffeeId(e.target.value)}
+                    className="text-[8px] border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 bg-white max-w-[140px]"
+                  >
+                    <option value="">☕ Coffee...</option>
+                    {coffeeProfiles.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={() => {
+                    const p = coffeeProfiles.find(c => c.id === selectedCoffeeId);
+                    if (!p) return;
+                    setCoffeeName(p.name); setRoastery(p.roaster || ''); setOrigin(p.origin || '');
+                    setProcess(p.process || 'washed'); setRoastLevel(parseRoastToSlider(p.roastLevel));
+                    setImportMsg(`✅ Loaded ${p.name}`); setTimeout(() => setImportMsg(''), 3000);
+                  }} className="text-[8px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-semibold hover:bg-amber-200">Load</button>
+                </div>
+              )}
+
+              {brewProfiles.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <select value={selectedBrewId} onChange={e => setSelectedBrewId(e.target.value)}
+                    className="text-[8px] border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 bg-white max-w-[140px]"
+                  >
+                    <option value="">📋 Recipe...</option>
+                    {brewProfiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                  <button type="button" onClick={() => {
+                    const bp = brewProfiles.find(b => b.id === selectedBrewId); if (!bp) return;
+                    const water = Math.round(bp.dose * bp.ratio);
+                    localStorage.setItem('belkaDoseWeight', String(bp.dose)); localStorage.setItem('belkaBrewRatio', String(bp.ratio)); localStorage.setItem('belkaTotalWaterIn', String(water));
+                    setRecipeValues({ dose: bp.dose, ratio: bp.ratio, water, grindSize: 0 });
+                    setBrewTimeSec(bp.targetFinishSec); setWaterTemp(bp.waterTemp); setGrinderMicron(bp.grindUm); setTargetEY(String(bp.targetEYmid));
+                    setImportMsg(`✅ Loaded ${bp.name}`); setTimeout(() => setImportMsg(''), 3000);
+                  }} className="text-[8px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-semibold hover:bg-amber-200">Load</button>
+                </div>
+              )}
+
+              <button type="button" onClick={() => {
+                localStorage.setItem('belkaDoseWeight', '18'); localStorage.setItem('belkaBrewRatio', '16'); localStorage.setItem('belkaTotalWaterIn', '288');
+                setRecipeValues({ dose: 18, ratio: 16, water: 288, grindSize: 0 });
+                setBrewTimeSec(180); setWaterTemp(93); setGrinderMicron(800); setTargetEY('20');
+                setImportMsg('🔄 Reset'); setTimeout(() => setImportMsg(''), 2000);
+              }} className="text-[8px] px-1.5 py-0.5 text-slate-400 hover:text-red-500 font-semibold">Reset</button>
+
+              {importMsg && <span className="text-[8px] text-emerald-600 font-semibold">{importMsg}</span>}
+            </div>
+            <div className="mt-1 text-[7px] text-slate-400">
+              {recipeValues.dose}g · 1:{recipeValues.ratio} · {waterTemp}°C · {Math.floor(brewTimeSec / 60)}:{String(brewTimeSec % 60).padStart(2, '0')} · {grinderMicron}µm
+            </div>
+          </div>)}
+
+          {/* Tabs */}
+          <div className="flex gap-1 flex-wrap">
+            {([['setup','⚙ Setup'],['bean','🫘 Bean'],['brew','🌿 Brew'],['targets','🎯 Targets'],['log','📋 Log']] as const).map(([id, label]) => (
+              <button key={id} onClick={() => setActiveTab(id)}
+                className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${activeTab === id ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-4 space-y-4 pb-20">
+        {activeTab === 'brew' && (
+          <>
 
       {/* Brew Impact */}
-      <section className="bg-white border border-emerald-200 rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Brew Impact</h3>
-          {!symptom && (
-            <span className="text-[10px] text-emerald-500 italic">{activeFactor ? 'Tap again to clear' : 'Tap a row to see ripple'}</span>
-          )}
-        </div>
+      <SectionCard id="brew-impact" title={<div className="flex items-center gap-3">Brew Impact{!symptom && <span className="text-[10px] text-emerald-500 italic font-normal">{activeFactor ? 'Tap again to clear' : 'Tap a row to see ripple'}</span>}</div>} headerClass="text-emerald-800" borderClass="border-emerald-200">
+        
 
         {/* Symptom selector */}
         <div className="flex flex-wrap gap-1 mb-3">
@@ -730,11 +852,12 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             );
           })}
         </div>
-      </section>
-
-      {/* Equipment Profile */}
-      <section id="equipment-profile" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-sky-800 uppercase tracking-wider mb-3">Equipment Profile</h3>
+      </SectionCard>
+    </>)}
+    {activeTab === 'setup' && (
+      <>
+        {/* Equipment Profile */}
+      <SectionCard id="equipment-profile" title="Equipment Profile" headerClass="text-sky-800" borderClass="border-slate-200">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Brewer</label>
@@ -823,10 +946,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           </div>
 
         </div>
-      </section>
+      </SectionCard>
 
       {/* Water PPM */}
-      <section id="water-ppm" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <SectionCard id="water-ppm" title="Water PPM" headerClass="text-cyan-800" borderClass="border-slate-200">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-cyan-800 uppercase tracking-wider">Water PPM</h3>
           <span className="text-[9px] text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full border border-cyan-200 font-semibold">
@@ -956,16 +1079,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             Input your meter reading before brewing to keep water setup consistent across brews.
           </p>
         </div>
-      </section>
+      </SectionCard>
 
       {/* Brew Temperature */}
-      <section id="brew-temp" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-rose-800 uppercase tracking-wider">Brew Temperature</h3>
-          <span className="text-[9px] text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-semibold">
-            {tempSuggestion.label}
-          </span>
-        </div>
+      <SectionCard id="brew-temp" title={<div className="flex items-center gap-3">Brew Temperature<span className="text-[9px] text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-semibold">{tempSuggestion.label}</span></div>} headerClass="text-rose-800" borderClass="border-slate-200">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => setWaterTemp(Math.max(80, waterTemp - 1))} className="w-6 h-6 flex items-center justify-center rounded text-sm font-bold text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100">−</button>
@@ -986,11 +1103,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
         <div className="mt-2 text-[10px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
           <span className="font-semibold text-slate-700">Extraction Strategy:</span> {tempSuggestion.extraction}
         </div>
-      </section>
+      </SectionCard>
 
       {/* Grinder Setup */}
-      <section id="grinder-setup" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm overflow-x-hidden">
-        <h3 className="text-sm font-bold text-amber-800 uppercase tracking-wider mb-3">Grinder Setup</h3>
+      <SectionCard id="grinder-setup" title="Grinder Setup" headerClass="text-amber-800" borderClass="border-slate-200" className="overflow-x-hidden">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
           <div className="flex flex-col gap-0.5 min-w-0">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Grinder</label>
@@ -1325,11 +1441,12 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             )}
           </div>
         </div>
-      </section>
-
-      {/* Bean Profile */}
-      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-amber-800 uppercase tracking-wider mb-3">Bean Profile</h3>
+      </SectionCard>
+    </>)}
+    {activeTab === 'bean' && (
+      <>
+        {/* Bean Profile */}
+      <SectionCard id="bean-profile" title="Bean Profile" headerClass="text-amber-800" borderClass="border-slate-200">
 
         {/* Coffee Name + Roastery */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4 text-sm">
@@ -1388,6 +1505,31 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               URL.revokeObjectURL(url);
             }} className="px-3 py-1 text-[10px] font-bold text-sky-600 bg-sky-50 border border-sky-200 rounded-lg hover:bg-sky-100">📦 Export</button>
           )}
+          <div className="relative">
+            <button type="button" onClick={() => setShowSensoryImport(v => !v)}
+              className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100"
+            >🧪 Import Sensory</button>
+            {showSensoryImport && sensoryProfiles.length > 0 && (
+              <div className="absolute z-20 top-full mt-1 left-0 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto min-w-[200px]">
+                {sensoryProfiles.map((sp: any) => (
+                  <button key={sp.id} type="button" onClick={() => {
+                    setCoffeeName(sp.coffeeName || '');
+                    setRoastery(sp.roaster || '');
+                    setOrigin(sp.origin || '');
+                    setProcess(sp.process || '');
+                    if (sp.roastLevel) {
+                      const map: Record<string, number> = { 'Nordic': 8, 'Light': 25, 'Light-Medium': 42, 'Medium': 58, 'Medium-Dark': 75, 'Dark': 92 };
+                      setRoastLevel(map[sp.roastLevel] ?? 50);
+                    }
+                    setShowSensoryImport(false);
+                  }} className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 border-b border-slate-100 last:border-b-0">
+                    <div className="font-semibold">{sp.name}</div>
+                    <div className="text-[10px] text-slate-400">{sp.coffeeName || '—'} · {Object.keys(sp.checkedFlavors ?? {}).length} flavors</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button type="button" onClick={() => {
             const profile = { coffeeName, roastery, origin, process, roastLevel, density, altitude, defects };
             localStorage.setItem('belkaImportedBean', JSON.stringify(profile));
@@ -1601,7 +1743,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           {/* Origin */}
           <div className="col-span-2 md:col-span-1 flex flex-col gap-0.5">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Origin</label>
-            <input type="text" value={origin} onChange={(e) => setOrigin(e.target.value)} placeholder="e.g. Ethiopia" className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <CoffeeOriginSelect value={origin} onChange={setOrigin} placeholder="Select origin" size="lg" />
           </div>
 
           {/* Defects */}
@@ -1622,11 +1764,12 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Status Effects */}
-      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-indigo-800 uppercase tracking-wider mb-3">Status Effects</h3>
+      </SectionCard>
+    </>)}
+    {activeTab === 'brew' && (
+      <>
+        {/* Status Effects */}
+      <SectionCard id="status-effects" title="Status Effects" headerClass="text-indigo-800" borderClass="border-slate-200">
         <div className="flex flex-wrap gap-2">
           {/* Brewer perk */}
           <div className="flex-1 min-w-[140px] bg-gradient-to-br from-sky-50 to-indigo-50 border border-sky-200 rounded-lg p-2.5">
@@ -1771,11 +1914,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </div>
           )}
         </div>
-      </section>
+      </SectionCard>
 
       {/* Brew Time */}
-      <section id="brew-time" className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">⏱️ Brew Time</h3>
+      <SectionCard id="brew-time" title="⏱️ Brew Time" headerClass="text-slate-800" borderClass="border-slate-200">
 
         {/* Target | Diff | Actual side by side */}
         <div className="flex items-stretch gap-2 mb-2">
@@ -1942,16 +2084,15 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             })()}
           </span>
         </div>
-      </section>
+      </SectionCard>
 
       {/* Turbulence Model */}
-      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-orange-800 uppercase tracking-wider mb-3">🌊 Turbulence Model</h3>
+      <SectionCard id="turbulence-model" title="🌊 Turbulence Model" headerClass="text-orange-800" borderClass="border-slate-200">
         <TurbulenceModel targetBrewTimeSec={brewTimeSec} brewerType={brewerType} onBrewerChange={setBrewerType} doseWeight={recipeValues.dose} grindSetting={grindAdjustPct} />
-      </section>
+      </SectionCard>
 
       {/* Bean Grind Guidance */}
-      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <SectionCard id="bean-grind-guidance" title="Bean Grind Guidance" headerClass="text-amber-800" borderClass="border-slate-200">
         {(() => {
           const totalPct = Math.round(beanAdvice.overall * 0.3);
           const absPct = Math.abs(totalPct);
@@ -2090,16 +2231,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </div>
           ))}
         </div>
-      </section>
+      </SectionCard>
 
       {/* Grind Adjustment Calculator */}
-      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Grind Adjustment</h3>
-            <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 font-semibold">🫘 DENSITY {density}%</span>
-          </div>
-          {(() => {
+      <SectionCard id="grind-adjustment" title={<div className="flex items-center gap-2">Grind Adjustment<span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 font-semibold">🫘 DENSITY {density}%</span></div>} headerClass="text-emerald-800" borderClass="border-slate-200" headerRight={(() => {
             const suggested = Math.round(beanAdvice.overall * 0.3);
             return (
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
@@ -2108,8 +2243,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 Suggest {suggested === 0 ? 'neutral' : `${Math.abs(suggested)}% ${suggested < 0 ? 'finer' : 'coarser'}`}
               </span>
             );
-          })()}
-        </div>
+          })()}>
         <div className="relative flex items-center gap-3">
           <span className="text-[10px] text-slate-400 font-medium w-12 text-right">Finer</span>
           <div className="relative flex-1 max-w-48">
@@ -2132,17 +2266,16 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             {grindAdjustPct < 33 ? 'Finer' : grindAdjustPct < 66 ? 'Neutral' : 'Coarser'} ({grindAdjustPct}%)
           </span>
         </div>
-      </section>
-
-      {/* TDS Target */}
-      <section id="tds-target" className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        <div className="flex items-center justify-between px-4 pt-3 pb-1">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">TDS Target</h3>
+      </SectionCard>
+    </>)}
+    {activeTab === 'targets' && (
+      <>
+        {/* TDS Target */}
+      <SectionCard id="tds-target" title="TDS Target" headerClass="text-slate-800" borderClass="border-slate-200" headerRight={
           <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
             <button type="button" onClick={() => setBrewFilterMode('hot')} className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${brewFilterMode === 'hot' ? 'bg-white text-amber-700 shadow-sm border border-amber-200' : 'text-slate-400 hover:text-slate-600'}`}>☕ Hot</button>
             <button type="button" onClick={() => setBrewFilterMode('iced')} className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${brewFilterMode === 'iced' ? 'bg-white text-sky-700 shadow-sm border border-sky-200' : 'text-slate-400 hover:text-slate-600'}`}>🧊 Iced</button>
-          </div>
-        </div>
+          </div>}>
         {brewFilterMode === 'hot' && <>
           <TDSHUD
             tdsMin={parseFloat(targetTDSMin) || 0}
@@ -2399,16 +2532,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             })()}
           </div>
         </div>)}
-      </section>
+      </SectionCard>
 
       {/* Iced Drip Calculator */}
-      <section className="bg-white border border-sky-200 rounded-xl p-4 shadow-sm">
-        <button type="button" onClick={() => setIcedOpen(v => !v)} className="w-full flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-sky-800 uppercase tracking-wider">🧊 Iced Drip Calculator</h3>
-          <svg className={`w-4 h-4 text-sky-500 transition-transform ${icedOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-        </button>
-        {icedOpen && (
-          <>
+      <SectionCard id="iced-drip" title="🧊 Iced Drip Calculator" headerClass="text-sky-800" borderClass="border-sky-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Brew Calculation */}
           <div className="space-y-2">
@@ -2730,37 +2857,33 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </div>
           );
         })()}
-          </>
-        )}
-      </section>
+      </SectionCard>
 
       {/* Recipe & Pour Planning */}
-      <section id="recipe-pour-planning" className="border border-emerald-200 rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 pt-3 pb-1">
-          <div className="flex items-center gap-3 text-[10px]">
-            <span className="text-slate-400 font-semibold uppercase tracking-wider">Expecting</span>
-            <span className="text-sky-700 font-bold tabular-nums">TDS {parseFloat(targetTDSMin).toFixed(2)}–{parseFloat(targetTDSMax).toFixed(2)}%</span>
-            <span className="text-slate-300">|</span>
-            <span className="text-emerald-700 font-bold tabular-nums">EY {parseFloat(targetEY).toFixed(1)}%</span>
-            <span className="text-slate-300">|</span>
-            <span className="text-amber-700 font-bold tabular-nums">1:{tdsPlanRatio}</span>
-            {(() => {
-              try {
-                const raw = localStorage.getItem('belkaTurbulencePlan');
-                if (!raw) return null;
-                const p = JSON.parse(raw);
-                return (
-                  <>
-                    <span className="text-slate-200">|</span>
-                    <span className="text-emerald-600 font-semibold">🌊 {p.flowRegime} · {p.bloomTime}s bloom · v={p.v}</span>
-                    <button type="button" onClick={() => localStorage.removeItem('belkaTurbulencePlan')} className="text-slate-300 hover:text-red-400 text-[10px]" title="Clear turbulence plan">✕</button>
-                  </>
-                );
-              } catch { return null; }
-            })()}
-          </div>
-          <button type="button" onClick={() => document.getElementById('grinder-setup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100">↑ Grinder Setup</button>
+      <SectionCard id="recipe-pour-planning" title={
+        <div className="flex items-center gap-3 text-[10px] font-normal">
+          <span className="text-slate-400 font-semibold uppercase tracking-wider">Expecting</span>
+          <span className="text-sky-700 font-bold tabular-nums">TDS {parseFloat(targetTDSMin).toFixed(2)}–{parseFloat(targetTDSMax).toFixed(2)}%</span>
+          <span className="text-slate-300">|</span>
+          <span className="text-emerald-700 font-bold tabular-nums">EY {parseFloat(targetEY).toFixed(1)}%</span>
+          <span className="text-slate-300">|</span>
+          <span className="text-amber-700 font-bold tabular-nums">1:{tdsPlanRatio}</span>
+          {(() => {
+            try {
+              const raw = localStorage.getItem('belkaTurbulencePlan');
+              if (!raw) return null;
+              const p = JSON.parse(raw);
+              return (
+                <>
+                  <span className="text-slate-200">|</span>
+                  <span className="text-emerald-600 font-semibold">🌊 {p.flowRegime} · {p.bloomTime}s bloom · v={p.v}</span>
+                  <button type="button" onClick={() => localStorage.removeItem('belkaTurbulencePlan')} className="text-slate-300 hover:text-red-400 text-[10px]" title="Clear turbulence plan">✕</button>
+                </>
+              );
+            } catch { return null; }
+          })()}
         </div>
+      } headerClass="text-emerald-800" borderClass="border-emerald-200" className="overflow-hidden">
         <RecipePourPlanning ref={recipePlanRef} brewTargetSec={brewTimeSec} expectedTDSMin={parseFloat(targetTDSMin) || undefined} expectedTDSMax={parseFloat(targetTDSMax) || undefined}
           onSendToMainApp={(profile) => {
             localStorage.setItem('belka.planToGraph', JSON.stringify(profile));
@@ -2775,11 +2898,12 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
         {pourPlanSentFeedback && (
           <div className="mt-1 text-[10px] text-sky-600 font-semibold animate-pulse">✓ Pour plan sent — ready for next attempt</div>
         )}
-      </section>
-
-      {/* Attempt Log */}
-      <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Attempt Log</h3>
+      </SectionCard>
+    </>)}
+    {activeTab === 'log' && (
+      <>
+        {/* Attempt Log */}
+      <SectionCard id="attempt-log" title="Attempt Log" headerClass="text-slate-800" borderClass="border-slate-200">
         <AttemptLog
           currentGrindSize={recipeValues.grindSize}
           currentDose={recipeValues.dose}
@@ -2863,7 +2987,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           onClearPourPlanStandby={() => setPourPlanStandby(null)}
           onClearWaterMixStandby={() => setWaterMixStandby(null)}
         />
-      </section>
+      </SectionCard>
+    </>)}
+      </div>
     </div>
   );
 });

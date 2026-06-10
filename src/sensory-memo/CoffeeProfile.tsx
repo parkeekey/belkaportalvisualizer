@@ -2,9 +2,10 @@ import { useState, useMemo, useEffect } from 'react';
 import { FLAVORS } from './flavors';
 import { loadCustomFlavors } from './customFlavors';
 import {
-  TASTE_LABELS,
-  type CoffeeProfile, type FlavorEntry, type AggregateAnalysis,
+  BIG_CATEGORIES, TASTE_LABELS, BIG_SUBGROUP_LABEL,
+  type CoffeeProfile, type FlavorEntry, type AggregateAnalysis, type BigAromaCategory,
 } from './types';
+import CoffeeOriginSelect from '../components/CoffeeOriginSelect';
 
 const PROFILES_KEY = 'belka.coffeeProfiles';
 
@@ -32,6 +33,10 @@ function computeAnalysis(flavorIds: string[], allFlavors: FlavorEntry[]): Aggreg
   const totalTaste = { sour: 0, sweet: 0, bitter: 0, salty: 0, umami: 0 };
   let wcrCount = 0, customCount = 0;
 
+  const categoryCounts: Partial<Record<BigAromaCategory, number>> = {};
+  const subgroupCounts: Record<string, number> = {};
+  let totalVibrancy = 0, totalDepth = 0;
+
   for (const f of selected) {
     totalTaste.sour += f.taste.sour;
     totalTaste.sweet += f.taste.sweet;
@@ -40,6 +45,17 @@ function computeAnalysis(flavorIds: string[], allFlavors: FlavorEntry[]): Aggreg
     totalTaste.umami += f.taste.umami;
     if (f.id.startsWith('custom_')) customCount++;
     else if ('wcr_ref' in f && f.wcr_ref) wcrCount++;
+
+    categoryCounts[f.bigCategory] = (categoryCounts[f.bigCategory] || 0) + 1;
+
+    const subKey = f.bigSubgroup ? (BIG_SUBGROUP_LABEL[f.bigSubgroup] ?? f.bigSubgroup) : f.family;
+    subgroupCounts[subKey] = (subgroupCounts[subKey] || 0) + 1;
+
+    const totalSweetSour = f.taste.sour + f.taste.sweet;
+    if (totalSweetSour > 0) totalVibrancy += f.taste.sweet / totalSweetSour;
+
+    const bc = f.bigCategory;
+    if (bc === 'sugar-browning' || bc === 'dry-distillation') totalDepth++;
   }
 
   const n = selected.length;
@@ -50,6 +66,10 @@ function computeAnalysis(flavorIds: string[], allFlavors: FlavorEntry[]): Aggreg
     salty: Math.round((totalTaste.salty / n) * 10) / 10,
     umami: Math.round((totalTaste.umami / n) * 10) / 10,
   };
+
+  const avgVibrancy = n > 0 ? totalVibrancy / n : 0;
+  const vibrancyScore = Math.min(100, Math.round((avgVibrancy / 5) * 100));
+  const depthScore = Math.min(100, Math.round((totalDepth / n) * 100));
 
   // Determine dominant sensory dimension
   const bright = avgTaste.sour + avgTaste.sweet;
@@ -87,6 +107,7 @@ function computeAnalysis(flavorIds: string[], allFlavors: FlavorEntry[]): Aggreg
     totalTaste, avgTaste, dimension, dimensionReason,
     possibilityScore: score,
     selectedCount: n, wcrCount, customCount,
+    categoryCounts, subgroupCounts, vibrancyScore, depthScore,
   };
 }
 
@@ -165,6 +186,14 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
   const [editOrigin, setEditOrigin] = useState('');
   const [editProcess, setEditProcess] = useState('');
   const [editRoast, setEditRoast] = useState('');
+  const [editRoastValue, setEditRoastValue] = useState(50);
+  const roastLabel = useMemo(() => {
+    return editRoastValue <= 16 ? 'Nordic' : editRoastValue <= 33 ? 'Light' : editRoastValue <= 50 ? 'Light-Medium' : editRoastValue <= 66 ? 'Medium' : editRoastValue <= 83 ? 'Medium-Dark' : 'Dark';
+  }, [editRoastValue]);
+  const handleRoastChange = (v: number) => {
+    setEditRoastValue(v);
+    setEditRoast(v <= 16 ? 'Nordic' : v <= 33 ? 'Light' : v <= 50 ? 'Light-Medium' : v <= 66 ? 'Medium' : v <= 83 ? 'Medium-Dark' : 'Dark');
+  };
   const [editNotes, setEditNotes] = useState('');
   const [editFlavors, setEditFlavors] = useState<string[]>([]);
 
@@ -185,6 +214,12 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
       setEditOrigin(activeProfile.origin ?? '');
       setEditProcess(activeProfile.process ?? '');
       setEditRoast(activeProfile.roastLevel ?? '');
+      if (activeProfile.roastLevel) {
+        const labelToValue: Record<string, number> = { 'Nordic': 8, 'Light': 25, 'Light-Medium': 42, 'Medium': 58, 'Medium-Dark': 75, 'Dark': 92 };
+        setEditRoastValue(labelToValue[activeProfile.roastLevel] ?? 50);
+      } else {
+        setEditRoastValue(50);
+      }
       setEditNotes(activeProfile.notes ?? '');
       setEditFlavors(activeProfile.flavorIds);
     } else {
@@ -193,6 +228,7 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
       setEditOrigin('');
       setEditProcess('');
       setEditRoast('');
+      setEditRoastValue(50);
       setEditNotes('');
       setEditFlavors([]);
     }
@@ -304,24 +340,60 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                   />
                 </div>
                 <div>
-                  <span className="text-[7px] text-slate-400 uppercase font-semibold">Origin</span>
-                  <input value={editOrigin} onChange={e => setEditOrigin(e.target.value)}
-                    className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
-                  />
+                    <span className="text-[7px] text-slate-400 uppercase font-semibold">Origin</span>
+                    <div className="mt-0.5">
+                      <CoffeeOriginSelect value={editOrigin} onChange={setEditOrigin} placeholder="Select origin" size="md" />
+                    </div>
+                  </div>
+              </div>
+              <div>
+                <span className="text-[7px] text-slate-400 uppercase font-semibold">Process</span>
+                <div className="flex gap-1 mt-0.5 flex-wrap">
+                  <button onClick={() => setEditProcess('')}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${!editProcess ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                  >Any</button>
+                  <button onClick={() => setEditProcess('washed')}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'washed' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                  >Washed</button>
+                  <button onClick={() => setEditProcess('natural')}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'natural' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                  >Natural</button>
+                  <button onClick={() => setEditProcess('honey')}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'honey' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                  >Honey</button>
+                  <button onClick={() => setEditProcess('anaerobic')}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'anaerobic' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                  >Anaerobic</button>
+                  <button onClick={() => setEditProcess('lactic')}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'lactic' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                  >Lactic</button>
+                  <button onClick={() => setEditProcess('thermal-shock')}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'thermal-shock' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                  >Thermal</button>
+                  <span className="text-[6px] text-slate-300 uppercase font-semibold self-center ml-1 mr-0.5">Co-fermented</span>
+                  <button onClick={() => setEditProcess('co-fermented')}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'co-fermented' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                  >Co-Fermented</button>
+                  <button onClick={() => setEditProcess('carbonic-maceration')}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'carbonic-maceration' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                  >Carbonic Mac.</button>
+                  <button onClick={() => setEditProcess('koji')}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'koji' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                  >Koji</button>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-[7px] text-slate-400 uppercase font-semibold">Process</span>
-                    <input value={editProcess} onChange={e => setEditProcess(e.target.value)}
-                      className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
-                    />
-                  </div>
-                  <div>
-                    <span className="text-[7px] text-slate-400 uppercase font-semibold">Roast</span>
-                    <input value={editRoast} onChange={e => setEditRoast(e.target.value)}
-                      className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
-                    />
-                  </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[7px] text-slate-400 uppercase font-semibold">Roast level</span>
+                  <span className="text-[7px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">{roastLabel}</span>
+                </div>
+                <input type="range" min={0} max={100} value={editRoastValue}
+                  onChange={e => handleRoastChange(parseInt(e.target.value))}
+                  className="w-full h-1.5 accent-amber-600"
+                />
+                <div className="flex justify-between text-[6px] text-slate-300 mt-0.5">
+                  <span>Nordic</span>
+                  <span>Dark</span>
                 </div>
               </div>
 
@@ -357,7 +429,9 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                           <span className="text-sm">{f.emoji}</span>
                           <span className="text-[9px] font-semibold text-slate-700">{f.label}</span>
                           {'wcr_ref' in f && f.wcr_ref && <span className="text-[6px] text-slate-400 bg-slate-100 px-1 rounded">WCR</span>}
-                          <span className="text-[7px] text-slate-300 ml-auto capitalize">{f.family}</span>
+                          <span className="text-[6px] px-1 rounded text-white ml-auto"
+                            style={{ backgroundColor: BIG_CATEGORIES.find(c => c.key === f.bigCategory)?.color ?? '#999' }}
+                          >{BIG_CATEGORIES.find(c => c.key === f.bigCategory)?.label}</span>
                         </div>
                         <MiniTasteBars taste={f.taste} />
                         <p className="text-[7px] text-slate-500 mt-1 leading-relaxed">{f.description}</p>
@@ -367,23 +441,89 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                 </div>
               )}
 
-              {/* Aggregate analysis */}
+              {/* Aggregate analysis — Sensory Composition */}
               {analysis && selectedFlavors.length > 0 && (
                 <div className="bg-gradient-to-br from-violet-50 to-white border border-violet-200 rounded-lg p-3">
-                  <div className="text-[9px] font-bold text-violet-700 mb-2">Aggregate analysis</div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[9px] font-bold text-violet-700">Sensory Composition</span>
+                    <span className="text-[7px] text-slate-400">{analysis.selectedCount} flavors · {analysis.wcrCount} WCR</span>
+                  </div>
 
-                  {/* Combined taste profile */}
+                  {/* Taste profile bars */}
                   <div className="mb-2">
-                    <span className="text-[7px] text-slate-400 uppercase font-semibold">Average taste composition</span>
-                    <div className="mt-1">
-                      <MiniTasteBars taste={analysis.avgTaste} />
-                    </div>
-                    <div className="flex gap-2 mt-1 text-[7px] text-slate-400">
-                      {TASTE_LABELS.filter(t => analysis.avgTaste[t.key] > 0).map(t => (
-                        <span key={t.key}>{t.label}: <strong className="text-slate-600">{analysis.avgTaste[t.key].toFixed(1)}</strong></span>
-                      ))}
+                    <span className="text-[7px] text-slate-400 uppercase font-semibold">Taste profile</span>
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      {TASTE_LABELS.map(t => {
+                        const val = analysis.avgTaste[t.key];
+                        if (val === 0) return null;
+                        return (
+                          <div key={t.key} className="flex items-center gap-1">
+                            <span className="text-[6px] text-slate-400 w-6 text-right">{t.label}</span>
+                            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full ${t.color}`} style={{ width: `${(val / 5) * 100}%` }} />
+                            </div>
+                            <span className="text-[7px] text-slate-400 w-3 text-right">{val}</span>
+                          </div>
+                        );
+                      })}
+                      {Object.values(analysis.avgTaste).every(v => v === 0) && (
+                        <span className="text-[7px] text-slate-300 italic">No dominant taste</span>
+                      )}
                     </div>
                   </div>
+
+                  {/* Big category breakdown */}
+                  {analysis.categoryCounts && Object.keys(analysis.categoryCounts).length > 0 && (
+                    <div className="mb-1.5">
+                      <span className="text-[7px] text-slate-400 uppercase font-semibold">Aroma categories</span>
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {BIG_CATEGORIES.map(cat => {
+                          const count = analysis.categoryCounts![cat.key] ?? 0;
+                          if (count === 0) return null;
+                          const pct = Math.round((count / analysis.selectedCount) * 100);
+                          return (
+                            <div key={cat.key} className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: cat.bgColor, borderColor: cat.borderColor, borderWidth: 1 }}>
+                              <span className="text-[8px]" style={{ color: cat.color }}>●</span>
+                              <span className={`text-[7px] font-semibold ${cat.textColor}`}>{cat.label}</span>
+                              <span className="text-[7px] text-slate-400">{count} ({pct}%)</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Subgroup breakdown */}
+                  {analysis.subgroupCounts && Object.keys(analysis.subgroupCounts).length > 0 && (
+                    <div className="mb-1.5">
+                      <span className="text-[7px] text-slate-400 uppercase font-semibold">Notes</span>
+                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+                        {Object.entries(analysis.subgroupCounts).sort((a, b) => b[1] - a[1]).map(([label, count]) => (
+                          <span key={label} className="text-[8px] text-slate-600">
+                            {label} <span className="text-slate-300">×{count}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Vibrancy vs Depth */}
+                  {analysis.vibrancyScore !== undefined && analysis.depthScore !== undefined && (
+                    <div className="flex gap-3 mb-2">
+                      <div className="flex-1">
+                        <span className="text-[6px] text-slate-400 uppercase">Vibrancy</span>
+                        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
+                          <div className="h-full rounded-full bg-pink-400" style={{ width: `${analysis.vibrancyScore}%` }} />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-[6px] text-slate-400 uppercase">Depth</span>
+                        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
+                          <div className="h-full rounded-full bg-orange-600" style={{ width: `${analysis.depthScore}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Dimension prediction */}
                   <div className="mb-2">

@@ -3,6 +3,8 @@ import { getReferenceTDS, getReferenceTDSRange } from '../utils/tdsReference';
 import shadowJudgeData from '../data/shadowJudge';
 import { SENSORY_VOCAB, POLARITY_COLORS } from '../data/sensoryVocab';
 import TDSHUD from './TDSHUD';
+import type { SensoryProfile, TasteProfile, FlavorEntry } from '../sensory-memo';
+import { FLAVORS, TASTE_LABELS } from '../sensory-memo';
 
 type Score = number;
 
@@ -476,6 +478,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
   const [showSummary, setShowSummary] = useState(true);
   const [showVocabChips, setShowVocabChips] = useState(true);
   const [showSaveLoad, setShowSaveLoad] = useState(false);
+  const [loadedMemoProfile, setLoadedMemoProfile] = useState<SensoryProfile | null>(null);
+  const [showMemoPicker, setShowMemoPicker] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [snapName, setSnapName] = useState('');
   const [snapRating, setSnapRating] = useState(3);
@@ -925,6 +929,32 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
             <input ref={fileRef} type="file" accept=".json" onChange={handleLoad} className="hidden" />
             <button onClick={handleSave} className="px-2 py-1 text-[10px] font-semibold border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-100">Save</button>
             <button onClick={() => fileRef.current?.click()} className="px-2 py-1 text-[10px] font-semibold border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-100">Load</button>
+            <div className="relative">
+              <button onClick={() => setShowMemoPicker(p => !p)} className={`px-2 py-1 text-[10px] font-semibold border rounded-lg transition-colors ${loadedMemoProfile ? 'bg-violet-100 border-violet-200 text-violet-700' : 'border-slate-200 text-slate-500 hover:bg-slate-100'}`}>📥 Memo</button>
+              {showMemoPicker && (() => {
+                let profiles: SensoryProfile[] = [];
+                try { profiles = JSON.parse(localStorage.getItem('belka.sensoryProfiles') || '[]'); } catch {}
+                return (
+                  <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                    <div className="p-1.5 border-b border-slate-100 text-[8px] font-semibold text-slate-400">Load from Sensory Memo</div>
+                    {profiles.length === 0 ? (
+                      <div className="p-3 text-[9px] text-slate-400 italic text-center">No saved profiles</div>
+                    ) : profiles.map(p => (
+                      <button key={p.id} onClick={() => { setLoadedMemoProfile(p); setShowMemoPicker(false); }}
+                        className="w-full text-left px-2 py-1.5 text-[9px] hover:bg-violet-50 border-b border-slate-50 last:border-0"
+                      >
+                        <span className="font-semibold text-slate-700">{p.name}</span>
+                        {p.coffeeName && <span className="text-slate-400 ml-1">— {p.coffeeName}</span>}
+                        <div className="text-[7px] text-slate-400">{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}{p.roastLevel ? ` · ${p.roastLevel}` : ''}</div>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+            {loadedMemoProfile && (
+              <button onClick={() => { setLoadedMemoProfile(null); setShowMemoPicker(false); }} className="px-1.5 py-1 text-[9px] font-semibold text-slate-400 hover:text-red-500">✕</button>
+            )}
             <button onClick={onClose} className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100">✕ Close</button>
           </div>
         </div>
@@ -965,6 +995,61 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-4 space-y-4 pb-20">
         {tab === 'profile' && (
           <>
+            {loadedMemoProfile && (() => {
+              const checkedEntries = Object.entries(loadedMemoProfile.checkedFlavors).filter(([, v]) => v.checked);
+              const checkedFlavorIds = new Set(checkedEntries.map(([id]) => id));
+              const checkedFlavors: FlavorEntry[] = FLAVORS.filter(f => checkedFlavorIds.has(f.id));
+              const totalTaste: TasteProfile = { sour: 0, sweet: 0, bitter: 0, salty: 0, umami: 0 };
+              checkedFlavors.forEach(f => { for (const k of Object.keys(totalTaste) as (keyof TasteProfile)[]) totalTaste[k] += f.taste[k]; });
+              const cnt = checkedFlavors.length || 1;
+              const avgTaste: TasteProfile = { sour: +(totalTaste.sour / cnt).toFixed(1), sweet: +(totalTaste.sweet / cnt).toFixed(1), bitter: +(totalTaste.bitter / cnt).toFixed(1), salty: +(totalTaste.salty / cnt).toFixed(1), umami: +(totalTaste.umami / cnt).toFixed(1) };
+              const bigCats: Record<string, number> = {};
+              checkedFlavors.forEach(f => { bigCats[f.bigCategory] = (bigCats[f.bigCategory] || 0) + 1; });
+              return (
+              <div className="bg-white rounded-xl border border-violet-200 shadow-sm p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-[10px] font-bold text-violet-700">🧪 PRE-BREW REFERENCE</h3>
+                  <button onClick={() => setLoadedMemoProfile(null)} className="text-[8px] text-slate-400 hover:text-red-500 font-semibold">✕ Clear</button>
+                </div>
+                {(loadedMemoProfile.coffeeName || loadedMemoProfile.roaster || loadedMemoProfile.origin || loadedMemoProfile.process || loadedMemoProfile.roastLevel) && (
+                  <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[7px] text-slate-500 mb-2">
+                    {loadedMemoProfile.coffeeName && <span className="font-semibold text-slate-700">{loadedMemoProfile.coffeeName}</span>}
+                    {loadedMemoProfile.roaster && <span>roasted by {loadedMemoProfile.roaster}</span>}
+                    {loadedMemoProfile.origin && <span>· {loadedMemoProfile.origin}</span>}
+                    {loadedMemoProfile.process && <span>· {loadedMemoProfile.process}</span>}
+                    {loadedMemoProfile.roastLevel && <span>· {loadedMemoProfile.roastLevel}</span>}
+                  </div>
+                )}
+                {/* Taste composition bars */}
+                <div className="mb-2">
+                  <div className="text-[7px] font-semibold text-slate-500 mb-1">Expected Taste</div>
+                  <div className="flex gap-2">
+                    {TASTE_LABELS.map(t => (
+                      <div key={t.key} className="flex-1">
+                        <div className="text-[6px] text-slate-400 text-center mb-0.5">{t.label}</div>
+                        <div className="h-8 rounded-full overflow-hidden bg-slate-100 flex flex-col-reverse">
+                          <div className={`${t.color} transition-all duration-200`} style={{ height: `${(avgTaste[t.key] / 5) * 100}%` }} />
+                        </div>
+                        <div className="text-[7px] font-bold text-slate-600 text-center">{avgTaste[t.key]}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Big category breakdown */}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {Object.entries(bigCats).map(([cat, n]) => (
+                    <span key={cat} className="text-[7px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 font-semibold">{cat} {n}</span>
+                  ))}
+                </div>
+                {/* Flavor chips */}
+                <div className="flex flex-wrap gap-1">
+                  {checkedFlavors.map(f => (
+                    <span key={f.id} className="text-[7px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{f.emoji} {f.label}</span>
+                  ))}
+                </div>
+              </div>
+              );
+            })()}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold text-slate-700">Score Profile</h2>
@@ -1647,6 +1732,22 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 <p className="text-[8px] text-slate-400">Adjust each layer by how much you feel it needs — independent of your sensory score</p>
               </div>
             </div>
+            {loadedMemoProfile && (() => {
+              const checkedEntries = Object.entries(loadedMemoProfile.checkedFlavors).filter(([, v]) => v.checked);
+              const checkedFlavorIds = new Set(checkedEntries.map(([id]) => id));
+              const checkedFlavors: FlavorEntry[] = FLAVORS.filter(f => checkedFlavorIds.has(f.id));
+              return (
+              <div className="mb-3 p-2 bg-violet-50/50 border border-violet-200 rounded-lg">
+                <div className="text-[8px] font-bold text-violet-700 mb-1">🧪 Expected from Memo</div>
+                <div className="flex flex-wrap gap-1">
+                  {checkedFlavors.map(f => (
+                    <span key={f.id} className="text-[7px] px-1.5 py-0.5 rounded bg-white border border-violet-100 text-slate-600">{f.emoji} {f.label}</span>
+                  ))}
+                  {checkedFlavors.length === 0 && <span className="text-[7px] text-slate-400 italic">No flavor data</span>}
+                </div>
+              </div>
+              );
+            })()}
             {(() => {
               const R = 5;
               const flavorFamilies: { emoji: string; name: string; axes: string[] }[] = [

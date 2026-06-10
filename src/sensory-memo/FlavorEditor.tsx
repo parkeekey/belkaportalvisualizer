@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { AROMA_FAMILIES, TASTE_LABELS, type AromaFamily, type TasteProfile, type CustomFlavorEntry } from './types';
+import { useState, useMemo } from 'react';
+import { AROMA_FAMILIES, BIG_CATEGORIES, TASTE_LABELS, type AromaFamily, type TasteProfile, type CustomFlavorEntry, type BigAromaCategory, type BigAromaSubgroup, type FlavorEntry } from './types';
+import { FLAVORS } from './flavors';
+import { loadCustomFlavors } from './customFlavors';
 
 interface Props {
   flavor?: CustomFlavorEntry;
-  onSave: (data: { label: string; emoji: string; family: AromaFamily; taste: TasteProfile; description: string; subgroup?: string }) => void;
+  onSave: (data: { label: string; emoji: string; family: AromaFamily; bigCategory: BigAromaCategory; bigSubgroup: BigAromaSubgroup; taste: TasteProfile; description: string; subgroup?: string; similarTo?: string }) => void;
   onClose: () => void;
 }
 
@@ -13,9 +15,32 @@ export default function FlavorEditor({ flavor, onSave, onClose }: Props) {
   const [label, setLabel] = useState(flavor?.label ?? '');
   const [emoji, setEmoji] = useState(flavor?.emoji ?? '🍊');
   const [family, setFamily] = useState<AromaFamily>(flavor?.family ?? 'other');
+  const [bigCategory, setBigCategory] = useState<BigAromaCategory>(flavor?.bigCategory ?? 'other');
+  const [bigSubgroup, setBigSubgroup] = useState<BigAromaSubgroup>(flavor?.bigSubgroup ?? 'others-other');
   const [subgroup, setSubgroup] = useState(flavor?.subgroup ?? '');
   const [taste, setTaste] = useState<TasteProfile>(flavor?.taste ?? { ...DEFAULT_TASTE });
   const [description, setDescription] = useState(flavor?.description ?? '');
+  const [similarTo, setSimilarTo] = useState(flavor?.similarTo ?? '');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+
+  const customFlavors = useMemo(() => loadCustomFlavors(), []);
+  const allFlavors = useMemo(() => [...customFlavors, ...FLAVORS], [customFlavors]);
+
+  const similarFlavor = useMemo(() => allFlavors.find(f => f.id === similarTo), [similarTo, allFlavors]);
+
+  const results = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase();
+    return allFlavors.filter(f =>
+      f.label.toLowerCase().includes(q) ||
+      f.description.toLowerCase().includes(q) ||
+      f.family.toLowerCase().includes(q)
+    ).slice(0, 8);
+  }, [searchQuery, allFlavors]);
+
+  const bigCatDef = BIG_CATEGORIES.find(c => c.key === bigCategory);
+  const subgroups = bigCatDef?.subgroups ?? [];
 
   const setTasteVal = (key: keyof TasteProfile, val: number) => {
     setTaste(prev => ({ ...prev, [key]: Math.max(0, Math.min(5, val)) }));
@@ -23,8 +48,10 @@ export default function FlavorEditor({ flavor, onSave, onClose }: Props) {
 
   const handleSave = () => {
     if (!label.trim()) return;
-    onSave({ label: label.trim(), emoji, family, taste, description: description.trim(), subgroup: subgroup.trim() || undefined });
+    onSave({ label: label.trim(), emoji, family, bigCategory, bigSubgroup, taste, description: description.trim(), subgroup: subgroup.trim() || undefined, similarTo: similarTo || undefined });
   };
+
+  const isWCR = (f: FlavorEntry | CustomFlavorEntry): f is FlavorEntry => 'wcr_ref' in f;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20" onClick={onClose}>
@@ -38,9 +65,53 @@ export default function FlavorEditor({ flavor, onSave, onClose }: Props) {
           <div>
             <span className="text-[8px] text-slate-400 font-semibold uppercase">Name</span>
             <input value={label} onChange={e => setLabel(e.target.value)}
-              placeholder="e.g. My Special Note"
+              placeholder="e.g. Yuzu"
               className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
             />
+          </div>
+
+          {/* Similar to search */}
+          <div>
+            <span className="text-[8px] text-slate-400 font-semibold uppercase">Similar to</span>
+            <div className="relative mt-0.5">
+              {similarFlavor ? (
+                <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] border border-violet-200 rounded bg-violet-50">
+                  <span className="text-sm">{similarFlavor.emoji}</span>
+                  <span className="font-semibold text-violet-700">{similarFlavor.label}</span>
+                  {isWCR(similarFlavor) && similarFlavor.wcr_ref && <span className="text-[6px] text-slate-400 bg-white px-1 rounded">WCR</span>}
+                  <button onClick={() => { setSimilarTo(''); setSearchQuery(''); }} className="ml-auto text-slate-400 hover:text-red-500 text-[9px]">✕</button>
+                </div>
+              ) : (
+                <button onClick={() => setShowSearch(p => !p)}
+                  className="w-full text-left px-2 py-1 text-[10px] border border-dashed border-slate-300 rounded text-slate-400 hover:text-slate-600 hover:border-slate-400"
+                >+ Link to existing flavor</button>
+              )}
+              {showSearch && !similarFlavor && (
+                <div className="mt-1">
+                  <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search WCR & custom flavors..."
+                    className="w-full px-2 py-1 text-[9px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    autoFocus
+                  />
+                  {results.length > 0 && (
+                    <div className="mt-1 border border-slate-200 rounded max-h-36 overflow-y-auto">
+                      {results.map(f => (
+                        <button key={f.id} onClick={() => { setSimilarTo(f.id); setShowSearch(false); setSearchQuery(''); }}
+                          className="w-full text-left px-2 py-1 text-[9px] hover:bg-violet-50 flex items-center gap-1.5 border-b border-slate-50 last:border-0"
+                        >
+                          <span className="text-sm">{f.emoji}</span>
+                          <span className="font-medium text-slate-600">{f.label}</span>
+                          {isWCR(f) && f.wcr_ref && <span className="text-[6px] text-slate-400 bg-slate-100 px-1 rounded ml-auto">WCR</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {searchQuery.trim() && results.length === 0 && (
+                    <div className="text-[8px] text-slate-400 italic mt-1 text-center">No matches — you can leave it unlinked</div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Emoji + Family row */}
@@ -63,9 +134,33 @@ export default function FlavorEditor({ flavor, onSave, onClose }: Props) {
             </div>
           </div>
 
-          {/* Subgroup */}
+          {/* Big Category + Subgroup row */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <span className="text-[8px] text-slate-400 font-semibold uppercase">Big category</span>
+              <select value={bigCategory} onChange={e => { setBigCategory(e.target.value as BigAromaCategory); setBigSubgroup(BIG_CATEGORIES.find(c => c.key === e.target.value)?.subgroups[0]?.key ?? 'others-other'); }}
+                className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white"
+              >
+                {BIG_CATEGORIES.map(c => (
+                  <option key={c.key} value={c.key}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <span className="text-[8px] text-slate-400 font-semibold uppercase">Subgroup</span>
+              <select value={bigSubgroup} onChange={e => setBigSubgroup(e.target.value as BigAromaSubgroup)}
+                className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white"
+              >
+                {subgroups.map(s => (
+                  <option key={s.key} value={s.key}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Legacy subgroup */}
           <div>
-            <span className="text-[8px] text-slate-400 font-semibold uppercase">Subgroup (optional)</span>
+            <span className="text-[8px] text-slate-400 font-semibold uppercase">Legacy subgroup (optional)</span>
             <input value={subgroup} onChange={e => setSubgroup(e.target.value)}
               placeholder="e.g. berry, citrus, roasted"
               className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
@@ -86,6 +181,11 @@ export default function FlavorEditor({ flavor, onSave, onClose }: Props) {
                   <span className="text-[9px] font-bold text-slate-600 w-3 text-right">{taste[t.key]}</span>
                 </div>
               ))}
+              {similarFlavor && (
+                <div className="text-[7px] text-slate-400 italic border-t border-slate-100 pt-1 mt-1">
+                  Tip: {similarFlavor.label} has sour {similarFlavor.taste.sour} · sweet {similarFlavor.taste.sweet} · bitter {similarFlavor.taste.bitter}
+                </div>
+              )}
             </div>
           </div>
 

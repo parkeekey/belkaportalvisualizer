@@ -96,7 +96,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const [icedHotTDS, setIcedHotTDS] = useState(3.0);
   const [icedTargetFinalTDS, setIcedTargetFinalTDS] = useState<number | null>(null);
   const [icedTab, setIcedTab] = useState<'ratio' | 'ey'>('ratio');
-  const [icedOpen, setIcedOpen] = useState(false);
+
   const [icedEYmin, setIcedEYmin] = useState(18);
   const [icedEYmax, setIcedEYmax] = useState(22);
   const [brewFilterMode, setBrewFilterMode] = useState<'hot' | 'iced'>('hot');

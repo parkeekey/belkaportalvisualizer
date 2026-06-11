@@ -270,11 +270,11 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
   const MICRON_RANGES = [
     { id: 'turkish', label: 'Turkish / Ibrik', min: 100, max: 300, mid: 220, color: 'text-purple-700 bg-purple-50 border-purple-200', note: 'Ultra-fine, powder-like.' },
-    { id: 'espresso', label: 'Espresso', min: 300, max: 400, mid: 350, color: 'text-red-700 bg-red-50 border-red-200', note: 'Fine, high pressure required.' },
+    { id: 'espresso', label: 'Espresso', min: 300, max: 400, mid: 350, color: 'text-red-700 bg-red-50 dark:bg-red-900/20 border-red-200', note: 'Fine, high pressure required.' },
     { id: 'moka', label: 'Moka Pot / Fine Aeropress', min: 400, max: 500, mid: 450, color: 'text-orange-700 bg-orange-50 border-orange-200', note: 'Between espresso and pour-over.' },
-    { id: 'pourover', label: 'Pour-Over / V60 / Drip', min: 500, max: 700, mid: 600, color: 'text-emerald-700 bg-emerald-50 border-emerald-200', note: 'Standard pour-over range.' },
+    { id: 'pourover', label: 'Pour-Over / V60 / Drip', min: 500, max: 700, mid: 600, color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800', note: 'Standard pour-over range.' },
     { id: 'chemex', label: 'Chemex / Kalita / Flat Bottom', min: 700, max: 900, mid: 800, color: 'text-teal-700 bg-teal-50 border-teal-200', note: 'Clean cup, faster flow.' },
-    { id: 'frenchpress', label: 'French Press / Coarse Aeropress', min: 900, max: 1100, mid: 1000, color: 'text-amber-700 bg-amber-50 border-amber-200', note: 'Full immersion, heavy body.' },
+    { id: 'frenchpress', label: 'French Press / Coarse Aeropress', min: 900, max: 1100, mid: 1000, color: 'text-amber-700 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800', note: 'Full immersion, heavy body.' },
     { id: 'coldbrew', label: 'Cold Brew / Cupping', min: 1100, max: 1400, mid: 1250, color: 'text-stone-700 bg-stone-50 border-stone-200', note: 'Very coarse, long steep.' },
   ];
   const [targetMethod, setTargetMethod] = useState<string | null>(null);
@@ -308,12 +308,12 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
   const SectionCard = useCallback(({ id, title, headerClass, borderClass, children, headerRight, className = '' }: { id: string; title: React.ReactNode; headerClass: string; borderClass: string; children: React.ReactNode; headerRight?: React.ReactNode; className?: string }) => {
     const collapsed = collapsedSections.has(id);
     return (
-      <section className={`bg-white border rounded-xl shadow-sm transition-all ${collapsed ? 'shadow-none border-slate-200' : ''} ${borderClass} ${className}`}>
+      <section className={`bg-white dark:bg-slate-800 border rounded-xl shadow-sm transition-all ${collapsed ? 'shadow-none border-slate-200 dark:border-slate-700' : ''} ${borderClass} ${className}`}>
         <button type="button" onClick={() => toggleSection(id)} className="w-full flex items-center justify-between px-4 pt-3 pb-2">
           <h3 className={`text-sm font-bold uppercase tracking-wider ${headerClass}`}>{title}</h3>
           <div className="flex items-center gap-2">
             {headerRight}
-            <svg className={`w-3 h-3 text-slate-400 transition-transform ${collapsed ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            <svg className={`w-3 h-3 text-slate-400 dark:text-slate-500 transition-transform ${collapsed ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
           </div>
         </button>
         {!collapsed && <div className="px-4 pb-4">{children}</div>}
@@ -609,22 +609,22 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
   return (
     <div className="min-h-screen bg-[#f8f6f0] flex flex-col">
-      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-slate-200">
+      <header className="sticky top-0 z-10 bg-white dark:bg-slate-800/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-4xl mx-auto px-4 py-3 space-y-3">
           <div className="flex items-center justify-between">
             <h1 className="text-lg font-bold text-slate-800">⚙ Setup Profile</h1>
-            <button onClick={() => setShowImport(v => !v)} className="text-[9px] text-slate-400 hover:text-slate-600 font-semibold px-2 py-0.5 rounded border border-slate-200 hover:border-slate-300 transition-colors">{showImport ? '📥' : '📥'}</button>
+            <button onClick={() => setShowImport(v => !v)} className="text-[9px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 font-semibold px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:border-slate-600 transition-colors">{showImport ? '📥' : '📥'}</button>
           </div>
 
           {showImport && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2.5">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[8px] font-semibold text-amber-700 uppercase tracking-wider">📥 Import</span>
 
               {coffeeProfiles.length > 0 && (
                 <div className="flex items-center gap-1">
                   <select value={selectedCoffeeId} onChange={e => setSelectedCoffeeId(e.target.value)}
-                    className="text-[8px] border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 bg-white max-w-[140px]"
+                    className="text-[8px] border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 max-w-[140px]"
                   >
                     <option value="">☕ Coffee...</option>
                     {coffeeProfiles.map(p => (
@@ -637,14 +637,14 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                     setCoffeeName(p.name); setRoastery(p.roaster || ''); setOrigin(p.origin || '');
                     setProcess(p.process || 'washed'); setRoastLevel(parseRoastToSlider(p.roastLevel));
                     setImportMsg(`✅ Loaded ${p.name}`); setTimeout(() => setImportMsg(''), 3000);
-                  }} className="text-[8px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-semibold hover:bg-amber-200">Load</button>
+                  }} className="text-[8px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 rounded font-semibold hover:bg-amber-200">Load</button>
                 </div>
               )}
 
               {brewProfiles.length > 0 && (
                 <div className="flex items-center gap-1">
                   <select value={selectedBrewId} onChange={e => setSelectedBrewId(e.target.value)}
-                    className="text-[8px] border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 bg-white max-w-[140px]"
+                    className="text-[8px] border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 max-w-[140px]"
                   >
                     <option value="">📋 Recipe...</option>
                     {brewProfiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -656,7 +656,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                     setRecipeValues({ dose: bp.dose, ratio: bp.ratio, water, grindSize: 0 });
                     setBrewTimeSec(bp.targetFinishSec); setWaterTemp(bp.waterTemp); setGrinderMicron(bp.grindUm); setTargetEY(String(bp.targetEYmid));
                     setImportMsg(`✅ Loaded ${bp.name}`); setTimeout(() => setImportMsg(''), 3000);
-                  }} className="text-[8px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-semibold hover:bg-amber-200">Load</button>
+                  }} className="text-[8px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 rounded font-semibold hover:bg-amber-200">Load</button>
                 </div>
               )}
 
@@ -665,11 +665,11 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 setRecipeValues({ dose: 18, ratio: 16, water: 288, grindSize: 0 });
                 setBrewTimeSec(180); setWaterTemp(93); setGrinderMicron(800); setTargetEY('20');
                 setImportMsg('🔄 Reset'); setTimeout(() => setImportMsg(''), 2000);
-              }} className="text-[8px] px-1.5 py-0.5 text-slate-400 hover:text-red-500 font-semibold">Reset</button>
+              }} className="text-[8px] px-1.5 py-0.5 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:text-red-400 font-semibold">Reset</button>
 
               {importMsg && <span className="text-[8px] text-emerald-600 font-semibold">{importMsg}</span>}
             </div>
-            <div className="mt-1 text-[7px] text-slate-400">
+            <div className="mt-1 text-[7px] text-slate-400 dark:text-slate-500">
               {recipeValues.dose}g · 1:{recipeValues.ratio} · {waterTemp}°C · {Math.floor(brewTimeSec / 60)}:{String(brewTimeSec % 60).padStart(2, '0')} · {grinderMicron}µm
             </div>
           </div>)}
@@ -678,7 +678,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <div className="flex gap-1 flex-wrap">
             {([['setup','⚙ Setup'],['bean','🫘 Bean'],['brew','🌿 Brew'],['targets','🎯 Targets'],['log','📋 Log']] as const).map(([id, label]) => (
               <button key={id} onClick={() => setActiveTab(id)}
-                className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${activeTab === id ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${activeTab === id ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 -mb-px' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}
               >{label}</button>
             ))}
           </div>
@@ -690,7 +690,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <>
 
       {/* Brew Impact */}
-      <SectionCard id="brew-impact" title={<div className="flex items-center gap-3">Brew Impact{!symptom && <span className="text-[10px] text-emerald-500 italic font-normal">{activeFactor ? 'Tap again to clear' : 'Tap a row to see ripple'}</span>}</div>} headerClass="text-emerald-800" borderClass="border-emerald-200">
+      <SectionCard id="brew-impact" title={<div className="flex items-center gap-3">Brew Impact{!symptom && <span className="text-[10px] text-emerald-500 italic font-normal">{activeFactor ? 'Tap again to clear' : 'Tap a row to see ripple'}</span>}</div>} headerClass="text-emerald-800 dark:text-emerald-200" borderClass="border-emerald-200 dark:border-emerald-800">
         
 
         {/* Symptom selector */}
@@ -706,7 +706,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all ${
                 symptom === s.id
                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                  : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-emerald-600'
+                  : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:border-emerald-700 hover:text-emerald-600'
               }`}
             >
               {s.label} {symptom === s.id && '✕'}
@@ -716,15 +716,15 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
         {/* Guidance mode */}
         {symptom && symptomGuide[symptom] && (
-          <div className="mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+          <div className="mb-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Fix this</span>
-              <span className="text-xs font-bold text-emerald-800">{SYMPTOM_OPTIONS.find(s => s.id === symptom)?.label}</span>
+              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-200">{SYMPTOM_OPTIONS.find(s => s.id === symptom)?.label}</span>
             </div>
-            <p className="text-xs text-emerald-700 leading-relaxed">{symptomGuide[symptom].advice}</p>
+            <p className="text-xs text-emerald-700 dark:text-emerald-400 leading-relaxed">{symptomGuide[symptom].advice}</p>
             <div className="flex items-center gap-2 mt-2 text-xs">
-              <span className="font-bold text-emerald-700">→ {symptomGuide[symptom].rankLabel}:</span>
-              <span className="font-bold text-emerald-600 bg-white px-2 py-0.5 rounded border border-emerald-200">{symptomGuide[symptom].direction} {symptomGuide[symptom].magnitude}</span>
+              <span className="font-bold text-emerald-700 dark:text-emerald-400">→ {symptomGuide[symptom].rankLabel}:</span>
+              <span className="font-bold text-emerald-600 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">{symptomGuide[symptom].direction} {symptomGuide[symptom].magnitude}</span>
             </div>
           </div>
         )}
@@ -744,19 +744,19 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 onClick={() => { if (!symptom) setActiveFactor(isActive ? null : f.rank); }}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg border text-left transition-all duration-200 ${
                   isGuided
-                    ? 'border-emerald-400 bg-emerald-50 shadow-[0_0_10px_rgba(52,211,153,0.35)]'
+                    ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 shadow-[0_0_10px_rgba(52,211,153,0.35)]'
                     : isActive
-                    ? 'border-emerald-400 bg-emerald-50 shadow-[0_0_8px_rgba(52,211,153,0.3)]'
+                    ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 shadow-[0_0_8px_rgba(52,211,153,0.3)]'
                     : isConnected
-                    ? 'border-emerald-300 bg-emerald-50/50 shadow-[0_0_4px_rgba(52,211,153,0.15)]'
+                    ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20/50 shadow-[0_0_4px_rgba(52,211,153,0.15)]'
                     : isOther
                     ? 'border-transparent opacity-30'
-                    : 'border-transparent hover:bg-slate-50'
+                    : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
                 }`}
                 disabled={!!symptom}
               >
                 <span className={`text-[11px] font-bold w-4 text-center transition-colors ${
-                  isGuided ? 'text-emerald-600' : isActive ? 'text-emerald-600' : isConnected ? 'text-emerald-500' : 'text-slate-400'
+                  isGuided ? 'text-emerald-600' : isActive ? 'text-emerald-600' : isConnected ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'
                 }`}>
                   {f.rank}
                 </span>
@@ -770,7 +770,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                     />
                   </div>
                   <span className={`text-[11px] font-semibold w-auto shrink-0 transition-colors flex items-center gap-0.5 ${
-                    isGuided ? 'text-emerald-700' : isActive ? 'text-emerald-700' : isConnected ? 'text-emerald-600' : 'text-slate-500'
+                    isGuided ? 'text-emerald-700 dark:text-emerald-400' : isActive ? 'text-emerald-700 dark:text-emerald-400' : isConnected ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400'
                   }`}>
                     {f.name}
                     {isGuided && <span className="ml-1 text-[9px] text-emerald-500">←</span>}
@@ -782,13 +782,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setWaterTemp(Math.max(80, waterTemp - 1)); }}
-                        className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                        className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-slate-400 dark:text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:bg-emerald-900/20"
                       >−</button>
-                      <span className="text-[11px] font-bold text-slate-700 tabular-nums w-7 text-center">{waterTemp}</span>
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 tabular-nums w-7 text-center">{waterTemp}</span>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setWaterTemp(Math.min(100, waterTemp + 1)); }}
-                        className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                        className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-slate-400 dark:text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:bg-emerald-900/20"
                       >+</button>
                     </div>
                   ) : f.rank === 5 ? (
@@ -800,8 +800,8 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                           onClick={(e) => { e.stopPropagation(); setWaterQuality(wq); }}
                           className={`text-[9px] font-semibold px-1.5 py-0.5 rounded transition-colors ${
                             waterQuality === wq
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'text-slate-400 hover:text-slate-600'
+                              ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'
                           }`}
                         >
                           {wq === 'soft' ? 'S' : wq === 'medium' ? 'M' : 'H'}
@@ -818,21 +818,21 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                           className={`w-3.5 h-3.5 rounded-full border transition-colors ${
                             turbulenceLevel >= lv
                               ? 'bg-amber-400 border-amber-500'
-                              : 'bg-slate-100 border-slate-300'
+                              : 'bg-slate-100 border-slate-300 dark:border-slate-600'
                           }`}
                         />
                       ))}
                     </div>
                   ) : (
-                    <span className={`text-[11px] font-bold tabular-nums ${isGuided ? 'text-emerald-700' : 'text-slate-700'}`}>{f.value}</span>
+                    <span className={`text-[11px] font-bold tabular-nums ${isGuided ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{f.value}</span>
                   )}
                   {!isOther && (
                     <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full transition-colors ${
                       connections > 0
                         ? isGuided || isActive || isConnected
-                          ? 'bg-emerald-100 text-emerald-600'
-                          : 'bg-slate-100 text-slate-400'
-                        : 'text-slate-300'
+                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600'
+                          : 'bg-slate-100 text-slate-400 dark:text-slate-500'
+                        : 'text-slate-300 dark:text-slate-600'
                     }`}>
                       ↔{connections}
                     </span>
@@ -857,15 +857,15 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     {activeTab === 'setup' && (
       <>
         {/* Equipment Profile */}
-      <SectionCard id="equipment-profile" title="Equipment Profile" headerClass="text-sky-800" borderClass="border-slate-200">
+      <SectionCard id="equipment-profile" title="Equipment Profile" headerClass="text-sky-800" borderClass="border-slate-200 dark:border-slate-700">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Brewer</label>
-            <input type="text" value={equipmentName} onChange={(e) => setEquipmentName(e.target.value)} placeholder="e.g. Stagg X" className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Brewer</label>
+            <input type="text" value={equipmentName} onChange={(e) => setEquipmentName(e.target.value)} placeholder="e.g. Stagg X" className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Brew Method</label>
-            <select value={brewerType} onChange={(e) => setBrewerType(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-sky-400">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Brew Method</label>
+            <select value={brewerType} onChange={(e) => setBrewerType(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400">
               <option value="V60">V60</option>
               <option value="Chemex">Chemex</option>
               <option value="Kalita Wave">Kalita Wave</option>
@@ -876,20 +876,20 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Filter</label>
-            <input type="text" value={filterName} onChange={(e) => setFilterName(e.target.value)} placeholder="e.g. Cafec Abaca" className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Filter</label>
+            <input type="text" value={filterName} onChange={(e) => setFilterName(e.target.value)} placeholder="e.g. Cafec Abaca" className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Filter Type <span className="text-slate-300 font-normal">(opt)</span></label>
-            <input type="text" value={filterType} onChange={(e) => setFilterType(e.target.value)} placeholder="e.g. V60-02, paper" className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Filter Type <span className="text-slate-300 dark:text-slate-600 font-normal">(opt)</span></label>
+            <input type="text" value={filterType} onChange={(e) => setFilterType(e.target.value)} placeholder="e.g. V60-02, paper" className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
           </div>
           <div className="flex flex-col gap-0.5 col-span-2 md:col-span-3">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Flow Speed</label>
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Flow Speed</label>
             <div className="flex items-center gap-3">
-              <span className="text-[10px] text-slate-400 font-medium w-16 text-right">Very Slow</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium w-16 text-right">Very Slow</span>
               <input type="range" min={0} max={100} value={flowSpeed} onChange={(e) => { const v = parseInt(e.target.value); setFlowSpeed(v); setGrindAdjustPct(50 + Math.round((v - 50) * 0.4)); }} className="flex-1 h-1.5 accent-sky-500 max-w-48" />
-              <span className="text-[10px] text-slate-400 font-medium w-16">Very Fast</span>
-              <div className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${flowSuggestion > 0 ? 'text-emerald-700 bg-emerald-100 border-emerald-300' : flowSuggestion < 0 ? 'text-amber-700 bg-amber-100 border-amber-300' : 'text-slate-500 bg-slate-100 border-slate-200'}`}>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium w-16">Very Fast</span>
+              <div className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${flowSuggestion > 0 ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700' : flowSuggestion < 0 ? 'text-amber-700 bg-amber-100 dark:bg-amber-900/30 border-amber-300' : 'text-slate-500 dark:text-slate-400 bg-slate-100 border-slate-200 dark:border-slate-700'}`}>
                 {flowSuggestion > 0 ? `Suggest ${flowSuggestion}% finer` : flowSuggestion < 0 ? `Suggest ${Math.abs(flowSuggestion)}% coarser` : 'Neutral'}
               </div>
             </div>
@@ -903,17 +903,17 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </button>
             {flowTestOpen && (
               <div className="mt-2 p-3 bg-sky-50 border border-sky-200 rounded-lg text-xs space-y-2">
-                <p className="text-[10px] text-slate-500">Measure how fast water passes through the <strong>empty</strong> dripper + paper (no coffee). This reflects the equipment's flow resistance, not your pour speed.</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Measure how fast water passes through the <strong>empty</strong> dripper + paper (no coffee). This reflects the equipment's flow resistance, not your pour speed.</p>
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex items-center gap-1">
-                    <label className="text-[10px] text-slate-500">Drawdown Rate:</label>
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400">Drawdown Rate:</label>
                     <input type="number" step="0.1" min="0" max="25" value={drawdownRate} onChange={(e) => setDrawdownRate(Number(e.target.value))} className="w-16 px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                    <span className="text-[10px] text-slate-400">g/s</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">g/s</span>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold whitespace-nowrap ${
                     drawdownRate >= 15 ? 'text-purple-700 bg-purple-100' :
-                    drawdownRate >= 8 ? 'text-emerald-700 bg-emerald-100' :
-                    drawdownRate >= 4 ? 'text-amber-700 bg-amber-100' :
+                    drawdownRate >= 8 ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30' :
+                    drawdownRate >= 4 ? 'text-amber-700 bg-amber-100 dark:bg-amber-900/30' :
                     'text-red-700 bg-red-100'
                   }`}>
                     {drawdownRate >= 15 ? 'Ultra-Fast' : drawdownRate >= 8 ? 'Standard Fast' : drawdownRate >= 4 ? 'Medium-Slow' : 'Highly Restrictive'}
@@ -923,15 +923,15 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                     setFlowSpeed(speed);
                     setGrindAdjustPct(50 + Math.round((speed - 50) * 0.4));
                     setFlowTestOpen(false);
-                  }} className="px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border border-sky-300 text-sky-700 bg-white hover:bg-sky-50">
+                  }} className="px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border border-sky-300 text-sky-700 bg-white dark:bg-slate-800 hover:bg-sky-50">
                     Apply
                   </button>
                 </div>
                 <div className={`text-[10px] px-2 py-1.5 rounded ${
                   drawdownRate >= 15 ? 'bg-purple-50 text-purple-800 border border-purple-200' :
-                  drawdownRate >= 8 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
-                  drawdownRate >= 4 ? 'bg-amber-50 text-amber-800 border border-amber-200' :
-                  'bg-red-50 text-red-800 border border-red-200'
+                  drawdownRate >= 8 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800' :
+                  drawdownRate >= 4 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800' :
+                  'bg-red-50 dark:bg-red-900/20 text-red-800 border border-red-200'
                 }`}>
                   {drawdownRate >= 15
                     ? 'Zero bypass resistance. Recommend finer grind or slower pour to prevent under-extraction.'
@@ -949,7 +949,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       </SectionCard>
 
       {/* Water PPM */}
-      <SectionCard id="water-ppm" title="Water PPM" headerClass="text-cyan-800" borderClass="border-slate-200">
+      <SectionCard id="water-ppm" title="Water PPM" headerClass="text-cyan-800" borderClass="border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-cyan-800 uppercase tracking-wider">Water PPM</h3>
           <span className="text-[9px] text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full border border-cyan-200 font-semibold">
@@ -958,7 +958,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Water : Mineral Ratio</label>
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Water : Mineral Ratio</label>
             <input
               type="text"
               value={waterMineralRatio}
@@ -968,7 +968,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 localStorage.setItem('belkaWaterMineralRatio', next);
               }}
               placeholder="e.g. 1:2"
-              className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
             />
             <div className="flex items-center gap-1 mt-1">
               <button
@@ -994,7 +994,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </div>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Measured Water PPM</label>
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Measured Water PPM</label>
             <input
               type="number"
               min={0}
@@ -1006,11 +1006,11 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 localStorage.setItem('belkaWaterPPM', next);
               }}
               placeholder="PPM from pen"
-              className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
             />
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Total Mix Water (ml)</label>
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Total Mix Water (ml)</label>
             <input
               type="number"
               min={1}
@@ -1022,30 +1022,30 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 localStorage.setItem('belkaWaterMixTotalMl', next);
               }}
               placeholder="e.g. 300"
-              className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
             />
           </div>
           {!waterMixCalc.valid ? (
-            <div className="md:col-span-3 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+            <div className="md:col-span-3 text-[10px] text-amber-700 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded px-2 py-1.5">
               Enter ratio as mineral:water (example 1:10 or 2:10) and set total ml.
             </div>
           ) : (
             <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
               <div className="rounded border border-cyan-200 bg-cyan-50 px-2 py-1.5">
                 <div className="text-cyan-700 font-semibold uppercase tracking-wider">Mineral Water</div>
-                <div className="text-slate-700 font-bold tabular-nums text-xs">{waterMixCalc.mineralMl.toFixed(1)} ml</div>
+                <div className="text-slate-700 dark:text-slate-300 font-bold tabular-nums text-xs">{waterMixCalc.mineralMl.toFixed(1)} ml</div>
               </div>
               <div className="rounded border border-sky-200 bg-sky-50 px-2 py-1.5">
                 <div className="text-sky-700 font-semibold uppercase tracking-wider">Plain Water</div>
-                <div className="text-slate-700 font-bold tabular-nums text-xs">{waterMixCalc.plainWaterMl.toFixed(1)} ml</div>
+                <div className="text-slate-700 dark:text-slate-300 font-bold tabular-nums text-xs">{waterMixCalc.plainWaterMl.toFixed(1)} ml</div>
               </div>
               <div className="rounded border border-indigo-200 bg-indigo-50 px-2 py-1.5">
                 <div className="text-indigo-700 font-semibold uppercase tracking-wider">Mineral %</div>
-                <div className="text-slate-700 font-bold tabular-nums text-xs">{waterMixCalc.mineralPct.toFixed(1)}%</div>
+                <div className="text-slate-700 dark:text-slate-300 font-bold tabular-nums text-xs">{waterMixCalc.mineralPct.toFixed(1)}%</div>
               </div>
-              <div className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1.5">
-                <div className="text-emerald-700 font-semibold uppercase tracking-wider">Est. Final PPM</div>
-                <div className="text-slate-700 font-bold tabular-nums text-xs">{waterMixCalc.estimatedFinalPpm != null ? waterMixCalc.estimatedFinalPpm.toFixed(1) : '—'}</div>
+              <div className="rounded border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1.5">
+                <div className="text-emerald-700 dark:text-emerald-400 font-semibold uppercase tracking-wider">Est. Final PPM</div>
+                <div className="text-slate-700 dark:text-slate-300 font-bold tabular-nums text-xs">{waterMixCalc.estimatedFinalPpm != null ? waterMixCalc.estimatedFinalPpm.toFixed(1) : '—'}</div>
               </div>
             </div>
           )}
@@ -1075,70 +1075,70 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               <span className="text-[10px] text-cyan-700 font-semibold">✓ Standby ready</span>
             )}
           </div>
-          <p className="md:col-span-3 text-[10px] text-slate-500">
+          <p className="md:col-span-3 text-[10px] text-slate-500 dark:text-slate-400">
             Input your meter reading before brewing to keep water setup consistent across brews.
           </p>
         </div>
       </SectionCard>
 
       {/* Brew Temperature */}
-      <SectionCard id="brew-temp" title={<div className="flex items-center gap-3">Brew Temperature<span className="text-[9px] text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-semibold">{tempSuggestion.label}</span></div>} headerClass="text-rose-800" borderClass="border-slate-200">
+      <SectionCard id="brew-temp" title={<div className="flex items-center gap-3">Brew Temperature<span className="text-[9px] text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-semibold">{tempSuggestion.label}</span></div>} headerClass="text-rose-800" borderClass="border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => setWaterTemp(Math.max(80, waterTemp - 1))} className="w-6 h-6 flex items-center justify-center rounded text-sm font-bold text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100">−</button>
-            <span className="text-lg font-bold text-slate-700 tabular-nums w-10 text-center">{waterTemp}°C</span>
+            <span className="text-lg font-bold text-slate-700 dark:text-slate-300 tabular-nums w-10 text-center">{waterTemp}°C</span>
             <button type="button" onClick={() => setWaterTemp(Math.min(100, waterTemp + 1))} className="w-6 h-6 flex items-center justify-center rounded text-sm font-bold text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100">+</button>
           </div>
-          <button type="button" onClick={() => setWaterTemp(tempSuggestion.temp)} className="px-3 py-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100">
+          <button type="button" onClick={() => setWaterTemp(tempSuggestion.temp)} className="px-3 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg hover:bg-emerald-100 dark:bg-emerald-900/30">
             Apply {tempSuggestion.temp}°C ({tempSuggestion.label})
           </button>
-          <div className="flex items-center gap-2 text-[10px] text-slate-500">
-            <span className="font-semibold text-slate-700">Density:</span>
+          <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+            <span className="font-semibold text-slate-700 dark:text-slate-300">Density:</span>
             <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${tempSuggestion.densityPct}%` }} />
             </div>
-            <span className="font-bold text-slate-700 tabular-nums">{tempSuggestion.densityPct}%</span>
+            <span className="font-bold text-slate-700 dark:text-slate-300 tabular-nums">{tempSuggestion.densityPct}%</span>
           </div>
         </div>
-        <div className="mt-2 text-[10px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-          <span className="font-semibold text-slate-700">Extraction Strategy:</span> {tempSuggestion.extraction}
+        <div className="mt-2 text-[10px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
+          <span className="font-semibold text-slate-700 dark:text-slate-300">Extraction Strategy:</span> {tempSuggestion.extraction}
         </div>
       </SectionCard>
 
       {/* Grinder Setup */}
-      <SectionCard id="grinder-setup" title="Grinder Setup" headerClass="text-amber-800" borderClass="border-slate-200" className="overflow-x-hidden">
+      <SectionCard id="grinder-setup" title="Grinder Setup" headerClass="text-amber-800 dark:text-amber-200" borderClass="border-slate-200 dark:border-slate-700" className="overflow-x-hidden">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
           <div className="flex flex-col gap-0.5 min-w-0">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Grinder</label>
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Grinder</label>
             <div className="flex items-center gap-1.5">
-              <input type="text" value={grinderName} onChange={(e) => setGrinderName(e.target.value)} placeholder="e.g. Comandante C40" className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              <input type="text" value={grinderName} onChange={(e) => setGrinderName(e.target.value)} placeholder="e.g. Comandante C40" className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400" />
             </div>
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Power</label>
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Power</label>
             <div className="flex gap-1 flex-wrap">
               {(['hand', 'electric'] as const).map((p) => (
-                <button key={p} type="button" onClick={() => setGrinderPower(p)} className={`flex-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${grinderPower === p ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-500 border-slate-200 hover:border-amber-200'}`}>
+                <button key={p} type="button" onClick={() => setGrinderPower(p)} className={`flex-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${grinderPower === p ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border-amber-300' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-amber-200 dark:border-amber-800'}`}>
                   {p === 'hand' ? 'Hand' : 'Electric'}
                 </button>
               ))}
             </div>
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Burr Type</label>
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Burr Type</label>
             <div className="flex gap-1 flex-wrap">
               {(['conical', 'flat', 'blade'] as const).map((b) => (
-                <button key={b} type="button" onClick={() => setGrinderBurr(b)} className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${grinderBurr === b ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-500 border-slate-200 hover:border-amber-200'}`}>
+                <button key={b} type="button" onClick={() => setGrinderBurr(b)} className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${grinderBurr === b ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border-amber-300' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-amber-200 dark:border-amber-800'}`}>
                   {b === 'conical' ? 'Conical' : b === 'flat' ? 'Flat' : 'Blade'}
                 </button>
               ))}
             </div>
           </div>
           <div className="flex flex-col gap-0.5 col-span-1 min-w-0">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Fines Tendency</label>
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Fines Tendency</label>
             <div className="flex items-center gap-2">
               {(['low', 'medium', 'high'] as const).map((f) => (
-                <button key={f} type="button" onClick={() => setFinesTendency(f)} className={`flex-1 px-2 py-1.5 text-[11px] font-bold rounded-lg border transition-colors ${finesTendency === f ? f === 'low' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : f === 'medium' ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-red-100 text-red-700 border-red-300' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}>
+                <button key={f} type="button" onClick={() => setFinesTendency(f)} className={`flex-1 px-2 py-1.5 text-[11px] font-bold rounded-lg border transition-colors ${finesTendency === f ? f === 'low' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700' : f === 'medium' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border-amber-300' : 'bg-red-100 text-red-700 border-red-300' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:border-slate-600'}`}>
                   {f === 'low' ? 'Low' : f === 'medium' ? 'Med' : 'High'}
                 </button>
               ))}
@@ -1146,9 +1146,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           </div>
           <div className="col-span-1 sm:col-span-2 md:col-span-3">
             <div className={`p-2 rounded-lg text-[10px] leading-relaxed border ${
-              finesTendency === 'low' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
-              finesTendency === 'medium' ? 'bg-amber-50 border-amber-200 text-amber-700' :
-              'bg-red-50 border-red-200 text-red-700'
+              finesTendency === 'low' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400' :
+              finesTendency === 'medium' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700' :
+              'bg-red-50 dark:bg-red-900/20 border-red-200 text-red-700'
             }`}>
               {finesTendency === 'low' && 'Low fines: clean bed, predictable flow, consistent extractions.'}
               {finesTendency === 'medium' && 'Moderate fines: slight channeling risk on fast pours. Keep agitation moderate.'}
@@ -1159,10 +1159,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           </div>
           <div className="col-span-1 sm:col-span-2 md:col-span-3 flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Particle Size</label>
+              <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Particle Size</label>
               <div className="flex items-center gap-2">
                 {targetRange && (
-                  <span className="text-[9px] text-slate-400 font-medium">
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">
                     {targetRange.min}-{targetRange.max} um
                   </span>
                 )}
@@ -1193,10 +1193,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   }}
                   className={`text-[9px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
                     targetMethod === r.id
-                      ? 'bg-amber-100 text-amber-700 border-amber-300'
+                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border-amber-300'
                       : micronGuide.id === r.id
-                      ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                      : 'bg-white text-slate-400 border-slate-200 hover:border-amber-200'
+                      ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border-emerald-200 dark:border-emerald-800'
+                      : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-amber-200 dark:border-amber-800'
                   }`}
                 >
                   {r.label} <span className="text-[8px] opacity-70">{r.min}-{r.max}</span>
@@ -1209,7 +1209,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 Current: {micronGuide.label} - {micronGuide.note}
               </div>
               {targetRange && (
-                <div className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-amber-50 border border-amber-200 text-amber-700 whitespace-nowrap">
+                <div className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 whitespace-nowrap">
                   Target: {targetRange.min}-{targetRange.max} um
                   {grinderMicron < targetRange.min && ` (${targetRange.min - grinderMicron} um finer)`}
                   {grinderMicron > targetRange.max && ` (${grinderMicron - targetRange.max} um coarser)`}
@@ -1219,16 +1219,16 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </div>
           </div>
           {/* Calibration: grind # to micron */}
-          <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1 min-w-0">
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 dark:border-slate-700 pt-3 mt-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Calibration</span>
+              <span className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Calibration</span>
               <div className="flex items-center gap-1">
-                <label className="text-[9px] text-slate-400">Grind #</label>
-                <input type="number" min={0} max={100} step={0.1} value={calGrindDraft} onChange={(e) => setCalGrindDraft(e.target.value)} onBlur={() => { const v = parseFloat(calGrindDraft); if (isNaN(v) || v < 0) setCalGrindDraft('0'); else setCalGrindDraft(String(v)); }} className="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <label className="text-[9px] text-slate-400 dark:text-slate-500">Grind #</label>
+                <input type="number" min={0} max={100} step={0.1} value={calGrindDraft} onChange={(e) => setCalGrindDraft(e.target.value)} onBlur={() => { const v = parseFloat(calGrindDraft); if (isNaN(v) || v < 0) setCalGrindDraft('0'); else setCalGrindDraft(String(v)); }} className="w-16 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
               </div>
               <div className="flex items-center gap-1">
-                <label className="text-[9px] text-slate-400">um</label>
-                <input type="number" min={100} max={1400} step={1} value={calMicronDraft} onChange={(e) => setCalMicronDraft(e.target.value)} onBlur={() => { const v = parseFloat(calMicronDraft); if (isNaN(v) || v < 100) setCalMicronDraft('800'); else if (v > 1400) setCalMicronDraft('1400'); else setCalMicronDraft(String(v)); }} className="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <label className="text-[9px] text-slate-400 dark:text-slate-500">um</label>
+                <input type="number" min={100} max={1400} step={1} value={calMicronDraft} onChange={(e) => setCalMicronDraft(e.target.value)} onBlur={() => { const v = parseFloat(calMicronDraft); if (isNaN(v) || v < 100) setCalMicronDraft('800'); else if (v > 1400) setCalMicronDraft('1400'); else setCalMicronDraft(String(v)); }} className="w-16 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
               </div>
               <button type="button" onClick={() => {
                 const g = parseFloat(calGrindDraft);
@@ -1239,7 +1239,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 localStorage.setItem('belkaGrinderCal', JSON.stringify(updated));
                 setCalGrindDraft('0');
                 setCalMicronDraft('800');
-              }} className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100">Record</button>
+              }} className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg hover:bg-emerald-100 dark:bg-emerald-900/30">Record</button>
             </div>
             {grinderCalibration.length >= 2 && (
               <div className="mb-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px]">
@@ -1257,7 +1257,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       className="ml-auto w-16 px-1.5 py-0.5 text-[10px] border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400"
                     />
                   </div>
-                  <div className="mt-1 text-slate-600">
+                  <div className="mt-1 text-slate-600 dark:text-slate-400">
                     {predictedMicron == null ? 'Enter grind # to predict.' : <>Estimated: <span className="font-bold text-sky-700 tabular-nums">{predictedMicron.toFixed(1)} um</span></>}
                   </div>
                 </div>
@@ -1275,11 +1275,11 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       className="ml-auto w-16 px-1.5 py-0.5 text-[10px] border border-violet-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-violet-400"
                     />
                   </div>
-                  <div className="mt-1 text-slate-600">
+                  <div className="mt-1 text-slate-600 dark:text-slate-400">
                     {predictedGrind == null ? 'Enter um to predict.' : <>Estimated: <span className="font-bold text-violet-700 tabular-nums">#{predictedGrind.toFixed(2)}</span></>}
                   </div>
                 </div>
-                <div className="md:col-span-2 text-[9px] text-slate-500">
+                <div className="md:col-span-2 text-[9px] text-slate-500 dark:text-slate-400">
                   More samples improve prediction quality. Supports decimal grinder values (example: 15.5, 15.8).
                 </div>
               </div>
@@ -1291,10 +1291,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   {tdsPrediction.ready && showTdsPrediction && (
                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${
                       tdsPrediction.confidenceLabel === 'High'
-                        ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700'
                         : tdsPrediction.confidenceLabel === 'Medium'
-                        ? 'bg-amber-100 text-amber-700 border-amber-300'
-                        : 'bg-slate-100 text-slate-600 border-slate-300'
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border-amber-300'
+                        : 'bg-slate-100 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-600'
                     }`}>
                       {tdsPrediction.confidenceLabel} confidence ({tdsPrediction.confidenceScore}%)
                     </span>
@@ -1302,7 +1302,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   <button
                     type="button"
                     onClick={() => setShowTdsPrediction((v) => !v)}
-                    className="px-2 py-0.5 rounded border border-indigo-300 bg-white text-indigo-700 font-semibold hover:bg-indigo-100"
+                    className="px-2 py-0.5 rounded border border-indigo-300 bg-white dark:bg-slate-800 text-indigo-700 font-semibold hover:bg-indigo-100"
                   >
                     {showTdsPrediction ? 'Hide' : 'Show'}
                   </button>
@@ -1310,7 +1310,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               </div>
               {showTdsPrediction && (
                 <>
-                  <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-600">
+                  <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-600 dark:text-slate-400">
                     <label className="font-semibold text-indigo-700" htmlFor="tds-grind-override">What-if grind #</label>
                     <input
                       id="tds-grind-override"
@@ -1321,17 +1321,17 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       value={tdsGrindDraft}
                       onChange={(e) => setTdsGrindDraft(e.target.value)}
                       placeholder={String(recipeValues.grindSize || '')}
-                      className="w-20 px-1.5 py-0.5 text-[10px] border border-indigo-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      className="w-20 px-1.5 py-0.5 text-[10px] border border-indigo-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white dark:bg-slate-800"
                     />
-                    <span className="text-[9px] text-slate-500">Leave blank to use current grind #{recipeValues.grindSize || 0}.</span>
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400">Leave blank to use current grind #{recipeValues.grindSize || 0}.</span>
                   </div>
                   {tdsPrediction.ready ? (
-                    <div className="mt-1 text-slate-600 leading-relaxed">
+                    <div className="mt-1 text-slate-600 dark:text-slate-400 leading-relaxed">
                       Next attempt at grind <span className="font-bold text-indigo-700 tabular-nums">#{Number.isFinite(parseFloat(tdsGrindDraft)) ? parseFloat(tdsGrindDraft).toFixed(1) : recipeValues.grindSize.toFixed(1)}</span>, if you keep the same brew otherwise: <span className="font-bold text-indigo-700 tabular-nums">{tdsPrediction.min.toFixed(2)}-{tdsPrediction.max.toFixed(2)}%</span>
                       {' '}(mid <span className="font-bold text-indigo-700 tabular-nums">{tdsPrediction.estimated.toFixed(2)}%</span>)
                     </div>
                   ) : (
-                    <div className="mt-1 text-slate-500">{tdsPrediction.reason}</div>
+                    <div className="mt-1 text-slate-500 dark:text-slate-400">{tdsPrediction.reason}</div>
                   )}
                 </>
               )}
@@ -1341,13 +1341,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 {[...grinderCalibration].reverse().map((c, i) => {
                   const range = MICRON_RANGES.find(r => c.micron >= r.min && c.micron < r.max) ?? MICRON_RANGES[MICRON_RANGES.length - 1];
                   return (
-                    <div key={i} className="flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 rounded text-[10px] tabular-nums">
-                      <span className="font-semibold text-slate-600">#{c.grindNum}</span>
-                      <span className="text-slate-400">-&gt;</span>
+                    <div key={i} className="flex items-center gap-1 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[10px] tabular-nums">
+                      <span className="font-semibold text-slate-600 dark:text-slate-400">#{c.grindNum}</span>
+                      <span className="text-slate-400 dark:text-slate-500">-&gt;</span>
                       <span className="text-amber-700 font-bold">{c.micron} um</span>
-                      <span className="text-slate-300">|</span>
-                      <span className="text-[9px] text-slate-500">{range.label}</span>
-                      <button type="button" onClick={() => { recipePlanRef.current?.setGrindCalibration(c.grindNum, c.micron); document.getElementById('recipe-pour-planning')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-1.5 py-0.5 rounded text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100" title="Send to Recipe">To Recipe</button>
+                      <span className="text-slate-300 dark:text-slate-600">|</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400">{range.label}</span>
+                      <button type="button" onClick={() => { recipePlanRef.current?.setGrindCalibration(c.grindNum, c.micron); document.getElementById('recipe-pour-planning')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-1.5 py-0.5 rounded text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:bg-amber-900/30" title="Send to Recipe">To Recipe</button>
                       <button type="button" onClick={() => {
                         const idx = grinderCalibration.length - 1 - i;
                         const updated = grinderCalibration.filter((_, j) => j !== idx);
@@ -1361,21 +1361,21 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             )}
           </div>
           {/* Dialing Range */}
-          <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1 min-w-0">
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 dark:border-slate-700 pt-3 mt-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Dialing Range</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">Dialing Range</span>
               <div className="flex items-center gap-0.5">
-                <label className="text-[9px] text-slate-400">#</label>
-                <button type="button" onClick={() => { const v = Math.max(0, dialRangeMin - 1); setDialRangeMin(v); setDialRangeMinStr(String(v > 0 ? v : '')); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">-</button>
-                <input type="number" min={0} step={1} value={dialRangeMinStr} onChange={(e) => setDialRangeMinStr(e.target.value)} onBlur={(e) => commitDialMin(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="min" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
-                <button type="button" onClick={() => { const v = dialRangeMin + 1; setDialRangeMin(v); setDialRangeMinStr(String(v)); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
+                <label className="text-[9px] text-slate-400 dark:text-slate-500">#</label>
+                <button type="button" onClick={() => { const v = Math.max(0, dialRangeMin - 1); setDialRangeMin(v); setDialRangeMinStr(String(v > 0 ? v : '')); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded hover:bg-amber-100 dark:bg-amber-900/30 leading-none">-</button>
+                <input type="number" min={0} step={1} value={dialRangeMinStr} onChange={(e) => setDialRangeMinStr(e.target.value)} onBlur={(e) => commitDialMin(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="min" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <button type="button" onClick={() => { const v = dialRangeMin + 1; setDialRangeMin(v); setDialRangeMinStr(String(v)); localStorage.setItem('belkaDialRangeMin', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded hover:bg-amber-100 dark:bg-amber-900/30 leading-none">+</button>
               </div>
-              <span className="text-slate-300 text-[10px]">-&gt;</span>
+              <span className="text-slate-300 dark:text-slate-600 text-[10px]">-&gt;</span>
               <div className="flex items-center gap-0.5">
-                <label className="text-[9px] text-slate-400">#</label>
-                <button type="button" onClick={() => { const v = Math.max(0, dialRangeMax - 1); setDialRangeMax(v); setDialRangeMaxStr(String(v > 0 ? v : '')); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">-</button>
-                <input type="number" min={0} step={1} value={dialRangeMaxStr} onChange={(e) => setDialRangeMaxStr(e.target.value)} onBlur={(e) => commitDialMax(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="max" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
-                <button type="button" onClick={() => { const v = dialRangeMax + 1; setDialRangeMax(v); setDialRangeMaxStr(String(v)); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 leading-none">+</button>
+                <label className="text-[9px] text-slate-400 dark:text-slate-500">#</label>
+                <button type="button" onClick={() => { const v = Math.max(0, dialRangeMax - 1); setDialRangeMax(v); setDialRangeMaxStr(String(v > 0 ? v : '')); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded hover:bg-amber-100 dark:bg-amber-900/30 leading-none">-</button>
+                <input type="number" min={0} step={1} value={dialRangeMaxStr} onChange={(e) => setDialRangeMaxStr(e.target.value)} onBlur={(e) => commitDialMax(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} placeholder="max" className="w-10 px-1 py-0.5 text-[10px] border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <button type="button" onClick={() => { const v = dialRangeMax + 1; setDialRangeMax(v); setDialRangeMaxStr(String(v)); localStorage.setItem('belkaDialRangeMax', String(v)); }} className="px-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded hover:bg-amber-100 dark:bg-amber-900/30 leading-none">+</button>
               </div>
               {dialRangeMin > 0 && dialRangeMax > 0 && (
                 <span className="text-[9px] text-emerald-600 font-semibold">Active search zone: #{dialRangeMin}-#{dialRangeMax}</span>
@@ -1391,7 +1391,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       return (
                         <div key={s} className="flex-1 flex flex-col items-center gap-0.5">
                           <div className={`w-full h-2 rounded-sm ${s === 14 || s === 16 ? 'bg-emerald-400' : s >= 14 && s <= 16 ? 'bg-emerald-300' : s < 14 ? 'bg-sky-300' : 'bg-amber-300'}`} />
-                          <span className={`text-[8px] font-bold tabular-nums ${s >= 14 && s <= 16 ? 'text-emerald-700' : 'text-slate-400'}`}>#{s}</span>
+                          <span className={`text-[8px] font-bold tabular-nums ${s >= 14 && s <= 16 ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>#{s}</span>
                           {s === 14 && <span className="text-[7px] text-emerald-600 font-bold">finest</span>}
                           {s === 16 && <span className="text-[7px] text-emerald-600 font-bold">coarsest</span>}
                         </div>
@@ -1403,9 +1403,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             })()}
           </div>
           {/* Save / Load profiles */}
-          <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 pt-3 mt-1 min-w-0">
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 border-t border-slate-100 dark:border-slate-700 pt-3 mt-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <input type="text" value={profileNameInput} onChange={(e) => setProfileNameInput(e.target.value)} placeholder="Profile name..." className="flex-1 max-w-40 px-2 py-1 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              <input type="text" value={profileNameInput} onChange={(e) => setProfileNameInput(e.target.value)} placeholder="Profile name..." className="flex-1 max-w-40 px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" />
               <button type="button" onClick={() => {
                 const name = profileNameInput.trim();
                 if (!name) return;
@@ -1413,22 +1413,22 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 setGrinderProfiles(updated);
                 localStorage.setItem('belkaGrinderProfiles', JSON.stringify(updated));
                 setProfileNameInput('');
-              }} disabled={!profileNameInput.trim()} className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 disabled:opacity-40">Save</button>
+              }} disabled={!profileNameInput.trim()} className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg hover:bg-emerald-100 dark:bg-emerald-900/30 disabled:opacity-40">Save</button>
               {Object.keys(grinderProfiles).length > 0 && (
-                <span className="text-[9px] text-slate-400 ml-1">{Object.keys(grinderProfiles).length} saved</span>
+                <span className="text-[9px] text-slate-400 dark:text-slate-500 ml-1">{Object.keys(grinderProfiles).length} saved</span>
               )}
             </div>
             {Object.keys(grinderProfiles).length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {Object.entries(grinderProfiles).map(([key, p]) => (
-                  <div key={key} className="flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px]">
+                  <div key={key} className="flex items-center gap-1 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px]">
                     <button type="button" onClick={() => {
                       setGrinderName(p.name);
                       setGrinderPower(p.power as 'hand' | 'electric');
                       setGrinderBurr(p.burr as 'conical' | 'flat' | 'blade');
                       setFinesTendency(p.fines as 'low' | 'medium' | 'high');
                       setGrinderMicron(p.micron);
-                    }} className="font-semibold text-slate-700 hover:text-amber-600">{key}</button>
+                    }} className="font-semibold text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:text-amber-400">{key}</button>
                     <button type="button" onClick={() => {
                       const updated = { ...grinderProfiles };
                       delete updated[key];
@@ -1446,23 +1446,23 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     {activeTab === 'bean' && (
       <>
         {/* Bean Profile */}
-      <SectionCard id="bean-profile" title="Bean Profile" headerClass="text-amber-800" borderClass="border-slate-200">
+      <SectionCard id="bean-profile" title="Bean Profile" headerClass="text-amber-800 dark:text-amber-200" borderClass="border-slate-200 dark:border-slate-700">
 
         {/* Coffee Name + Roastery */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4 text-sm">
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Coffee Name</label>
-            <input type="text" value={coffeeName} onChange={(e) => setCoffeeName(e.target.value)} placeholder="e.g. Finca El Mirador" className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Coffee Name</label>
+            <input type="text" value={coffeeName} onChange={(e) => setCoffeeName(e.target.value)} placeholder="e.g. Finca El Mirador" className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Roastery</label>
-            <input type="text" value={roastery} onChange={(e) => setRoastery(e.target.value)} placeholder="e.g. Onyx Coffee Lab" className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Roastery</label>
+            <input type="text" value={roastery} onChange={(e) => setRoastery(e.target.value)} placeholder="e.g. Onyx Coffee Lab" className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
         </div>
 
         {/* Save / Load bean profiles + Import */}
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <input type="text" value={beanProfileNameInput} onChange={(e) => setBeanProfileNameInput(e.target.value)} placeholder="Profile name..." className="flex-1 max-w-36 px-2 py-1 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          <input type="text" value={beanProfileNameInput} onChange={(e) => setBeanProfileNameInput(e.target.value)} placeholder="Profile name..." className="flex-1 max-w-36 px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" />
           <button type="button" onClick={() => {
             const name = beanProfileNameInput.trim();
             if (!name) return;
@@ -1470,11 +1470,11 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             setBeanProfiles(updated);
             localStorage.setItem('belkaBeanProfiles', JSON.stringify(updated));
             setBeanProfileNameInput('');
-          }} disabled={!beanProfileNameInput.trim()} className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 disabled:opacity-40">Save</button>
+          }} disabled={!beanProfileNameInput.trim()} className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg hover:bg-emerald-100 dark:bg-emerald-900/30 disabled:opacity-40">Save</button>
           {Object.keys(beanProfiles).length > 0 && (
             <div className="flex items-center gap-1 flex-wrap">
               {Object.entries(beanProfiles).map(([key, bp]) => (
-                <div key={key} className="flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px]">
+                <div key={key} className="flex items-center gap-1 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px]">
                   <button type="button" onClick={() => {
                     setCoffeeName(bp.coffeeName);
                     setRoastery(bp.roastery);
@@ -1484,7 +1484,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                     setDensity(bp.density);
                     setAltitude(bp.altitude);
                     setDefects(bp.defects);
-                  }} className="font-semibold text-slate-700 hover:text-amber-600">{key}</button>
+                  }} className="font-semibold text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:text-amber-400">{key}</button>
                   <button type="button" onClick={() => {
                     const updated = { ...beanProfiles };
                     delete updated[key];
@@ -1507,10 +1507,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           )}
           <div className="relative">
             <button type="button" onClick={() => setShowSensoryImport(v => !v)}
-              className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100"
+              className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg hover:bg-emerald-100 dark:bg-emerald-900/30"
             >🧪 Import Sensory</button>
             {showSensoryImport && sensoryProfiles.length > 0 && (
-              <div className="absolute z-20 top-full mt-1 left-0 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto min-w-[200px]">
+              <div className="absolute z-20 top-full mt-1 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto min-w-[200px]">
                 {sensoryProfiles.map((sp: any) => (
                   <button key={sp.id} type="button" onClick={() => {
                     setCoffeeName(sp.coffeeName || '');
@@ -1522,9 +1522,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       setRoastLevel(map[sp.roastLevel] ?? 50);
                     }
                     setShowSensoryImport(false);
-                  }} className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 border-b border-slate-100 last:border-b-0">
+                  }} className="w-full text-left px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:bg-emerald-900/20 border-b border-slate-100 dark:border-slate-700 last:border-b-0">
                     <div className="font-semibold">{sp.name}</div>
-                    <div className="text-[10px] text-slate-400">{sp.coffeeName || '—'} · {Object.keys(sp.checkedFlavors ?? {}).length} flavors</div>
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500">{sp.coffeeName || '—'} · {Object.keys(sp.checkedFlavors ?? {}).length} flavors</div>
                   </button>
                 ))}
               </div>
@@ -1547,27 +1547,27 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           {/* Roast Level Slider */}
           <div className="col-span-2 md:col-span-1 flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Roast Level</label>
-              <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+              <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Roast Level</label>
+              <span className="text-xs font-bold text-amber-700 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
                 {roastLevel <= 16 ? 'Nordic' : roastLevel <= 33 ? 'Light' : roastLevel <= 50 ? 'Light-Medium' : roastLevel <= 66 ? 'Medium' : roastLevel <= 83 ? 'Medium-Dark' : 'Dark'}
               </span>
             </div>
             <div className="relative h-7 flex items-center">
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full overflow-hidden" style={{background: 'linear-gradient(to right, #D4A76A, #C4915E, #A66E3E, #8B5E3C, #6B3F1F, #3B1E08)'}} />
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full overflow-hidden">
-                <div className="h-full bg-white/30" style={{width: `${100 - roastLevel}%`, marginLeft: 'auto'}} />
+                <div className="h-full bg-white dark:bg-slate-800/30" style={{width: `${100 - roastLevel}%`, marginLeft: 'auto'}} />
               </div>
               <input type="range" min="0" max="100" value={roastLevel} onChange={(e) => setRoastLevel(Number(e.target.value))} className="bean-slider absolute inset-x-0 w-full z-10" />
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-0 pointer-events-none" style={{zIndex: 5}}>
-                <div className="w-0.5 h-3 bg-white/60 rounded-full" />
-                <div className="w-0.5 h-3 bg-white/60 rounded-full" />
-                <div className="w-0.5 h-3 bg-white/60 rounded-full" />
-                <div className="w-0.5 h-3 bg-white/60 rounded-full" />
-                <div className="w-0.5 h-3 bg-white/60 rounded-full" />
-                <div className="w-0.5 h-3 bg-white/60 rounded-full" />
+                <div className="w-0.5 h-3 bg-white dark:bg-slate-800/60 rounded-full" />
+                <div className="w-0.5 h-3 bg-white dark:bg-slate-800/60 rounded-full" />
+                <div className="w-0.5 h-3 bg-white dark:bg-slate-800/60 rounded-full" />
+                <div className="w-0.5 h-3 bg-white dark:bg-slate-800/60 rounded-full" />
+                <div className="w-0.5 h-3 bg-white dark:bg-slate-800/60 rounded-full" />
+                <div className="w-0.5 h-3 bg-white dark:bg-slate-800/60 rounded-full" />
               </div>
             </div>
-            <div className="flex justify-between text-[9px] text-slate-400 px-0">
+            <div className="flex justify-between text-[9px] text-slate-400 dark:text-slate-500 px-0">
               <span>Nordic</span>
               <span>Light</span>
               <span>Lt-Med</span>
@@ -1580,10 +1580,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           {/* Density Slider */}
           <div className="col-span-2 md:col-span-1 flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Density</label>
+              <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Density</label>
               <div className="flex items-center gap-1.5">
                 <span className="text-[8px] text-violet-500 bg-violet-50 px-1.5 py-0.5 rounded-full border border-violet-200 font-semibold">▸{Math.round(tempSuggestion.densityPct - (roastLevel / 100) * 25 + (altitude / 2500) * 10)}% effective</span>
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                   {density <= 10 ? 'Brittle' : density <= 25 ? 'Very Soft' : density <= 40 ? 'Soft' : density <= 55 ? 'Medium' : density <= 70 ? 'Firm' : density <= 85 ? 'Dense' : 'Very Dense'}
                 </span>
               </div>
@@ -1591,7 +1591,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             <div className="relative h-7 flex items-center">
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full" style={{background: 'linear-gradient(to right, #A8D5BA, #6BBF8A, #2D8B57)'}} />
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full overflow-hidden">
-                <div className="h-full bg-white/30" style={{width: `${100 - density}%`, marginLeft: 'auto'}} />
+                <div className="h-full bg-white dark:bg-slate-800/30" style={{width: `${100 - density}%`, marginLeft: 'auto'}} />
               </div>
               {/* Combined effective density marker: process base + roast darkens + altitude lifts */}
               <div className="absolute top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-300" style={{ left: `calc(${Math.min(100, Math.max(0, tempSuggestion.densityPct - (roastLevel / 100) * 25 + (altitude / 2500) * 10))}% - 2px)`, zIndex: 5 }}>
@@ -1599,7 +1599,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               </div>
               <input type="range" min="0" max="100" value={density} onChange={(e) => setDensity(Number(e.target.value))} className="bean-slider absolute inset-x-0 w-full z-10" />
             </div>
-            <div className="flex justify-between text-[9px] text-slate-400 px-0.5">
+            <div className="flex justify-between text-[9px] text-slate-400 dark:text-slate-500 px-0.5">
               <span>Brittle</span>
               <span>Soft</span>
               <span>Med</span>
@@ -1611,17 +1611,17 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           {/* Altitude Slider */}
           <div className="col-span-2 md:col-span-1 flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Altitude</label>
+              <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Altitude</label>
               <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">{altitude}m</span>
             </div>
             <div className="relative h-7 flex items-center">
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full" style={{background: 'linear-gradient(to right, #93C5FD, #3B82F6, #1E3A5F)'}} />
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full overflow-hidden">
-                <div className="h-full bg-white/30" style={{width: `${100 - ((altitude - 800) / 1700 * 100)}%`, marginLeft: 'auto'}} />
+                <div className="h-full bg-white dark:bg-slate-800/30" style={{width: `${100 - ((altitude - 800) / 1700 * 100)}%`, marginLeft: 'auto'}} />
               </div>
               <input type="range" min="800" max="2500" step="50" value={altitude} onChange={(e) => setAltitude(Number(e.target.value))} className="bean-slider absolute inset-x-0 w-full z-10" />
             </div>
-            <div className="flex justify-between text-[9px] text-slate-400 px-0.5">
+            <div className="flex justify-between text-[9px] text-slate-400 dark:text-slate-500 px-0.5">
               <span>800m</span>
               <span>1650m</span>
               <span>2500m</span>
@@ -1631,10 +1631,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           {/* Process */}
           <div className="col-span-2 md:col-span-1 flex flex-col gap-0.5">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Process</label>
+              <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Process</label>
               <span className="text-[9px] text-cyan-600 bg-cyan-50 px-1.5 py-0.5 rounded-full border border-cyan-200 font-semibold">💧 {waterSuggestion.range} PPM</span>
             </div>
-            <select value={process} onChange={(e) => setProcess(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <select value={process} onChange={(e) => setProcess(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400">
               <option value="washed">Washed</option>
               <option value="natural">Natural</option>
               <option value="honey">Honey</option>
@@ -1648,8 +1648,8 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             </select>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-[9px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-full border border-rose-200 font-semibold">🌡️ {tempSuggestion.temp}°C</span>
-              <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 font-semibold">🫘 {tempSuggestion.densityPct}% density</span>
-              <span className="text-[9px] text-slate-400 italic">{tempSuggestion.extraction}</span>
+              <span className="text-[9px] text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 font-semibold">🫘 {tempSuggestion.densityPct}% density</span>
+              <span className="text-[9px] text-slate-400 dark:text-slate-500 italic">{tempSuggestion.extraction}</span>
             </div>
           </div>
 
@@ -1672,7 +1672,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       <div key={group.label} className="flex items-center gap-1 flex-wrap">
                         <span className="text-[9px] font-bold text-orange-700 uppercase tracking-wider min-w-[64px]">{group.label}</span>
                         {hideableCols.length > 1 && (
-                          <label className="flex items-center gap-1 text-[8px] text-slate-400 cursor-pointer hover:text-orange-600">
+                          <label className="flex items-center gap-1 text-[8px] text-slate-400 dark:text-slate-500 cursor-pointer hover:text-orange-600">
                             <input type="checkbox" checked={allVisible} onChange={() => {
                               if (allVisible) setProcessFinderVisibleCols(prev => prev.filter(c => !hideableCols.includes(c)));
                               else setProcessFinderVisibleCols(prev => [...new Set([...prev, ...hideableCols])]);
@@ -1681,7 +1681,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                           </label>
                         )}
                         {hideableCols.map(col => (
-                          <label key={col} className="flex items-center gap-1 text-[9px] text-slate-600 cursor-pointer">
+                          <label key={col} className="flex items-center gap-1 text-[9px] text-slate-600 dark:text-slate-400 cursor-pointer">
                             <input type="checkbox" checked={processFinderVisibleCols.includes(col)} onChange={() => {
                               setProcessFinderVisibleCols(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
                             }} className="w-2.5 h-2.5 accent-orange-500" />
@@ -1718,7 +1718,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                     {PROCESS_GUIDE.filter(p => p.id !== 'other').map(p => (
                       <tr key={p.id} className={`${process === p.id ? 'bg-orange-100 font-semibold' : 'hover:bg-orange-50'} cursor-pointer`} onClick={() => { setProcess(p.id); setProcessFinderOpen(false); }}>
                         {['Process', ...processFinderCols.filter(c => c !== 'Process' && processFinderVisibleCols.includes(c))].map(col => (
-                          <td key={col} className="px-1.5 py-1 border border-orange-200 text-slate-700">
+                          <td key={col} className="px-1.5 py-1 border border-orange-200 text-slate-700 dark:text-slate-300">
                             {col === 'Process' ? p.label :
                              col === 'Crease' ? p.crease :
                              col === 'Appearance' ? p.appearance :
@@ -1742,20 +1742,20 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
           {/* Origin */}
           <div className="col-span-2 md:col-span-1 flex flex-col gap-0.5">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Origin</label>
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Origin</label>
             <CoffeeOriginSelect value={origin} onChange={setOrigin} placeholder="Select origin" size="lg" />
           </div>
 
           {/* Defects */}
           <div className="col-span-2">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1.5 block">Defects</label>
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mb-1.5 block">Defects</label>
             <div className="flex flex-wrap gap-1.5">
               {DEFECT_OPTIONS.map(d => (
                 <button key={d.id} type="button" onClick={() => toggleDefect(d.id)}
                   className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all ${
                     defects.includes(d.id)
-                      ? 'bg-red-50 text-red-700 border-red-300 shadow-sm'
-                      : 'bg-slate-50 text-slate-400 border-slate-200 hover:border-red-200 hover:text-red-500'
+                      ? 'bg-red-50 dark:bg-red-900/20 text-red-700 border-red-300 shadow-sm'
+                      : 'bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-red-200 hover:text-red-500 dark:text-red-400'
                   }`}
                 >
                   {defects.includes(d.id) ? '✓ ' : ''}{d.label}
@@ -1769,7 +1769,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     {activeTab === 'brew' && (
       <>
         {/* Status Effects */}
-      <SectionCard id="status-effects" title="Status Effects" headerClass="text-indigo-800" borderClass="border-slate-200">
+      <SectionCard id="status-effects" title="Status Effects" headerClass="text-indigo-800" borderClass="border-slate-200 dark:border-slate-700">
         <div className="flex flex-wrap gap-2">
           {/* Brewer perk */}
           <div className="flex-1 min-w-[140px] bg-gradient-to-br from-sky-50 to-indigo-50 border border-sky-200 rounded-lg p-2.5">
@@ -1777,7 +1777,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               <span className="text-xs">☕</span>
               <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">{brewerType}</span>
             </div>
-            <p className="text-[9px] text-slate-500 leading-tight">
+            <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight">
               {brewerType === 'V60' ? 'Fast flow, high clarity — precise technique needed' :
                brewerType === 'Chemex' ? 'Thick filter, clean cup — slightly coarser grind' :
                brewerType === 'Kalita Wave' ? 'Flat bottom, forgiving — even extraction' :
@@ -1791,15 +1791,15 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           {/* Drawdown perk */}
           <div className={`flex-1 min-w-[140px] bg-gradient-to-br rounded-lg p-2.5 border ${
             flowSpeed >= 70 ? 'from-purple-50 to-fuchsia-50 border-purple-200' :
-            flowSpeed >= 40 ? 'from-emerald-50 to-teal-50 border-emerald-200' :
-            flowSpeed >= 20 ? 'from-amber-50 to-orange-50 border-amber-200' :
+            flowSpeed >= 40 ? 'from-emerald-50 to-teal-50 border-emerald-200 dark:border-emerald-800' :
+            flowSpeed >= 20 ? 'from-amber-50 to-orange-50 border-amber-200 dark:border-amber-800' :
             'from-red-50 to-rose-50 border-red-200'
           }`}>
             <div className="flex items-center gap-1 mb-0.5">
               <span className="text-xs">💧</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">Drawdown</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Drawdown</span>
             </div>
-            <p className="text-[9px] text-slate-500 leading-tight">
+            <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight">
               {flowSpeed >= 70 ? 'Very fast flow — finer grind to prevent under-extraction' :
                flowSpeed >= 40 ? 'Standard flow — balanced extraction expected' :
                flowSpeed >= 20 ? 'Slow flow — minimise agitation, avoid stalling' :
@@ -1809,15 +1809,15 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
           {/* Roast perk */}
           <div className={`flex-1 min-w-[140px] bg-gradient-to-br rounded-lg p-2.5 border ${
-            roastLevel <= 33 ? 'from-amber-50 to-yellow-50 border-amber-200' :
+            roastLevel <= 33 ? 'from-amber-50 to-yellow-50 border-amber-200 dark:border-amber-800' :
             roastLevel <= 66 ? 'from-orange-50 to-amber-50 border-orange-200' :
             'from-stone-50 to-amber-50 border-stone-300'
           }`}>
             <div className="flex items-center gap-1 mb-0.5">
               <span className="text-xs">🔥</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">Roast</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Roast</span>
             </div>
-            <p className="text-[9px] text-slate-500 leading-tight">
+            <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight">
               {roastLevel <= 16 ? 'Nordic — very light, requires finer grind + higher water temp' :
                roastLevel <= 33 ? 'Light — needs finer grind, bright acidity' :
                roastLevel <= 50 ? 'Light-Medium — balanced approach' :
@@ -1829,15 +1829,15 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
           {/* Density perk */}
           <div className={`flex-1 min-w-[140px] bg-gradient-to-br rounded-lg p-2.5 border ${
-            density >= 67 ? 'from-emerald-50 to-green-50 border-emerald-200' :
+            density >= 67 ? 'from-emerald-50 to-green-50 border-emerald-200 dark:border-emerald-800' :
             density >= 34 ? 'from-teal-50 to-emerald-50 border-teal-200' :
             'from-lime-50 to-green-50 border-lime-200'
           }`}>
             <div className="flex items-center gap-1 mb-0.5">
               <span className="text-xs">⚖️</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">Density</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Density</span>
             </div>
-            <p className="text-[9px] text-slate-500 leading-tight">
+            <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight">
               {density >= 67 ? 'High — hard bean, requires finer grind + more heat' :
                density >= 34 ? 'Medium — standard density, normal approach' :
                'Low — soft bean, coarser grind, less agitation'}
@@ -1848,13 +1848,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <div className={`flex-1 min-w-[140px] bg-gradient-to-br rounded-lg p-2.5 border ${
             altitude >= 1800 ? 'from-sky-50 to-blue-50 border-sky-200' :
             altitude >= 800 ? 'from-cyan-50 to-sky-50 border-cyan-200' :
-            'from-slate-50 to-gray-50 border-slate-200'
+            'from-slate-50 to-gray-50 border-slate-200 dark:border-slate-700'
           }`}>
             <div className="flex items-center gap-1 mb-0.5">
               <span className="text-xs">⛰️</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">Altitude</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Altitude</span>
             </div>
-            <p className="text-[9px] text-slate-500 leading-tight">
+            <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight">
               {altitude >= 1800 ? 'High — dense bean structure, complex sugars, finer grind' :
                altitude >= 800 ? 'Medium — standard elevation bean' :
                'Low — softer bean, less complex'}
@@ -1867,7 +1867,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               <span className="text-xs">🧪</span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-violet-700">{process}</span>
             </div>
-            <p className="text-[9px] text-slate-500 leading-tight">
+            <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight">
               {process === 'washed' ? 'Clean, bright — standard extraction approach' :
                process === 'natural' ? 'Fruity, heavy body — more soluble, less agitation' :
                process === 'honey' ? 'Sweet, balanced — standard approach' :
@@ -1880,15 +1880,15 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
           {/* Fines perk */}
           <div className={`flex-1 min-w-[140px] bg-gradient-to-br rounded-lg p-2.5 border ${
-            finesTendency === 'low' ? 'from-emerald-50 to-green-50 border-emerald-200' :
-            finesTendency === 'medium' ? 'from-amber-50 to-yellow-50 border-amber-200' :
+            finesTendency === 'low' ? 'from-emerald-50 to-green-50 border-emerald-200 dark:border-emerald-800' :
+            finesTendency === 'medium' ? 'from-amber-50 to-yellow-50 border-amber-200 dark:border-amber-800' :
             'from-red-50 to-rose-50 border-red-200'
           }`}>
             <div className="flex items-center gap-1 mb-0.5">
               <span className="text-xs">⚫</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">Fines</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Fines</span>
             </div>
-            <p className="text-[9px] text-slate-500 leading-tight">
+            <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight">
               {finesTendency === 'low' ? 'Clean particle distribution — predictable flow, even extraction.' :
                finesTendency === 'medium' ? 'Moderate fines — watch for slow drawdown on light roasts.' :
                'High fines — significant clogging risk, grind coarser or use slower pour.'}
@@ -1908,7 +1908,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   return <span key={id} className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-red-100 text-red-600">{d?.label ?? id}</span>;
                 })}
               </div>
-              <p className="text-[9px] text-red-500 mt-1 leading-tight">
+              <p className="text-[9px] text-red-500 dark:text-red-400 mt-1 leading-tight">
                 Defects reduce extraction quality. Consider tightening grind or cupping to identify off-flavours before brewing.
               </p>
             </div>
@@ -1917,17 +1917,17 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       </SectionCard>
 
       {/* Brew Time */}
-      <SectionCard id="brew-time" title="⏱️ Brew Time" headerClass="text-slate-800" borderClass="border-slate-200">
+      <SectionCard id="brew-time" title="⏱️ Brew Time" headerClass="text-slate-800" borderClass="border-slate-200 dark:border-slate-700">
 
         {/* Target | Diff | Actual side by side */}
         <div className="flex items-stretch gap-2 mb-2">
           {/* Target */}
-          <div className="flex-1 p-2.5 bg-amber-50 border border-amber-200 rounded-lg flex flex-col items-center justify-center">
-            <label className="text-[9px] uppercase tracking-wider text-amber-600 font-semibold mb-1">Target</label>
+          <div className="flex-1 p-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex flex-col items-center justify-center">
+            <label className="text-[9px] uppercase tracking-wider text-amber-600 dark:text-amber-400 font-semibold mb-1">Target</label>
             <div className="flex items-center gap-0.5">
-              <input type="number" min={0} max={4} step={1} value={Math.floor(brewTimeSec / 60)} onChange={(e) => setBrewTimeSec(Math.min(240, Math.max(0, Number(e.target.value) * 60 + (brewTimeSec % 60))))} className="w-12 px-1 py-1.5 text-sm border border-amber-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white font-bold" />
+              <input type="number" min={0} max={4} step={1} value={Math.floor(brewTimeSec / 60)} onChange={(e) => setBrewTimeSec(Math.min(240, Math.max(0, Number(e.target.value) * 60 + (brewTimeSec % 60))))} className="w-12 px-1 py-1.5 text-sm border border-amber-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white dark:bg-slate-800 font-bold" />
               <span className="text-sm text-amber-400 font-bold px-0.5">:</span>
-              <input type="number" min={0} max={55} step={5} value={brewTimeSec % 60} onChange={(e) => setBrewTimeSec(Math.min(240, Math.max(0, Math.floor(brewTimeSec / 60) * 60 + Number(e.target.value))))} className="w-12 px-1 py-1.5 text-sm border border-amber-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white font-bold" />
+              <input type="number" min={0} max={55} step={5} value={brewTimeSec % 60} onChange={(e) => setBrewTimeSec(Math.min(240, Math.max(0, Math.floor(brewTimeSec / 60) * 60 + Number(e.target.value))))} className="w-12 px-1 py-1.5 text-sm border border-amber-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white dark:bg-slate-800 font-bold" />
             </div>
           </div>
 
@@ -1935,19 +1935,19 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <div className="flex items-center justify-center min-w-[60px]">
             {brewActualSec !== null ? (
               <div className={`text-center px-2 py-1 rounded-lg border ${
-                Math.abs(brewActualSec - brewTimeSec) <= 15 ? 'bg-emerald-50 border-emerald-200' :
-                'bg-amber-50 border-amber-200'
+                Math.abs(brewActualSec - brewTimeSec) <= 15 ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' :
+                'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
               }`}>
                 <div className={`text-sm font-black tabular-nums ${
-                  Math.abs(brewActualSec - brewTimeSec) <= 15 ? 'text-emerald-600' : 'text-amber-600'
+                  Math.abs(brewActualSec - brewTimeSec) <= 15 ? 'text-emerald-600' : 'text-amber-600 dark:text-amber-400'
                 }`}>
                   {brewActualSec === brewTimeSec ? '0' :
                    brewActualSec < brewTimeSec ? `-${brewTimeSec - brewActualSec}` : `+${brewActualSec - brewTimeSec}`}
                 </div>
-                <div className="text-[8px] text-slate-400 uppercase tracking-wider">sec</div>
+                <div className="text-[8px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">sec</div>
               </div>
             ) : (
-              <div className="text-[10px] text-slate-300 font-bold">→</div>
+              <div className="text-[10px] text-slate-300 dark:text-slate-600 font-bold">→</div>
             )}
           </div>
 
@@ -1955,9 +1955,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <div className="flex-1 p-2.5 bg-sky-50 border border-sky-200 rounded-lg flex flex-col items-center justify-center">
             <label className="text-[9px] uppercase tracking-wider text-sky-600 font-semibold mb-1">Actual</label>
             <div className="flex items-center gap-0.5">
-              <input type="number" min={0} max={4} step={1} value={brewActualSec !== null ? Math.floor(brewActualSec / 60) : ''} onChange={(e) => setBrewActualSec(e.target.value !== '' ? Math.min(240, Math.max(0, Number(e.target.value) * 60 + ((brewActualSec ?? 0) % 60))) : null)} className="w-12 px-1 py-1.5 text-sm border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white font-bold placeholder:text-slate-300" placeholder="-" />
+              <input type="number" min={0} max={4} step={1} value={brewActualSec !== null ? Math.floor(brewActualSec / 60) : ''} onChange={(e) => setBrewActualSec(e.target.value !== '' ? Math.min(240, Math.max(0, Number(e.target.value) * 60 + ((brewActualSec ?? 0) % 60))) : null)} className="w-12 px-1 py-1.5 text-sm border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white dark:bg-slate-800 font-bold placeholder:text-slate-300 dark:text-slate-600" placeholder="-" />
               <span className="text-sm text-sky-400 font-bold px-0.5">:</span>
-              <input type="number" min={0} max={55} step={5} value={brewActualSec !== null ? brewActualSec % 60 : ''} onChange={(e) => setBrewActualSec(e.target.value !== '' ? Math.min(240, Math.max(0, Math.floor((brewActualSec ?? 0) / 60) * 60 + Number(e.target.value))) : null)} className="w-12 px-1 py-1.5 text-sm border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white font-bold placeholder:text-slate-300" placeholder="--" />
+              <input type="number" min={0} max={55} step={5} value={brewActualSec !== null ? brewActualSec % 60 : ''} onChange={(e) => setBrewActualSec(e.target.value !== '' ? Math.min(240, Math.max(0, Math.floor((brewActualSec ?? 0) / 60) * 60 + Number(e.target.value))) : null)} className="w-12 px-1 py-1.5 text-sm border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white dark:bg-slate-800 font-bold placeholder:text-slate-300 dark:text-slate-600" placeholder="--" />
             </div>
           </div>
         </div>
@@ -1977,13 +1977,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <div className="flex items-center justify-center gap-2 mb-3">
             <button type="button" onClick={() => setBrewLiked(brewLiked === true ? null : true)}
               className={`px-3 py-1 rounded text-[10px] font-bold border transition-all ${
-                brewLiked === true ? 'bg-emerald-100 text-emerald-700 border-emerald-300 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:border-emerald-200 hover:text-emerald-500'
+                brewLiked === true ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-emerald-200 dark:border-emerald-800 hover:text-emerald-500'
               }`}>
               👍 Like
             </button>
             <button type="button" onClick={() => setBrewLiked(brewLiked === false ? null : false)}
               className={`px-3 py-1 rounded text-[10px] font-bold border transition-all ${
-                brewLiked === false ? 'bg-red-100 text-red-700 border-red-300 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:border-red-200 hover:text-red-500'
+                brewLiked === false ? 'bg-red-100 text-red-700 border-red-300 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-red-200 hover:text-red-500 dark:text-red-400'
               }`}>
               👎 Don't Like
             </button>
@@ -1992,7 +1992,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
         {/* Diagnosis: plan failed or execution failed? */}
         {brewActualSec !== null && brewLiked !== null && !brewLiked && (
-          <div className="mb-3 p-2.5 rounded-lg border text-[10px] space-y-1 bg-red-50 border-red-200">
+          <div className="mb-3 p-2.5 rounded-lg border text-[10px] space-y-1 bg-red-50 dark:bg-red-900/20 border-red-200">
             <div className="font-bold text-red-700 uppercase tracking-wider text-[9px]">☕ Coffee was bad — why?</div>
             {Math.abs(brewActualSec - brewTimeSec) <= 10 ? (
               <div className="text-red-600">
@@ -2022,8 +2022,8 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           </div>
         )}
         {brewActualSec !== null && brewLiked !== null && brewLiked && Math.abs(brewActualSec - brewTimeSec) > 10 && (
-          <div className="mb-3 p-2.5 rounded-lg border text-[10px] bg-emerald-50 border-emerald-200">
-            <div className="text-emerald-700">
+          <div className="mb-3 p-2.5 rounded-lg border text-[10px] bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800">
+            <div className="text-emerald-700 dark:text-emerald-400">
               <strong>Note:</strong> You liked the result even though you missed your target by {Math.abs(brewActualSec - brewTimeSec)}s.
               Consider updating your target time to {Math.floor(brewActualSec / 60)}:{String(brewActualSec % 60).padStart(2, '0')} — that's what actually worked.
             </div>
@@ -2034,22 +2034,22 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
         <div className="flex items-stretch gap-1 text-[9px] mb-3">
           <div className="flex-1 p-2 bg-sky-50 border border-sky-200 rounded-lg text-center">
             <div className="font-bold text-sky-700 uppercase tracking-wider mb-0.5">Equipment</div>
-            <div className="text-slate-500">
+            <div className="text-slate-500 dark:text-slate-400">
               {flowSpeed >= 70 ? 'Fast drawdown' : flowSpeed >= 40 ? 'Standard drawdown' : flowSpeed >= 20 ? 'Slow drawdown' : 'Restrictive'}
               <br />{brewerType}
             </div>
           </div>
-          <div className="flex items-center text-slate-300 text-base px-0.5">→</div>
-          <div className="flex-1 p-2 bg-amber-50 border border-amber-200 rounded-lg text-center">
+          <div className="flex items-center text-slate-300 dark:text-slate-600 text-base px-0.5">→</div>
+          <div className="flex-1 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-center">
             <div className="font-bold text-amber-700 uppercase tracking-wider mb-0.5">Brew Time</div>
-            <div className="text-slate-500">
+            <div className="text-slate-500 dark:text-slate-400">
               {Math.floor(brewTimeSec / 60)}:{String(brewTimeSec % 60).padStart(2, '0')}
             </div>
           </div>
-          <div className="flex items-center text-slate-300 text-base px-0.5">→</div>
+          <div className="flex items-center text-slate-300 dark:text-slate-600 text-base px-0.5">→</div>
           <div className="flex-1 p-2 bg-orange-50 border border-orange-200 rounded-lg text-center">
             <div className="font-bold text-orange-700 uppercase tracking-wider mb-0.5">Taste Profile</div>
-            <div className="text-slate-500">
+            <div className="text-slate-500 dark:text-slate-400">
               {brewTimeSec < 120 ? 'Bright, sour, tea-like' :
                brewTimeSec < 150 ? 'Light body, high acidity' :
                brewTimeSec < 180 ? 'Mild, juicy acidity' :
@@ -2058,10 +2058,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                'Bitter, astringent, flat'}
             </div>
           </div>
-          <div className="flex items-center text-slate-300 text-base px-0.5">→</div>
+          <div className="flex items-center text-slate-300 dark:text-slate-600 text-base px-0.5">→</div>
           <div className="flex-1 p-2 bg-purple-50 border border-purple-200 rounded-lg text-center">
             <div className="font-bold text-purple-700 uppercase tracking-wider mb-0.5">Grind</div>
-            <div className="text-slate-500">
+            <div className="text-slate-500 dark:text-slate-400">
               {(() => {
                 const diff = 180 - brewTimeSec;
                 if (Math.abs(diff) < 10) return 'No change';
@@ -2072,7 +2072,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
         </div>
 
         {/* Sensory + TDS check advice */}
-        <div className="text-[10px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg p-2">
+        <div className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
           <span>
             {(() => {
               if (brewTimeSec < 120) return '⏱️ Targeting 1:00 — fast brew, grind coarser for bright, light-bodied coffee. Check TDS to confirm extraction.';
@@ -2087,12 +2087,12 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       </SectionCard>
 
       {/* Turbulence Model */}
-      <SectionCard id="turbulence-model" title="🌊 Turbulence Model" headerClass="text-orange-800" borderClass="border-slate-200">
+      <SectionCard id="turbulence-model" title="🌊 Turbulence Model" headerClass="text-orange-800" borderClass="border-slate-200 dark:border-slate-700">
         <TurbulenceModel targetBrewTimeSec={brewTimeSec} brewerType={brewerType} onBrewerChange={setBrewerType} doseWeight={recipeValues.dose} grindSetting={grindAdjustPct} />
       </SectionCard>
 
       {/* Bean Grind Guidance */}
-      <SectionCard id="bean-grind-guidance" title="Bean Grind Guidance" headerClass="text-amber-800" borderClass="border-slate-200">
+      <SectionCard id="bean-grind-guidance" title="Bean Grind Guidance" headerClass="text-amber-800 dark:text-amber-200" borderClass="border-slate-200 dark:border-slate-700">
         {(() => {
           const totalPct = Math.round(beanAdvice.overall * 0.3);
           const absPct = Math.abs(totalPct);
@@ -2108,13 +2108,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           const zoneNames = ['Much Finer', 'Finer', 'Neutral', 'Coarser', 'Much Coarser'];
           return (
             <div className={`mb-3 p-3 rounded-lg border ${
-              isFiner ? 'bg-blue-50 border-blue-200' : isCoarser ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'
+              isFiner ? 'bg-blue-50 border-blue-200' : isCoarser ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700'
             }`}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">Total Grind Impact</span>
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Total Grind Impact</span>
                 {absPct > 0 && (
                   <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                    isFiner ? 'bg-blue-100 text-blue-600' : isCoarser ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'
+                    isFiner ? 'bg-blue-100 text-blue-600' : isCoarser ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-slate-100 text-slate-400 dark:text-slate-500'
                   }`}>
                     {absPct}%
                   </span>
@@ -2128,10 +2128,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   </span>
                 )}
                 <span className={`font-bold tracking-tight ${
-                  severity === 'none' ? 'text-slate-500 text-sm' :
-                  severity === 'slight' ? 'text-slate-600 text-sm' :
+                  severity === 'none' ? 'text-slate-500 dark:text-slate-400 text-sm' :
+                  severity === 'slight' ? 'text-slate-600 dark:text-slate-400 text-sm' :
                   'text-base'
-                } ${isFiner ? 'text-blue-700' : isCoarser ? 'text-amber-700' : 'text-slate-500'}`}>
+                } ${isFiner ? 'text-blue-700' : isCoarser ? 'text-amber-700' : 'text-slate-500 dark:text-slate-400'}`}>
                   {absPct === 0 ? 'Neutral — no adjustment needed' :
                    `${severity.charAt(0).toUpperCase() + severity.slice(1)} — ${clickEstimate} step${clickEstimate.includes('-') || clickEstimate.includes('+') ? 's' : ''} ${isFiner ? 'finer' : 'coarser'}`}
                 </span>
@@ -2149,7 +2149,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                           z === 0 ? 'bg-blue-200' :
                           z === 1 ? 'bg-blue-100' :
                           z === 2 ? 'bg-slate-100' :
-                          z === 3 ? 'bg-amber-100' :
+                          z === 3 ? 'bg-amber-100 dark:bg-amber-900/30' :
                           'bg-amber-200'
                         } ${activeZone === z ? 'opacity-100' : 'opacity-60'}`}
                         style={{ width: `${zoneWidth}%` }}
@@ -2181,8 +2181,8 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       key={name}
                       className={`text-[9px] font-semibold transition-all duration-300 ${
                         activeZone === i
-                          ? i < 2 ? 'text-blue-600' : i > 2 ? 'text-amber-600' : 'text-slate-500'
-                          : 'text-slate-300'
+                          ? i < 2 ? 'text-blue-600' : i > 2 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'
+                          : 'text-slate-300 dark:text-slate-600'
                       }`}
                     >
                       {name}
@@ -2205,7 +2205,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             { label: 'Brew Time', score: beanAdvice.brewTimeScore, max: 30, color: 'bg-slate-400' },
           ].map(({ label, score, max, color }) => (
             <div key={label} className="flex items-center gap-2">
-              <span className="text-[10px] text-slate-500 font-medium w-12">{label}</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium w-12">{label}</span>
               <div className="flex-1 relative h-3 bg-slate-100 rounded-full overflow-hidden">
                 <div
                   className={`absolute top-0 h-full rounded-full ${color} transition-all duration-300`}
@@ -2224,7 +2224,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 }} />
               </div>
               <span className={`text-[10px] font-bold w-7 text-right tabular-nums ${
-                score < 0 ? 'text-blue-500' : score > 0 ? 'text-amber-500' : 'text-slate-400'
+                score < 0 ? 'text-blue-500' : score > 0 ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'
               }`}>
                 {score > 0 ? `+${score}` : score}
               </span>
@@ -2234,18 +2234,18 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       </SectionCard>
 
       {/* Grind Adjustment Calculator */}
-      <SectionCard id="grind-adjustment" title={<div className="flex items-center gap-2">Grind Adjustment<span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 font-semibold">🫘 DENSITY {density}%</span></div>} headerClass="text-emerald-800" borderClass="border-slate-200" headerRight={(() => {
+      <SectionCard id="grind-adjustment" title={<div className="flex items-center gap-2">Grind Adjustment<span className="text-[9px] text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 font-semibold">🫘 DENSITY {density}%</span></div>} headerClass="text-emerald-800 dark:text-emerald-200" borderClass="border-slate-200 dark:border-slate-700" headerRight={(() => {
             const suggested = Math.round(beanAdvice.overall * 0.3);
             return (
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                suggested < 0 ? 'text-blue-600 bg-blue-50 border-blue-200' : suggested > 0 ? 'text-amber-600 bg-amber-50 border-amber-200' : 'text-slate-400 bg-slate-50 border-slate-200'
+                suggested < 0 ? 'text-blue-600 bg-blue-50 border-blue-200' : suggested > 0 ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700'
               }`}>
                 Suggest {suggested === 0 ? 'neutral' : `${Math.abs(suggested)}% ${suggested < 0 ? 'finer' : 'coarser'}`}
               </span>
             );
           })()}>
         <div className="relative flex items-center gap-3">
-          <span className="text-[10px] text-slate-400 font-medium w-12 text-right">Finer</span>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium w-12 text-right">Finer</span>
           <div className="relative flex-1 max-w-48">
             <input type="range" min={0} max={100} value={grindAdjustPct} onChange={(e) => setGrindAdjustPct(parseInt(e.target.value))} className="w-full h-1.5 accent-emerald-500 relative z-10" />
             {/* Suggested position marker */}
@@ -2261,8 +2261,8 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               );
             })()}
           </div>
-          <span className="text-[10px] text-slate-400 font-medium w-12">Coarser</span>
-          <span className="text-xs font-bold text-slate-700 tabular-nums w-16 text-right">
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium w-12">Coarser</span>
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tabular-nums w-16 text-right">
             {grindAdjustPct < 33 ? 'Finer' : grindAdjustPct < 66 ? 'Neutral' : 'Coarser'} ({grindAdjustPct}%)
           </span>
         </div>
@@ -2271,10 +2271,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     {activeTab === 'targets' && (
       <>
         {/* TDS Target */}
-      <SectionCard id="tds-target" title="TDS Target" headerClass="text-slate-800" borderClass="border-slate-200" headerRight={
+      <SectionCard id="tds-target" title="TDS Target" headerClass="text-slate-800" borderClass="border-slate-200 dark:border-slate-700" headerRight={
           <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
-            <button type="button" onClick={() => setBrewFilterMode('hot')} className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${brewFilterMode === 'hot' ? 'bg-white text-amber-700 shadow-sm border border-amber-200' : 'text-slate-400 hover:text-slate-600'}`}>☕ Hot</button>
-            <button type="button" onClick={() => setBrewFilterMode('iced')} className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${brewFilterMode === 'iced' ? 'bg-white text-sky-700 shadow-sm border border-sky-200' : 'text-slate-400 hover:text-slate-600'}`}>🧊 Iced</button>
+            <button type="button" onClick={() => setBrewFilterMode('hot')} className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${brewFilterMode === 'hot' ? 'bg-white dark:bg-slate-800 text-amber-700 shadow-sm border border-amber-200 dark:border-amber-800' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}>☕ Hot</button>
+            <button type="button" onClick={() => setBrewFilterMode('iced')} className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${brewFilterMode === 'iced' ? 'bg-white dark:bg-slate-800 text-sky-700 shadow-sm border border-sky-200' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}>🧊 Iced</button>
           </div>}>
         {brewFilterMode === 'hot' && <>
           <TDSHUD
@@ -2300,43 +2300,43 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             else if (isUnder) advice = `TDS is ${tdsDelta.toFixed(2)}% below SCA zone. Tighten ratio to 1:${(ratio - 1).toFixed(0)}, increase dose, or grind finer.`;
             else advice = `TDS is ${tdsDelta.toFixed(2)}% above SCA zone. Loosen ratio to 1:${(ratio + 1).toFixed(0)}, coarsen grind, or reduce dose.`;
             const statusLabel = isUnder ? 'UNDER' : isOver ? 'OVER' : '✓ IDEAL';
-            const statusColor = isUnder ? 'text-sky-600 bg-sky-50 border-sky-200' : isOver ? 'text-red-600 bg-red-50 border-red-200' : 'text-emerald-600 bg-emerald-50 border-emerald-200';
+            const statusColor = isUnder ? 'text-sky-600 bg-sky-50 border-sky-200' : isOver ? 'text-red-600 bg-red-50 dark:bg-red-900/20 border-red-200' : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800';
             const gaugeLeft = Math.max(0, (scaLo / tdsGaugeMax) * 100);
             const gaugeWidth = Math.min(100 - gaugeLeft, (scaHi - scaLo) / tdsGaugeMax * 100);
             const markerLeft = Math.max(0, Math.min(100, (currentTDS / tdsGaugeMax) * 100));
             return (
-              <div className="px-4 py-3 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-white">
+              <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-white">
                 <div className="flex items-start gap-4">
                   <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">SCA Target</span>
+                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">SCA Target</span>
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-slate-500">TDS</span>
-                        <span className="text-sm font-bold text-emerald-700 tabular-nums">{scaLo.toFixed(2)}–{scaHi.toFixed(2)}%</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">TDS</span>
+                        <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{scaLo.toFixed(2)}–{scaHi.toFixed(2)}%</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-slate-500">EY</span>
-                        <span className="text-sm font-bold text-emerald-700 tabular-nums">18.0–22.0%</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">EY</span>
+                        <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">18.0–22.0%</span>
                       </div>
                     </div>
                   </div>
                   <div className={`px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>
                     {statusLabel} {tdsDelta > 0 && `+${tdsDelta.toFixed(2)}%`}
                   </div>
-                  <button type="button" onClick={(e) => { e.stopPropagation(); const r = tdsPlanRatio || 16; setCurrentTDS(getReferenceTDS(r, 20)); setTargetTDSMin(getReferenceTDS(r, 18).toFixed(2)); setTargetTDSMax(getReferenceTDS(r, 22).toFixed(2)); }} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md px-2 py-1 transition-colors shrink-0">
+                  <button type="button" onClick={(e) => { e.stopPropagation(); const r = tdsPlanRatio || 16; setCurrentTDS(getReferenceTDS(r, 20)); setTargetTDSMin(getReferenceTDS(r, 18).toFixed(2)); setTargetTDSMax(getReferenceTDS(r, 22).toFixed(2)); }} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-md px-2 py-1 transition-colors shrink-0">
                     🎯 Ideal
                   </button>
                 </div>
                 <div className="flex items-center gap-4 mt-2 text-xs">
-                  <span className="text-slate-500 tabular-nums">TDS <strong className={isUnder ? 'text-sky-600' : isOver ? 'text-red-600' : 'text-emerald-600'}>{currentTDS.toFixed(2)}%</strong></span>
-                  <span className="text-slate-500 tabular-nums">EY <strong className={isUnder ? 'text-sky-600' : isOver ? 'text-red-600' : 'text-emerald-600'}>{actualEY.toFixed(1)}%</strong></span>
-                  <span className="text-slate-400">at 1:{ratio}</span>
+                  <span className="text-slate-500 dark:text-slate-400 tabular-nums">TDS <strong className={isUnder ? 'text-sky-600' : isOver ? 'text-red-600' : 'text-emerald-600'}>{currentTDS.toFixed(2)}%</strong></span>
+                  <span className="text-slate-500 dark:text-slate-400 tabular-nums">EY <strong className={isUnder ? 'text-sky-600' : isOver ? 'text-red-600' : 'text-emerald-600'}>{actualEY.toFixed(1)}%</strong></span>
+                  <span className="text-slate-400 dark:text-slate-500">at 1:{ratio}</span>
                 </div>
                 <div className="relative h-2 mt-2 mb-1 rounded-full bg-slate-100 overflow-hidden max-w-xs">
                   <div className="absolute inset-y-0 bg-emerald-300/40 border-x border-emerald-400/50" style={{ left: `${gaugeLeft}%`, width: `${gaugeWidth}%` }} />
                   <div className="absolute top-0 bottom-0 w-0.5 bg-slate-600 transition-all duration-300" style={{ left: `${markerLeft}%` }} />
                 </div>
-                <p className="text-[10px] text-slate-500 leading-relaxed mt-1">{advice}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed mt-1">{advice}</p>
               </div>
             );
           })()}
@@ -2355,45 +2355,45 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               <div className="px-4 py-3 bg-gradient-to-r from-sky-50 to-white border-t border-sky-200 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[9px] uppercase font-bold tracking-wider text-sky-600">☕ Hot Concentrate Targets</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${eyStatus === 'Ideal' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : eyStatus === 'Under' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{eyStatus}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${eyStatus === 'Ideal' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : eyStatus === 'Under' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 border-amber-200 dark:border-amber-800'}`}>{eyStatus}</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                  <div className="bg-white rounded-lg border border-sky-200 p-2">
-                    <span className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold">EY Target</span>
+                  <div className="bg-white dark:bg-slate-800 rounded-lg border border-sky-200 p-2">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">EY Target</span>
                     <div className="font-bold text-sky-700">{icedEYmin}–{icedEYmax}%</div>
                   </div>
-                  <div className="bg-white rounded-lg border border-sky-200 p-2">
-                    <span className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold">Hot TDS Target</span>
+                  <div className="bg-white dark:bg-slate-800 rounded-lg border border-sky-200 p-2">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Hot TDS Target</span>
                     <div className="font-bold text-amber-700">{reqTDSLo.toFixed(2)}–{reqTDSHi.toFixed(2)}%</div>
                   </div>
-                  <div className="bg-white rounded-lg border border-sky-200 p-2">
-                    <span className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold">Final TDS</span>
-                    <div className="font-bold text-emerald-700">{finalTDS.toFixed(2)}%</div>
+                  <div className="bg-white dark:bg-slate-800 rounded-lg border border-sky-200 p-2">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Final TDS</span>
+                    <div className="font-bold text-emerald-700 dark:text-emerald-400">{finalTDS.toFixed(2)}%</div>
                   </div>
-                  <div className="bg-white rounded-lg border border-sky-200 p-2">
-                    <span className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold">Current EY</span>
+                  <div className="bg-white dark:bg-slate-800 rounded-lg border border-sky-200 p-2">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Current EY</span>
                     <div className="font-bold text-purple-700">{currentEY.toFixed(1)}%</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 text-[9px] text-slate-500">
-                  <span>Hot TDS <strong className="text-slate-700">{icedHotTDS.toFixed(2)}%</strong></span>
+                <div className="flex items-center gap-3 text-[9px] text-slate-500 dark:text-slate-400">
+                  <span>Hot TDS <strong className="text-slate-700 dark:text-slate-300">{icedHotTDS.toFixed(2)}%</strong></span>
                   <span>Ratio 1:{icedRatio}</span>
                   <span>Ice {icedIcePct}%</span>
                   <span>Dose {icedDose}g</span>
                 </div>
-                <p className="text-[9px] text-slate-400 italic">ℹ️ Hot concentrate TDS is 2–4× higher than final TDS. Adjust in <strong className="text-sky-600">🧊 Iced Drip Calculator</strong> below.</p>
+                <p className="text-[9px] text-slate-400 dark:text-slate-500 italic">ℹ️ Hot concentrate TDS is 2–4× higher than final TDS. Adjust in <strong className="text-sky-600">🧊 Iced Drip Calculator</strong> below.</p>
               </div>
             );
           })()}
         </>}
         {brewFilterMode === 'hot' && (
-        <div className="bg-white/80 px-4 py-3 flex flex-col gap-3 text-xs border-t border-slate-200">
+        <div className="bg-white dark:bg-slate-800/80 px-4 py-3 flex flex-col gap-3 text-xs border-t border-slate-200 dark:border-slate-700">
           {/* Ratio + EY — prominent focus */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Ratio</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">Ratio</span>
               <div className="flex items-center gap-1">
-                <span className="text-sm font-bold text-slate-600">1:</span>
+                <span className="text-sm font-bold text-slate-600 dark:text-slate-400">1:</span>
                 <input
                   type="number"
                   min={1}
@@ -2401,7 +2401,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   step={0.5}
                   value={tdsPlanRatio}
                   onChange={(e) => { const v = Math.min(30, Math.max(1, parseFloat(e.target.value) || 16)); setTdsPlanRatio(v); }}
-                  className="w-14 px-1.5 py-1 text-sm font-bold text-sky-800 border-2 border-sky-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white shadow-sm"
+                  className="w-14 px-1.5 py-1 text-sm font-bold text-sky-800 border-2 border-sky-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white dark:bg-slate-800 shadow-sm"
                 />
                 <button
                   type="button"
@@ -2412,7 +2412,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">EY</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">EY</span>
               <div className="flex items-center gap-1">
                 <input
                   type="number"
@@ -2421,9 +2421,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   max={30}
                   value={targetEY}
                   onChange={(e) => setTargetEY(e.target.value)}
-                  className="w-14 px-1.5 py-1 text-sm font-bold text-amber-800 border-2 border-amber-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white shadow-sm"
+                  className="w-14 px-1.5 py-1 text-sm font-bold text-amber-800 dark:text-amber-200 border-2 border-amber-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 shadow-sm"
                 />
-                <span className="text-sm font-bold text-slate-400">%</span>
+                <span className="text-sm font-bold text-slate-400 dark:text-slate-500">%</span>
               </div>
             </div>
             {tdsPlanRatio > 0 && (() => {
@@ -2433,9 +2433,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               const tdsHi = (tdsFromEY + 0.05).toFixed(2);
               return (
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] text-slate-400">TDS</span>
-                  <span className="text-[9px] font-bold text-emerald-700 tabular-nums">{tdsLo}–{tdsHi}%</span>
-                  <button type="button" onClick={() => { setTargetTDSMin(tdsLo); setTargetTDSMax(tdsHi); document.getElementById('recipe-pour-planning')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-1.5 py-0.5 rounded text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100">→ Plan</button>
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500">TDS</span>
+                  <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{tdsLo}–{tdsHi}%</span>
+                  <button type="button" onClick={() => { setTargetTDSMin(tdsLo); setTargetTDSMax(tdsHi); document.getElementById('recipe-pour-planning')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-1.5 py-0.5 rounded text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900/30">→ Plan</button>
                 </div>
               );
             })()}
@@ -2456,7 +2456,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                     <div className="absolute inset-0 rounded-sm bg-slate-100 overflow-hidden">
                       <div className="absolute inset-0 flex">
                         <div className="h-full flex-1 bg-sky-100/50" />
-                        <div className="h-full flex-1 bg-emerald-100/50" />
+                        <div className="h-full flex-1 bg-emerald-100 dark:bg-emerald-900/30/50" />
                         <div className="h-full flex-1 bg-red-100/50" />
                       </div>
                       {/* SCA band */}
@@ -2477,7 +2477,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       </div>
                     </div>
                     {/* Zone labels */}
-                    <div className="flex justify-between text-[7px] text-slate-400 mt-px px-0.5">
+                    <div className="flex justify-between text-[7px] text-slate-400 dark:text-slate-500 mt-px px-0.5">
                       <span>UNDER</span>
                       <span>SCA</span>
                       <span>OVER</span>
@@ -2486,7 +2486,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   {/* Status text */}
                   <div className="flex items-center gap-1 shrink-0">
                     {!isUnder && !isOver ? (
-                      <span className="text-emerald-700 font-bold text-[9px]">✓ SCA</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[9px]">✓ SCA</span>
                     ) : (
                       <span className={`font-bold text-[9px] ${isUnder ? 'text-sky-600' : 'text-red-600'}`}>
                         {isUnder ? `${delta.toFixed(2)}% ↓` : `${delta.toFixed(2)}% ↑`}
@@ -2495,7 +2495,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                     <button
                       type="button"
                       onClick={() => { const ey = parseFloat(targetEY) || 20; const t = getReferenceTDS(tdsPlanRatio, ey); setTargetTDSMin((t - 0.05).toFixed(2)); setTargetTDSMax((t + 0.05).toFixed(2)); }}
-                      className="px-1.5 py-0.5 rounded text-[8px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100"
+                      className="px-1.5 py-0.5 rounded text-[8px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900/30"
                     >
                       Set TDS
                     </button>
@@ -2506,14 +2506,14 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           </div>
 
           {/* Controls row */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-slate-100 pt-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-slate-100 dark:border-slate-700 pt-2">
             <div className="flex items-center gap-1">
-              <label className="text-[9px] text-slate-400 font-medium">TDS Min</label>
-              <input type="number" step={0.05} value={targetTDSMin} onChange={(e) => setTargetTDSMin(e.target.value)} className="w-14 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
+              <label className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">TDS Min</label>
+              <input type="number" step={0.05} value={targetTDSMin} onChange={(e) => setTargetTDSMin(e.target.value)} className="w-14 px-1 py-0.5 text-[10px] border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
             </div>
             <div className="flex items-center gap-1">
-              <label className="text-[9px] text-slate-400 font-medium">TDS Max</label>
-              <input type="number" step={0.05} value={targetTDSMax} onChange={(e) => setTargetTDSMax(e.target.value)} className="w-14 px-1 py-0.5 text-[10px] border border-slate-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
+              <label className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">TDS Max</label>
+              <input type="number" step={0.05} value={targetTDSMax} onChange={(e) => setTargetTDSMax(e.target.value)} className="w-14 px-1 py-0.5 text-[10px] border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
             </div>
 
             {tdsPlanRatio > 0 && (() => {
@@ -2546,27 +2546,27 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
           <div className="space-y-2">
             {/* Tabs */}
             <div className="flex gap-1 border-b border-sky-200 pb-1.5">
-              <button type="button" onClick={() => setIcedTab('ratio')} className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-t transition-colors ${icedTab === 'ratio' ? 'text-sky-800 bg-sky-100 border-b-2 border-sky-500' : 'text-slate-400 hover:text-sky-600'}`}>Coffee &amp; Ice</button>
-              <button type="button" onClick={() => setIcedTab('ey')} className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-t transition-colors ${icedTab === 'ey' ? 'text-sky-800 bg-sky-100 border-b-2 border-sky-500' : 'text-slate-400 hover:text-sky-600'}`}>EY &amp; TDS Target</button>
+              <button type="button" onClick={() => setIcedTab('ratio')} className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-t transition-colors ${icedTab === 'ratio' ? 'text-sky-800 bg-sky-100 border-b-2 border-sky-500' : 'text-slate-400 dark:text-slate-500 hover:text-sky-600'}`}>Coffee &amp; Ice</button>
+              <button type="button" onClick={() => setIcedTab('ey')} className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-t transition-colors ${icedTab === 'ey' ? 'text-sky-800 bg-sky-100 border-b-2 border-sky-500' : 'text-slate-400 dark:text-slate-500 hover:text-sky-600'}`}>EY &amp; TDS Target</button>
             </div>
 
             {icedTab === 'ratio' ? (
               <>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
-                  <label className="text-slate-500 col-span-1">Dose</label>
+                  <label className="text-slate-500 dark:text-slate-400 col-span-1">Dose</label>
                   <div className="col-span-2 flex items-center gap-1">
                     <input type="number" min={1} step={0.5} value={icedDose} onChange={(e) => setIcedDose(Number(e.target.value))} className="w-full px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                    <span className="text-[10px] text-slate-400">g</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">g</span>
                   </div>
-                  <label className="text-slate-500 col-span-1">Ratio</label>
+                  <label className="text-slate-500 dark:text-slate-400 col-span-1">Ratio</label>
                   <div className="col-span-2 flex items-center gap-1">
-                    <span className="text-[10px] text-slate-400">1 :</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">1 :</span>
                     <input type="number" min={1} step={0.5} value={icedRatio} onChange={(e) => setIcedRatio(Number(e.target.value))} className="w-full px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
                   </div>
-                  <label className="text-slate-500 col-span-1">Ice</label>
+                  <label className="text-slate-500 dark:text-slate-400 col-span-1">Ice</label>
                   <div className="col-span-2 flex items-center gap-1">
                     <input type="number" min={0} max={100} step={1} value={icedIcePct} onChange={(e) => setIcedIcePct(Number(e.target.value))} className="w-16 px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                    <span className="text-[10px] text-slate-400">% of water</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">% of water</span>
                   </div>
                 </div>
                 {(() => {
@@ -2575,10 +2575,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   const hotWater = totalWater - ice;
                   return (
                     <div className="p-2 bg-sky-50 border border-sky-200 rounded-lg text-xs space-y-0.5">
-                      <div className="flex justify-between"><span className="text-slate-500">Total water</span><span className="font-bold tabular-nums">{totalWater.toFixed(0)}g</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">Hot water</span><span className="font-bold tabular-nums text-amber-600">{hotWater.toFixed(0)}g</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">Ice needed</span><span className="font-bold tabular-nums text-sky-600">{ice.toFixed(0)}g</span></div>
-                      <div className="flex justify-between border-t border-sky-200 pt-0.5 mt-0.5"><span className="text-slate-500">Target bev.</span><span className="font-bold tabular-nums">{totalWater.toFixed(0)}g</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Total water</span><span className="font-bold tabular-nums">{totalWater.toFixed(0)}g</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Hot water</span><span className="font-bold tabular-nums text-amber-600 dark:text-amber-400">{hotWater.toFixed(0)}g</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Ice needed</span><span className="font-bold tabular-nums text-sky-600">{ice.toFixed(0)}g</span></div>
+                      <div className="flex justify-between border-t border-sky-200 pt-0.5 mt-0.5"><span className="text-slate-500 dark:text-slate-400">Target bev.</span><span className="font-bold tabular-nums">{totalWater.toFixed(0)}g</span></div>
                     </div>
                   );
                 })()}
@@ -2586,27 +2586,27 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             ) : (
               <>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
-                  <label className="text-slate-500 col-span-1">Target EY</label>
+                  <label className="text-slate-500 dark:text-slate-400 col-span-1">Target EY</label>
                   <div className="col-span-2 flex items-center gap-1">
                     <input type="number" min={0} step={0.5} value={icedEYmin} onChange={(e) => setIcedEYmin(Number(e.target.value))} className="w-12 px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                    <span className="text-[10px] text-slate-300">—</span>
+                    <span className="text-[10px] text-slate-300 dark:text-slate-600">—</span>
                     <input type="number" min={0} step={0.5} value={icedEYmax} onChange={(e) => setIcedEYmax(Number(e.target.value))} className="w-12 px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                    <span className="text-[10px] text-slate-400">%</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">%</span>
                   </div>
-                  <label className="text-slate-500 col-span-1">Final TDS</label>
+                  <label className="text-slate-500 dark:text-slate-400 col-span-1">Final TDS</label>
                   <div className="col-span-2 flex items-center gap-1">
-                    <input type="number" min={0} step={0.05} value={icedTargetFinalTDS ?? ''} onChange={(e) => setIcedTargetFinalTDS(e.target.value ? Number(e.target.value) : null)} placeholder="target" className="w-full px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400 placeholder:text-slate-300" />
-                    <span className="text-[10px] text-slate-400">%</span>
+                    <input type="number" min={0} step={0.05} value={icedTargetFinalTDS ?? ''} onChange={(e) => setIcedTargetFinalTDS(e.target.value ? Number(e.target.value) : null)} placeholder="target" className="w-full px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400 placeholder:text-slate-300 dark:text-slate-600" />
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">%</span>
                   </div>
-                  <label className="text-slate-500 col-span-1">Dose</label>
+                  <label className="text-slate-500 dark:text-slate-400 col-span-1">Dose</label>
                   <div className="col-span-2 flex items-center gap-1">
                     <input type="number" min={1} step={0.5} value={icedDose} onChange={(e) => setIcedDose(Number(e.target.value))} className="w-full px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                    <span className="text-[10px] text-slate-400">g</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">g</span>
                   </div>
-                  <label className="text-slate-500 col-span-1">Ice</label>
+                  <label className="text-slate-500 dark:text-slate-400 col-span-1">Ice</label>
                   <div className="col-span-2 flex items-center gap-1">
                     <input type="number" min={0} max={100} step={1} value={icedIcePct} onChange={(e) => setIcedIcePct(Number(e.target.value))} className="w-16 px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                    <span className="text-[10px] text-slate-400">% of water</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">% of water</span>
                   </div>
                 </div>
                 {(() => {
@@ -2620,14 +2620,14 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   return (
                     <div className="p-2 bg-sky-50 border border-sky-200 rounded-lg text-xs space-y-0.5">
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">Optimal ratio</span>
+                        <span className="text-slate-500 dark:text-slate-400">Optimal ratio</span>
                         <span className="font-bold tabular-nums text-indigo-600">1 : {optRatio.toFixed(1)}</span>
                       </div>
-                      <div className="flex justify-between"><span className="text-slate-500">Total water</span><span className="font-bold tabular-nums">{totalWater.toFixed(0)}g</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">Hot water</span><span className="font-bold tabular-nums text-amber-600">{hotWater.toFixed(0)}g</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">Ice needed</span><span className="font-bold tabular-nums text-sky-600">{ice.toFixed(0)}g</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Total water</span><span className="font-bold tabular-nums">{totalWater.toFixed(0)}g</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Hot water</span><span className="font-bold tabular-nums text-amber-600 dark:text-amber-400">{hotWater.toFixed(0)}g</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Ice needed</span><span className="font-bold tabular-nums text-sky-600">{ice.toFixed(0)}g</span></div>
                       <div className="flex justify-between border-t border-sky-200 pt-0.5 mt-0.5">
-                        <span className="text-slate-500">Req. hot TDS</span>
+                        <span className="text-slate-500 dark:text-slate-400">Req. hot TDS</span>
                         <span className="font-bold tabular-nums text-purple-600">{reqHotTDS.toFixed(2)}%</span>
                       </div>
                     </div>
@@ -2639,9 +2639,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
 
           {/* TDS Dilution */}
           <div className="space-y-2">
-            <h4 className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">TDS Dilution</h4>
+            <h4 className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">TDS Dilution</h4>
             <div className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
-              <label className="text-slate-500 col-span-1">Hot TDS</label>
+              <label className="text-slate-500 dark:text-slate-400 col-span-1">Hot TDS</label>
               <div className="col-span-2 flex items-center gap-1">
                 {(() => {
                   const ratio = icedRatio;
@@ -2656,8 +2656,8 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   if (isUnder) deltaStr = `↓ ${(scaLo - icedHotTDS).toFixed(2)}%`;
                   else if (isAboveIdeal) deltaStr = `↑ +${(icedHotTDS - scaHi).toFixed(2)}%`;
                   else if (isImpossible) deltaStr = `↑ +${(icedHotTDS - impossible).toFixed(2)}%`;
-                  const borderColor = isImpossible ? 'border-red-400 bg-red-50 focus:ring-red-400' :
-                    isAboveIdeal ? 'border-amber-400 bg-amber-50 focus:ring-amber-400' :
+                  const borderColor = isImpossible ? 'border-red-400 bg-red-50 dark:bg-red-900/20 focus:ring-red-400' :
+                    isAboveIdeal ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 focus:ring-amber-400' :
                     isUnder ? 'border-blue-400 bg-blue-50 focus:ring-blue-400' :
                     'border-emerald-400 focus:ring-emerald-400';
                   return (
@@ -2665,11 +2665,11 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       <input type="number" min={0} step={0.05} value={icedHotTDS} onChange={(e) => setIcedHotTDS(Number(e.target.value))}
                         className={`w-full px-1.5 py-1 text-xs border-2 rounded text-center focus:outline-none ${borderColor}`}
                       />
-                      <span className="text-[10px] text-slate-400">%</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">%</span>
                       {isHighlighted && (
                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold whitespace-nowrap ${
                           isImpossible ? 'bg-red-100 text-red-700 border border-red-300' :
-                          isAboveIdeal ? 'bg-amber-100 text-amber-700 border border-amber-300' :
+                          isAboveIdeal ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border border-amber-300' :
                           'bg-blue-100 text-blue-700 border border-blue-300'
                         }`}>
                           {deltaStr}
@@ -2686,7 +2686,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 const impossible = +(getReferenceTDS(ratio, 31)).toFixed(4);
                 if (icedHotTDS < scaLo) return 'text-blue-600';
                 if (icedHotTDS > impossible) return 'text-red-600';
-                if (icedHotTDS > scaHi) return 'text-amber-600';
+                if (icedHotTDS > scaHi) return 'text-amber-600 dark:text-amber-400';
                 return 'text-emerald-600';
               })()}`}>
                 {(() => {
@@ -2709,28 +2709,28 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               return (
                 <div className="p-2 bg-sky-50 border border-sky-200 rounded-lg text-xs space-y-0.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Final TDS (diluted)</span>
+                    <span className="text-slate-500 dark:text-slate-400">Final TDS (diluted)</span>
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold tabular-nums text-emerald-600">{finalTDS.toFixed(2)}%</span>
-                      <span className="text-[8px] text-slate-400">info</span>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500">info</span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between text-[9px] text-slate-400 pt-0.5 border-t border-sky-200 mt-0.5">
-                    <span>Hot TDS <strong className="text-slate-500">{icedHotTDS.toFixed(2)}%</strong> at {hotWater > 0 ? (hotWater / totalWater * 100).toFixed(0) : 0}% dilution</span>
+                  <div className="flex items-center justify-between text-[9px] text-slate-400 dark:text-slate-500 pt-0.5 border-t border-sky-200 mt-0.5">
+                    <span>Hot TDS <strong className="text-slate-500 dark:text-slate-400">{icedHotTDS.toFixed(2)}%</strong> at {hotWater > 0 ? (hotWater / totalWater * 100).toFixed(0) : 0}% dilution</span>
                   </div>
                 </div>
               );
             })()}
             {/* EY ↔ TDS Goal Table */}
-            <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs space-y-1.5">
+            <div className="p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-amber-800 uppercase tracking-wider">EY ↔ TDS Goal</span>
+                <span className="text-[10px] font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wider">EY ↔ TDS Goal</span>
                 <div className="flex items-center gap-1.5 text-[9px]">
-                  <span className="text-slate-400">Target:</span>
+                  <span className="text-slate-400 dark:text-slate-500">Target:</span>
                   <input type="number" min={0} step={0.5} value={icedEYmin} onChange={(e) => setIcedEYmin(Number(e.target.value))} className="w-10 px-1 py-0.5 text-[9px] border border-amber-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-amber-400" />
-                  <span className="text-slate-300">—</span>
+                  <span className="text-slate-300 dark:text-slate-600">—</span>
                   <input type="number" min={0} step={0.5} value={icedEYmax} onChange={(e) => setIcedEYmax(Number(e.target.value))} className="w-10 px-1 py-0.5 text-[9px] border border-amber-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-amber-400" />
-                  <span className="text-slate-400">%</span>
+                  <span className="text-slate-400 dark:text-slate-500">%</span>
                 </div>
               </div>
               {(() => {
@@ -2743,9 +2743,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 for (let v = lo; v <= hi; v++) eyValues.push(v);
                 return (
                   <div className="grid grid-cols-7 gap-px bg-amber-200/60 rounded overflow-hidden" style={{gridTemplateColumns: '2fr 3fr 2fr'}}>
-                    <div className="bg-amber-100/80 px-1.5 py-1 text-[9px] font-semibold text-amber-800 text-center">EY</div>
-                    <div className="bg-amber-100/80 px-1.5 py-1 text-[9px] font-semibold text-amber-800 text-center">Hot Brew TDS</div>
-                    <div className="bg-amber-100/80 px-1.5 py-1 text-[9px] font-semibold text-amber-800 text-center">Final TDS</div>
+                    <div className="bg-amber-100 dark:bg-amber-900/30/80 px-1.5 py-1 text-[9px] font-semibold text-amber-800 dark:text-amber-200 text-center">EY</div>
+                    <div className="bg-amber-100 dark:bg-amber-900/30/80 px-1.5 py-1 text-[9px] font-semibold text-amber-800 dark:text-amber-200 text-center">Hot Brew TDS</div>
+                    <div className="bg-amber-100 dark:bg-amber-900/30/80 px-1.5 py-1 text-[9px] font-semibold text-amber-800 dark:text-amber-200 text-center">Final TDS</div>
                     {eyValues.map(ey => {
                       const reqTDS = dose > 0 && hotWater > 0 ? ey * dose / hotWater / 100 : 0;
                       const finalTDS = totalWater > 0 ? reqTDS * hotWater / totalWater : 0;
@@ -2753,13 +2753,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                       const tdsMatches = Math.abs(reqTDS * 100 - icedHotTDS) < 0.05;
                       return (
                         <React.Fragment key={ey}>
-                          <div className={`px-1.5 py-1 text-center text-[9px] font-bold tabular-nums ${tdsMatches ? 'bg-amber-300 text-amber-900' : eyInTarget ? 'bg-white text-slate-700' : 'bg-white/60 text-slate-400'}`}>
+                          <div className={`px-1.5 py-1 text-center text-[9px] font-bold tabular-nums ${tdsMatches ? 'bg-amber-300 text-amber-900' : eyInTarget ? 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300' : 'bg-white dark:bg-slate-800/60 text-slate-400 dark:text-slate-500'}`}>
                             {ey}%{tdsMatches ? ' ◀' : ''}
                           </div>
-                          <div className={`px-1.5 py-1 text-center text-[9px] tabular-nums ${tdsMatches ? 'bg-amber-300 font-bold text-amber-900' : eyInTarget ? 'bg-white text-slate-600' : 'bg-white/60 text-slate-400'}`}>
+                          <div className={`px-1.5 py-1 text-center text-[9px] tabular-nums ${tdsMatches ? 'bg-amber-300 font-bold text-amber-900' : eyInTarget ? 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400' : 'bg-white dark:bg-slate-800/60 text-slate-400 dark:text-slate-500'}`}>
                             {(reqTDS * 100).toFixed(2)}%
                           </div>
-                          <div className={`px-1.5 py-1 text-center text-[9px] tabular-nums ${tdsMatches ? 'bg-amber-300 font-bold text-amber-900' : 'bg-white/60 text-slate-400'}`}>
+                          <div className={`px-1.5 py-1 text-center text-[9px] tabular-nums ${tdsMatches ? 'bg-amber-300 font-bold text-amber-900' : 'bg-white dark:bg-slate-800/60 text-slate-400 dark:text-slate-500'}`}>
                             {(finalTDS * 100).toFixed(2)}%
                           </div>
                         </React.Fragment>
@@ -2774,14 +2774,14 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 const ey = icedHotTDS / 100 * hotWater / icedDose * 100;
                 const eyStatus = ey < icedEYmin ? 'Under' : ey > icedEYmax ? 'Over' : 'Ideal';
                 return (
-                  <div className="flex items-center justify-between text-[9px] pt-0.5 border-t border-amber-200">
-                    <span className="text-slate-500">Current hot TDS <strong>{icedHotTDS.toFixed(2)}%</strong></span>
+                  <div className="flex items-center justify-between text-[9px] pt-0.5 border-t border-amber-200 dark:border-amber-800">
+                    <span className="text-slate-500 dark:text-slate-400">Current hot TDS <strong>{icedHotTDS.toFixed(2)}%</strong></span>
                     <div className="flex items-center gap-1">
                       <span className="font-bold tabular-nums text-amber-700">{ey.toFixed(1)}% EY</span>
                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
-                        eyStatus === 'Ideal' ? 'bg-emerald-100 text-emerald-700' :
+                        eyStatus === 'Ideal' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
                         eyStatus === 'Under' ? 'bg-blue-100 text-blue-700' :
-                        'bg-amber-100 text-amber-700'
+                        'bg-amber-100 dark:bg-amber-900/30 text-amber-700'
                       }`}>{eyStatus}</span>
                     </div>
                   </div>
@@ -2823,7 +2823,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   let msg: string;
                   let cls: string;
                   if (isImpossible) { msg = `Exceeds max achievable EY (31%). Loosen ratio or accept lower TDS.`; cls = 'bg-red-100 text-red-700 border-red-300'; }
-                  else if (isAboveIdeal) { msg = `${icedHotTDS.toFixed(2)}% is above SCA zone (${scaLo}–${scaHi}%). Possible but high EY — watch for astringency.`; cls = 'bg-amber-100 text-amber-700 border-amber-300'; }
+                  else if (isAboveIdeal) { msg = `${icedHotTDS.toFixed(2)}% is above SCA zone (${scaLo}–${scaHi}%). Possible but high EY — watch for astringency.`; cls = 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border-amber-300'; }
                   else { msg = `${icedHotTDS.toFixed(2)}% is below SCA zone (${scaLo}–${scaHi}%). Grind finer or tighten ratio.`; cls = 'bg-blue-100 text-blue-700 border-blue-300'; }
                   return (
                     <div className={`px-2 py-1 rounded text-[9px] font-bold border ${cls}`}>
@@ -2835,22 +2835,22 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
               })()}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Hot concentrate */}
-                <div className="p-2 bg-white/70 border border-amber-200 rounded-lg space-y-1">
-                  <div className="text-[9px] font-bold text-amber-800 uppercase tracking-wider">Hot Concentrate</div>
-                  <div className="text-[9px] text-slate-500">TDS: <strong className="text-amber-700">{hotTDS.toFixed(2)}%</strong></div>
-                  <div className="text-[9px] text-slate-500">Liquid: <strong className="text-slate-700">{hotLiquid.toFixed(0)}g</strong> ({hotWater.toFixed(0)}g water − ~{Math.round(icedDose * 2.5)}g retained)</div>
-                  <div className="text-[9px] text-slate-500">Extracted coffee: <strong className="text-slate-700">{extracted.toFixed(2)}g</strong></div>
-                  <div className="text-[9px] font-bold text-indigo-700 border-t border-amber-200 pt-0.5 mt-0.5">
+                <div className="p-2 bg-white dark:bg-slate-800/70 border border-amber-200 dark:border-amber-800 rounded-lg space-y-1">
+                  <div className="text-[9px] font-bold text-amber-800 dark:text-amber-200 uppercase tracking-wider">Hot Concentrate</div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400">TDS: <strong className="text-amber-700">{hotTDS.toFixed(2)}%</strong></div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400">Liquid: <strong className="text-slate-700 dark:text-slate-300">{hotLiquid.toFixed(0)}g</strong> ({hotWater.toFixed(0)}g water − ~{Math.round(icedDose * 2.5)}g retained)</div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400">Extracted coffee: <strong className="text-slate-700 dark:text-slate-300">{extracted.toFixed(2)}g</strong></div>
+                  <div className="text-[9px] font-bold text-indigo-700 border-t border-amber-200 dark:border-amber-800 pt-0.5 mt-0.5">
                     EY = {hotLiquid.toFixed(0)}g × {hotTDS.toFixed(2)}% ÷ {icedDose}g = <strong>{ey.toFixed(2)}%</strong>
                   </div>
                 </div>
                 {/* Final beverage */}
-                <div className="p-2 bg-white/70 border border-sky-200 rounded-lg space-y-1">
+                <div className="p-2 bg-white dark:bg-slate-800/70 border border-sky-200 rounded-lg space-y-1">
                   <div className="text-[9px] font-bold text-sky-800 uppercase tracking-wider">Final Beverage (After Ice)</div>
-                  <div className="text-[9px] text-slate-500">TDS: <strong className="text-sky-700">{finalTDS.toFixed(2)}%</strong></div>
-                  <div className="text-[9px] text-slate-500">Beverage: <strong className="text-slate-700">{finalBev.toFixed(0)}g</strong> ({hotLiquid.toFixed(0)}g hot + {ice}g melted ice)</div>
-                  <div className="text-[9px] text-slate-500">Extracted coffee: <strong className="text-slate-700">{finalExtracted.toFixed(2)}g</strong></div>
-                  <div className={`text-[9px] font-bold border-t pt-0.5 mt-0.5 ${matched ? 'text-emerald-600 border-sky-200' : 'text-amber-600 border-sky-200'}`}>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400">TDS: <strong className="text-sky-700">{finalTDS.toFixed(2)}%</strong></div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400">Beverage: <strong className="text-slate-700 dark:text-slate-300">{finalBev.toFixed(0)}g</strong> ({hotLiquid.toFixed(0)}g hot + {ice}g melted ice)</div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400">Extracted coffee: <strong className="text-slate-700 dark:text-slate-300">{finalExtracted.toFixed(2)}g</strong></div>
+                  <div className={`text-[9px] font-bold border-t pt-0.5 mt-0.5 ${matched ? 'text-emerald-600 border-sky-200' : 'text-amber-600 dark:text-amber-400 border-sky-200'}`}>
                     EY = {finalBev.toFixed(0)}g × {finalTDS.toFixed(2)}% ÷ {icedDose}g = <strong>{finalEY.toFixed(2)}%</strong>
                     {matched && <span className="ml-1 text-emerald-600">✓ Same!</span>}
                   </div>
@@ -2867,11 +2867,11 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
       {/* Recipe & Pour Planning */}
       <SectionCard id="recipe-pour-planning" title={
         <div className="flex items-center gap-3 text-[10px] font-normal">
-          <span className="text-slate-400 font-semibold uppercase tracking-wider">Expecting</span>
+          <span className="text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Expecting</span>
           <span className="text-sky-700 font-bold tabular-nums">TDS {parseFloat(targetTDSMin).toFixed(2)}–{parseFloat(targetTDSMax).toFixed(2)}%</span>
-          <span className="text-slate-300">|</span>
-          <span className="text-emerald-700 font-bold tabular-nums">EY {parseFloat(targetEY).toFixed(1)}%</span>
-          <span className="text-slate-300">|</span>
+          <span className="text-slate-300 dark:text-slate-600">|</span>
+          <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">EY {parseFloat(targetEY).toFixed(1)}%</span>
+          <span className="text-slate-300 dark:text-slate-600">|</span>
           <span className="text-amber-700 font-bold tabular-nums">1:{tdsPlanRatio}</span>
           {(() => {
             try {
@@ -2882,13 +2882,13 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                 <>
                   <span className="text-slate-200">|</span>
                   <span className="text-emerald-600 font-semibold">🌊 {p.flowRegime} · {p.bloomTime}s bloom · v={p.v}</span>
-                  <button type="button" onClick={() => localStorage.removeItem('belkaTurbulencePlan')} className="text-slate-300 hover:text-red-400 text-[10px]" title="Clear turbulence plan">✕</button>
+                  <button type="button" onClick={() => localStorage.removeItem('belkaTurbulencePlan')} className="text-slate-300 dark:text-slate-600 hover:text-red-400 text-[10px]" title="Clear turbulence plan">✕</button>
                 </>
               );
             } catch { return null; }
           })()}
         </div>
-      } headerClass="text-emerald-800" borderClass="border-emerald-200" className="overflow-hidden">
+      } headerClass="text-emerald-800 dark:text-emerald-200" borderClass="border-emerald-200 dark:border-emerald-800" className="overflow-hidden">
         <RecipePourPlanning ref={recipePlanRef} brewTargetSec={brewTimeSec} expectedTDSMin={parseFloat(targetTDSMin) || undefined} expectedTDSMax={parseFloat(targetTDSMax) || undefined}
           onSendToMainApp={(profile) => {
             localStorage.setItem('belka.planToGraph', JSON.stringify(profile));
@@ -2908,7 +2908,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
     {activeTab === 'log' && (
       <>
         {/* Attempt Log */}
-      <SectionCard id="attempt-log" title="Attempt Log" headerClass="text-slate-800" borderClass="border-slate-200">
+      <SectionCard id="attempt-log" title="Attempt Log" headerClass="text-slate-800" borderClass="border-slate-200 dark:border-slate-700">
         <AttemptLog
           currentGrindSize={recipeValues.grindSize}
           currentDose={recipeValues.dose}

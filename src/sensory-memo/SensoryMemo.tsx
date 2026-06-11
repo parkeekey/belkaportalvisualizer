@@ -42,16 +42,16 @@ function TasteBars({ taste }: { taste: FlavorEntry['taste'] }) {
         if (val === 0) return null;
         return (
           <div key={t.key} className="flex items-center gap-1">
-            <span className="text-[6px] text-slate-400 w-7 text-right">{t.label}</span>
+            <span className="text-[6px] text-slate-400 dark:text-slate-500 w-7 text-right">{t.label}</span>
             <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div className={`h-full rounded-full ${t.color}`} style={{ width: `${(val / 5) * 100}%` }} />
             </div>
-            <span className="text-[7px] text-slate-400 w-3 text-right">{val}</span>
+            <span className="text-[7px] text-slate-400 dark:text-slate-500 w-3 text-right">{val}</span>
           </div>
         );
       })}
       {Object.values(taste).every(v => v === 0) && (
-        <span className="text-[7px] text-slate-300 italic">No dominant taste</span>
+        <span className="text-[7px] text-slate-300 dark:text-slate-600 italic">No dominant taste</span>
       )}
     </div>
   );
@@ -79,7 +79,7 @@ function FlavorCard({
   }, [flavor]);
 
   return (
-    <div className={`rounded-lg border ${checked ? 'border-violet-300 bg-violet-50/50' : 'border-slate-200 bg-white'} p-2`}>
+    <div className={`rounded-lg border ${checked ? 'border-violet-300 bg-violet-50/50' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'} p-2`}>
       <div className="flex items-start gap-2">
         <input type="checkbox" checked={checked}
           onChange={() => onToggleCheck(flavor.id)}
@@ -88,24 +88,24 @@ function FlavorCard({
         <button onClick={() => setExpanded(v => !v)} className="flex-1 text-left">
           <div className="flex items-center gap-1.5">
             <span className="text-sm">{flavor.emoji}</span>
-            <span className="text-[10px] font-semibold text-slate-700">{flavor.label}</span>
+            <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">{flavor.label}</span>
             {flavor.wcr_ref && (
-              <span className="text-[6px] text-slate-400 bg-slate-100 px-1 rounded">WCR</span>
+              <span className="text-[6px] text-slate-400 dark:text-slate-500 bg-slate-100 px-1 rounded">WCR</span>
             )}
             {similarLabel && (
               <span className="text-[6px] text-violet-400 bg-violet-50 px-1 rounded">↔ {similarLabel}</span>
             )}
             {flavor.subgroup && (
-              <span className="text-[6px] text-slate-300 italic capitalize">{flavor.subgroup}</span>
+              <span className="text-[6px] text-slate-300 dark:text-slate-600 italic capitalize">{flavor.subgroup}</span>
             )}
           </div>
             {expanded && (
             <div className="mt-1.5 pl-0.5 space-y-1">
               <TasteBars taste={flavor.taste} />
-              <p className="text-[8px] text-slate-500 leading-relaxed">{flavor.description}</p>
+              <p className="text-[8px] text-slate-500 dark:text-slate-400 leading-relaxed">{flavor.description}</p>
               <div className="flex flex-wrap gap-1 mt-1">
                 {flavor.wcr_category && (
-                  <span className="text-[6px] text-slate-400 bg-slate-100 px-1 rounded">{flavor.wcr_category}</span>
+                  <span className="text-[6px] text-slate-400 dark:text-slate-500 bg-slate-100 px-1 rounded">{flavor.wcr_category}</span>
                 )}
                 <span className="text-[6px] px-1 rounded text-white"
                   style={{ backgroundColor: BIG_CATEGORIES.find(c => c.key === flavor.bigCategory)?.color ?? '#999' }}
@@ -126,13 +126,13 @@ function FlavorCard({
             </div>
           )}
           <button onClick={() => setExpanded(v => !v)}
-            className="text-[8px] text-slate-300 hover:text-slate-500"
+            className="text-[8px] text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:text-slate-400"
           >{expanded ? '▲' : '▼'}</button>
         </div>
       </div>
       {checked && (
         <div className="flex items-center gap-2 mt-1.5 pl-0.5">
-          <span className="text-[7px] text-slate-400">Intensity:</span>
+          <span className="text-[7px] text-slate-400 dark:text-slate-500">Intensity:</span>
           <input type="range" min={1} max={5} value={intensity}
             onChange={e => onIntensity(flavor.id, parseInt(e.target.value))}
             className="flex-1 h-1 accent-violet-500"
@@ -414,8 +414,8 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-lg">📝</span>
-          <span className="text-sm font-bold text-slate-700">Sensory Memo</span>
-          <span className="text-[8px] text-slate-400">{allFlavors.length} entries · {customFlavors.length} custom</span>
+          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Sensory Memo</span>
+          <span className="text-[8px] text-slate-400 dark:text-slate-500">{allFlavors.length} entries · {customFlavors.length} custom</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button onClick={() => { setEditingFlavor(undefined); setShowEditor(true); }}
@@ -425,7 +425,7 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
             className={`text-[9px] font-semibold px-2 py-1 rounded border transition-colors ${
               showProfileList
                 ? 'bg-sky-100 border-sky-300 text-sky-700'
-                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
             }`}
           >📁 My Profiles</button>
           <button onClick={() => {
@@ -443,13 +443,13 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
           }}
             className={`text-[9px] font-semibold px-2 py-1 rounded border transition-colors ${
               saveProfileOpen
-                ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
-                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
             }`}
           >☕ New Profile</button>
           {onClose && (
             <button onClick={onClose}
-              className="text-[9px] text-slate-400 hover:text-slate-600 underline decoration-dotted"
+              className="text-[9px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 underline decoration-dotted"
             >✕ Close</button>
           )}
         </div>
@@ -480,7 +480,7 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
               <span className="text-[10px]">{f.emoji}</span>
               <span className="text-[7px] font-medium text-violet-700">{f.label}</span>
               <button onClick={() => toggleCheck(f.id)}
-                className="text-[7px] text-violet-400 hover:text-red-500 pl-0.5"
+                className="text-[7px] text-violet-400 hover:text-red-500 dark:text-red-400 pl-0.5"
               >✕</button>
             </div>
           ))}
@@ -495,14 +495,14 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
             <span className="text-[7px] text-sky-400">{sensoryProfiles.length} saved</span>
           </div>
           {sensoryProfiles.length === 0 ? (
-            <div className="text-center py-3 text-[8px] text-slate-400 italic">No saved profiles yet</div>
+            <div className="text-center py-3 text-[8px] text-slate-400 dark:text-slate-500 italic">No saved profiles yet</div>
           ) : (
             <div className="space-y-1 max-h-48 overflow-y-auto">
               {[...sensoryProfiles].reverse().map(p => (
-                <div key={p.id} className="flex items-center gap-1 bg-white border border-sky-200 rounded px-2 py-1.5">
+                <div key={p.id} className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-sky-200 rounded px-2 py-1.5">
                   <div className="flex-1 min-w-0">
                     <div className="text-[9px] font-semibold text-sky-800 truncate">{p.name}</div>
-                    <div className="flex gap-2 text-[6px] text-slate-400">
+                    <div className="flex gap-2 text-[6px] text-slate-400 dark:text-slate-500">
                       <span>{p.coffeeName || '—'}</span>
                       <span>{Object.keys(p.checkedFlavors).length} flavors</span>
                       {p.process && <span>{p.process}</span>}
@@ -512,7 +512,7 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
                     className="text-[7px] px-1.5 py-0.5 rounded font-bold text-sky-600 bg-sky-100 hover:bg-sky-200 transition-colors"
                   >Load</button>
                   <button onClick={() => deleteSensoryProfile(p.id)}
-                    className="text-[7px] px-1.5 py-0.5 rounded font-bold text-red-400 bg-white border border-red-200 hover:bg-red-50 transition-colors"
+                    className="text-[7px] px-1.5 py-0.5 rounded font-bold text-red-400 bg-white dark:bg-slate-800 border border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 dark:bg-red-900/20 transition-colors"
                   >✕</button>
                 </div>
               ))}
@@ -522,19 +522,19 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
       )}
 
       {/* Smell lean slider */}
-      <div className="mb-2 bg-white border border-slate-200 rounded-lg p-2">
+      <div className="mb-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-1.5">
-            <span className="text-[7px] text-slate-400 font-semibold uppercase">Smell lean</span>
+            <span className="text-[7px] text-slate-400 dark:text-slate-500 font-semibold uppercase">Smell lean</span>
             <button onClick={() => setSmellLeanEnabled(v => !v)}
               className={`text-[7px] px-1.5 py-0.5 rounded font-bold transition-colors ${
                 smellLeanEnabled
                   ? 'bg-violet-100 text-violet-700 border border-violet-300'
-                  : 'bg-slate-100 text-slate-400 border border-slate-200'
+                  : 'bg-slate-100 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
               }`}
             >{smellLeanEnabled ? 'ON' : 'OFF'}</button>
           </div>
-          <span className="text-[7px] text-slate-400">
+          <span className="text-[7px] text-slate-400 dark:text-slate-500">
             {!smellLeanEnabled ? 'Filter off' : smellLean < 30 ? 'Sour ⬅' : smellLean > 70 ? '➡ Sweet' : 'Balanced'}
           </span>
         </div>
@@ -546,7 +546,7 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
           />
           <span className="text-[8px] text-pink-500 font-bold">Sweet</span>
         </div>
-        <div className="flex justify-between text-[6px] text-slate-300 mt-0.5">
+        <div className="flex justify-between text-[6px] text-slate-300 dark:text-slate-600 mt-0.5">
           <span>Citrus, Berry, Winey</span>
           <span>Caramel, Chocolate, Nutty</span>
         </div>
@@ -554,88 +554,88 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
 
       {/* Save sensory profile */}
       {saveProfileOpen && (
-        <div className="mb-2 bg-emerald-50 border border-emerald-200 rounded-lg p-2">
+        <div className="mb-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-2">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[8px] text-emerald-700 font-semibold uppercase">New Sensory Profile</span>
+            <span className="text-[8px] text-emerald-700 dark:text-emerald-400 font-semibold uppercase">New Sensory Profile</span>
             {saveConfirm && <span className="text-[8px] text-emerald-600 animate-pulse">✓ Saved!</span>}
           </div>
           <div className="space-y-1.5">
             <input value={sensoryProfileName} onChange={e => setSensoryProfileName(e.target.value)}
               placeholder="Profile name (e.g. 'Finca El Mirador tasting')"
-              className="w-full px-2 py-1 text-[9px] border border-emerald-300 rounded font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white"
+              className="w-full px-2 py-1 text-[9px] border border-emerald-300 dark:border-emerald-700 rounded font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white dark:bg-slate-800"
             />
             <div className="grid grid-cols-2 gap-1.5">
               <input value={spCoffeeName} onChange={e => setSpCoffeeName(e.target.value)}
-                placeholder="Coffee name" className="w-full px-2 py-1 text-[9px] border border-slate-300 rounded font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white"
+                placeholder="Coffee name" className="w-full px-2 py-1 text-[9px] border border-slate-300 dark:border-slate-600 rounded font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white dark:bg-slate-800"
               />
               <input value={spRoaster} onChange={e => setSpRoaster(e.target.value)}
-                placeholder="Roaster" className="w-full px-2 py-1 text-[9px] border border-slate-300 rounded font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white"
+                placeholder="Roaster" className="w-full px-2 py-1 text-[9px] border border-slate-300 dark:border-slate-600 rounded font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white dark:bg-slate-800"
               />
               <CoffeeOriginSelect value={spOrigin} onChange={setSpOrigin} placeholder="Origin" size="sm" />
               <div className="col-span-2">
-                <span className="text-[7px] text-slate-400 uppercase font-semibold">Process</span>
+                <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Process</span>
                 <div className="flex gap-1 mt-0.5">
                   <button onClick={() => setSpProcess('')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${!spProcess ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${!spProcess ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Any</button>
                   <button onClick={() => setSpProcess('washed')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'washed' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'washed' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Washed</button>
                   <button onClick={() => setSpProcess('natural')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'natural' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'natural' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Natural</button>
                   <button onClick={() => setSpProcess('honey')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'honey' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'honey' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Honey</button>
                   <button onClick={() => setSpProcess('anaerobic')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'anaerobic' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'anaerobic' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Anaerobic</button>
                   <button onClick={() => setSpProcess('lactic')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'lactic' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'lactic' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Lactic</button>
                   <button onClick={() => setSpProcess('thermal-shock')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'thermal-shock' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'thermal-shock' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border border-amber-300' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Thermal</button>
                 </div>
                 <div className="flex gap-1 mt-0.5">
-                  <span className="text-[6px] text-slate-300 uppercase font-semibold self-center mr-1">Co-fermented</span>
+                  <span className="text-[6px] text-slate-300 dark:text-slate-600 uppercase font-semibold self-center mr-1">Co-fermented</span>
                   <button onClick={() => setSpProcess('co-fermented')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'co-fermented' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'co-fermented' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border border-amber-300' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Co-Fermented</button>
                   <button onClick={() => setSpProcess('carbonic-maceration')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'carbonic-maceration' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'carbonic-maceration' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border border-amber-300' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Carbonic Mac.</button>
                   <button onClick={() => setSpProcess('koji')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'koji' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${spProcess === 'koji' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border border-amber-300' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Koji</button>
                 </div>
               </div>
               <div className="col-span-2">
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[7px] text-slate-400">Roast level</span>
-                  <span className="text-[7px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">{roastLabel}</span>
+                  <span className="text-[7px] text-slate-400 dark:text-slate-500">Roast level</span>
+                  <span className="text-[7px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">{roastLabel}</span>
                 </div>
                 <input type="range" min={0} max={100} value={spRoastValue}
                   onChange={e => handleRoastChange(parseInt(e.target.value))}
                   className="w-full h-1.5 accent-amber-600"
                 />
-                <div className="flex justify-between text-[6px] text-slate-300 mt-0.5">
+                <div className="flex justify-between text-[6px] text-slate-300 dark:text-slate-600 mt-0.5">
                   <span>Nordic</span>
                   <span>Dark</span>
                 </div>
               </div>
               <div className="relative">
                 <button onClick={() => setShowSensorySetupPicker(v => !v)}
-                  className="w-full px-2 py-1 text-[9px] border border-amber-300 rounded bg-amber-50 text-amber-700 font-semibold hover:bg-amber-100 transition-colors text-left"
+                  className="w-full px-2 py-1 text-[9px] border border-amber-300 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-700 font-semibold hover:bg-amber-100 dark:bg-amber-900/30 transition-colors text-left"
                 >📦 Load from Setup</button>
                 {showSensorySetupPicker && (
-                  <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg max-h-36 overflow-y-auto">
+                  <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-36 overflow-y-auto">
                     {Object.keys(beanProfiles).length === 0 && (
-                      <div className="px-2 py-1.5 text-[8px] text-slate-400 italic">No saved bean profiles</div>
+                      <div className="px-2 py-1.5 text-[8px] text-slate-400 dark:text-slate-500 italic">No saved bean profiles</div>
                     )}
                     {Object.entries(beanProfiles).map(([key, bp]) => (
                       <button key={key} onClick={() => loadBeanProfileToForm(bp)}
-                        className="w-full text-left px-2 py-1.5 text-[9px] text-slate-700 hover:bg-amber-50 font-mono"
+                        className="w-full text-left px-2 py-1.5 text-[9px] text-slate-700 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 font-mono"
                       >{key} — {bp.coffeeName}</button>
                     ))}
                   </div>
@@ -651,14 +651,14 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
 
       {/* Search */}
       <div className="relative mb-2">
-        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-300">🔍</span>
+        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-300 dark:text-slate-600">🔍</span>
         <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search flavors by name, description, or family..."
-          className="w-full pl-6 pr-2 py-1.5 text-[10px] border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white"
+          className="w-full pl-6 pr-2 py-1.5 text-[10px] border border-slate-200 dark:border-slate-700 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white dark:bg-slate-800"
         />
         {searchQuery && (
           <button onClick={() => setSearchQuery('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-slate-300 hover:text-slate-500"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:text-slate-400"
           >✕</button>
         )}
       </div>
@@ -668,35 +668,35 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
         <div className="mb-2 bg-gradient-to-br from-violet-50 to-white border border-violet-200 rounded-lg p-2.5">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[7px] text-violet-500 font-semibold uppercase tracking-wider">Sensory Composition</span>
-            <span className="text-[7px] text-slate-400">{analysis.n} flavors · {analysis.wcrCount} WCR · {analysis.customCount} custom</span>
+            <span className="text-[7px] text-slate-400 dark:text-slate-500">{analysis.n} flavors · {analysis.wcrCount} WCR · {analysis.customCount} custom</span>
           </div>
 
           {/* Average taste profile */}
           <div className="mb-2">
-            <span className="text-[7px] text-slate-400 uppercase font-semibold">Taste profile</span>
+            <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Taste profile</span>
             <div className="flex flex-col gap-0.5 mt-1">
               {TASTE_LABELS.map(t => {
                 const val = analysis.avgTaste[t.key];
                 if (val === 0) return null;
                 return (
                   <div key={t.key} className="flex items-center gap-1">
-                    <span className="text-[6px] text-slate-400 w-6 text-right">{t.label}</span>
+                    <span className="text-[6px] text-slate-400 dark:text-slate-500 w-6 text-right">{t.label}</span>
                     <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${t.color}`} style={{ width: `${(val / 5) * 100}%` }} />
                     </div>
-                    <span className="text-[7px] text-slate-400 w-3 text-right">{val}</span>
+                    <span className="text-[7px] text-slate-400 dark:text-slate-500 w-3 text-right">{val}</span>
                   </div>
                 );
               })}
               {Object.values(analysis.avgTaste).every(v => v === 0) && (
-                <span className="text-[7px] text-slate-300 italic">No dominant taste</span>
+                <span className="text-[7px] text-slate-300 dark:text-slate-600 italic">No dominant taste</span>
               )}
             </div>
           </div>
 
           {/* Big category breakdown */}
           <div className="mb-1.5">
-            <span className="text-[7px] text-slate-400 uppercase font-semibold">Aroma categories</span>
+            <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Aroma categories</span>
             <div className="flex gap-1 mt-1 flex-wrap">
               {BIG_CATEGORIES.map(cat => {
                 const count = analysis.categoryCounts[cat.key] ?? 0;
@@ -706,7 +706,7 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
                   <div key={cat.key} className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: cat.bgColor, borderColor: cat.borderColor, borderWidth: 1 }}>
                     <span className="text-[8px]" style={{ color: cat.color }}>●</span>
                     <span className={`text-[7px] font-semibold ${cat.textColor}`}>{cat.label}</span>
-                    <span className="text-[7px] text-slate-400">{count} ({pct}%)</span>
+                    <span className="text-[7px] text-slate-400 dark:text-slate-500">{count} ({pct}%)</span>
                   </div>
                 );
               })}
@@ -715,11 +715,11 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
 
           {/* Subgroup breakdown */}
           <div className="mb-1.5">
-            <span className="text-[7px] text-slate-400 uppercase font-semibold">Notes</span>
+            <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Notes</span>
             <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
               {Object.entries(analysis.subgroupCounts).sort((a, b) => b[1] - a[1]).map(([label, count]) => (
-                <span key={label} className="text-[8px] text-slate-600">
-                  {label} <span className="text-slate-300">×{count}</span>
+                <span key={label} className="text-[8px] text-slate-600 dark:text-slate-400">
+                  {label} <span className="text-slate-300 dark:text-slate-600">×{count}</span>
                 </span>
               ))}
             </div>
@@ -728,13 +728,13 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
           {/* Taste vibrancy vs depth */}
           <div className="flex gap-3">
             <div className="flex-1">
-              <span className="text-[6px] text-slate-400 uppercase">Vibrancy</span>
+              <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Vibrancy</span>
               <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
                 <div className="h-full rounded-full bg-pink-400" style={{ width: `${analysis.vibrancyScore}%` }} />
               </div>
             </div>
             <div className="flex-1">
-              <span className="text-[6px] text-slate-400 uppercase">Depth</span>
+              <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Depth</span>
               <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
                 <div className="h-full rounded-full bg-orange-600" style={{ width: `${analysis.depthScore}%` }} />
               </div>
@@ -747,7 +747,7 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
       {hasSearch ? (
         <div className="space-y-1.5">
           {filteredFlavors!.length === 0 ? (
-            <div className="text-center py-6 text-[9px] text-slate-400">No flavors match "<strong className="text-slate-500">{searchQuery}</strong>"</div>
+            <div className="text-center py-6 text-[9px] text-slate-400 dark:text-slate-500">No flavors match "<strong className="text-slate-500 dark:text-slate-400">{searchQuery}</strong>"</div>
           ) : (
             filteredFlavors!.map(f => (
               <FlavorCard key={f.id} flavor={f}
@@ -775,12 +775,12 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
                 >
                   <div className="flex items-center gap-1.5">
                     <span className={`text-[10px] font-bold ${cat.textColor}`}>{cat.label}</span>
-                    <span className="text-[8px] text-slate-400">{catTotal}</span>
+                    <span className="text-[8px] text-slate-400 dark:text-slate-500">{catTotal}</span>
                     {catChecked > 0 && (
                       <span className="text-[8px] text-violet-500 bg-violet-100 rounded px-1">{catChecked}</span>
                     )}
                   </div>
-                  <span className="text-[8px] text-slate-400">{isCollapsed ? '▶' : '▼'}</span>
+                  <span className="text-[8px] text-slate-400 dark:text-slate-500">{isCollapsed ? '▶' : '▼'}</span>
                 </button>
                 {!isCollapsed && (
                   <div className="px-2.5 pb-2 space-y-2">
@@ -791,8 +791,8 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
                         <div key={sg.key}>
                           <div className="flex items-center gap-1 mb-1 mt-1">
                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: sg.color }} />
-                            <span className="text-[8px] font-semibold text-slate-500">{sg.label}</span>
-                            <span className="text-[7px] text-slate-300">{entries.length}</span>
+                            <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400">{sg.label}</span>
+                            <span className="text-[7px] text-slate-300 dark:text-slate-600">{entries.length}</span>
                           </div>
                           <div className="space-y-1.5">
                             {entries.map(f => (

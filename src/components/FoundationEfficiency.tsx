@@ -30,7 +30,7 @@ function barColor(v: number) {
 }
 
 function labelColor(v: number) {
-  if (v >= 70) return 'text-emerald-700';
+  if (v >= 70) return 'text-emerald-700 dark:text-emerald-400';
   if (v >= 40) return 'text-amber-700';
   return 'text-red-600';
 }
@@ -110,9 +110,9 @@ export default function FoundationEfficiency({
   ];
 
   return (
-    <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2">
+    <div className="rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-3 py-2">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Foundation Efficiency</span>
+        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Foundation Efficiency</span>
         <span className={`text-[13px] font-bold ${labelColor(composite)}`}>{composite}%</span>
       </div>
       <div className="space-y-1.5">
@@ -121,7 +121,7 @@ export default function FoundationEfficiency({
             <div className="flex items-center justify-between text-[7px] mb-0.5 cursor-pointer select-none"
               onClick={() => toggle(b.key)}>
               <span className={`font-semibold ${labelColor(b.score)}`}>{b.label}</span>
-              <span className="text-slate-400">{b.desc}</span>
+              <span className="text-slate-400 dark:text-slate-500">{b.desc}</span>
               <span className={`font-bold ${labelColor(b.score)}`}>{b.score}%</span>
             </div>
             <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
@@ -129,7 +129,7 @@ export default function FoundationEfficiency({
                 style={{ width: `${b.score}%` }} />
             </div>
             {expanded === b.key && (
-              <div className="text-[7px] text-slate-500 mt-1 px-0.5 leading-relaxed">
+              <div className="text-[7px] text-slate-500 dark:text-slate-400 mt-1 px-0.5 leading-relaxed">
                 {b.key === 'grind' && grindAdvice(drainRate, finesPct, grindSetting)}
                 {b.key === 'ratio' && ratioAdvice(ratio)}
                 {b.key === 'turb' && turbAdvice(pourRate, pourHeightCm, channelRisk)}

@@ -920,30 +920,30 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="min-h-screen bg-[#f8f6f0] flex flex-col overflow-x-hidden">
-      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-slate-200">
+      <header className="sticky top-0 z-10 bg-white dark:bg-slate-800/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <h1 className="text-lg font-bold text-slate-800">🔍 Diagnostic</h1>
           <div className="flex items-center gap-1.5">
             <input ref={fileRef} type="file" accept=".json" onChange={handleLoad} className="hidden" />
-            <button onClick={handleSave} className="px-2 py-1 text-[10px] font-semibold border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-100">Save</button>
-            <button onClick={() => fileRef.current?.click()} className="px-2 py-1 text-[10px] font-semibold border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-100">Load</button>
+            <button onClick={handleSave} className="px-2 py-1 text-[10px] font-semibold border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">Save</button>
+            <button onClick={() => fileRef.current?.click()} className="px-2 py-1 text-[10px] font-semibold border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">Load</button>
             <div className="relative">
-              <button onClick={() => setShowMemoPicker(p => !p)} className={`px-2 py-1 text-[10px] font-semibold border rounded-lg transition-colors ${loadedMemoProfile ? 'bg-violet-100 border-violet-200 text-violet-700' : 'border-slate-200 text-slate-500 hover:bg-slate-100'}`}>📥 Memo</button>
+              <button onClick={() => setShowMemoPicker(p => !p)} className={`px-2 py-1 text-[10px] font-semibold border rounded-lg transition-colors ${loadedMemoProfile ? 'bg-violet-100 border-violet-200 text-violet-700' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>📥 Memo</button>
               {showMemoPicker && (() => {
                 let profiles: SensoryProfile[] = [];
                 try { profiles = JSON.parse(localStorage.getItem('belka.sensoryProfiles') || '[]'); } catch {}
                 return (
-                  <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
-                    <div className="p-1.5 border-b border-slate-100 text-[8px] font-semibold text-slate-400">Load from Sensory Memo</div>
+                  <div className="absolute right-0 top-full mt-1 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                    <div className="p-1.5 border-b border-slate-100 dark:border-slate-700 text-[8px] font-semibold text-slate-400 dark:text-slate-500">Load from Sensory Memo</div>
                     {profiles.length === 0 ? (
-                      <div className="p-3 text-[9px] text-slate-400 italic text-center">No saved profiles</div>
+                      <div className="p-3 text-[9px] text-slate-400 dark:text-slate-500 italic text-center">No saved profiles</div>
                     ) : profiles.map(p => (
                       <button key={p.id} onClick={() => { setLoadedMemoProfile(p); setShowMemoPicker(false); }}
                         className="w-full text-left px-2 py-1.5 text-[9px] hover:bg-violet-50 border-b border-slate-50 last:border-0"
                       >
-                        <span className="font-semibold text-slate-700">{p.name}</span>
-                        {p.coffeeName && <span className="text-slate-400 ml-1">— {p.coffeeName}</span>}
-                        <div className="text-[7px] text-slate-400">{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}{p.roastLevel ? ` · ${p.roastLevel}` : ''}</div>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">{p.name}</span>
+                        {p.coffeeName && <span className="text-slate-400 dark:text-slate-500 ml-1">— {p.coffeeName}</span>}
+                        <div className="text-[7px] text-slate-400 dark:text-slate-500">{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}{p.roastLevel ? ` · ${p.roastLevel}` : ''}</div>
                       </button>
                     ))}
                   </div>
@@ -951,9 +951,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               })()}
             </div>
             {loadedMemoProfile && (
-              <button onClick={() => { setLoadedMemoProfile(null); setShowMemoPicker(false); }} className="px-1.5 py-1 text-[9px] font-semibold text-slate-400 hover:text-red-500">✕</button>
+              <button onClick={() => { setLoadedMemoProfile(null); setShowMemoPicker(false); }} className="px-1.5 py-1 text-[9px] font-semibold text-slate-400 dark:text-slate-500 hover:text-red-500 dark:text-red-400">✕</button>
             )}
-            <button onClick={onClose} className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100">✕ Close</button>
+            <button onClick={onClose} className="px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">✕ Close</button>
           </div>
         </div>
         {/* Hierarchy bar — 5-layer workflow model */}
@@ -968,25 +968,25 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
             ].map((layer, i) => (
               <button key={layer.id} onClick={() => setTab(layer.id as typeof tab)}
                 className={`flex items-center gap-0.5 px-1.5 py-1 rounded transition-colors ${
-                  tab === layer.id ? 'bg-amber-100 text-amber-800' : 'text-slate-400 hover:text-slate-600'
+                  tab === layer.id ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'
                 }`}
               >
                 <span>{layer.icon}</span>
                 <span>{layer.label}</span>
-                {i < 4 && <span className="text-slate-300 mx-0.5">→</span>}
+                {i < 4 && <span className="text-slate-300 dark:text-slate-600 mx-0.5">→</span>}
               </button>
             ))}
           </div>
         </div>
         <div className="max-w-4xl mx-auto px-4 flex gap-1 flex-wrap">
-          <button onClick={() => setTab('profile')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'profile' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>📊 Sensory</button>
-          <button onClick={() => setTab('composition')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'composition' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>🥪 Composition</button>
-          <button onClick={() => setTab('extraction')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'extraction' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>📐 Extraction</button>
-          <button onClick={() => setTab('internal')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'internal' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>🧠 Foundations</button>
-          <button onClick={() => setTab('timing')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'timing' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>⏱ Timing</button>
-          <button onClick={() => setTab('hidden')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'hidden' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>👁 Hidden Physics</button>
-          <button onClick={() => setTab('external')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'external' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>🌍 External</button>
-          <button onClick={() => setTab('symptoms')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'symptoms' ? 'bg-white border-slate-200 text-slate-800 -mb-px' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>☣ Symptoms</button>
+          <button onClick={() => setTab('profile')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'profile' ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 -mb-px' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}>📊 Sensory</button>
+          <button onClick={() => setTab('composition')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'composition' ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 -mb-px' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}>🥪 Composition</button>
+          <button onClick={() => setTab('extraction')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'extraction' ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 -mb-px' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}>📐 Extraction</button>
+          <button onClick={() => setTab('internal')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'internal' ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 -mb-px' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}>🧠 Foundations</button>
+          <button onClick={() => setTab('timing')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'timing' ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 -mb-px' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}>⏱ Timing</button>
+          <button onClick={() => setTab('hidden')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'hidden' ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 -mb-px' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}>👁 Hidden Physics</button>
+          <button onClick={() => setTab('external')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'external' ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 -mb-px' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}>🌍 External</button>
+          <button onClick={() => setTab('symptoms')} className={`px-3 py-1.5 text-[10px] font-semibold rounded-t-lg border-t border-l border-r transition-colors ${tab === 'symptoms' ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 -mb-px' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}>☣ Symptoms</button>
         </div>
       </header>
 
@@ -1004,14 +1004,14 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               const bigCats: Record<string, number> = {};
               checkedFlavors.forEach(f => { bigCats[f.bigCategory] = (bigCats[f.bigCategory] || 0) + 1; });
               return (
-              <div className="bg-white rounded-xl border border-violet-200 shadow-sm p-3">
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-violet-200 shadow-sm p-3">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-[10px] font-bold text-violet-700">🧪 PRE-BREW REFERENCE</h3>
-                  <button onClick={() => setLoadedMemoProfile(null)} className="text-[8px] text-slate-400 hover:text-red-500 font-semibold">✕ Clear</button>
+                  <button onClick={() => setLoadedMemoProfile(null)} className="text-[8px] text-slate-400 dark:text-slate-500 hover:text-red-500 dark:text-red-400 font-semibold">✕ Clear</button>
                 </div>
                 {(loadedMemoProfile.coffeeName || loadedMemoProfile.roaster || loadedMemoProfile.origin || loadedMemoProfile.process || loadedMemoProfile.roastLevel) && (
-                  <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[7px] text-slate-500 mb-2">
-                    {loadedMemoProfile.coffeeName && <span className="font-semibold text-slate-700">{loadedMemoProfile.coffeeName}</span>}
+                  <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[7px] text-slate-500 dark:text-slate-400 mb-2">
+                    {loadedMemoProfile.coffeeName && <span className="font-semibold text-slate-700 dark:text-slate-300">{loadedMemoProfile.coffeeName}</span>}
                     {loadedMemoProfile.roaster && <span>roasted by {loadedMemoProfile.roaster}</span>}
                     {loadedMemoProfile.origin && <span>· {loadedMemoProfile.origin}</span>}
                     {loadedMemoProfile.process && <span>· {loadedMemoProfile.process}</span>}
@@ -1020,15 +1020,15 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 )}
                 {/* Taste composition bars */}
                 <div className="mb-2">
-                  <div className="text-[7px] font-semibold text-slate-500 mb-1">Expected Taste</div>
+                  <div className="text-[7px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Expected Taste</div>
                   <div className="flex gap-2">
                     {TASTE_LABELS.map(t => (
                       <div key={t.key} className="flex-1">
-                        <div className="text-[6px] text-slate-400 text-center mb-0.5">{t.label}</div>
+                        <div className="text-[6px] text-slate-400 dark:text-slate-500 text-center mb-0.5">{t.label}</div>
                         <div className="h-8 rounded-full overflow-hidden bg-slate-100 flex flex-col-reverse">
                           <div className={`${t.color} transition-all duration-200`} style={{ height: `${(avgTaste[t.key] / 5) * 100}%` }} />
                         </div>
-                        <div className="text-[7px] font-bold text-slate-600 text-center">{avgTaste[t.key]}</div>
+                        <div className="text-[7px] font-bold text-slate-600 dark:text-slate-400 text-center">{avgTaste[t.key]}</div>
                       </div>
                     ))}
                   </div>
@@ -1042,38 +1042,38 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 {/* Flavor chips */}
                 <div className="flex flex-wrap gap-1">
                   {checkedFlavors.map(f => (
-                    <span key={f.id} className="text-[7px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{f.emoji} {f.label}</span>
+                    <span key={f.id} className="text-[7px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:text-slate-400">{f.emoji} {f.label}</span>
                   ))}
                 </div>
               </div>
               );
             })()}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-bold text-slate-700">Score Profile</h2>
+                <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300">Score Profile</h2>
                 <div className="flex items-center gap-1">
                   <button onClick={() => setProfileMode('slider')}
-                    className={`px-2 py-0.5 text-[9px] font-semibold rounded transition-colors ${profileMode === 'slider' ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-400 hover:text-slate-600'}`}
+                    className={`px-2 py-0.5 text-[9px] font-semibold rounded transition-colors ${profileMode === 'slider' ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}
                   >🎚 Sliders</button>
                   <button onClick={() => setProfileMode('chip')}
-                    className={`px-2 py-0.5 text-[9px] font-semibold rounded transition-colors ${profileMode === 'chip' ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-400 hover:text-slate-600'}`}
+                    className={`px-2 py-0.5 text-[9px] font-semibold rounded transition-colors ${profileMode === 'chip' ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}
                   >🏷 Chips</button>
                 </div>
               </div>
-              <div className="flex items-center gap-3 mb-3 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-xs font-semibold text-slate-600">🎯 Aim for</span>
+              <div className="flex items-center gap-3 mb-3 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-700">
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">🎯 Aim for</span>
                 <div className="flex items-center gap-1">
                   {[5, 6, 7, 8, 9].map(v => (
                     <button key={v} onClick={() => setImproveTo(v)}
-                      className={`px-2 py-0.5 text-xs font-bold rounded transition-colors ${improveTo === v ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                      className={`px-2 py-0.5 text-xs font-bold rounded transition-colors ${improveTo === v ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                     >{v}</button>
                   ))}
                 </div>
-                <span className="text-[10px] text-slate-400 ml-auto">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-auto">
                   {improveTo === 5 ? 'Baseline — start here' : improveTo === 6 ? 'Good — solid starting point' : improveTo === 7 ? 'Great — one step at a time' : 'Ambitious — take it slow'}
                 </span>
               </div>
-              <div className="mb-3 text-[9px] text-slate-400 italic leading-relaxed bg-amber-50/50 border border-amber-100 rounded-lg p-2">
+              <div className="mb-3 text-[9px] text-slate-400 dark:text-slate-500 italic leading-relaxed bg-amber-50 dark:bg-amber-900/20/50 border border-amber-100 rounded-lg p-2">
                 You don't have to fix everything at once. The system shows <strong>one starting point</strong> below. Pick what feels right and ignore the rest for now.
               </div>
               <div className="flex flex-col md:flex-row items-start gap-6">
@@ -1082,11 +1082,11 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     <RadarChart profile={profile} onChange={(k, v) => setScore(k as keyof Profile, v)} />
                     <div className="flex items-center gap-1">
                       <button onClick={() => setSnapshots(prev => [...prev, { profile: { ...profile }, name: `S${prev.length + 1}`, time: new Date() }])}
-                        className="text-[8px] font-semibold border border-dashed border-slate-200 text-slate-400 hover:text-slate-600 px-2 py-0.5 rounded"
+                        className="text-[8px] font-semibold border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded"
                       >📸 Snapshot</button>
                       {snapshots.length > 0 && (
                         <button onClick={() => setShowSnapshots(prev => !prev)}
-                          className={`text-[8px] font-semibold px-2 py-0.5 rounded border transition-colors ${showSnapshots ? 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-slate-200' : 'bg-white border-dashed border-slate-200 text-slate-400 hover:text-slate-600'}`}
+                          className={`text-[8px] font-semibold px-2 py-0.5 rounded border transition-colors ${showSnapshots ? 'bg-slate-100 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200' : 'bg-white dark:bg-slate-800 border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400'}`}
                         >{showSnapshots ? '🙈 Hide' : `👁 ${snapshots.length}`}</button>
                       )}
                     </div>
@@ -1094,11 +1094,11 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   {showSnapshots && snapshots.length > 0 && (
                     <div className="flex gap-2 overflow-x-auto pb-1 max-w-[324px]">
                       {snapshots.map((s, i) => (
-                        <div key={i} className="flex flex-col items-center gap-0.5 bg-slate-50 rounded-lg p-1.5 border border-slate-100 shrink-0 w-[104px] cursor-pointer hover:border-slate-300 transition-colors"
+                        <div key={i} className="flex flex-col items-center gap-0.5 bg-slate-50 dark:bg-slate-900/50 rounded-lg p-1.5 border border-slate-100 dark:border-slate-700 shrink-0 w-[104px] cursor-pointer hover:border-slate-300 dark:border-slate-600 transition-colors"
                           onClick={() => setProfile({ ...s.profile })}
                         >
                           <MiniRadar profile={s.profile} label={s.name} />
-                          <div className="w-full text-[6px] text-slate-500 leading-tight">
+                          <div className="w-full text-[6px] text-slate-500 dark:text-slate-400 leading-tight">
                             {AXES.map(k => (
                               <div key={k} className="flex justify-between gap-1">
                                 <span style={{ color: scoreContext(s.profile[k]).color }} className="truncate">{AXIS_LABELS[k]}</span>
@@ -1106,9 +1106,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                               </div>
                             ))}
                           </div>
-                          <span className="text-[5px] text-slate-300">{s.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-[5px] text-slate-300 dark:text-slate-600">{s.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           <button onClick={e => { e.stopPropagation(); setSnapshots(prev => prev.filter((_, j) => j !== i)); }}
-                            className="text-[7px] text-slate-300 hover:text-red-400 font-semibold w-full text-right -mt-0.5"
+                            className="text-[7px] text-slate-300 dark:text-slate-600 hover:text-red-400 font-semibold w-full text-right -mt-0.5"
                           >✕</button>
                         </div>
                       ))}
@@ -1123,22 +1123,22 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       return (
                         <div key={k} className="flex flex-col items-center gap-1.5">
                           <button onClick={() => toggleAward(k)}
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${chipAwards[k] ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
-                          >{AXIS_LABELS[k]}{k === 'overall' && <span className="ml-1 text-[8px] font-normal text-slate-400">|</span>}{k === 'overall' && <button onClick={e => { e.stopPropagation(); setProfile(p => ({ ...p, overall: Math.round((p.acidity + p.sweetness + p.flavor + p.mouthfeel + p.aftertaste) / 5) })); }} className="ml-0.5 text-[8px] text-slate-400 hover:text-amber-600" title="Set as mean of all scores">∑</button>}</button>
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${chipAwards[k] ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-500 text-amber-800 dark:text-amber-200 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:border-slate-600 hover:text-slate-600 dark:text-slate-400'}`}
+                          >{AXIS_LABELS[k]}{k === 'overall' && <span className="ml-1 text-[8px] font-normal text-slate-400 dark:text-slate-500">|</span>}{k === 'overall' && <button onClick={e => { e.stopPropagation(); setProfile(p => ({ ...p, overall: Math.round((p.acidity + p.sweetness + p.flavor + p.mouthfeel + p.aftertaste) / 5) })); }} className="ml-0.5 text-[8px] text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:text-amber-400" title="Set as mean of all scores">∑</button>}</button>
                           {chipAwards[k] && (
                             <div className="flex flex-col items-center gap-1">
                               <div className="flex items-center gap-1.5 w-28">
-                                <span className="text-[7px] text-slate-400 font-mono w-2 text-right">0</span>
+                                <span className="text-[7px] text-slate-400 dark:text-slate-500 font-mono w-2 text-right">0</span>
                                 <input type="range" min={0} max={9} value={profile[k as keyof Profile]} onChange={e => setScore(k as keyof Profile, parseInt(e.target.value))}
                                   className="flex-1 h-1 appearance-none rounded-full bg-slate-200 accent-amber-600 cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-600 [&::-webkit-slider-thumb]:shadow-sm"
                                 />
-                                <span className="text-[7px] text-slate-400 font-mono w-2">9</span>
+                                <span className="text-[7px] text-slate-400 dark:text-slate-500 font-mono w-2">9</span>
                               </div>
                               {chips && chips.reasons.length > 0 && (
                                 <div className="flex flex-wrap gap-1 justify-center max-w-[140px]">
                                   {chips.reasons.map(reason => (
                                     <button key={reason} onClick={() => toggleReason(k, reason)}
-                                      className={`px-1.5 py-0.5 text-[8px] font-medium rounded transition-colors ${selectedReasons.includes(reason) ? 'bg-slate-200 text-slate-700' : 'bg-white border border-dashed border-slate-200 text-slate-400 hover:bg-slate-50'}`}
+                                      className={`px-1.5 py-0.5 text-[8px] font-medium rounded transition-colors ${selectedReasons.includes(reason) ? 'bg-slate-200 text-slate-700 dark:text-slate-300' : 'bg-white dark:bg-slate-800 border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                                     >{reason}</button>
                                   ))}
                                 </div>
@@ -1146,8 +1146,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                               {SENSORY_VOCAB[k] && (
                                 <div className="flex flex-wrap gap-1 justify-center mt-0.5 max-w-[200px]">
                                   {SENSORY_VOCAB[k].categories.map((cat, catIdx) => (
-                                    <div key={cat.name} className={`flex flex-wrap gap-0.5 items-baseline w-full ${catIdx === 0 ? 'bg-amber-50/50 rounded p-1 mb-0.5 border border-amber-200/30' : ''}`}>
-                            <span className={`text-[6px] font-semibold uppercase tracking-wider ${POLARITY_COLORS[cat.polarity] || 'text-slate-400'}`}>{catIdx === 0 && '⚙️ '}{cat.name}{cat.acidType && cat.words.some(w => w.label === notedDescriptors[k]) && <span className="ml-1 text-[5px] text-slate-400 font-normal">({cat.acidType})</span>}</span>
+                                    <div key={cat.name} className={`flex flex-wrap gap-0.5 items-baseline w-full ${catIdx === 0 ? 'bg-amber-50 dark:bg-amber-900/20/50 rounded p-1 mb-0.5 border border-amber-200 dark:border-amber-800/30' : ''}`}>
+                            <span className={`text-[6px] font-semibold uppercase tracking-wider ${POLARITY_COLORS[cat.polarity] || 'text-slate-400 dark:text-slate-500'}`}>{catIdx === 0 && '⚙️ '}{cat.name}{cat.acidType && cat.words.some(w => w.label === notedDescriptors[k]) && <span className="ml-1 text-[5px] text-slate-400 dark:text-slate-500 font-normal">({cat.acidType})</span>}</span>
                                         {cat.words.map(w => (
                                           <button key={w.label} onClick={() => {
                                             setNotedDescriptors(prev => {
@@ -1160,7 +1160,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                                               return { ...prev, [k]: next };
                                             });
                                           }}
-                                          className={`px-1 py-0.5 text-[7px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === w.label ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300'}`}
+                                          className={`px-1 py-0.5 text-[7px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === w.label ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-500 text-amber-800 dark:text-amber-200 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 hover:border-slate-300 dark:border-slate-600'}`}
                                         >{w.emoji} {w.label}{notedDescriptors[k] === w.label ? ' ✓' : ''}</button>
                                       ))}
                                     </div>
@@ -1181,25 +1181,25 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       return (
                         <div key={k}>
                           <div className="flex items-center justify-between mb-0.5">
-                            <span className="text-xs font-semibold text-slate-600 capitalize">{AXIS_LABELS[k]}</span>
-                            <span className="flex items-center gap-1"><span className="text-[11px] font-bold" style={{ color: scoreContext(profile[k]).color }}>{profile[k]} <span className="font-normal text-slate-400 text-[10px]">({scoreContext(profile[k]).label})</span></span>{k === 'overall' && <button onClick={() => setProfile(p => ({ ...p, overall: Math.round((p.acidity + p.sweetness + p.flavor + p.mouthfeel + p.aftertaste) / 5) }))} className="text-[8px] text-slate-400 hover:text-amber-600 border border-slate-200 hover:border-amber-400 rounded px-1 py-0.5" title="Set as mean of all scores">∑</button>}</span>
+                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 capitalize">{AXIS_LABELS[k]}</span>
+                            <span className="flex items-center gap-1"><span className="text-[11px] font-bold" style={{ color: scoreContext(profile[k]).color }}>{profile[k]} <span className="font-normal text-slate-400 dark:text-slate-500 text-[10px]">({scoreContext(profile[k]).label})</span></span>{k === 'overall' && <button onClick={() => setProfile(p => ({ ...p, overall: Math.round((p.acidity + p.sweetness + p.flavor + p.mouthfeel + p.aftertaste) / 5) }))} className="text-[8px] text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:text-amber-400 border border-slate-200 dark:border-slate-700 hover:border-amber-400 rounded px-1 py-0.5" title="Set as mean of all scores">∑</button>}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] text-slate-400 font-mono w-3 text-right">0</span>
+                            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono w-3 text-right">0</span>
                             <input type="range" min={0} max={9} value={profile[k]} onChange={e => setScore(k, parseInt(e.target.value))}
                               className="flex-1 h-1.5 appearance-none rounded-full bg-slate-200 accent-amber-600 cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-600 [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
                             />
-                            <span className="text-[9px] text-slate-400 font-mono w-3">9</span>
+                            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono w-3">9</span>
                           </div>
                           {chips && (
                               <div className="flex flex-wrap gap-1 mt-1.5">
                                 {SENSORY_VOCAB[k] ? (
                                   SENSORY_VOCAB[k].categories.map((cat, catIdx) => (
-                                    <div key={cat.name} className={`flex flex-wrap gap-0.5 items-baseline w-full ${catIdx === 0 ? 'bg-amber-50/50 rounded p-1 mb-0.5 border border-amber-200/30' : ''}`}>
-                                       <span className={`text-[7px] font-semibold mr-0.5 ${POLARITY_COLORS[cat.polarity] || 'text-slate-400'}`}>{catIdx === 0 && '⚙️ '}{cat.name}{cat.acidType && cat.words.some(w => w.label === notedDescriptors[k]) && <span className="ml-1 text-[5px] text-slate-400 font-normal">({cat.acidType})</span>}</span>
+                                    <div key={cat.name} className={`flex flex-wrap gap-0.5 items-baseline w-full ${catIdx === 0 ? 'bg-amber-50 dark:bg-amber-900/20/50 rounded p-1 mb-0.5 border border-amber-200 dark:border-amber-800/30' : ''}`}>
+                                       <span className={`text-[7px] font-semibold mr-0.5 ${POLARITY_COLORS[cat.polarity] || 'text-slate-400 dark:text-slate-500'}`}>{catIdx === 0 && '⚙️ '}{cat.name}{cat.acidType && cat.words.some(w => w.label === notedDescriptors[k]) && <span className="ml-1 text-[5px] text-slate-400 dark:text-slate-500 font-normal">({cat.acidType})</span>}</span>
                                       {cat.words.map(w => (
                                         <button key={w.label} onClick={() => setNotedDescriptors(prev => ({ ...prev, [k]: prev[k] === w.label ? null : w.label }))}
-                                          className={`px-1.5 py-0.5 text-[8px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === w.label ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'}`}
+                                          className={`px-1.5 py-0.5 text-[8px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === w.label ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-500 text-amber-800 dark:text-amber-200 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 hover:border-slate-300 dark:border-slate-600'}`}
                                         >{w.emoji} {w.label}{notedDescriptors[k] === w.label ? ' ✓' : ''}</button>
                                       ))}
                                     </div>
@@ -1209,14 +1209,14 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                                     <button key={chip.label} onClick={() => {
                                       setNotedDescriptors(prev => ({ ...prev, [k]: prev[k] === chip.label ? null : chip.label }));
                                     }}
-                                      className={`px-2 py-0.5 text-[9px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === chip.label ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'}`}
+                                      className={`px-2 py-0.5 text-[9px] font-medium rounded-full border transition-colors ${notedDescriptors[k] === chip.label ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-500 text-amber-800 dark:text-amber-200 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 hover:border-slate-300 dark:border-slate-600'}`}
                                     >{chip.label}{notedDescriptors[k] === chip.label ? ' ✓' : ''}</button>
                                   ))
                                 )}
-                                {chips.reasons.length > 0 && <span className="text-[8px] text-slate-400 font-medium mt-0.5 mx-0.5">·</span>}
+                                {chips.reasons.length > 0 && <span className="text-[8px] text-slate-400 dark:text-slate-500 font-medium mt-0.5 mx-0.5">·</span>}
                                 {chips.reasons.map(reason => (
                                   <button key={reason} onClick={() => toggleReason(k, reason)}
-                                    className={`px-1.5 py-0.5 text-[8px] font-medium rounded transition-colors ${selectedReasons.includes(reason) ? 'bg-slate-200 text-slate-700' : 'bg-white border border-dashed border-slate-200 text-slate-400 hover:bg-slate-50'}`}
+                                    className={`px-1.5 py-0.5 text-[8px] font-medium rounded transition-colors ${selectedReasons.includes(reason) ? 'bg-slate-200 text-slate-700 dark:text-slate-300' : 'bg-white dark:bg-slate-800 border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                                   >{reason}</button>
                                 ))}
                 </div>
@@ -1224,20 +1224,20 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               </div>
                       );
                     })}
-                    <div className="pt-2 border-t border-slate-100">
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-500">Mean Score</span>
-                        <span className="text-lg font-bold text-slate-700">{total.toFixed(1)} <span className="text-xs font-normal text-slate-400">/ 9</span></span>
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Mean Score</span>
+                        <span className="text-lg font-bold text-slate-700 dark:text-slate-300">{total.toFixed(1)} <span className="text-xs font-normal text-slate-400 dark:text-slate-500">/ 9</span></span>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mt-3">
-                <div className="text-[10px] font-bold text-slate-500 mb-1.5">🎭 Shadow Judge</div>
+              <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 mt-3">
+                <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">🎭 Shadow Judge</div>
                 {!judgeSummoned ? (
                   <button onClick={() => setJudgeSummoned(true)}
-                    className="text-[9px] text-slate-500 hover:text-amber-700 bg-white border border-dashed border-slate-300 hover:border-amber-400 rounded-lg px-3 py-2 w-full transition-colors"
+                    className="text-[9px] text-slate-500 dark:text-slate-400 hover:text-amber-700 bg-white dark:bg-slate-800 border border-dashed border-slate-300 dark:border-slate-600 hover:border-amber-400 rounded-lg px-3 py-2 w-full transition-colors"
                   >🔮 Summon Shadow Judge</button>
                 ) : (
                   <>
@@ -1245,59 +1245,59 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   <div className="space-y-0.5 mb-2">
                     {shadowJudge.lines.map((l, i) => (
                       <div key={i} className="flex items-start gap-1.5 text-[9px]">
-                        <span className="font-semibold text-slate-500 shrink-0 w-14">{AXIS_LABELS[l.axis]}</span>
-                        <span className={`${l.tone === 'cheer' ? 'text-emerald-700' : l.tone === 'pressure' ? 'text-red-600' : 'text-amber-600'}`}>{l.tone === 'cheer' ? '🟢 ' : l.tone === 'pressure' ? '🔴 ' : '🟡 '}{l.score} — {l.text}</span>
+                        <span className="font-semibold text-slate-500 dark:text-slate-400 shrink-0 w-14">{AXIS_LABELS[l.axis]}</span>
+                        <span className={`${l.tone === 'cheer' ? 'text-emerald-700 dark:text-emerald-400' : l.tone === 'pressure' ? 'text-red-600' : 'text-amber-600 dark:text-amber-400'}`}>{l.tone === 'cheer' ? '🟢 ' : l.tone === 'pressure' ? '🔴 ' : '🟡 '}{l.score} — {l.text}</span>
                       </div>
                     ))}
                   </div>
                 )}
                 {shadowJudge.notes.length > 0 && (
-                  <div className="space-y-0.5 mb-2 pt-1.5 border-t border-slate-200">
+                  <div className="space-y-0.5 mb-2 pt-1.5 border-t border-slate-200 dark:border-slate-700">
                     {shadowJudge.notes.map((n, i) => (
-                      <div key={i} className={`text-[9px] ${n.startsWith('⚠') ? 'text-amber-700' : 'text-slate-600'}`}>{n}</div>
+                      <div key={i} className={`text-[9px] ${n.startsWith('⚠') ? 'text-amber-700' : 'text-slate-600 dark:text-slate-400'}`}>{n}</div>
                     ))}
                   </div>
                 )}
                 {shadowJudge.drinkability.text && (
-                  <div className="text-[9px] text-slate-600 pt-1.5 border-t border-slate-200 mb-1.5">
+                  <div className="text-[9px] text-slate-600 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-slate-700 mb-1.5">
                     <span className="mr-1">{shadowJudge.drinkability.icon}</span>
                     {shadowJudge.drinkability.text}
                   </div>
                 )}
-                <div className={`text-[9px] font-semibold pt-1.5 border-t border-slate-200 ${shadowJudge.verdict.includes('Solid work') || shadowJudge.verdict.includes('Strong profile') ? 'text-emerald-600' : shadowJudge.verdict.includes('too many weak') ? 'text-red-600' : 'text-amber-600'}`}>{shadowJudge.verdict}</div>
-                <div className="pt-1.5 border-t border-slate-200 space-y-1">
-                  <div className="text-[8px] text-slate-400 font-medium">Adjustment Advice</div>
+                <div className={`text-[9px] font-semibold pt-1.5 border-t border-slate-200 dark:border-slate-700 ${shadowJudge.verdict.includes('Solid work') || shadowJudge.verdict.includes('Strong profile') ? 'text-emerald-600' : shadowJudge.verdict.includes('too many weak') ? 'text-red-600' : 'text-amber-600 dark:text-amber-400'}`}>{shadowJudge.verdict}</div>
+                <div className="pt-1.5 border-t border-slate-200 dark:border-slate-700 space-y-1">
+                  <div className="text-[8px] text-slate-400 dark:text-slate-500 font-medium">Adjustment Advice</div>
                   {shadowJudge.plan.length > 0 ? shadowJudge.plan.map((step, i) => (
-                    <div key={step.axis} className="text-[9px] text-slate-600">{i + 1}. <span className="font-medium">{step.label}</span> — {step.tip}</div>
+                    <div key={step.axis} className="text-[9px] text-slate-600 dark:text-slate-400">{i + 1}. <span className="font-medium">{step.label}</span> — {step.tip}</div>
                   )) : (
-                    <div className="text-[9px] text-slate-500 italic">Everything's in a good place. Pick one area and push it further — you're on the right track.</div>
+                    <div className="text-[9px] text-slate-500 dark:text-slate-400 italic">Everything's in a good place. Pick one area and push it further — you're on the right track.</div>
                   )}
                 </div>
-                <div className="pt-1 border-t border-slate-200">
+                <div className="pt-1 border-t border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-1">
-                    <button onClick={() => setShowTranscript(p => !p)} className="text-[10px] text-slate-400 hover:text-slate-600 mr-1">{showTranscript ? '▼' : '▶'} 📜 Transcript</button>
+                    <button onClick={() => setShowTranscript(p => !p)} className="text-[10px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 mr-1">{showTranscript ? '▼' : '▶'} 📜 Transcript</button>
                     {showTranscript && (<>
                     <select value={selectedVoice} onChange={e => setSelectedVoice(e.target.value)}
-                      className="text-[8px] border border-slate-200 rounded px-1 py-0.5 text-slate-500 max-w-[120px]"
+                      className="text-[8px] border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-slate-500 dark:text-slate-400 max-w-[120px]"
                     >{voices.map(v => (
                       <option key={v.name} value={v.name}>{v.name.replace(/Microsoft|Desktop|Online|\(Natural\)|\(Neural\)/g,'').trim()}</option>
                     ))}</select>
                     <button onClick={() => {
                       const txt = shadowJudge.segments.map(s => s.text).join(' ');
                       isSpeaking ? stopTranscript() : playTranscript(txt);
-                    }} className="text-[10px] px-1.5 py-0.5 rounded border border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-400"
+                    }} className="text-[10px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 hover:border-slate-400"
                     >{isSpeaking ? '⏹' : '▶'}</button>
                     </>)}
                   </div>
                   {showTranscript && (
                   <p className="text-[8px] italic leading-relaxed mt-1">
-                    <span className="text-[8px] text-slate-400 font-medium mr-1">📜</span>
+                    <span className="text-[8px] text-slate-400 dark:text-slate-500 font-medium mr-1">📜</span>
                     {shadowJudge.segments.map((s, i) => (
                       <span key={i} className={
                         s.tone === 'cheer' ? 'text-emerald-600' :
                         s.tone === 'pressure' ? 'text-red-600' :
-                        s.tone === 'opener' || s.tone === 'closer' ? 'text-slate-400' :
-                        'text-amber-600'
+                        s.tone === 'opener' || s.tone === 'closer' ? 'text-slate-400 dark:text-slate-500' :
+                        'text-amber-600 dark:text-amber-400'
                       }>{s.tone === 'cheer' ? '🟢 ' : s.tone === 'pressure' ? '🔴 ' : s.tone === 'neutral' ? '🟡 ' : ''}{s.text}{i < shadowJudge.segments.length - 1 ? ' ' : ''}</span>
                     ))}
                   </p>
@@ -1306,42 +1306,42 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   </>
                 )}
               </div>
-              <div className="mt-4 border-t border-slate-100 pt-3">
+              <div className="mt-4 border-t border-slate-100 dark:border-slate-700 pt-3">
                 <button onClick={() => setShowEquipment(prev => !prev)}
-                  className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 hover:text-slate-600"
+                  className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"
                 >{showEquipment ? '▼' : '▶'} Equipment {equipment.dripper || equipment.paper || equipment.burrType ? '⚙' : '(optional)'}</button>
                 {showEquipment && (
                   <div className="mt-2 space-y-2">
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <span className="text-[8px] font-semibold text-slate-500 block mb-0.5">Dripper</span>
+                        <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Dripper</span>
                         <select value={equipment.dripper} onChange={e => setEquipment(prev => ({ ...prev, dripper: e.target.value, mod: '' }))}
-                          className="w-full text-[9px] border border-slate-200 rounded px-1 py-0.5 text-slate-600"
+                          className="w-full text-[9px] border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-slate-600 dark:text-slate-400"
                         ><option value="">—</option>{DRIPPERS.map(d => <option key={d.name} value={d.name}>{d.name} ({d.shape})</option>)}</select>
                       </div>
                       <div>
-                        <span className="text-[8px] font-semibold text-slate-500 block mb-0.5">Paper</span>
+                        <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Paper</span>
                         <select value={equipment.paper} onChange={e => setEquipment(prev => ({ ...prev, paper: e.target.value }))}
-                          className="w-full text-[9px] border border-slate-200 rounded px-1 py-0.5 text-slate-600"
+                          className="w-full text-[9px] border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-slate-600 dark:text-slate-400"
                         ><option value="">—</option>{PAPERS.map(p => <option key={p.name} value={p.name}>{p.name} ({p.resistance}/3)</option>)}</select>
                       </div>
                       <div>
-                        <span className="text-[8px] font-semibold text-slate-500 block mb-0.5">Burr Type</span>
+                        <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Burr Type</span>
                         <select value={equipment.burrType} onChange={e => setEquipment(prev => ({ ...prev, burrType: e.target.value }))}
-                          className="w-full text-[9px] border border-slate-200 rounded px-1 py-0.5 text-slate-600"
+                          className="w-full text-[9px] border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-slate-600 dark:text-slate-400"
                         ><option value="">—</option><option value="Cone">Cone</option><option value="Flat">Flat</option><option value="Other">Other</option></select>
                       </div>
                     </div>
                     {equipment.burrType && (
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <span className="text-[8px] font-semibold text-slate-500 block mb-0.5">Burr Size</span>
+                          <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Burr Size</span>
                           <select value={equipment.burrSize} onChange={e => setEquipment(prev => ({ ...prev, burrSize: e.target.value }))}
-                            className="w-full text-[9px] border border-slate-200 rounded px-1 py-0.5 text-slate-600"
+                            className="w-full text-[9px] border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-slate-600 dark:text-slate-400"
                           ><option value="">—</option>{['38mm','40mm','48mm','50mm','54mm','58mm','64mm','71mm','80mm','83mm','98mm'].map(s => <option key={s} value={s}>{s}</option>)}</select>
                         </div>
                         <div>
-                          <span className="text-[8px] font-semibold text-slate-500 block mb-0.5">Fines you see: {equipment.finesFeel} <span className="font-normal text-slate-400">(few → many)</span></span>
+                          <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Fines you see: {equipment.finesFeel} <span className="font-normal text-slate-400 dark:text-slate-500">(few → many)</span></span>
                           <input type="range" min={0} max={9} value={equipment.finesFeel} onChange={e => setEquipment(prev => ({ ...prev, finesFeel: parseInt(e.target.value) }))}
                             className="w-full h-1 appearance-none rounded-full bg-slate-200 accent-amber-600 cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-600 [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
                           />
@@ -1350,7 +1350,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     )}
                     {equipment.burrType && (
                       <div>
-                        <span className="text-[8px] font-semibold text-slate-500 block mb-0.5">Grind effort (hand): {equipment.grindEffort} <span className="font-normal text-slate-400">(easy → hard)</span></span>
+                        <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Grind effort (hand): {equipment.grindEffort} <span className="font-normal text-slate-400 dark:text-slate-500">(easy → hard)</span></span>
                         <input type="range" min={0} max={9} value={equipment.grindEffort} onChange={e => setEquipment(prev => ({ ...prev, grindEffort: parseInt(e.target.value) }))}
                           className="w-full h-1 appearance-none rounded-full bg-slate-200 accent-amber-600 cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-600 [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
                         />
@@ -1358,7 +1358,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     )}
                     {equipment.burrType && (
                       <div>
-                        <span className="text-[8px] font-semibold text-slate-500 block mb-0.5">Grind: {['X-Coarse','Very Coarse','Coarse','Med-Coarse','Medium','Med-Fine','Fine','Very Fine','X-Fine','Ultra-Fine'][equipment.grindSetting]} ({equipment.grindSetting}/9)</span>
+                        <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Grind: {['X-Coarse','Very Coarse','Coarse','Med-Coarse','Medium','Med-Fine','Fine','Very Fine','X-Fine','Ultra-Fine'][equipment.grindSetting]} ({equipment.grindSetting}/9)</span>
                         <input type="range" min={0} max={9} value={equipment.grindSetting} onChange={e => setEquipment(prev => ({ ...prev, grindSetting: parseInt(e.target.value) }))}
                           className="w-full h-1 appearance-none rounded-full bg-slate-200 accent-amber-600 cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-600 [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
                         />
@@ -1367,15 +1367,15 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     {equipment.burrType && (
                       <div className="flex gap-3 items-end">
                         <div className="flex-1">
-                          <span className="text-[8px] font-semibold text-slate-500 block mb-0.5">Dose: {equipment.dose}g</span>
+                          <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Dose: {equipment.dose}g</span>
                           <input type="range" min={8} max={30} value={equipment.dose} onChange={e => setEquipment(prev => ({ ...prev, dose: parseInt(e.target.value) }))}
                             className="w-full h-1 appearance-none rounded-full bg-slate-200 accent-amber-600 cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-600 [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
                           />
                         </div>
                         <div className="w-20">
-                          <span className="text-[8px] font-semibold text-slate-500 block mb-0.5">Ratio</span>
+                          <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Ratio</span>
                           <select value={equipment.ratio} onChange={e => setEquipment(prev => ({ ...prev, ratio: e.target.value }))}
-                            className="w-full text-[9px] border border-slate-200 rounded px-1 py-0.5 text-slate-600"
+                            className="w-full text-[9px] border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-slate-600 dark:text-slate-400"
                           >{['1:8','1:9','1:10','1:11','1:12','1:13','1:14','1:15','1:16','1:17','1:18','1:19','1:20'].map(r => <option key={r} value={r}>{r}</option>)}</select>
                         </div>
                       </div>
@@ -1384,14 +1384,14 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       const d = DRIPPERS.find(d => d.name === equipment.dripper);
                       if (d?.mods?.length) return (
                         <div>
-                          <span className="text-[8px] font-semibold text-slate-500 block mb-0.5">Accessory / Mod</span>
+                          <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Accessory / Mod</span>
                           <div className="flex gap-1 flex-wrap">
                             <button onClick={() => setEquipment(prev => ({ ...prev, mod: '' }))}
-                              className={`text-[7px] px-1.5 py-0.5 rounded border transition-colors ${!equipment.mod ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'}`}
+                              className={`text-[7px] px-1.5 py-0.5 rounded border transition-colors ${!equipment.mod ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 text-amber-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                             >None</button>
                             {d.mods.map(m => (
                               <button key={m.name} onClick={() => setEquipment(prev => ({ ...prev, mod: m.name }))}
-                                className={`text-[7px] px-1.5 py-0.5 rounded border transition-colors ${equipment.mod === m.name ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'}`}
+                                className={`text-[7px] px-1.5 py-0.5 rounded border transition-colors ${equipment.mod === m.name ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 text-amber-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                                 title={m.desc}
                               >{m.name}</button>
                             ))}
@@ -1406,21 +1406,21 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       const r = hasResistance ? computeResistance(equipment) : null;
                       const barColor = r ? (r.totalScore <= 4 ? '#3b82f6' : r.totalScore <= 7 ? '#22c55e' : '#ef4444') : '#94a3b8';
                       return (
-                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 space-y-1.5">
+                        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-bold text-slate-600">Flow Resistance</span>
+                            <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">Flow Resistance</span>
                             {r ? <span className="text-[8px] font-semibold" style={{ color: barColor }}>{r.rating} ({r.totalScore}/9)</span>
-                            : <span className="text-[7px] text-slate-400 italic">fill dripper + paper</span>}
+                            : <span className="text-[7px] text-slate-400 dark:text-slate-500 italic">fill dripper + paper</span>}
                           </div>
                           <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
                             <div className="h-full rounded-full transition-all" style={{ width: r ? `${(r.totalScore / 9) * 100}%` : '0%', backgroundColor: barColor }} />
                           </div>
-                          <div className="grid grid-cols-3 gap-1 text-[7px] text-slate-500">
+                          <div className="grid grid-cols-3 gap-1 text-[7px] text-slate-500 dark:text-slate-400">
                             <div>☕ Dripper {r ? `${r.dripperRes}/3` : '—'}</div>
                             <div>🧻 Paper {r ? `${r.paperRes}/3` : '—'}</div>
                             <div>⚙️ Grind {r ? `${r.grindRes}/3` : '—'}</div>
                           </div>
-                          <div className="text-[6px] text-slate-400 font-mono">∑ = {r ? `${r.dripperRes} + ${r.paperRes} + ${r.grindRes} = ${r.totalScore}/9` : '—'}</div>
+                          <div className="text-[6px] text-slate-400 dark:text-slate-500 font-mono">∑ = {r ? `${r.dripperRes} + ${r.paperRes} + ${r.grindRes} = ${r.totalScore}/9` : '—'}</div>
                           {r && (() => {
                             const computedSec = r.totalScore <= 4 ? 105 : r.totalScore <= 7 ? 150 : 210;
                             const planSec = (() => {
@@ -1439,26 +1439,26 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                             const timeColor = timeStatus === 'Too Fast' ? '#3b82f6' : timeStatus === 'Fast' ? '#22c55e' : timeStatus === 'On Track' ? '#22c55e' : timeStatus === 'Slow' ? '#f59e0b' : '#ef4444';
                             const timeInsight = timeStatus === 'Too Fast' ? 'Much faster than planned — likely channeling or grind too coarse' : timeStatus === 'Fast' ? 'Slightly fast — good flow, may benefit from finer grind' : timeStatus === 'On Track' ? 'On target — nice execution' : timeStatus === 'Slow' ? 'Slower than planned — possible fines migration or slight clog' : timeStatus === 'Stalled' ? 'Stalled — bed clogged, grind too fine or paper too dense' : null;
                             return (
-                              <div className="border-t border-slate-200 pt-1.5 space-y-1">
+                              <div className="border-t border-slate-200 dark:border-slate-700 pt-1.5 space-y-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[7px] font-semibold text-slate-500">Plan</span>
+                                  <span className="text-[7px] font-semibold text-slate-500 dark:text-slate-400">Plan</span>
                                   <input value={equipment.planTime} onChange={e => setEquipment(prev => ({ ...prev, planTime: e.target.value }))}
                                     placeholder={planLabel}
-                                    className="w-11 text-[8px] border border-slate-200 rounded px-0.5 py-0.5 text-slate-600 bg-white text-center"
+                                    className="w-11 text-[8px] border border-slate-200 dark:border-slate-700 rounded px-0.5 py-0.5 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 text-center"
                                   />
-                                  <span className="text-[7px] text-slate-400">·</span>
-                                  <span className="text-[7px] font-semibold text-slate-500">Actual</span>
+                                  <span className="text-[7px] text-slate-400 dark:text-slate-500">·</span>
+                                  <span className="text-[7px] font-semibold text-slate-500 dark:text-slate-400">Actual</span>
                                   <input value={equipment.timeFinished} onChange={e => setEquipment(prev => ({ ...prev, timeFinished: e.target.value }))}
                                     placeholder="m:ss"
-                                    className="w-11 text-[8px] border border-slate-200 rounded px-0.5 py-0.5 text-slate-600 bg-white text-center"
+                                    className="w-11 text-[8px] border border-slate-200 dark:border-slate-700 rounded px-0.5 py-0.5 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 text-center"
                                   />
                                   {timeStatus && <span className="text-[7px] font-semibold px-1 py-0.5 rounded" style={{ color: timeColor, backgroundColor: timeColor + '15' }}>{timeStatus}</span>}
                                 </div>
-                                {timeInsight && <p className="text-[7px] text-slate-500 italic">{timeInsight}</p>}
+                                {timeInsight && <p className="text-[7px] text-slate-500 dark:text-slate-400 italic">{timeInsight}</p>}
                               </div>
                             );
                           })()}
-                          {r && <p className="text-[7px] text-slate-500 italic border-t border-slate-200 pt-1">{r.feedback}</p>}
+                          {r && <p className="text-[7px] text-slate-500 dark:text-slate-400 italic border-t border-slate-200 dark:border-slate-700 pt-1">{r.feedback}</p>}
                         </div>
                       );
                     })()}
@@ -1469,10 +1469,10 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
 
             {/* Optimization Plan */}
             {focusAxes.length > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-bold text-slate-700">🎯 Optimization Plan</h2>
-                  <span className="text-[9px] text-slate-400">{focusAxes.length} priorit{focusAxes.length > 1 ? 'ies' : 'y'}</span>
+                  <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300">🎯 Optimization Plan</h2>
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500">{focusAxes.length} priorit{focusAxes.length > 1 ? 'ies' : 'y'}</span>
                 </div>
                 <div className="space-y-1.5">
                   {focusAxes.map((axis, idx) => {
@@ -1494,21 +1494,21 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       : integrityCheck.direction?.includes('Over') ? 'Temp / Time'
                       : 'Grind';
                     return (
-                      <div key={axis} className={`flex items-center gap-2 p-2 rounded-lg ${idx === 0 ? 'bg-amber-50 border border-amber-200' : 'bg-white border border-slate-100'}`}>
-                        <span className="text-[9px] font-bold text-slate-400 w-4 shrink-0">{idx + 1}</span>
+                      <div key={axis} className={`flex items-center gap-2 p-2 rounded-lg ${idx === 0 ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700'}`}>
+                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 w-4 shrink-0">{idx + 1}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-semibold text-slate-700 capitalize">{label}</span>
-                            <span className="text-[9px] font-mono text-slate-500">{score} → {improveTo}</span>
-                            <span className="text-[8px] font-medium text-amber-600">+{gap}</span>
-                            {!isWinnable && <span className="text-[7px] text-slate-400 bg-slate-100 px-1 rounded">tough</span>}
+                            <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 capitalize">{label}</span>
+                            <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400">{score} → {improveTo}</span>
+                            <span className="text-[8px] font-medium text-amber-600 dark:text-amber-400">+{gap}</span>
+                            {!isWinnable && <span className="text-[7px] text-slate-400 dark:text-slate-500 bg-slate-100 px-1 rounded">tough</span>}
                           </div>
-                          <div className="flex items-center gap-1 text-[8px] text-slate-500 mt-0.5">
+                          <div className="flex items-center gap-1 text-[8px] text-slate-500 dark:text-slate-400 mt-0.5">
                             <span>Adjust <span className="font-mono">{FOUNDATION_ICONS[topFoundation] || '■'} {topFoundation}</span></span>
                             {relatedHidden.length > 0 && (
                               <span className="text-emerald-600">· {relatedHidden.length} variable{relatedHidden.length > 1 ? 's' : ''}</span>
                             )}
-                            {idx === 0 && <span className="text-amber-600 font-semibold ml-auto">★ Priority</span>}
+                            {idx === 0 && <span className="text-amber-600 dark:text-amber-400 font-semibold ml-auto">★ Priority</span>}
                           </div>
                         </div>
                       </div>
@@ -1519,9 +1519,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
             )}
 
             {/* Strategy — Choose Your Fight */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <h2 className="text-sm font-bold text-slate-700 mb-2">⚔ Your Focus</h2>
-              <p className="text-[10px] text-slate-500 mb-2">Pick one to start. Or pick several — the system suggests where to begin. <strong>You're not required to fix everything.</strong></p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">⚔ Your Focus</h2>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-2">Pick one to start. Or pick several — the system suggests where to begin. <strong>You're not required to fix everything.</strong></p>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {integrityCheck.entries.length > 0 ? integrityCheck.entries.map(e => {
                   const isPrimary = focusAxes[0] === e.key;
@@ -1537,8 +1537,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     }}
                       className={`px-2 py-1 text-[9px] font-semibold rounded-lg border transition-colors ${
                         isPrimary || isAuto ? 'bg-amber-600 text-white border-amber-600' 
-                        : isSelected ? 'bg-amber-100 text-amber-800 border-amber-300'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        : isSelected ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-300'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
                       }`}
                     >
                       {e.label} ({e.score}/9)
@@ -1550,44 +1550,44 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 )}
               </div>
               {focusAxes.length > 0 && (
-                <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <p className="text-[9px] text-slate-600">
+                    <p className="text-[9px] text-slate-600 dark:text-slate-400">
                       <span className="font-bold">{focusAxes.length} selected.</span> Start with <span className="font-semibold capitalize">{AXIS_LABELS[focusAxes[0]]}</span>, then address the others.
                     </p>
-                    <button onClick={() => setFocusAxes([])} className="text-[8px] text-slate-400 hover:text-slate-600 font-semibold">Clear all</button>
+                    <button onClick={() => setFocusAxes([])} className="text-[8px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 font-semibold">Clear all</button>
                   </div>
                   {focusAxes.length > 1 && (
                     <div className="mt-1 flex flex-wrap gap-1">
                       Priority: {focusAxes.map((k, i) => (
-                        <span key={k} className="text-[8px] text-slate-500">{i + 1}. {AXIS_LABELS[k]}</span>
+                        <span key={k} className="text-[8px] text-slate-500 dark:text-slate-400">{i + 1}. {AXIS_LABELS[k]}</span>
                       ))}
                     </div>
                   )}
                 </div>
               )}
               {focusAxes.length === 0 && integrityCheck.entries.length > 0 && (
-                <p className="text-[9px] text-slate-400 italic">★ <strong>{AXIS_LABELS[integrityCheck.lowest.axis]}</strong> suggested as starting point. Click to confirm or pick your own.</p>
+                <p className="text-[9px] text-slate-400 dark:text-slate-500 italic">★ <strong>{AXIS_LABELS[integrityCheck.lowest.axis]}</strong> suggested as starting point. Click to confirm or pick your own.</p>
               )}
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-bold text-slate-700">Extraction Status</h2>
-                <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full ${extractionStatus.label === 'Increase extraction' ? 'bg-blue-100 text-blue-700' : extractionStatus.label === 'Decrease extraction' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>{extractionStatus.label === 'Increase extraction' ? '↑ Increase extraction' : extractionStatus.label === 'Decrease extraction' ? '↓ Decrease extraction' : 'Stay'}</span>
+                <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300">Extraction Status</h2>
+                <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full ${extractionStatus.label === 'Increase extraction' ? 'bg-blue-100 text-blue-700' : extractionStatus.label === 'Decrease extraction' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600 dark:text-slate-400'}`}>{extractionStatus.label === 'Increase extraction' ? '↑ Increase extraction' : extractionStatus.label === 'Decrease extraction' ? '↓ Decrease extraction' : 'Stay'}</span>
               </div>
               <div className="relative h-5 bg-gradient-to-r from-blue-100 via-emerald-100 to-red-100 rounded-full overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 font-medium"><span>Decrease</span><span>Stay</span><span>Increase</span></div>
-                <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-sm rounded-full transition-all duration-200" style={{ left: `${extractionStatus.barPos}%` }} />
-                <div className="absolute top-0.5 bottom-0.5 w-1.5 rounded-full bg-white border-2 shadow-sm transition-all duration-200" style={{ left: `calc(${extractionStatus.barPos}% - 3px)`, borderColor: extractionStatus.color }} />
+                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 dark:text-slate-500 font-medium"><span>Decrease</span><span>Stay</span><span>Increase</span></div>
+                <div className="absolute top-0 bottom-0 w-0.5 bg-white dark:bg-slate-800 shadow-sm rounded-full transition-all duration-200" style={{ left: `${extractionStatus.barPos}%` }} />
+                <div className="absolute top-0.5 bottom-0.5 w-1.5 rounded-full bg-white dark:bg-slate-800 border-2 shadow-sm transition-all duration-200" style={{ left: `calc(${extractionStatus.barPos}% - 3px)`, borderColor: extractionStatus.color }} />
               </div>
               <div className="mt-2 flex items-center gap-2">
-                <span className={`text-xs font-semibold ${extractionStatus.major ? 'text-red-600' : 'text-slate-600'}`}>{extractionStatus.directive}</span>
+                <span className={`text-xs font-semibold ${extractionStatus.major ? 'text-red-600' : 'text-slate-600 dark:text-slate-400'}`}>{extractionStatus.directive}</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <h2 className="text-sm font-bold text-slate-700 mb-2">Foundation Impact</h2>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Foundation Impact</h2>
               <div className="space-y-2">
                 {foundationPlan.map(f => {
                   const impact = f.totalMatch <= 3 ? 'Misadjustment' : f.totalMatch <= 6 ? 'Tuning' : 'Rework';
@@ -1597,8 +1597,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     <div key={f.name}>
                       <div className="flex items-center justify-between mb-0.5">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-semibold text-slate-600">{FOUNDATION_ICONS[f.name] || '■'} {f.name}</span>
-                          <span className="text-[10px] text-slate-400">×{f.vars.length}</span>
+                          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{FOUNDATION_ICONS[f.name] || '■'} {f.name}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500">×{f.vars.length}</span>
                         </div>
                         <span className="text-[9px] font-semibold" style={{ color: impactColor }}>{impact}</span>
                       </div>
@@ -1609,14 +1609,14 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   );
                 })}
               </div>
-              {foundationPlan.length === 0 && <p className="text-[10px] text-slate-400 italic">No foundations impacted.</p>}
+              {foundationPlan.length === 0 && <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">No foundations impacted.</p>}
             </div>
             {ext.diagnosis && (
               <div className="p-3 rounded-lg border" style={{ backgroundColor: ext.diagnosis.badgeColor + '12', borderColor: ext.diagnosis.badgeColor + '30' }}>
                 {ext.validRatio && ext.eyMinNum > 0 && ext.eyMaxNum > 0 && (
-                  <div className="text-[9px] text-slate-400 text-center mb-2">
+                  <div className="text-[9px] text-slate-400 dark:text-slate-500 text-center mb-2">
                     EY {ext.eyMinNum}–{ext.eyMaxNum}% at 1:{ext.ratioNum} → TDS{' '}
-                    <span className="font-bold text-emerald-700">{getReferenceTDS(ext.ratioNum, ext.eyMinNum).toFixed(2)}–{getReferenceTDS(ext.ratioNum, ext.eyMaxNum).toFixed(2)}%</span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400">{getReferenceTDS(ext.ratioNum, ext.eyMinNum).toFixed(2)}–{getReferenceTDS(ext.ratioNum, ext.eyMaxNum).toFixed(2)}%</span>
                   </div>
                 )}
                 <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
@@ -1626,30 +1626,30 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     </span>
                   )}
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded text-white" style={{ backgroundColor: ext.diagnosis.badgeColor }}>{ext.diagnosis.label}</span>
-                  <span className="text-[8px] text-slate-400">from Extraction tab</span>
+                  <span className="text-[8px] text-slate-400 dark:text-slate-500">from Extraction tab</span>
                 </div>
                 <p className="text-[9px]" style={{ color: ext.diagnosis.badgeColor }}>{ext.diagnosis.narrative}</p>
                 {ext.lowScores.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
-                    <span className="text-[7px] font-semibold text-slate-400 uppercase">Low Scores:</span>
+                    <span className="text-[7px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Low Scores:</span>
                     {ext.lowScores.map(k => (
-                      <span key={k} className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">{AXIS_LABELS[k]} {profile[k]}</span>
+                      <span key={k} className="text-[8px] bg-slate-100 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-medium">{AXIS_LABELS[k]} {profile[k]}</span>
                     ))}
                   </div>
                 )}
                 {ext.selectedSymptomData.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1">
-                    <span className="text-[7px] font-semibold text-slate-400 uppercase">Symptoms:</span>
+                    <span className="text-[7px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Symptoms:</span>
                     {ext.selectedSymptomData.map(s => (
-                      <span key={s.name} className={`text-[8px] px-1.5 py-0.5 rounded font-medium ${s.likelyExtraction === 'under' ? 'bg-blue-100 text-blue-700' : s.likelyExtraction === 'over' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>{s.name}</span>
+                      <span key={s.name} className={`text-[8px] px-1.5 py-0.5 rounded font-medium ${s.likelyExtraction === 'under' ? 'bg-blue-100 text-blue-700' : s.likelyExtraction === 'over' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500 dark:text-slate-400'}`}>{s.name}</span>
                     ))}
                   </div>
                 )}
               </div>
             )}
             {ext.tdsNum > 0 && ext.doseNum > 0 && ext.ratioNum > 0 && ext.validRatio && (
-              <div className="bg-white rounded-lg border border-slate-200 p-2">
-                <div className="text-[8px] font-semibold text-slate-400 uppercase text-center mb-1.5">Ratio 1:{ext.ratioNum} — EY {ext.eyMinNum}–{ext.eyMaxNum}%</div>
+              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-2">
+                <div className="text-[8px] font-semibold text-slate-400 dark:text-slate-500 uppercase text-center mb-1.5">Ratio 1:{ext.ratioNum} — EY {ext.eyMinNum}–{ext.eyMaxNum}%</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {/* EY → TDS reference */}
                   <div>
@@ -1662,7 +1662,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                         return rows.map(r => {
                           const closeToCurrent = Math.abs(ext.tdsNum - r.tds) < 0.01;
                           return (
-                            <div key={r.ey} className={`flex items-center justify-between px-2 py-1 ${closeToCurrent ? 'bg-emerald-100 font-bold text-emerald-800' : 'bg-white text-slate-600'}`}>
+                            <div key={r.ey} className={`flex items-center justify-between px-2 py-1 ${closeToCurrent ? 'bg-emerald-100 dark:bg-emerald-900/30 font-bold text-emerald-800 dark:text-emerald-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                               <span className="font-mono">EY {r.ey}%</span>
                               <span className="font-mono">→ TDS {r.tds.toFixed(2)}%</span>
                               {closeToCurrent && <span className="text-[7px] text-emerald-600 ml-1">← your TDS</span>}
@@ -1675,10 +1675,10 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   {/* 3×3 TDS × EY grid */}
                   <div>
                     <div className="grid grid-cols-4 gap-px bg-slate-200 text-[8px]">
-                      <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold"></div>
-                      <div className="bg-slate-50 p-1 text-center text-blue-600 font-semibold">Under<br /><span className="text-[7px] font-normal">&lt;{ext.eyMinNum}%</span></div>
-                      <div className="bg-slate-50 p-1 text-center text-emerald-600 font-semibold">Ideal<br /><span className="text-[7px] font-normal">{ext.eyMinNum}–{ext.eyMaxNum}%</span></div>
-                      <div className="bg-slate-50 p-1 text-center text-red-600 font-semibold">Over<br /><span className="text-[7px] font-normal">&gt;{ext.eyMaxNum}%</span></div>
+                      <div className="bg-slate-50 dark:bg-slate-900/50 p-1 text-center text-slate-400 dark:text-slate-500 font-semibold"></div>
+                      <div className="bg-slate-50 dark:bg-slate-900/50 p-1 text-center text-blue-600 font-semibold">Under<br /><span className="text-[7px] font-normal">&lt;{ext.eyMinNum}%</span></div>
+                      <div className="bg-slate-50 dark:bg-slate-900/50 p-1 text-center text-emerald-600 font-semibold">Ideal<br /><span className="text-[7px] font-normal">{ext.eyMinNum}–{ext.eyMaxNum}%</span></div>
+                      <div className="bg-slate-50 dark:bg-slate-900/50 p-1 text-center text-red-600 font-semibold">Over<br /><span className="text-[7px] font-normal">&gt;{ext.eyMaxNum}%</span></div>
                       {(['weak', 'balanced', 'strong'] as const).map(tdsCat => {
                         const refMin = getReferenceTDS(ext.ratioNum, ext.eyMinNum);
                         const refMax = getReferenceTDS(ext.ratioNum, ext.eyMaxNum);
@@ -1687,7 +1687,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                         const eyLabelMap: Record<string, string> = { under: 'Under EY', ideal: 'Ideal EY', over: 'Over EY' };
                         return (
                           <div key={tdsCat} className="contents">
-                            <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold flex items-center justify-center text-[7px] leading-tight">
+                            <div className="bg-slate-50 dark:bg-slate-900/50 p-1 text-center text-slate-400 dark:text-slate-500 font-semibold flex items-center justify-center text-[7px] leading-tight">
                               {tdsLabel}<br />{tdsRange}%
                             </div>
                             {(['under', 'ideal', 'over'] as const).map(eyCat => {
@@ -1697,7 +1697,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                               const colorMap: Record<string, string> = { weak: '#0ea5e9', balanced: '#22c55e', strong: '#ef4444' };
                               const action = eyCat === 'under' ? `→ ${ext.eyMinNum}%+` : eyCat === 'ideal' ? '✓' : `→ ≤${ext.eyMaxNum}%`;
                               return (
-                                <div key={`${tdsCat}-${eyCat}`} className={`p-1 text-center bg-white ${highlighted ? 'font-bold' : ''}`} style={highlighted ? { backgroundColor: colorMap[tdsCat] + '20', color: colorMap[tdsCat] } : {}}>
+                                <div key={`${tdsCat}-${eyCat}`} className={`p-1 text-center bg-white dark:bg-slate-800 ${highlighted ? 'font-bold' : ''}`} style={highlighted ? { backgroundColor: colorMap[tdsCat] + '20', color: colorMap[tdsCat] } : {}}>
                                   <div className="text-[6px] leading-tight">{tdsLabel} · {eyLabelMap[eyCat]}</div>
                                   <div className="text-[7px] leading-tight font-mono">TDS {tdsRange}%</div>
                                   <div className="text-[6px] leading-tight" style={{ color: eyCat === 'ideal' ? '#16a34a' : '#ef4444' }}>{action}</div>
@@ -1710,10 +1710,10 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     </div>
                   </div>
                 </div>
-                <div className="text-[7px] text-slate-400 text-center mt-1">
+                <div className="text-[7px] text-slate-400 dark:text-slate-500 text-center mt-1">
                   Current: TDS {ext.tdsNum.toFixed(2)}% · EY {ext.ey.toFixed(1)}%
                   {ext.eyUnder && <span className="text-blue-500"> — below range</span>}
-                  {ext.eyOver && <span className="text-red-500"> — above range</span>}
+                  {ext.eyOver && <span className="text-red-500 dark:text-red-400"> — above range</span>}
                   {!ext.eyUnder && !ext.eyOver && <span className="text-emerald-600"> — in range</span>}
                 </div>
               </div>
@@ -1722,12 +1722,12 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
         )}
 
         {tab === 'composition' && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">🥪</span>
               <div>
-                <h2 className="text-sm font-bold text-slate-700">Composition</h2>
-                <p className="text-[8px] text-slate-400">Adjust each layer by how much you feel it needs — independent of your sensory score</p>
+                <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300">Composition</h2>
+                <p className="text-[8px] text-slate-400 dark:text-slate-500">Adjust each layer by how much you feel it needs — independent of your sensory score</p>
               </div>
             </div>
             {loadedMemoProfile && (() => {
@@ -1739,9 +1739,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 <div className="text-[8px] font-bold text-violet-700 mb-1">🧪 Expected from Memo</div>
                 <div className="flex flex-wrap gap-1">
                   {checkedFlavors.map(f => (
-                    <span key={f.id} className="text-[7px] px-1.5 py-0.5 rounded bg-white border border-violet-100 text-slate-600">{f.emoji} {f.label}</span>
+                    <span key={f.id} className="text-[7px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-violet-100 text-slate-600 dark:text-slate-400">{f.emoji} {f.label}</span>
                   ))}
-                  {checkedFlavors.length === 0 && <span className="text-[7px] text-slate-400 italic">No flavor data</span>}
+                  {checkedFlavors.length === 0 && <span className="text-[7px] text-slate-400 dark:text-slate-500 italic">No flavor data</span>}
                 </div>
               </div>
               );
@@ -1774,7 +1774,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               return (<>
               {/* Summary section */}
               <div className="mb-3">
-                <button onClick={() => setShowSummary(p => !p)} className="flex items-center gap-1 text-[8px] font-semibold text-slate-500 mb-1">
+                <button onClick={() => setShowSummary(p => !p)} className="flex items-center gap-1 text-[8px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
                   <span className="text-[6px]">{showSummary ? '▼' : '▶'}</span>
                   Summary
                 </button>
@@ -1786,73 +1786,73 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   <div className="absolute top-0 bottom-0 w-px bg-slate-300/30 z-10" style={{ left: `${50 + 100/30}%` }} />
                   <div className="absolute top-0 bottom-0 w-px bg-amber-400/40 z-10" style={{ left: `${50 - 300/30}%` }} />
                   <div className="absolute top-0 bottom-0 w-px bg-amber-400/40 z-10" style={{ left: `${50 + 300/30}%` }} />
-                  <div className="absolute inset-0 flex items-center justify-between px-2 text-[7px] text-slate-500 font-medium">
+                  <div className="absolute inset-0 flex items-center justify-between px-2 text-[7px] text-slate-500 dark:text-slate-400 font-medium">
                     <span className={netBalance < 0 ? 'text-blue-700 font-semibold' : ''}>Missing</span>
-                    <span className={netBalance === 0 ? 'text-slate-700 font-semibold' : ''}>Balanced</span>
+                    <span className={netBalance === 0 ? 'text-slate-700 dark:text-slate-300 font-semibold' : ''}>Balanced</span>
                     <span className={netBalance > 0 ? 'text-orange-700 font-semibold' : ''}>Too much</span>
                   </div>
                   {netBalance !== 0 && (
-                    <div className="absolute top-0 bottom-0 rounded-full bg-white/60 shadow-inner transition-all duration-200" style={{
+                    <div className="absolute top-0 bottom-0 rounded-full bg-white dark:bg-slate-800/60 shadow-inner transition-all duration-200" style={{
                       left: netBalance < 0 ? `${balancePct}%` : '50%',
                       right: netBalance > 0 ? `${100 - balancePct}%` : '50%',
                     }} />
                   )}
-                  <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white border-[3px] shadow-md transition-all duration-200" style={{
+                  <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white dark:bg-slate-800 border-[3px] shadow-md transition-all duration-200" style={{
                     left: `calc(${balancePct}% - 8px)`,
                     borderColor: netBalance === 0 ? '#94a3b8' : netBalance < 0 ? '#3b82f6' : '#f97316'
                   }} />
                 </div>
-                <div className="flex items-center justify-center gap-2 text-[6px] text-slate-300 mb-1">
-                  <span className="text-slate-400">|</span>
+                <div className="flex items-center justify-center gap-2 text-[6px] text-slate-300 dark:text-slate-600 mb-1">
+                  <span className="text-slate-400 dark:text-slate-500">|</span>
                   <span>0</span>
-                  <span className="text-slate-300">|</span>
+                  <span className="text-slate-300 dark:text-slate-600">|</span>
                   <span>±1 has/hasn't</span>
                   <span className="text-amber-400">|</span>
                   <span className="text-amber-500">±3 careful</span>
                 </div>
                 <div className="flex justify-between items-center mb-2 mt-1">
                   <div>
-                    <span className="text-[9px] text-slate-400">Composition Index of this cup: </span>
-                    <span className="text-[11px] font-bold text-slate-600">{AXES.reduce((s, k) => s + Math.abs(composition[k] || 0), 0)}</span>
-                    <span className="text-[7px] text-slate-300 ml-1">/30</span>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500">Composition Index of this cup: </span>
+                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">{AXES.reduce((s, k) => s + Math.abs(composition[k] || 0), 0)}</span>
+                    <span className="text-[7px] text-slate-300 dark:text-slate-600 ml-1">/30</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] text-slate-400">Balance Index of this cup: </span>
-                    <span className={`text-[11px] font-bold ${netBalance === 0 ? 'text-slate-600' : netBalance < 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500">Balance Index of this cup: </span>
+                    <span className={`text-[11px] font-bold ${netBalance === 0 ? 'text-slate-600 dark:text-slate-400' : netBalance < 0 ? 'text-blue-600' : 'text-orange-600'}`}>
                       {netBalance > 0 ? '+' : ''}{netBalance}
                     </span>
-                    <span className="text-[7px] text-slate-300 ml-1">/±30</span>
+                    <span className="text-[7px] text-slate-300 dark:text-slate-600 ml-1">/±30</span>
                   </div>
                 </div>
                 {(() => {
                   const avgScore = AXES.reduce((s, k) => s + (profile[k as keyof Profile] || 0), 0) / AXES.length;
-                  return <div className={`mb-1.5 text-[7px] ${avgScore >= 7 ? 'text-emerald-600' : avgScore >= 5 ? 'text-amber-600' : 'text-red-500'}`}>
+                  return <div className={`mb-1.5 text-[7px] ${avgScore >= 7 ? 'text-emerald-600' : avgScore >= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
                     <span className="font-semibold">Quality: </span>
                     {avgScore >= 7 ? 'Good' : avgScore >= 5 ? 'Average' : 'Low'}
-                    <span className="text-slate-300 mx-0.5">·</span>
+                    <span className="text-slate-300 dark:text-slate-600 mx-0.5">·</span>
                     Avg {avgScore.toFixed(1)}/9
                     {avgScore < 6 && <span className="text-red-400 ml-1">← composition doesn't fix low sensory scores</span>}
                   </div>;
                 })()}
                 <div className="mb-1.5">
-                  <button onClick={() => setShowGuide(p => !p)} className="flex items-center gap-1 text-[7px] text-slate-400 hover:text-slate-600">
+                  <button onClick={() => setShowGuide(p => !p)} className="flex items-center gap-1 text-[7px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400">
                     <span className={`w-3 h-3 rounded-full border border-current flex items-center justify-center text-[6px] font-bold`}>i</span>
                     CI &amp; BI Guide
                   </button>
-                  {showGuide && <div className="text-[7px] text-slate-500 mt-1 space-y-0.5 bg-slate-50 rounded border border-slate-100 p-1.5">
-                    <div className="font-semibold text-slate-600">Composition Index (0–30):</div>
-                    <div className="flex gap-1 items-baseline"><span className="text-emerald-600 font-bold">0–5</span> <span className="text-slate-400">=</span> <span className="text-slate-600">tight, precise brew — everything close to zero</span></div>
-                    <div className="flex gap-1 items-baseline"><span className="text-amber-600 font-bold">6–14</span> <span className="text-slate-400">=</span> <span className="text-slate-600">moderate — some movement but coherent</span></div>
-                    <div className="flex gap-1 items-baseline"><span className="text-red-500 font-bold">15+</span> <span className="text-slate-400">=</span> <span className="text-slate-600">wide — lots of adjustment needed, likely uneven extraction</span></div>
-                    <div className="font-semibold text-slate-600 mt-1">Balance Index (–30 to +30):</div>
-                    <div className="flex gap-1 items-baseline"><span className="text-slate-600 font-bold">±0–7</span> <span className="text-slate-400">=</span> <span className="text-slate-600">neutral — cup is balanced directionally</span></div>
-                    <div className="flex gap-1 items-baseline"><span className="text-blue-600 font-bold">±8+</span> <span className="text-slate-400">=</span> <span className="text-slate-600">leaning clearly underbuilt or overbuilt — recipe change needed</span></div>
+                  {showGuide && <div className="text-[7px] text-slate-500 dark:text-slate-400 mt-1 space-y-0.5 bg-slate-50 dark:bg-slate-900/50 rounded border border-slate-100 dark:border-slate-700 p-1.5">
+                    <div className="font-semibold text-slate-600 dark:text-slate-400">Composition Index (0–30):</div>
+                    <div className="flex gap-1 items-baseline"><span className="text-emerald-600 font-bold">0–5</span> <span className="text-slate-400 dark:text-slate-500">=</span> <span className="text-slate-600 dark:text-slate-400">tight, precise brew — everything close to zero</span></div>
+                    <div className="flex gap-1 items-baseline"><span className="text-amber-600 dark:text-amber-400 font-bold">6–14</span> <span className="text-slate-400 dark:text-slate-500">=</span> <span className="text-slate-600 dark:text-slate-400">moderate — some movement but coherent</span></div>
+                    <div className="flex gap-1 items-baseline"><span className="text-red-500 dark:text-red-400 font-bold">15+</span> <span className="text-slate-400 dark:text-slate-500">=</span> <span className="text-slate-600 dark:text-slate-400">wide — lots of adjustment needed, likely uneven extraction</span></div>
+                    <div className="font-semibold text-slate-600 dark:text-slate-400 mt-1">Balance Index (–30 to +30):</div>
+                    <div className="flex gap-1 items-baseline"><span className="text-slate-600 dark:text-slate-400 font-bold">±0–7</span> <span className="text-slate-400 dark:text-slate-500">=</span> <span className="text-slate-600 dark:text-slate-400">neutral — cup is balanced directionally</span></div>
+                    <div className="flex gap-1 items-baseline"><span className="text-blue-600 font-bold">±8+</span> <span className="text-slate-400 dark:text-slate-500">=</span> <span className="text-slate-600 dark:text-slate-400">leaning clearly underbuilt or overbuilt — recipe change needed</span></div>
                   </div>}
                 </div>
-                <div className="flex items-center gap-2 text-[6px] text-slate-300 mb-1.5 justify-center">
-                  <span className="text-slate-400">|</span>
+                <div className="flex items-center gap-2 text-[6px] text-slate-300 dark:text-slate-600 mb-1.5 justify-center">
+                  <span className="text-slate-400 dark:text-slate-500">|</span>
                   <span>±0</span>
-                  <span className="text-slate-300">|</span>
+                  <span className="text-slate-300 dark:text-slate-600">|</span>
                   <span>±1 has/hasn't</span>
                   <span className="text-amber-400">|</span>
                   <span className="text-amber-500">±3 careful</span>
@@ -1865,7 +1865,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   const selLabel = Object.values(activeCats)[0] || '';
                   return (
                     <div key={l.key} className="flex items-center gap-2">
-                      <span className="text-[10px] font-semibold text-slate-500 w-14 shrink-0 text-right">{l.label}</span>
+                      <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 w-14 shrink-0 text-right">{l.label}</span>
                       <div className="flex-1 relative h-4 rounded-full overflow-hidden bg-slate-100">
                         {/* Zone markers: 0 (center), ±1, ±3 */}
                         <div className="absolute top-0 bottom-0 w-px bg-slate-400/40 z-10" style={{ left: '50%' }} />
@@ -1876,14 +1876,14 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                         <div className={`absolute inset-y-0 rounded-full transition-all duration-200 ${v === 0 ? '' : v < 0 ? 'bg-blue-300' : 'bg-orange-300'}`}
                           style={v === 0 ? {} : { width: `${Math.abs(pct - 50)}%`, left: v < 0 ? `${pct}%` : '50%' }}
                         />
-                        <div className="absolute top-0.5 h-3 w-3 rounded-full bg-white border-[3px] shadow-sm transition-all duration-200" style={{
+                        <div className="absolute top-0.5 h-3 w-3 rounded-full bg-white dark:bg-slate-800 border-[3px] shadow-sm transition-all duration-200" style={{
                           left: `calc(${pct}% - 6px)`,
                           borderColor: v === 0 ? '#94a3b8' : v < 0 ? '#3b82f6' : '#f97316'
                         }} />
                       </div>
-                      <span className={`text-[10px] font-bold w-5 text-center ${v === 0 ? 'text-slate-300' : v < 0 ? 'text-blue-600' : 'text-orange-600'}`}>{v > 0 ? '+' : ''}{v}</span>
-                      <span className={`text-[6px] font-semibold ${v === 0 ? 'text-slate-300' : v < 0 ? 'text-blue-500' : 'text-orange-500'}`}>{v === 0 ? '—' : Math.abs(v) <= 2 ? 'slight' : Math.abs(v) <= 4 ? 'intense' : 'extreme'}</span>
-                      {selLabel && <span className="text-[8px] text-slate-400 truncate max-w-16">{selLabel}</span>}
+                      <span className={`text-[10px] font-bold w-5 text-center ${v === 0 ? 'text-slate-300 dark:text-slate-600' : v < 0 ? 'text-blue-600' : 'text-orange-600'}`}>{v > 0 ? '+' : ''}{v}</span>
+                      <span className={`text-[6px] font-semibold ${v === 0 ? 'text-slate-300 dark:text-slate-600' : v < 0 ? 'text-blue-500' : 'text-orange-500'}`}>{v === 0 ? '—' : Math.abs(v) <= 2 ? 'slight' : Math.abs(v) <= 4 ? 'intense' : 'extreme'}</span>
+                      {selLabel && <span className="text-[8px] text-slate-400 dark:text-slate-500 truncate max-w-16">{selLabel}</span>}
                     </div>
                   );
                 })}
@@ -1893,15 +1893,15 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
 
               {/* Save/Load */}
               <div className="mb-2">
-                <button onClick={() => setShowSaveLoad(p => !p)} className="flex items-center gap-1 text-[8px] font-semibold text-slate-500 mb-1">
+                <button onClick={() => setShowSaveLoad(p => !p)} className="flex items-center gap-1 text-[8px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
                   <span className="text-[6px]">{showSaveLoad ? '▼' : '▶'}</span>
                   Save / Load
                 </button>
-                {showSaveLoad && (<div className="bg-slate-50 rounded-lg border border-slate-100 p-2 space-y-2">
+                {showSaveLoad && (<div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-700 p-2 space-y-2">
                   {/* Save form */}
                   <div className="flex items-center gap-1.5">
                     <input value={snapName} onChange={e => setSnapName(e.target.value)} placeholder="Cup name..."
-                      className="flex-1 text-[8px] px-1.5 py-1 rounded border border-slate-200 bg-white outline-none focus:border-amber-300" />
+                      className="flex-1 text-[8px] px-1.5 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none focus:border-amber-300" />
                     <div className="flex gap-0.5">{[1,2,3,4,5].map(r => (
                       <button key={r} onClick={() => setSnapRating(r)}
                         className={`text-[10px] ${r <= snapRating ? 'text-amber-400' : 'text-slate-200'}`}>{r <= snapRating ? '★' : '☆'}</button>
@@ -1918,16 +1918,16 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       setCompSnapshots(prev => [s, ...prev]);
                       setSnapName(''); setSnapRating(3);
                     }}
-                      className="text-[8px] font-semibold px-2 py-1 rounded bg-amber-100 text-amber-700 hover:bg-amber-200"
+                      className="text-[8px] font-semibold px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 hover:bg-amber-200"
                     >Save</button>
                   </div>
                   {/* Saved list */}
                   {compSnapshots.length > 0 && <div className="space-y-1 max-h-40 overflow-y-auto">
                     {compSnapshots.map((s, i) => (
-                      <div key={i} className="flex items-center gap-1.5 text-[7px] bg-white rounded border border-slate-100 px-1.5 py-1">
-                        <span className="font-semibold text-slate-600 w-16 truncate">{s.name}</span>
+                      <div key={i} className="flex items-center gap-1.5 text-[7px] bg-white dark:bg-slate-800 rounded border border-slate-100 dark:border-slate-700 px-1.5 py-1">
+                        <span className="font-semibold text-slate-600 dark:text-slate-400 w-16 truncate">{s.name}</span>
                         <span className="text-amber-400">{'★'.repeat(s.rating)}{'☆'.repeat(5 - s.rating)}</span>
-                        <span className="text-slate-300 ml-auto">CI {s.ci}  {s.balance >= 0 ? '+' : ''}{s.balance}</span>
+                        <span className="text-slate-300 dark:text-slate-600 ml-auto">CI {s.ci}  {s.balance >= 0 ? '+' : ''}{s.balance}</span>
                         <button onClick={() => {
                           setComposition(s.composition);
                           setVocabCats(JSON.parse(JSON.stringify(s.vocabCats)));
@@ -1937,7 +1937,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                           className="text-[7px] px-1 py-0.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold"
                         >Load</button>
                         <button onClick={() => { if (confirm('Delete ' + s.name + '?')) setCompSnapshots(prev => prev.filter((_, j) => j !== i)); }}
-                          className="text-[7px] px-1 py-0.5 rounded text-slate-400 hover:text-red-500"
+                          className="text-[7px] px-1 py-0.5 rounded text-slate-400 dark:text-slate-500 hover:text-red-500 dark:text-red-400"
                         >✕</button>
                       </div>
                     ))}
@@ -1946,7 +1946,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               </div>
 
               {/* Adjustment section */}
-              <div className="text-[8px] font-semibold text-slate-500 mb-2 pb-1 border-b border-slate-100">Adjustment</div>
+              <div className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 mb-2 pb-1 border-b border-slate-100 dark:border-slate-700">Adjustment</div>
               {layers.map(layer => {
                 const sensoryScore = profile[layer.key as keyof Profile];
                 const adj = composition[layer.key] || 0;
@@ -1965,31 +1965,31 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 return (
                   <div key={layer.key} className="mb-2 pb-2 border-b border-slate-50 last:border-0">
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[10px] font-semibold text-slate-600">{layer.emoji} {AXIS_LABELS[layer.key]}<span className="font-normal text-slate-400"> : Quality</span> <span className={`font-bold`} style={{ color: scoreContext(sensoryScore).color }}>{axisPresent[layer.key] ? sensoryScore : '—'}<span className="font-normal text-slate-400">/9</span></span>{(posCnt > 0 || negCnt > 0) && <><span className="text-[8px] text-emerald-500 ml-1">✅{posCnt}</span><span className="text-[8px] text-red-400 ml-0.5">⚠️{negCnt}</span></>}</span>
+                      <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">{layer.emoji} {AXIS_LABELS[layer.key]}<span className="font-normal text-slate-400 dark:text-slate-500"> : Quality</span> <span className={`font-bold`} style={{ color: scoreContext(sensoryScore).color }}>{axisPresent[layer.key] ? sensoryScore : '—'}<span className="font-normal text-slate-400 dark:text-slate-500">/9</span></span>{(posCnt > 0 || negCnt > 0) && <><span className="text-[8px] text-emerald-500 ml-1">✅{posCnt}</span><span className="text-[8px] text-red-400 ml-0.5">⚠️{negCnt}</span></>}</span>
                       <div className="flex items-center gap-1">
-                      {SENSORY_VOCAB[layer.key] && <div className="flex rounded overflow-hidden border border-slate-200 text-[8px] font-semibold">
+                      {SENSORY_VOCAB[layer.key] && <div className="flex rounded overflow-hidden border border-slate-200 dark:border-slate-700 text-[8px] font-semibold">
                         <button onClick={() => setAutoComp(p => ({ ...p, [layer.key]: true }))}
-                          className={`px-1.5 py-0.5 transition-colors ${autoComp[layer.key] ? 'bg-amber-100 text-amber-700' : 'bg-white text-slate-400'}`}
+                          className={`px-1.5 py-0.5 transition-colors ${autoComp[layer.key] ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`}
                         >🔄</button>
                         <span className="w-px bg-slate-200" />
                         <button onClick={() => setAutoComp(p => ({ ...p, [layer.key]: false }))}
-                          className={`px-1.5 py-0.5 transition-colors ${!autoComp[layer.key] ? 'bg-slate-200 text-slate-600' : 'bg-white text-slate-400'}`}
+                          className={`px-1.5 py-0.5 transition-colors ${!autoComp[layer.key] ? 'bg-slate-200 text-slate-600 dark:text-slate-400' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`}
                         >✋</button>
                       </div>}
                       {SENSORY_VOCAB[layer.key] && <button onClick={() => setShowVocabChips(p => !p)}
-                        className={`text-[6px] px-1 py-0.5 rounded font-semibold ${showVocabChips ? 'bg-slate-100 text-slate-500' : 'bg-white text-slate-300 border border-slate-200'}`}
+                        className={`text-[6px] px-1 py-0.5 rounded font-semibold ${showVocabChips ? 'bg-slate-100 text-slate-500 dark:text-slate-400' : 'bg-white dark:bg-slate-800 text-slate-300 dark:text-slate-600 border border-slate-200 dark:border-slate-700'}`}
                       >Chips</button>}
                       <button onClick={() => setAxisPresent(p => {
                           const next = { ...p, [layer.key]: !p[layer.key] };
                           setComposition(c => ({ ...c, [layer.key]: next[layer.key] ? 0 : layer.oneWay ? 0 : 3 }));
                           return next;
                         })}
-                          className={`text-[7px] font-bold px-1.5 py-1 rounded transition-colors ${axisPresent[layer.key] ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}
+                          className={`text-[7px] font-bold px-1.5 py-1 rounded transition-colors ${axisPresent[layer.key] ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-slate-100 text-slate-400 dark:text-slate-500'}`}
                         >{axisPresent[layer.key] ? '👁' : '✖'}</button>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className={`text-[7px] w-8 text-right shrink-0 ${!axisPresent[layer.key] ? 'text-slate-300' : layer.oneWay ? 'text-blue-600 font-semibold' : adj < 0 ? 'text-blue-600 font-semibold' : 'text-slate-400'}`}>{axisPresent[layer.key] ? (layer.oneWay ? `0 ${layer.neg}` : adj < 0 ? `${adj} ${layer.neg}` : layer.neg) : '—'}</span>
+                      <span className={`text-[7px] w-8 text-right shrink-0 ${!axisPresent[layer.key] ? 'text-slate-300 dark:text-slate-600' : layer.oneWay ? 'text-blue-600 font-semibold' : adj < 0 ? 'text-blue-600 font-semibold' : 'text-slate-400 dark:text-slate-500'}`}>{axisPresent[layer.key] ? (layer.oneWay ? `0 ${layer.neg}` : adj < 0 ? `${adj} ${layer.neg}` : layer.neg) : '—'}</span>
                       <div className="flex-1 relative h-6 mx-3">
                         <div className="absolute inset-0 bg-slate-100 rounded-full overflow-hidden">
                           {!layer.oneWay && <div className="absolute top-0 bottom-0 left-0 rounded-full bg-gradient-to-r from-blue-400 to-blue-500 transition-all duration-200" style={{ width: adj < 0 ? `${(-adj / range) * 50}%` : '0%', opacity: adj < 0 ? 0.85 : 0 }} />}
@@ -2002,7 +2002,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                           <span className="text-[10px] font-bold drop-shadow-sm" style={{ color: !axisPresent[layer.key] ? '#cbd5e1' : layer.oneWay ? (adj <= 2 ? '#1e40af' : '#c2410c') : adj === 0 ? '#64748b' : adj < 0 ? '#1e40af' : '#c2410c' }}>{axisPresent[layer.key] ? (adj > 0 ? '+' : '') + adj : '—'}</span>
                         </div>
-                        <div className="absolute top-0.5 h-5 w-5 rounded-full bg-white border-[3px] shadow-md transition-all duration-200 z-10 pointer-events-none" style={{
+                        <div className="absolute top-0.5 h-5 w-5 rounded-full bg-white dark:bg-slate-800 border-[3px] shadow-md transition-all duration-200 z-10 pointer-events-none" style={{
                           left: `calc(${adjPct}% - 10px)`,
                           borderColor: !axisPresent[layer.key] ? '#cbd5e1' : layer.oneWay ? (adj <= 2 ? '#3b82f6' : '#f97316') : adj === 0 ? '#94a3b8' : adj < 0 ? '#3b82f6' : '#f97316'
                         }} />
@@ -2010,11 +2010,11 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                         />
                       </div>
-                      <span className={`text-[7px] w-8 shrink-0 ${!axisPresent[layer.key] ? 'text-slate-300' : adj > 0 ? 'text-orange-600 font-semibold' : 'text-slate-400'}`}>{axisPresent[layer.key] ? (adj > 0 ? `+${adj} ${layer.pos}` : layer.pos) : '—'}</span>
+                      <span className={`text-[7px] w-8 shrink-0 ${!axisPresent[layer.key] ? 'text-slate-300 dark:text-slate-600' : adj > 0 ? 'text-orange-600 font-semibold' : 'text-slate-400 dark:text-slate-500'}`}>{axisPresent[layer.key] ? (adj > 0 ? `+${adj} ${layer.pos}` : layer.pos) : '—'}</span>
                     </div>
                     {adj !== 0 && (
                       <div className="mt-0.5">
-                        <div className={`text-[7px] italic text-center ${!axisPresent[layer.key] ? 'text-slate-400' : posCnt > negCnt ? 'text-emerald-600' : negCnt > posCnt ? 'text-red-500' : 'text-slate-400'}`}>{axisPresent[layer.key] ? (layer.oneWay ? (adj <= 2 ? 'Needs more structure — feels underbuilt' : posCnt > negCnt ? `✅ ${vocab?.posLabel || 'Positive'} dominates — ${vocab?.posVerdict || 'this works'} (sensory: ${sensoryScore}/9)` : negCnt > posCnt ? `⚠️ ${vocab?.negLabel || 'Negative'} dominates — ${vocab?.negVerdict || 'dial it back'} (sensory: ${sensoryScore}/9)` : 'Overbuilt — the composition is too heavy (sensory: ' + sensoryScore + '/9)') : posCnt > negCnt ? `✅ ${vocab?.posLabel || 'Positive'} dominates — ${vocab?.posVerdict || 'this works'} (sensory: ${sensoryScore}/9)` : negCnt > posCnt ? `⚠️ ${vocab?.negLabel || 'Negative'} dominates — ${vocab?.negVerdict || 'dial it back'} (sensory: ${sensoryScore}/9)` : `Feels structurally ${adj > 0 ? 'overbuilt — dial it back' : 'underbuilt — give it more'} (sensory: ${sensoryScore}/9)`) : 'Not perceived — structurally missing from the cup'}</div>
+                        <div className={`text-[7px] italic text-center ${!axisPresent[layer.key] ? 'text-slate-400 dark:text-slate-500' : posCnt > negCnt ? 'text-emerald-600' : negCnt > posCnt ? 'text-red-500 dark:text-red-400' : 'text-slate-400 dark:text-slate-500'}`}>{axisPresent[layer.key] ? (layer.oneWay ? (adj <= 2 ? 'Needs more structure — feels underbuilt' : posCnt > negCnt ? `✅ ${vocab?.posLabel || 'Positive'} dominates — ${vocab?.posVerdict || 'this works'} (sensory: ${sensoryScore}/9)` : negCnt > posCnt ? `⚠️ ${vocab?.negLabel || 'Negative'} dominates — ${vocab?.negVerdict || 'dial it back'} (sensory: ${sensoryScore}/9)` : 'Overbuilt — the composition is too heavy (sensory: ' + sensoryScore + '/9)') : posCnt > negCnt ? `✅ ${vocab?.posLabel || 'Positive'} dominates — ${vocab?.posVerdict || 'this works'} (sensory: ${sensoryScore}/9)` : negCnt > posCnt ? `⚠️ ${vocab?.negLabel || 'Negative'} dominates — ${vocab?.negVerdict || 'dial it back'} (sensory: ${sensoryScore}/9)` : `Feels structurally ${adj > 0 ? 'overbuilt — dial it back' : 'underbuilt — give it more'} (sensory: ${sensoryScore}/9)`) : 'Not perceived — structurally missing from the cup'}</div>
                         {axisPresent[layer.key] && adj !== 0 && (() => {
                           const guides: Record<string, { over: string[]; under: string[] }> = {
                             mouthfeel: { over: ['Switch to paper filter (absorbs oils)', 'Lower water hardness (softer water)', 'Coarsen grind'], under: ['Switch to metal/cloth filter', 'Increase water hardness (add minerals)', 'Finer grind for more body'] },
@@ -2029,7 +2029,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                           const tips = adj > 0 ? g.over : g.under;
                           if (tips.length === 0) return null;
                           return (
-                            <div className="text-[7px] text-slate-400 text-center mt-0.5 space-y-0.5">
+                            <div className="text-[7px] text-slate-400 dark:text-slate-500 text-center mt-0.5 space-y-0.5">
                               {tips.map((t, i) => <div key={i} className="text-[6px]">→ {t}</div>)}
                             </div>
                           );
@@ -2040,10 +2040,10 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       <div className="flex flex-wrap gap-1 justify-center mt-1">
                         {SENSORY_VOCAB[layer.key] ? (<>
                           {SENSORY_VOCAB[layer.key].categories.map((cat, catIdx) => (
-                            <div key={cat.name} className={`flex flex-wrap gap-0.5 items-baseline w-full ${catIdx === 0 ? 'bg-amber-50/50 rounded p-1 mb-0.5 border border-amber-200/30' : ''}`}
+                            <div key={cat.name} className={`flex flex-wrap gap-0.5 items-baseline w-full ${catIdx === 0 ? 'bg-amber-50 dark:bg-amber-900/20/50 rounded p-1 mb-0.5 border border-amber-200 dark:border-amber-800/30' : ''}`}
                               style={{ display: catIdx === 0 || showVocabChips ? '' : 'none' }}
                             >
-                              <span className={`text-[6px] font-semibold uppercase tracking-wider ${POLARITY_COLORS[cat.polarity] || 'text-slate-400'}`}>{catIdx === 0 && '⚙️ '}{cat.name}{cat.acidType && vocabCats[layer.key]?.[cat.name] && <span className="ml-1 text-[5px] text-slate-400 font-normal">({cat.acidType})</span>}</span>
+                              <span className={`text-[6px] font-semibold uppercase tracking-wider ${POLARITY_COLORS[cat.polarity] || 'text-slate-400 dark:text-slate-500'}`}>{catIdx === 0 && '⚙️ '}{cat.name}{cat.acidType && vocabCats[layer.key]?.[cat.name] && <span className="ml-1 text-[5px] text-slate-400 dark:text-slate-500 font-normal">({cat.acidType})</span>}</span>
                               <div className="flex flex-wrap gap-1">
                                 {cat.words.map(w => {
                                   const catSel = vocabCats[layer.key] || {};
@@ -2082,7 +2082,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                                         return next;
                                       });
                                     }}
-                                      className={`text-[7px] px-1.5 py-0.5 rounded-full border transition-colors ${isActive ? 'bg-amber-50 border-amber-300 text-amber-700 font-semibold' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                                      className={`text-[7px] px-1.5 py-0.5 rounded-full border transition-colors ${isActive ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 text-amber-700 font-semibold' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:border-slate-600'}`}
                                     >{w.emoji} {w.label} <span className="text-[6px] opacity-60">{w.weight > 0 ? '+' : ''}{w.weight}</span></button>
                                   );
                                 })}
@@ -2097,13 +2097,13 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                               <div className="flex items-center gap-1">
                                 {negCnt > 0 && <span className="text-[6px] text-red-400 font-semibold shrink-0">⚠️ {nl} {negCnt}</span>}
                                 {posCnt > 0 && <span className="text-[6px] text-emerald-500 font-semibold shrink-0">✅ {pl} {posCnt}</span>}
-                                {posCnt > 0 && negCnt > 0 && <span className="text-[5px] text-slate-300 ml-auto">{posCnt > negCnt ? pl + ' wins' : nl + ' wins'}</span>}
+                                {posCnt > 0 && negCnt > 0 && <span className="text-[5px] text-slate-300 dark:text-slate-600 ml-auto">{posCnt > negCnt ? pl + ' wins' : nl + ' wins'}</span>}
                               </div>
                               <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-100">
                                 {negCnt > 0 && <div className="h-full bg-gradient-to-r from-red-300 to-red-400" style={{ width: (negCnt / (posCnt + negCnt)) * 100 + '%' }} />}
                                 {posCnt > 0 && <div className="h-full bg-gradient-to-r from-emerald-300 to-emerald-400" style={{ width: (posCnt / (posCnt + negCnt)) * 100 + '%' }} />}
                               </div>
-                              <div className="text-[6px] text-slate-400 font-medium">{posCnt >= negCnt ? '✓ ' + pl + ' — ' + (vocab?.posVerdict || 'good') : '✗ ' + nl + ' — ' + (vocab?.negVerdict || 'adjust')}</div>
+                              <div className="text-[6px] text-slate-400 dark:text-slate-500 font-medium">{posCnt >= negCnt ? '✓ ' + pl + ' — ' + (vocab?.posVerdict || 'good') : '✗ ' + nl + ' — ' + (vocab?.negVerdict || 'adjust')}</div>
                             </div>
                             );
                           })()}
@@ -2116,7 +2116,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                                 const next = curr.includes(f.name) ? curr.filter(x => x !== f.name) : [...curr, f.name];
                                 return { ...p, [layer.key]: next };
                               })}
-                                className={`text-[7px] px-1.5 py-0.5 rounded-full border transition-colors ${active ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                                className={`text-[7px] px-1.5 py-0.5 rounded-full border transition-colors ${active ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 text-amber-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:border-slate-600'}`}
                               >{f.emoji} {f.name}</button>
                             );
                           })
@@ -2167,23 +2167,23 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 scaTdsMax={scaHi || undefined}
               />
               {/* Compact input row */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-bold text-slate-700">📐 Extraction Theory</h2>
+                  <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300">📐 Extraction Theory</h2>
                 </div>
                 <div className="flex items-end gap-1.5 mb-3">
                   <div className="flex-1">
-                    <label className="text-[8px] font-semibold text-slate-500 block mb-0.5">Dose (g)</label>
+                    <label className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Dose (g)</label>
                     <div className="flex items-center gap-0.5">
-                      <button onClick={() => { const v = parseFloat(extractionDose) || 0; if (v > 0) setExtractionDose(Math.max(0, v - 0.5).toFixed(1)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">−</button>
-                      <input type="text" inputMode="decimal" value={extractionDose} onChange={e => setExtractionDose(e.target.value)} placeholder="18" className="w-full text-[10px] border border-slate-200 rounded px-1 py-1.5 text-slate-700 bg-white font-mono text-center" />
-                      <button onClick={() => { const v = parseFloat(extractionDose) || 0; setExtractionDose((v + 0.5).toFixed(1)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">+</button>
+                      <button onClick={() => { const v = parseFloat(extractionDose) || 0; if (v > 0) setExtractionDose(Math.max(0, v - 0.5).toFixed(1)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:text-slate-400">−</button>
+                      <input type="text" inputMode="decimal" value={extractionDose} onChange={e => setExtractionDose(e.target.value)} placeholder="18" className="w-full text-[10px] border border-slate-200 dark:border-slate-700 rounded px-1 py-1.5 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 font-mono text-center" />
+                      <button onClick={() => { const v = parseFloat(extractionDose) || 0; setExtractionDose((v + 0.5).toFixed(1)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:text-slate-400">+</button>
                     </div>
                   </div>
                   <div className="flex-1">
-                    <label className="text-[8px] font-semibold text-slate-500 block mb-0.5">Ratio</label>
+                    <label className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Ratio</label>
                     <div className="flex items-center gap-0.5">
-                      <span className="text-[10px] text-slate-400 font-mono">1:</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">1:</span>
                       <input type="text" inputMode="decimal"
                         value={extractionRatio.split(':')[1] || ''}
                         onChange={(e) => {
@@ -2196,35 +2196,35 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                           }
                         }}
                         placeholder="16"
-                        className="w-full text-[10px] border border-sky-300 rounded px-1 py-1.5 text-sky-800 bg-white font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                        className="w-full text-[10px] border border-sky-300 rounded px-1 py-1.5 text-sky-800 bg-white dark:bg-slate-800 font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
                     </div>
                   </div>
                   <div className="flex-1">
-                    <label className="text-[8px] font-semibold text-slate-500 block mb-0.5">TDS (%)</label>
+                    <label className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">TDS (%)</label>
                     <div className="flex items-center gap-0.5">
-                      <button onClick={() => { const v = parseFloat(tds) || 0; if (v > 0) setTds(Math.max(0, v - 0.05).toFixed(2)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">−</button>
-                      <input type="text" inputMode="decimal" value={tds} onChange={e => setTds(e.target.value)} placeholder="1.35" className="w-full text-[10px] border border-slate-200 rounded px-1 py-1.5 text-slate-700 bg-white font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
-                      <button onClick={() => { const v = parseFloat(tds) || 0; setTds((v + 0.05).toFixed(2)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">+</button>
+                      <button onClick={() => { const v = parseFloat(tds) || 0; if (v > 0) setTds(Math.max(0, v - 0.05).toFixed(2)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:text-slate-400">−</button>
+                      <input type="text" inputMode="decimal" value={tds} onChange={e => setTds(e.target.value)} placeholder="1.35" className="w-full text-[10px] border border-slate-200 dark:border-slate-700 rounded px-1 py-1.5 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                      <button onClick={() => { const v = parseFloat(tds) || 0; setTds((v + 0.05).toFixed(2)); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:text-slate-400">+</button>
                     </div>
                   </div>
                   <div className="flex-1">
-                    <label className="text-[8px] font-semibold text-slate-500 block mb-0.5">EY Range (%)</label>
+                    <label className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">EY Range (%)</label>
                     <div className="flex items-center gap-0.5">
-                      <input type="text" inputMode="decimal" value={eyMin} onChange={e => setEyMin(e.target.value)} placeholder="18" className="w-full text-[10px] border border-amber-300 rounded px-1 py-1.5 text-amber-800 bg-white font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
-                      <span className="text-[8px] text-slate-400 shrink-0">–</span>
-                      <input type="text" inputMode="decimal" value={eyMax} onChange={e => setEyMax(e.target.value)} placeholder="22" className="w-full text-[10px] border border-amber-300 rounded px-1 py-1.5 text-amber-800 bg-white font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                      <input type="text" inputMode="decimal" value={eyMin} onChange={e => setEyMin(e.target.value)} placeholder="18" className="w-full text-[10px] border border-amber-300 rounded px-1 py-1.5 text-amber-800 dark:text-amber-200 bg-white dark:bg-slate-800 font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 shrink-0">–</span>
+                      <input type="text" inputMode="decimal" value={eyMax} onChange={e => setEyMax(e.target.value)} placeholder="22" className="w-full text-[10px] border border-amber-300 rounded px-1 py-1.5 text-amber-800 dark:text-amber-200 bg-white dark:bg-slate-800 font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-400" />
                     </div>
                   </div>
                   {doseNum > 0 && ratioNum > 0 && (
-                    <div className="text-[8px] text-slate-400 text-center pb-0.5 shrink-0">
+                    <div className="text-[8px] text-slate-400 dark:text-slate-500 text-center pb-0.5 shrink-0">
                       <span className="block">Water In</span>
-                      <span className="font-mono font-bold text-slate-600">{waterIn.toFixed(0)}g</span>
-                      <span className="block mt-0.5 text-slate-300">Out</span>
+                      <span className="font-mono font-bold text-slate-600 dark:text-slate-400">{waterIn.toFixed(0)}g</span>
+                      <span className="block mt-0.5 text-slate-300 dark:text-slate-600">Out</span>
                       <div className="relative">
                         <input type="text" inputMode="decimal" value={yieldOut} onChange={e => setYieldOut(e.target.value)} placeholder={`≈${waterOut.toFixed(0)}`}
-                          className="w-full text-[10px] border border-dashed border-slate-200 rounded px-1 py-0.5 text-emerald-600 bg-white font-mono font-bold text-center focus:outline-none focus:ring-1 focus:ring-emerald-400" />
+                          className="w-full text-[10px] border border-dashed border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-emerald-600 bg-white dark:bg-slate-800 font-mono font-bold text-center focus:outline-none focus:ring-1 focus:ring-emerald-400" />
                         {yieldOutNum > 0 && (
-                          <button onClick={() => setYieldOut('')} className="absolute -top-1 -right-1 w-3 h-3 flex items-center justify-center rounded-full text-[7px] bg-slate-200 text-slate-500 hover:bg-red-200 hover:text-red-600" title="Clear">✕</button>
+                          <button onClick={() => setYieldOut('')} className="absolute -top-1 -right-1 w-3 h-3 flex items-center justify-center rounded-full text-[7px] bg-slate-200 text-slate-500 dark:text-slate-400 hover:bg-red-200 hover:text-red-600" title="Clear">✕</button>
                         )}
                       </div>
                     </div>
@@ -2234,9 +2234,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 {/* Ratio slider bar — 1:5 to 1:22 */}
                 <div className="mb-3 px-1">
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-[7px] text-slate-400">1:5</span>
+                    <span className="text-[7px] text-slate-400 dark:text-slate-500">1:5</span>
                     <span className="text-[9px] font-bold text-sky-700">1:{ratioNum.toFixed(1)}</span>
-                    <span className="text-[7px] text-slate-400">1:22</span>
+                    <span className="text-[7px] text-slate-400 dark:text-slate-500">1:22</span>
                   </div>
                   <input type="range" min={5} max={22} step={0.1} value={Math.min(22, Math.max(5, ratioNum))}
                     onChange={(e) => setExtractionRatio(`1:${e.target.value}`)}
@@ -2247,9 +2247,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 {tdsNum > 0 && doseNum > 0 && ratioNum > 0 && diagnosis && (
                   <div className="p-3 rounded-lg border" style={{ backgroundColor: diagnosis.badgeColor + '12', borderColor: diagnosis.badgeColor + '30' }}>
                     {validRatio && eyMinNum > 0 && eyMaxNum > 0 && (
-                      <div className="text-[9px] text-slate-400 text-center mb-2">
+                      <div className="text-[9px] text-slate-400 dark:text-slate-500 text-center mb-2">
                         EY {eyMinNum}–{eyMaxNum}% at 1:{ratioNum} → TDS{' '}
-                        <span className="font-bold text-emerald-700">{getReferenceTDS(ratioNum, eyMinNum).toFixed(2)}–{getReferenceTDS(ratioNum, eyMaxNum).toFixed(2)}%</span>
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400">{getReferenceTDS(ratioNum, eyMinNum).toFixed(2)}–{getReferenceTDS(ratioNum, eyMaxNum).toFixed(2)}%</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
@@ -2260,25 +2260,25 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       )}
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded text-white" style={{ backgroundColor: diagnosis.badgeColor }}>{diagnosis.label}</span>
                       {useScaForTds ? (
-                        <span className="text-[8px] text-slate-400">SCA zone reference</span>
+                        <span className="text-[8px] text-slate-400 dark:text-slate-500">SCA zone reference</span>
                       ) : (
-                        <span className="text-[8px] text-slate-400">Calculated reference ({ratioNum < 14 ? 'tight' : 'wide'} ratio)</span>
+                        <span className="text-[8px] text-slate-400 dark:text-slate-500">Calculated reference ({ratioNum < 14 ? 'tight' : 'wide'} ratio)</span>
                       )}
                     </div>
                     <p className="text-[9px]" style={{ color: diagnosis.badgeColor }}>{diagnosis.narrative}</p>
                     {lowScores.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
-                        <span className="text-[7px] font-semibold text-slate-400 uppercase">Low Scores:</span>
+                        <span className="text-[7px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Low Scores:</span>
                         {lowScores.map(k => (
-                          <span key={k} className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">{AXIS_LABELS[k]} {profile[k]}</span>
+                          <span key={k} className="text-[8px] bg-slate-100 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-medium">{AXIS_LABELS[k]} {profile[k]}</span>
                         ))}
                       </div>
                     )}
                     {selectedSymptoms.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
-                        <span className="text-[7px] font-semibold text-slate-400 uppercase">Symptoms:</span>
+                        <span className="text-[7px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Symptoms:</span>
                         {selectedSymptomData.map(s => (
-                          <span key={s.name} className={`text-[8px] px-1.5 py-0.5 rounded font-medium ${s.likelyExtraction === 'under' ? 'bg-blue-100 text-blue-700' : s.likelyExtraction === 'over' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>{s.name}</span>
+                          <span key={s.name} className={`text-[8px] px-1.5 py-0.5 rounded font-medium ${s.likelyExtraction === 'under' ? 'bg-blue-100 text-blue-700' : s.likelyExtraction === 'over' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500 dark:text-slate-400'}`}>{s.name}</span>
                         ))}
                       </div>
                     )}
@@ -2287,8 +2287,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
 
                 {/* EY → TDS reference + 3×3 grid */}
                 {tdsNum > 0 && doseNum > 0 && ratioNum > 0 && validRatio && (
-                  <div className="bg-white rounded-lg border border-slate-200 p-2">
-                    <div className="text-[8px] font-semibold text-slate-400 uppercase text-center mb-1.5">Ratio 1:{ratioNum} — EY {eyMinNum}–{eyMaxNum}%</div>
+                  <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-2">
+                    <div className="text-[8px] font-semibold text-slate-400 dark:text-slate-500 uppercase text-center mb-1.5">Ratio 1:{ratioNum} — EY {eyMinNum}–{eyMaxNum}%</div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {/* EY → TDS reference */}
                       <div>
@@ -2301,7 +2301,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                             return rows.map(r => {
                               const closeToCurrent = Math.abs(tdsNum - r.tds) < 0.01;
                               return (
-                                <div key={r.ey} className={`flex items-center justify-between px-2 py-1 ${closeToCurrent ? 'bg-emerald-100 font-bold text-emerald-800' : 'bg-white text-slate-600'}`}>
+                                <div key={r.ey} className={`flex items-center justify-between px-2 py-1 ${closeToCurrent ? 'bg-emerald-100 dark:bg-emerald-900/30 font-bold text-emerald-800 dark:text-emerald-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                                   <span className="font-mono">EY {r.ey}%</span>
                                   <span className="font-mono">→ TDS {r.tds.toFixed(2)}%</span>
                                   {closeToCurrent && <span className="text-[7px] text-emerald-600 ml-1">← your TDS</span>}
@@ -2314,10 +2314,10 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       {/* 3×3 TDS × EY grid */}
                       <div>
                         <div className="grid grid-cols-4 gap-px bg-slate-200 text-[8px]">
-                          <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold"></div>
-                          <div className="bg-slate-50 p-1 text-center text-blue-600 font-semibold">Under<br /><span className="text-[7px] font-normal">&lt;{eyMinNum}%</span></div>
-                          <div className="bg-slate-50 p-1 text-center text-emerald-600 font-semibold">Ideal<br /><span className="text-[7px] font-normal">{eyMinNum}–{eyMaxNum}%</span></div>
-                          <div className="bg-slate-50 p-1 text-center text-red-600 font-semibold">Over<br /><span className="text-[7px] font-normal">&gt;{eyMaxNum}%</span></div>
+                          <div className="bg-slate-50 dark:bg-slate-900/50 p-1 text-center text-slate-400 dark:text-slate-500 font-semibold"></div>
+                          <div className="bg-slate-50 dark:bg-slate-900/50 p-1 text-center text-blue-600 font-semibold">Under<br /><span className="text-[7px] font-normal">&lt;{eyMinNum}%</span></div>
+                          <div className="bg-slate-50 dark:bg-slate-900/50 p-1 text-center text-emerald-600 font-semibold">Ideal<br /><span className="text-[7px] font-normal">{eyMinNum}–{eyMaxNum}%</span></div>
+                          <div className="bg-slate-50 dark:bg-slate-900/50 p-1 text-center text-red-600 font-semibold">Over<br /><span className="text-[7px] font-normal">&gt;{eyMaxNum}%</span></div>
                           {(['weak', 'balanced', 'strong'] as const).map(tdsCat => {
                             const refMin = getReferenceTDS(ratioNum, eyMinNum);
                             const refMax = getReferenceTDS(ratioNum, eyMaxNum);
@@ -2326,7 +2326,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                             const eyLabelMap: Record<string, string> = { under: 'Under EY', ideal: 'Ideal EY', over: 'Over EY' };
                             return (
                               <div key={tdsCat} className="contents">
-                                <div className="bg-slate-50 p-1 text-center text-slate-400 font-semibold flex items-center justify-center text-[7px] leading-tight">
+                                <div className="bg-slate-50 dark:bg-slate-900/50 p-1 text-center text-slate-400 dark:text-slate-500 font-semibold flex items-center justify-center text-[7px] leading-tight">
                                   {tdsLabel}<br />{tdsRange}%
                                 </div>
                                 {(['under', 'ideal', 'over'] as const).map(eyCat => {
@@ -2336,7 +2336,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                                   const colorMap: Record<string, string> = { weak: '#0ea5e9', balanced: '#22c55e', strong: '#ef4444' };
                                   const action = eyCat === 'under' ? `→ ${eyMinNum}%+` : eyCat === 'ideal' ? '✓' : `→ ≤${eyMaxNum}%`;
                                   return (
-                                    <div key={`${tdsCat}-${eyCat}`} className={`p-1 text-center bg-white ${highlighted ? 'font-bold' : ''}`} style={highlighted ? { backgroundColor: colorMap[tdsCat] + '20', color: colorMap[tdsCat] } : {}}>
+                                    <div key={`${tdsCat}-${eyCat}`} className={`p-1 text-center bg-white dark:bg-slate-800 ${highlighted ? 'font-bold' : ''}`} style={highlighted ? { backgroundColor: colorMap[tdsCat] + '20', color: colorMap[tdsCat] } : {}}>
                                       <div className="text-[6px] leading-tight">{tdsLabel} · {eyLabelMap[eyCat]}</div>
                                       <div className="text-[7px] leading-tight font-mono">TDS {tdsRange}%</div>
                                       <div className="text-[6px] leading-tight" style={{ color: eyCat === 'ideal' ? '#16a34a' : '#ef4444' }}>{action}</div>
@@ -2349,10 +2349,10 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                         </div>
                       </div>
                     </div>
-                    <div className="text-[7px] text-slate-400 text-center mt-1">
+                    <div className="text-[7px] text-slate-400 dark:text-slate-500 text-center mt-1">
                       Current: TDS {tdsNum.toFixed(2)}% · EY {ey.toFixed(1)}%
                       {eyUnder && <span className="text-blue-500"> — below range</span>}
-                      {eyOver && <span className="text-red-500"> — above range</span>}
+                      {eyOver && <span className="text-red-500 dark:text-red-400"> — above range</span>}
                       {!eyUnder && !eyOver && <span className="text-emerald-600"> — in range</span>}
                     </div>
                   </div>
@@ -2362,9 +2362,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 {tdsNum > 0 && doseNum > 0 && ratioNum > 0 ? (
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-2">
-                        <div className={`p-2.5 rounded-lg border ${!eyUnder && !eyOver ? 'bg-emerald-50 border-emerald-200' : eyUnder ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
+                        <div className={`p-2.5 rounded-lg border ${!eyUnder && !eyOver ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : eyUnder ? 'bg-blue-50 border-blue-200' : 'bg-red-50 dark:bg-red-900/20 border-red-200'}`}>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-[8px] font-semibold text-slate-500 uppercase">EY</span>
+                            <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 uppercase">EY</span>
                             <span className="text-xs font-bold font-mono" style={{ color: !eyUnder && !eyOver ? '#16a34a' : eyUnder ? '#0284c7' : '#dc2626' }}>
                               {ey.toFixed(1)}%
                             </span>
@@ -2373,15 +2373,15 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                             <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (ey / Math.max(30, eyMaxNum * 1.3)) * 100)}%`, backgroundColor: !eyUnder && !eyOver ? '#22c55e' : eyUnder ? '#0ea5e9' : '#ef4444' }} />
                           </div>
                           <div className="flex items-center justify-between mt-1">
-                            <span className="text-[8px] text-slate-400">Range {eyMinNum}–{eyMaxNum}%</span>
+                            <span className="text-[8px] text-slate-400 dark:text-slate-500">Range {eyMinNum}–{eyMaxNum}%</span>
                             <span className={`text-[8px] font-semibold ${!eyUnder && !eyOver ? 'text-emerald-600' : eyUnder ? 'text-blue-600' : 'text-red-600'}`}>
                               {!eyUnder && !eyOver ? '✓ In range' : eyUnder ? `↓ ${(eyMinNum - ey).toFixed(1)}% low` : `↑ ${(ey - eyMaxNum).toFixed(1)}% high`}
                             </span>
                           </div>
                         </div>
-                        <div className={`p-2.5 rounded-lg border ${tdsInSCA ? 'bg-emerald-50 border-emerald-200' : tdsUnderSCA ? 'bg-blue-50 border-blue-200' : tdsOverSCA ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className={`p-2.5 rounded-lg border ${tdsInSCA ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : tdsUnderSCA ? 'bg-blue-50 border-blue-200' : tdsOverSCA ? 'bg-red-50 dark:bg-red-900/20 border-red-200' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700'}`}>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-[8px] font-semibold text-slate-500 uppercase">TDS</span>
+                            <span className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 uppercase">TDS</span>
                             <span className="text-xs font-bold font-mono" style={{ color: tdsInSCA ? '#16a34a' : tdsUnderSCA ? '#0284c7' : tdsOverSCA ? '#dc2626' : '#94a3b8' }}>
                               {tdsNum.toFixed(2)}%
                             </span>
@@ -2390,8 +2390,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                             <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (tdsNum / Math.max(2, scaHi * 1.3)) * 100)}%`, backgroundColor: tdsInSCA ? '#22c55e' : tdsUnderSCA ? '#0ea5e9' : tdsOverSCA ? '#ef4444' : '#94a3b8' }} />
                           </div>
                           <div className="flex items-center justify-between mt-1">
-                            <span className="text-[8px] text-slate-400">SCA {scaRange && `${scaLo.toFixed(2)}–${scaHi.toFixed(2)}%`}</span>
-                            <span className={`text-[8px] font-semibold ${tdsInSCA ? 'text-emerald-600' : tdsUnderSCA ? 'text-blue-600' : tdsOverSCA ? 'text-red-600' : 'text-slate-400'}`}>
+                            <span className="text-[8px] text-slate-400 dark:text-slate-500">SCA {scaRange && `${scaLo.toFixed(2)}–${scaHi.toFixed(2)}%`}</span>
+                            <span className={`text-[8px] font-semibold ${tdsInSCA ? 'text-emerald-600' : tdsUnderSCA ? 'text-blue-600' : tdsOverSCA ? 'text-red-600' : 'text-slate-400 dark:text-slate-500'}`}>
                               {tdsInSCA ? '✓ In zone' : tdsUnderSCA ? `↓ ${(scaLo - tdsNum).toFixed(2)}` : tdsOverSCA ? `↑ ${(tdsNum - scaHi).toFixed(2)}` : '—'}
                             </span>
                           </div>
@@ -2399,9 +2399,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       </div>
 
                       {/* Summary line */}
-                      <div className="flex items-center justify-center gap-3 text-[8px] text-slate-400 font-mono bg-slate-50 rounded-lg px-2.5 py-2">
+                      <div className="flex items-center justify-center gap-3 text-[8px] text-slate-400 dark:text-slate-500 font-mono bg-slate-50 dark:bg-slate-900/50 rounded-lg px-2.5 py-2">
                         <span>{doseNum.toFixed(1)}g × 1:{ratioNum} = {waterIn.toFixed(0)}g water in → ~{waterOut.toFixed(0)}g out</span>
-                        <span className="text-slate-300">|</span>
+                        <span className="text-slate-300 dark:text-slate-600">|</span>
                         <span>TDS {tdsNum.toFixed(2)}% × {waterOut.toFixed(0)}g ÷ {doseNum.toFixed(1)}g = EY {ey.toFixed(1)}%</span>
                       </div>
 
@@ -2425,12 +2425,12 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       )}
                     </div>
                   ) : (
-                    <p className="text-[10px] text-slate-400 italic text-center">Enter dose, ratio, and TDS above to check extraction status.</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 italic text-center">Enter dose, ratio, and TDS above to check extraction status.</p>
                   )}
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <p className="text-[9px] text-amber-800 font-semibold">↓ Goes into <strong>Foundations</strong></p>
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <p className="text-[9px] text-amber-800 dark:text-amber-200 font-semibold">↓ Goes into <strong>Foundations</strong></p>
                 <p className="text-[8px] text-amber-700 mt-0.5">Extraction Theory tells you <em>how much</em> to extract. Foundations (grind, ratio, temp, agitation) is where you make the change.</p>
               </div>
             </div>
@@ -2439,9 +2439,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
 
         {tab === 'timing' && (
           <>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <h2 className="text-sm font-bold text-slate-700 mb-3">⏱ Timing & Decision</h2>
-              <p className="text-[10px] text-slate-500 mb-3">Time is the variable that determines <strong>which hidden physics</strong> occur. Each phase controls different extraction mechanisms.</p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">⏱ Timing & Decision</h2>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3">Time is the variable that determines <strong>which hidden physics</strong> occur. Each phase controls different extraction mechanisms.</p>
               <div className="grid grid-cols-2 gap-3 mb-3">
                 {[
                   { key: 'bloom', label: 'Bloom', desc: 'CO₂ release, first wetting — determines even extraction start', val: bloomTime, set: setBloomTime, placeholder: '0:30' },
@@ -2449,10 +2449,10 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   { key: 'drawdown', label: 'Drawdown', desc: 'Fines migration, bed settling — determines clarity', val: drawdownTime, set: setDrawdownTime, placeholder: '1:00' },
                   { key: 'delivery', label: 'Delivery', desc: 'Pre-wet to first drip — affects bypass', val: deliveryTime, set: setDeliveryTime, placeholder: '0:10' },
                 ].map(phase => (
-                  <div key={phase.key} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
-                    <label className="text-[8px] font-semibold text-slate-500 block">{phase.label}</label>
-                    <input type="text" value={phase.val} onChange={e => phase.set(e.target.value)} placeholder={phase.placeholder} className="w-full text-[10px] border border-slate-200 rounded px-1.5 py-1 text-slate-700 bg-white mt-0.5 font-mono" />
-                    <p className="text-[7px] text-slate-400 mt-0.5">{phase.desc}</p>
+                  <div key={phase.key} className="p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <label className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 block">{phase.label}</label>
+                    <input type="text" value={phase.val} onChange={e => phase.set(e.target.value)} placeholder={phase.placeholder} className="w-full text-[10px] border border-slate-200 dark:border-slate-700 rounded px-1.5 py-1 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 mt-0.5 font-mono" />
+                    <p className="text-[7px] text-slate-400 dark:text-slate-500 mt-0.5">{phase.desc}</p>
                   </div>
                 ))}
               </div>
@@ -2464,32 +2464,32 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 const total = (bloom ?? 0) + (main ?? 0) + (drawdown ?? 0);
                 if (bloom !== null && main !== null && drawdown !== null) {
                   return (
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-3">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-semibold text-slate-600">Total Contact Time:</span>
-                        <span className="text-sm font-bold text-slate-700 font-mono">{Math.floor(total / 60)}:{String(total % 60).padStart(2, '0')}</span>
-                        <span className="text-[8px] text-slate-400">({bloom}s bloom + {main}s main + {drawdown}s drawdown)</span>
+                        <span className="text-[9px] font-semibold text-slate-600 dark:text-slate-400">Total Contact Time:</span>
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300 font-mono">{Math.floor(total / 60)}:{String(total % 60).padStart(2, '0')}</span>
+                        <span className="text-[8px] text-slate-400 dark:text-slate-500">({bloom}s bloom + {main}s main + {drawdown}s drawdown)</span>
                       </div>
                     </div>
                   );
                 }
                 return (
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-3">
-                    <p className="text-[9px] text-slate-400 italic">Enter bloom, main pour, and drawdown times (m:ss) to see total contact time.</p>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg mb-3">
+                    <p className="text-[9px] text-slate-400 dark:text-slate-500 italic">Enter bloom, main pour, and drawdown times (m:ss) to see total contact time.</p>
                   </div>
                 );
               })()}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <p className="text-[8px] font-semibold text-slate-500 mb-1">Plan vs Actual (from Equipment tab)</p>
-                <div className="flex items-center gap-2 text-[9px] text-slate-600">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg">
+                <p className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Plan vs Actual (from Equipment tab)</p>
+                <div className="flex items-center gap-2 text-[9px] text-slate-600 dark:text-slate-400">
                   <span>Plan: {equipment.planTime || '—'}</span>
                   <span>Actual: {equipment.timeFinished || '—'}</span>
                   {timeStatus && <span className="text-[8px] font-semibold px-1 py-0.5 rounded" style={{ color: timeDelta! <= -20 ? '#3b82f6' : timeDelta! <= -5 ? '#22c55e' : timeDelta! <= 15 ? '#22c55e' : timeDelta! <= 40 ? '#f59e0b' : '#ef4444', backgroundColor: (timeDelta! <= -20 ? '#3b82f6' : timeDelta! <= -5 ? '#22c55e' : timeDelta! <= 15 ? '#22c55e' : timeDelta! <= 40 ? '#f59e0b' : '#ef4444') + '15' }}>{timeStatus}</span>}
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <h3 className="text-[11px] font-bold text-slate-700 mb-2">What Each Phase Controls</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <h3 className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-2">What Each Phase Controls</h3>
               <div className="space-y-2">
                 <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
                   <span className="text-[8px] font-bold text-blue-700">Bloom</span>
@@ -2497,7 +2497,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 </div>
                 <div className="p-2 bg-green-50 border border-green-200 rounded-lg">
                   <span className="text-[8px] font-bold text-green-700">Main Pour</span>
-                  <p className="text-[7px] text-green-600 mt-0.5">Pour speed & height determine turbulence. Aggressive → agitation extraction + fines migration. Gentle → lower extraction, clearer bed.</p>
+                  <p className="text-[7px] text-green-600 dark:text-green-400 mt-0.5">Pour speed & height determine turbulence. Aggressive → agitation extraction + fines migration. Gentle → lower extraction, clearer bed.</p>
                 </div>
                 <div className="p-2 bg-purple-50 border border-purple-200 rounded-lg">
                   <span className="text-[8px] font-bold text-purple-700">Drawdown</span>
@@ -2523,13 +2523,13 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 <span className="text-[7px] font-semibold text-indigo-600 block">Equipment Context</span>
                 <p className="text-[7px] text-indigo-500 mt-0.5">{resistanceProfile.feedback}</p>
                 {timeStatus && timeStatus !== 'On Track' && (
-                  <p className="text-[7px] text-amber-600 mt-0.5">Brew time {timeStatus.toLowerCase()} — your {resistanceProfile.rating.toLowerCase()} setup may be amplifying this.</p>
+                  <p className="text-[7px] text-amber-600 dark:text-amber-400 mt-0.5">Brew time {timeStatus.toLowerCase()} — your {resistanceProfile.rating.toLowerCase()} setup may be amplifying this.</p>
                 )}
               </div>
             )}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <h2 className="text-sm font-bold text-slate-700 mb-2">The Four Foundations</h2>
-              <p className="text-[10px] text-slate-500 mb-3">Internal factors you control directly. Each foundation has a primary adjustment direction based on your score profile.</p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">The Four Foundations</h2>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3">Internal factors you control directly. Each foundation has a primary adjustment direction based on your score profile.</p>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {[ 
                   { icon: '⚙', name: 'Grind', desc: 'Particle size & distribution', dir: extractionStatus.label === 'Increase extraction' ? 'Finer' : extractionStatus.label === 'Decrease extraction' ? 'Coarser' : 'Check uniformity' },
@@ -2537,15 +2537,15 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   { icon: '🌊', name: 'Turbulence', desc: 'Pour flow, height & bed agitation', dir: 'Adjust pour + WDT' },
                   { icon: '⚖', name: 'Ratio', desc: 'Coffee dose to water ratio', dir: profile.mouthfeel <= 4 ? '↑ Dose for body' : 'Check filter media' },
                 ].map(f => (
-                  <div key={f.name} className="p-2 bg-slate-50 border border-slate-100 rounded-lg">
-                    <div className="text-xs font-bold text-slate-700">{f.icon} {f.name}</div>
-                    <div className="text-[8px] text-slate-400">{f.desc}</div>
-                    <div className="text-[8px] text-amber-600 font-semibold mt-0.5">{f.dir}</div>
+                  <div key={f.name} className="p-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-lg">
+                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300">{f.icon} {f.name}</div>
+                    <div className="text-[8px] text-slate-400 dark:text-slate-500">{f.desc}</div>
+                    <div className="text-[8px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5">{f.dir}</div>
                   </div>
                 ))}
               </div>
-              <details className="text-[10px] text-slate-500">
-                <summary className="cursor-pointer text-slate-600 font-semibold text-[10px]">How to think about adjustments</summary>
+              <details className="text-[10px] text-slate-500 dark:text-slate-400">
+                <summary className="cursor-pointer text-slate-600 dark:text-slate-400 font-semibold text-[10px]">How to think about adjustments</summary>
                 <div className="mt-1.5 space-y-1 pl-2">
                   <p>• <strong>Start with extraction direction</strong> — is it under or over? That sets the primary arrow.</p>
                   <p>• <strong>One foundation at a time</strong> — change one variable per brew, observe the effect.</p>
@@ -2555,15 +2555,15 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               </details>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-bold text-slate-700">Extraction Status</h2>
-                <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full ${extractionStatus.label === 'Increase extraction' ? 'bg-blue-100 text-blue-700' : extractionStatus.label === 'Decrease extraction' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>{extractionStatus.label === 'Increase extraction' ? '↑ Increase extraction' : extractionStatus.label === 'Decrease extraction' ? '↓ Decrease extraction' : 'Stay'}</span>
+                <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300">Extraction Status</h2>
+                <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full ${extractionStatus.label === 'Increase extraction' ? 'bg-blue-100 text-blue-700' : extractionStatus.label === 'Decrease extraction' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600 dark:text-slate-400'}`}>{extractionStatus.label === 'Increase extraction' ? '↑ Increase extraction' : extractionStatus.label === 'Decrease extraction' ? '↓ Decrease extraction' : 'Stay'}</span>
               </div>
               <div className="relative h-5 bg-gradient-to-r from-blue-100 via-emerald-100 to-red-100 rounded-full overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 font-medium"><span>Decrease</span><span>Stay</span><span>Increase</span></div>
-                <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-sm rounded-full transition-all duration-200" style={{ left: `${extractionStatus.barPos}%` }} />
-                <div className="absolute top-0.5 bottom-0.5 w-1.5 rounded-full bg-white border-2 shadow-sm transition-all duration-200" style={{ left: `calc(${extractionStatus.barPos}% - 3px)`, borderColor: extractionStatus.color }} />
+                <div className="absolute inset-0 flex items-center justify-between px-2 text-[8px] text-slate-400 dark:text-slate-500 font-medium"><span>Decrease</span><span>Stay</span><span>Increase</span></div>
+                <div className="absolute top-0 bottom-0 w-0.5 bg-white dark:bg-slate-800 shadow-sm rounded-full transition-all duration-200" style={{ left: `${extractionStatus.barPos}%` }} />
+                <div className="absolute top-0.5 bottom-0.5 w-1.5 rounded-full bg-white dark:bg-slate-800 border-2 shadow-sm transition-all duration-200" style={{ left: `calc(${extractionStatus.barPos}% - 3px)`, borderColor: extractionStatus.color }} />
               </div>
               <div className="mt-2 text-xs font-semibold" style={{ color: extractionStatus.color }}>{extractionStatus.directive}</div>
             </div>
@@ -2573,41 +2573,41 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               const impactColor = f.totalMatch <= 3 ? '#22c55e' : f.totalMatch <= 6 ? '#f59e0b' : '#ef4444';
               const impactW = Math.min(100, (f.totalMatch / 12) * 100);
               return (
-              <div key={f.name} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <div key={f.name} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-sm font-bold text-slate-700">
+                  <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300">
                     <span className="mr-1">{FOUNDATION_ICONS[f.name] || '■'}</span>
                     {f.name}
                   </h2>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-400 font-medium">Priority #{i + 1}</span>
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${f.totalMatch >= 5 ? 'bg-red-100 text-red-700' : f.totalMatch >= 3 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>{f.totalMatch}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Priority #{i + 1}</span>
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${f.totalMatch >= 5 ? 'bg-red-100 text-red-700' : f.totalMatch >= 3 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' : 'bg-slate-100 text-slate-500 dark:text-slate-400'}`}>{f.totalMatch}</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[9px] font-semibold" style={{ color: impactColor }}>Impact: {impact}</span>
-                  <span className="text-[8px] text-slate-400">{impact === 'Rework' ? 'Major change needed' : impact === 'Tuning' ? 'Moderate adjustment' : 'Minor tweak'}</span>
+                  <span className="text-[8px] text-slate-400 dark:text-slate-500">{impact === 'Rework' ? 'Major change needed' : impact === 'Tuning' ? 'Moderate adjustment' : 'Minor tweak'}</span>
                 </div>
                 <div className="relative h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
                   <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-200" style={{ width: `${impactW}%`, backgroundColor: impactColor }} />
                 </div>
                 <div className="space-y-2">
                   {f.vars.sort((a, b) => b.match - a.match).map(h => (
-                    <div key={h.name} className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+                    <div key={h.name} className="p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-lg">
                       <div className="flex items-start justify-between gap-2 mb-0.5">
-                        <span className="text-xs font-semibold text-slate-700">{h.name}</span>
-                        <span className="text-[9px] text-slate-400 font-mono">match {h.match}/6</span>
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{h.name}</span>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">match {h.match}/6</span>
                       </div>
-                      <p className="text-[10px] text-slate-500">{h.summary}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">{h.summary}</p>
                       <div className="mt-1 flex flex-wrap gap-1.5">
                         <span className="text-[8px] bg-blue-50 text-blue-700 px-1 py-0.5 rounded font-medium">🔎 {h.observable}</span>
                       </div>
-                      <p className="text-[9px] text-slate-600 mt-1">{h.direction}</p>
+                      <p className="text-[9px] text-slate-600 dark:text-slate-400 mt-1">{h.direction}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-3 pt-2 border-t border-slate-100">
-                  <p className="text-[10px] text-slate-500 italic">
+                <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
                     {f.name === 'Grind' && (extractionStatus.label === 'Increase extraction' ? '⇒ Grind finer to increase extraction surface area' : extractionStatus.label === 'Decrease extraction' ? '⇒ Grind coarser to reduce extraction surface area' : '⇒ Check particle distribution uniformity')}
                     {f.name === 'Temp / Time' && (extractionStatus.label !== 'Stay' ? `⇒ ${extractionStatus.label === 'Increase extraction' ? 'Increase water temp or extend contact time' : 'Decrease water temp or shorten contact time'}` : '⇒ Verify thermal stability across the brew')}
                     {f.name === 'Turbulence' && '⇒ Adjust pour flow rate, height, or WDT to improve bed uniformity'}
@@ -2619,8 +2619,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
             })}
 
             {foundationPlan.length === 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
-                <p className="text-sm text-slate-400">No foundation issues detected based on current scores. Try lowering some scores to see recommendations.</p>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-8 text-center">
+                <p className="text-sm text-slate-400 dark:text-slate-500">No foundation issues detected based on current scores. Try lowering some scores to see recommendations.</p>
               </div>
             )}
           </>
@@ -2638,8 +2638,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 </div>
               );
             })()}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <h2 className="text-sm font-bold text-slate-700 mb-2">Score Gaps <span className="font-normal text-slate-400 text-[10px]">(aiming for ≥ {improveTo})</span></h2>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Score Gaps <span className="font-normal text-slate-400 dark:text-slate-500 text-[10px]">(aiming for ≥ {improveTo})</span></h2>
               {integrityCheck.entries.length === 0 ? (
                 <p className="text-xs text-emerald-600 font-medium">All scores ≥ {improveTo} ✓</p>
               ) : (
@@ -2647,36 +2647,36 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   {integrityCheck.entries.map(e => (
                     <div key={e.label}>
                       <button onClick={() => setExpandedIntegrity(expandedIntegrity === e.label ? null : e.label)}
-                        className={`w-full flex items-center gap-2 text-xs py-1 px-1.5 rounded transition-colors ${expandedIntegrity === e.label ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
+                        className={`w-full flex items-center gap-2 text-xs py-1 px-1.5 rounded transition-colors ${expandedIntegrity === e.label ? 'bg-slate-100' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                       >
                         <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${e.context === 'Needs work' ? 'bg-red-400' : 'bg-amber-300'}`} />
-                        <span className="font-semibold text-slate-600">{e.label}</span>
-                        <span className={`font-bold ${e.context === 'Critical' ? 'text-red-500' : 'text-amber-500'}`}>{e.score}/9</span>
-                        <span className="text-slate-400">— {e.context}</span>
-                        <span className="ml-auto text-slate-300 text-[10px]">{expandedIntegrity === e.label ? '▲' : '▼'}</span>
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">{e.label}</span>
+                        <span className={`font-bold ${e.context === 'Critical' ? 'text-red-500 dark:text-red-400' : 'text-amber-500'}`}>{e.score}/9</span>
+                        <span className="text-slate-400 dark:text-slate-500">— {e.context}</span>
+                        <span className="ml-auto text-slate-300 dark:text-slate-600 text-[10px]">{expandedIntegrity === e.label ? '▲' : '▼'}</span>
                       </button>
                       {expandedIntegrity === e.label && (
                         <div className="ml-4 mt-1.5 space-y-1.5 pb-1.5">
                           {filteredTraces.length === 0 ? (
-                            <p className="text-[10px] text-slate-400 italic">No matching hidden variables for this axis yet.</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">No matching hidden variables for this axis yet.</p>
                           ) : filteredTraces.map(t => (
-                            <div key={t.name} className="p-2 bg-slate-50 border border-slate-100 rounded text-[10px]">
+                            <div key={t.name} className="p-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded text-[10px]">
                               <div className="flex items-start justify-between gap-2">
-                                <span className="font-bold text-slate-700">{t.name}</span>
-                                <span className={`text-[8px] font-semibold px-1 py-0.5 rounded shrink-0 ${t.match >= 3 ? 'bg-red-100 text-red-700' : t.match >= 2 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>{t.match}/6</span>
+                                <span className="font-bold text-slate-700 dark:text-slate-300">{t.name}</span>
+                                <span className={`text-[8px] font-semibold px-1 py-0.5 rounded shrink-0 ${t.match >= 3 ? 'bg-red-100 text-red-700' : t.match >= 2 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' : 'bg-slate-100 text-slate-500 dark:text-slate-400'}`}>{t.match}/6</span>
                               </div>
-                              <p className="text-slate-500 mt-0.5">{t.summary}</p>
+                              <p className="text-slate-500 dark:text-slate-400 mt-0.5">{t.summary}</p>
                               <div className="mt-1 flex flex-wrap gap-1">
                                 {t.relatedAxes.map(a => {
                                   const ctx = scoreContext(profile[a as keyof Profile]);
-                                  return <span key={a} className="text-[6px] font-medium px-1 py-0.5 rounded bg-white border border-slate-100" style={{ color: ctx.color }}>{AXIS_LABELS[a]}: {profile[a as keyof Profile]}/9</span>;
+                                  return <span key={a} className="text-[6px] font-medium px-1 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700" style={{ color: ctx.color }}>{AXIS_LABELS[a]}: {profile[a as keyof Profile]}/9</span>;
                                 })}
                               </div>
                               <div className="mt-1 flex flex-wrap gap-1.5">
                                 <span className="text-[8px] bg-blue-50 text-blue-700 px-1 py-0.5 rounded font-medium">🔎 {t.observable}</span>
-                                <span className="text-[8px] bg-amber-50 text-amber-700 px-1 py-0.5 rounded font-medium">⚙ {t.foundation}</span>
+                                <span className="text-[8px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 px-1 py-0.5 rounded font-medium">⚙ {t.foundation}</span>
                               </div>
-                              <p className="text-slate-500 mt-0.5 italic">{t.direction}</p>
+                              <p className="text-slate-500 dark:text-slate-400 mt-0.5 italic">{t.direction}</p>
                             </div>
                           ))}
                         </div>
@@ -2686,36 +2686,36 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 </div>
               )}
               {integrityCheck.direction && (
-                <div className="mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-xs font-semibold text-amber-800">Largest gap: <span className="capitalize">{integrityCheck.lowest.axis}</span> ({integrityCheck.lowest.score}/9 — needs ≥ {improveTo})</p>
+                <div className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Largest gap: <span className="capitalize">{integrityCheck.lowest.axis}</span> ({integrityCheck.lowest.score}/9 — needs ≥ {improveTo})</p>
                   <p className="text-xs text-amber-700 mt-0.5">{integrityCheck.direction}</p>
                 </div>
               )}
             </div>
 
             {traces.length > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                <h2 className="text-sm font-bold text-slate-700 mb-2">Hidden Variable Trace</h2>
-                <p className="text-[10px] text-slate-500 mb-3">These are the bridge between what you taste and which foundation to adjust. Click any integrity item above to filter, or browse all below.</p>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+                <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Hidden Variable Trace</h2>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3">These are the bridge between what you taste and which foundation to adjust. Click any integrity item above to filter, or browse all below.</p>
                 <div className="space-y-2">
                   {traces.map(t => (
-                    <div key={t.name} className="p-2.5 border border-slate-100 rounded-lg bg-slate-50/50">
+                    <div key={t.name} className="p-2.5 border border-slate-100 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900/50/50">
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs font-bold text-slate-700">{t.name}</span>
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${t.match >= 3 ? 'bg-red-100 text-red-700' : t.match >= 2 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>Match {t.match}/6</span>
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{t.name}</span>
+                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${t.match >= 3 ? 'bg-red-100 text-red-700' : t.match >= 2 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' : 'bg-slate-100 text-slate-500 dark:text-slate-400'}`}>Match {t.match}/6</span>
                       </div>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{t.summary}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{t.summary}</p>
                       <div className="mt-1.5 flex flex-wrap gap-1">
                         {t.relatedAxes.map(a => {
                           const ctx = scoreContext(profile[a as keyof Profile]);
-                          return <span key={a} className="text-[7px] font-medium px-1 py-0.5 rounded bg-white border border-slate-100" style={{ color: ctx.color }}>{AXIS_LABELS[a]}: {profile[a as keyof Profile]}/9</span>;
+                          return <span key={a} className="text-[7px] font-medium px-1 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700" style={{ color: ctx.color }}>{AXIS_LABELS[a]}: {profile[a as keyof Profile]}/9</span>;
                         })}
                       </div>
                       <div className="mt-1.5 flex flex-wrap gap-2">
                         <span className="text-[9px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-medium">🔎 {t.observable}</span>
-                        <span className="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-medium">⚙ {t.foundation}</span>
+                        <span className="text-[9px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 px-1.5 py-0.5 rounded font-medium">⚙ {t.foundation}</span>
                       </div>
-                      <p className="text-[9px] text-slate-500 mt-1 italic">{t.direction}</p>
+                      <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 italic">{t.direction}</p>
                     </div>
                   ))}
                 </div>
@@ -2732,55 +2732,55 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 <p className="text-[7px] text-indigo-500 mt-0.5">{resistanceProfile.rating} ({resistanceProfile.totalScore}/9) — {resistanceProfile.feedback}</p>
               </div>
             )}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <h2 className="text-sm font-bold text-slate-700 mb-2">Brew Execution Analysis</h2>
-              <p className="text-[10px] text-slate-500 mb-3">These factors affect how your recipe translates from paper to cup. Each traces back to a foundation.</p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Brew Execution Analysis</h2>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3">These factors affect how your recipe translates from paper to cup. Each traces back to a foundation.</p>
               <div className="space-y-2">
                 {brewAnalysis.map(f => (
-                  <div key={f.name} className="p-3 border border-slate-100 rounded-lg bg-slate-50/50">
+                  <div key={f.name} className="p-3 border border-slate-100 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900/50/50">
                     <div className="flex items-start justify-between gap-2 mb-0.5">
-                      <span className="text-xs font-bold text-slate-700">{f.name}</span>
-                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${f.match >= 4 ? 'bg-red-100 text-red-700' : f.match >= 2 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>Match {f.match}/5</span>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{f.name}</span>
+                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${f.match >= 4 ? 'bg-red-100 text-red-700' : f.match >= 2 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' : 'bg-slate-100 text-slate-500 dark:text-slate-400'}`}>Match {f.match}/5</span>
                     </div>
-                    <p className="text-[10px] text-slate-500">{f.summary}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">{f.summary}</p>
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       <span className="text-[8px] bg-blue-50 text-blue-700 px-1 py-0.5 rounded font-medium">🔎 {f.observable}</span>
-                      <span className="text-[8px] bg-amber-50 text-amber-700 px-1 py-0.5 rounded font-medium">⚙ {f.foundation}</span>
+                      <span className="text-[8px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 px-1 py-0.5 rounded font-medium">⚙ {f.foundation}</span>
                     </div>
-                    <p className="text-[9px] text-slate-600 mt-1.5">{f.direction}</p>
+                    <p className="text-[9px] text-slate-600 dark:text-slate-400 mt-1.5">{f.direction}</p>
                     <div className="mt-1.5 flex flex-wrap gap-1">
                       {f.affectedAxes.map(a => {
                         const ctx = scoreContext(profile[a as keyof Profile]);
-                        return <span key={a} className="text-[7px] font-medium px-1 py-0.5 rounded bg-white border border-slate-100" style={{ color: ctx.color }}>{AXIS_LABELS[a]}: {profile[a as keyof Profile]}/9</span>;
+                        return <span key={a} className="text-[7px] font-medium px-1 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700" style={{ color: ctx.color }}>{AXIS_LABELS[a]}: {profile[a as keyof Profile]}/9</span>;
                       })}
                     </div>
                   </div>
                 ))}
               </div>
               {brewAnalysis.length === 0 && (
-                <p className="text-[10px] text-slate-400 italic text-center py-4">No brew factors detected. Lower some scores to see analysis.</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 italic text-center py-4">No brew factors detected. Lower some scores to see analysis.</p>
               )}
             </div>
 
             {brewAnalysis.length > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                <h2 className="text-sm font-bold text-slate-700 mb-2">Brew Factor → Foundation Map</h2>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+                <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Brew Factor → Foundation Map</h2>
                 <div className="space-y-1.5">
                   {[...new Set(brewAnalysis.map(f => f.foundation))].map(fnd => {
                     const factors = brewAnalysis.filter(f => f.foundation === fnd);
                     return (
                       <div key={fnd} className="flex items-center gap-2 text-xs">
-                        <span className="font-semibold text-slate-600 w-20">{FOUNDATION_ICONS[fnd] || '■'} {fnd}</span>
+                        <span className="font-semibold text-slate-600 dark:text-slate-400 w-20">{FOUNDATION_ICONS[fnd] || '■'} {fnd}</span>
                         <div className="flex flex-wrap gap-1">
                           {factors.map(f => (
-                            <span key={f.name} className="text-[8px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{f.name}</span>
+                            <span key={f.name} className="text-[8px] bg-slate-100 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded">{f.name}</span>
                           ))}
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div className="mt-3 pt-2 border-t border-slate-100 text-[9px] text-slate-500 italic">
+                <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700 text-[9px] text-slate-500 dark:text-slate-400 italic">
                   Adjust the foundation (not the symptom) to fix brew execution issues.
                 </div>
               </div>
@@ -2802,16 +2802,16 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 </p>
               </div>
             )}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <h2 className="text-sm font-bold text-slate-700 mb-2">☣ Taste Symptoms</h2>
-              <p className="text-[10px] text-slate-500 mb-3">Select symptoms you tasted in the cup. These link to hidden variables and foundations.</p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">☣ Taste Symptoms</h2>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3">Select symptoms you tasted in the cup. These link to hidden variables and foundations.</p>
               <div className="flex flex-wrap gap-1.5 mb-4">
                 {SYMPTOMS.map(s => {
                   const isSelected = selectedSymptoms.includes(s.name);
-                  const extColor = s.likelyExtraction === 'under' ? 'border-blue-300 bg-blue-50 text-blue-700' : s.likelyExtraction === 'over' ? 'border-red-300 bg-red-50 text-red-700' : 'border-slate-300 bg-slate-50 text-slate-600';
+                  const extColor = s.likelyExtraction === 'under' ? 'border-blue-300 bg-blue-50 text-blue-700' : s.likelyExtraction === 'over' ? 'border-red-300 bg-red-50 dark:bg-red-900/20 text-red-700' : 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400';
                   return (
                     <button key={s.name} onClick={() => setSelectedSymptoms(prev => prev.includes(s.name) ? prev.filter(x => x !== s.name) : [...prev, s.name])}
-                      className={`px-2 py-1 text-[9px] font-semibold rounded-lg border transition-colors ${isSelected ? `${extColor} border-2` : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                      className={`px-2 py-1 text-[9px] font-semibold rounded-lg border transition-colors ${isSelected ? `${extColor} border-2` : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                       title={s.desc}
                     >
                       {s.name}
@@ -2827,19 +2827,19 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 {selectedSymptoms.map(sName => {
                   const s = SYMPTOMS.find(x => x.name === sName)!;
                   return (
-                    <div key={sName} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                    <div key={sName} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
                       <div className="flex items-center justify-between mb-1">
-                        <h3 className="text-xs font-bold text-slate-700">{s.name}</h3>
-                        <span className={`text-[8px] font-semibold px-1.5 py-0.5 rounded ${s.likelyExtraction === 'under' ? 'bg-blue-100 text-blue-700' : s.likelyExtraction === 'over' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>{s.likelyExtraction}</span>
+                        <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300">{s.name}</h3>
+                        <span className={`text-[8px] font-semibold px-1.5 py-0.5 rounded ${s.likelyExtraction === 'under' ? 'bg-blue-100 text-blue-700' : s.likelyExtraction === 'over' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500 dark:text-slate-400'}`}>{s.likelyExtraction}</span>
                       </div>
-                      <p className="text-[9px] text-slate-500 mb-1.5">{s.desc}</p>
+                      <p className="text-[9px] text-slate-500 dark:text-slate-400 mb-1.5">{s.desc}</p>
                       <div className="flex flex-wrap gap-1 mb-1.5">
-                        {s.fixes.map(fix => <span key={fix} className="text-[8px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">{fix}</span>)}
+                        {s.fixes.map(fix => <span key={fix} className="text-[8px] bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded font-medium">{fix}</span>)}
                       </div>
                       <div className="flex items-center gap-2 text-[9px]">
-                        <span className="font-semibold text-slate-600">⚙ {s.relatedFoundation}</span>
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">⚙ {s.relatedFoundation}</span>
                         {s.relatedHiddenVars.length > 0 && (
-                          <span className="text-slate-400">→ {s.relatedHiddenVars.join(', ')}</span>
+                          <span className="text-slate-400 dark:text-slate-500">→ {s.relatedHiddenVars.join(', ')}</span>
                         )}
                       </div>
                     </div>
@@ -2849,8 +2849,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
             )}
 
             {selectedSymptoms.length === 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
-                <p className="text-sm text-slate-400">Tap symptoms above to see their analysis.</p>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-8 text-center">
+                <p className="text-sm text-slate-400 dark:text-slate-500">Tap symptoms above to see their analysis.</p>
               </div>
             )}
           </>

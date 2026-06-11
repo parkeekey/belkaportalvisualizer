@@ -138,22 +138,22 @@ function FlavorSelector({
     <div className="relative">
       <input value={query} onChange={e => setQuery(e.target.value)}
         placeholder="Search flavors to add..."
-        className="w-full px-2 py-1.5 text-[10px] border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
+        className="w-full px-2 py-1.5 text-[10px] border border-slate-200 dark:border-slate-700 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
       />
       {results.length > 0 && (
-        <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
           {results.map(f => {
             const isSelected = selected.includes(f.id);
             return (
               <button key={f.id} onClick={() => onToggle(f.id)}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-slate-50 transition-colors ${isSelected ? 'bg-violet-50' : ''}`}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 transition-colors ${isSelected ? 'bg-violet-50' : ''}`}
               >
-                <span className={`text-[8px] w-3 ${isSelected ? 'text-violet-500' : 'text-slate-300'}`}>
+                <span className={`text-[8px] w-3 ${isSelected ? 'text-violet-500' : 'text-slate-300 dark:text-slate-600'}`}>
                   {isSelected ? '✓' : '+'}
                 </span>
                 <span className="text-sm">{f.emoji}</span>
-                <span className="text-[10px] font-medium text-slate-700">{f.label}</span>
-                {'wcr_ref' in f && f.wcr_ref && <span className="text-[6px] text-slate-400 bg-slate-100 px-1 rounded ml-auto">WCR</span>}
+                <span className="text-[10px] font-medium text-slate-700 dark:text-slate-300">{f.label}</span>
+                {'wcr_ref' in f && f.wcr_ref && <span className="text-[6px] text-slate-400 dark:text-slate-500 bg-slate-100 px-1 rounded ml-auto">WCR</span>}
               </button>
             );
           })}
@@ -169,7 +169,7 @@ function MiniTasteBars({ taste }: { taste: { sour: number; sweet: number; bitter
     <div className="flex items-center gap-2">
       {TASTE_LABELS.filter(t => taste[t.key] > 0).map(t => (
         <div key={t.key} className="flex items-center gap-0.5">
-          <span className="text-[6px] text-slate-400">{t.label[0]}</span>
+          <span className="text-[6px] text-slate-400 dark:text-slate-500">{t.label[0]}</span>
           <div className="w-8 h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div className={`h-full rounded-full ${t.color}`} style={{ width: `${(taste[t.key] / 5) * 100}%` }} />
           </div>
@@ -302,8 +302,8 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-lg">☕</span>
-          <span className="text-sm font-bold text-slate-700">Coffee Profiles</span>
-          <span className="text-[8px] text-slate-400">{profiles.length} saved</span>
+          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Coffee Profiles</span>
+          <span className="text-[8px] text-slate-400 dark:text-slate-500">{profiles.length} saved</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button onClick={handleNew}
@@ -312,18 +312,18 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
           {sensoryProfiles.length > 0 && (
             <div className="relative">
               <button onClick={() => setImportSensoryOpen(v => !v)}
-                className="text-[9px] font-semibold px-2 py-1 rounded border border-amber-200 text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors"
+                className="text-[9px] font-semibold px-2 py-1 rounded border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:bg-amber-900/30 transition-colors"
               >📥 Sensory</button>
               {importSensoryOpen && (
-                <div className="absolute top-full right-0 mt-1 z-20 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto min-w-[200px]">
+                <div className="absolute top-full right-0 mt-1 z-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto min-w-[200px]">
                   {sensoryProfiles.length === 0 ? (
-                    <div className="px-3 py-2 text-[8px] text-slate-400">No sensory sessions saved</div>
+                    <div className="px-3 py-2 text-[8px] text-slate-400 dark:text-slate-500">No sensory sessions saved</div>
                   ) : sensoryProfiles.map(sp => (
                     <button key={sp.id} onClick={() => handleImportSensory(sp)}
-                      className="w-full text-left px-3 py-2 hover:bg-amber-50 transition-colors border-b border-slate-100 last:border-0"
+                      className="w-full text-left px-3 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-0"
                     >
-                      <div className="text-[9px] font-semibold text-slate-700">{sp.name}</div>
-                      <div className="text-[7px] text-slate-400">
+                      <div className="text-[9px] font-semibold text-slate-700 dark:text-slate-300">{sp.name}</div>
+                      <div className="text-[7px] text-slate-400 dark:text-slate-500">
                         {sp.coffeeName && <span>{sp.coffeeName} · </span>}
                         {Object.keys(sp.checkedFlavors).length} tracked flavors
                       </div>
@@ -335,7 +335,7 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
           )}
           {onClose && (
             <button onClick={onClose}
-              className="text-[9px] text-slate-400 hover:text-slate-600 underline decoration-dotted"
+              className="text-[9px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 underline decoration-dotted"
             >✕ Close</button>
           )}
         </div>
@@ -345,18 +345,18 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
         {/* Profile list — sidebar */}
         <div className="w-36 shrink-0 space-y-1">
           {profiles.length === 0 && (
-            <div className="text-[8px] text-slate-400 italic py-2 text-center">No profiles yet</div>
+            <div className="text-[8px] text-slate-400 dark:text-slate-500 italic py-2 text-center">No profiles yet</div>
           )}
           {profiles.map(p => (
-            <div key={p.id} className={`rounded-lg border overflow-hidden ${activeId === p.id ? 'border-violet-300 bg-violet-50' : 'border-slate-200 bg-white'}`}>
+            <div key={p.id} className={`rounded-lg border overflow-hidden ${activeId === p.id ? 'border-violet-300 bg-violet-50' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'}`}>
               <button onClick={() => { setActiveId(p.id); setImportSensoryOpen(false); }}
                 className="w-full text-left px-2 py-1.5"
               >
-                <div className="text-[9px] font-semibold text-slate-700 truncate">{p.name}</div>
-                <div className="text-[7px] text-slate-400 truncate">{p.flavorIds.length} flavors</div>
+                <div className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 truncate">{p.name}</div>
+                <div className="text-[7px] text-slate-400 dark:text-slate-500 truncate">{p.flavorIds.length} flavors</div>
               </button>
               <button onClick={() => handleDelete(p.id)}
-                className="w-full text-[7px] text-red-300 hover:text-red-500 text-center pb-1"
+                className="w-full text-[7px] text-red-300 hover:text-red-500 dark:text-red-400 text-center pb-1"
               >Delete</button>
             </div>
           ))}
@@ -365,7 +365,7 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
         {/* Active profile editor */}
         <div className="flex-1">
           {!activeId ? (
-            <div className="text-center py-12 text-[9px] text-slate-400">
+            <div className="text-center py-12 text-[9px] text-slate-400 dark:text-slate-500">
               Select a profile or create a new one
             </div>
           ) : (
@@ -373,70 +373,70 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
               {/* Profile fields */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <span className="text-[7px] text-slate-400 uppercase font-semibold">Name</span>
+                  <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Name</span>
                   <input value={editName} onChange={e => setEditName(e.target.value)}
-                    className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 dark:border-slate-700 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
                   />
                 </div>
                 <div>
-                  <span className="text-[7px] text-slate-400 uppercase font-semibold">Roaster</span>
+                  <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Roaster</span>
                   <input value={editRoaster} onChange={e => setEditRoaster(e.target.value)}
-                    className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 dark:border-slate-700 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
                   />
                 </div>
                 <div>
-                    <span className="text-[7px] text-slate-400 uppercase font-semibold">Origin</span>
+                    <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Origin</span>
                     <div className="mt-0.5">
                       <CoffeeOriginSelect value={editOrigin} onChange={setEditOrigin} placeholder="Select origin" size="md" />
                     </div>
                   </div>
               </div>
               <div>
-                <span className="text-[7px] text-slate-400 uppercase font-semibold">Process</span>
+                <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Process</span>
                 <div className="flex gap-1 mt-0.5 flex-wrap">
                   <button onClick={() => setEditProcess('')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${!editProcess ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${!editProcess ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Any</button>
                   <button onClick={() => setEditProcess('washed')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'washed' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'washed' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Washed</button>
                   <button onClick={() => setEditProcess('natural')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'natural' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'natural' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Natural</button>
                   <button onClick={() => setEditProcess('honey')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'honey' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'honey' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Honey</button>
                   <button onClick={() => setEditProcess('anaerobic')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'anaerobic' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'anaerobic' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Anaerobic</button>
                   <button onClick={() => setEditProcess('lactic')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'lactic' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'lactic' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Lactic</button>
                   <button onClick={() => setEditProcess('thermal-shock')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'thermal-shock' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'thermal-shock' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border border-amber-300' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Thermal</button>
-                  <span className="text-[6px] text-slate-300 uppercase font-semibold self-center ml-1 mr-0.5">Co-fermented</span>
+                  <span className="text-[6px] text-slate-300 dark:text-slate-600 uppercase font-semibold self-center ml-1 mr-0.5">Co-fermented</span>
                   <button onClick={() => setEditProcess('co-fermented')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'co-fermented' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'co-fermented' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border border-amber-300' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Co-Fermented</button>
                   <button onClick={() => setEditProcess('carbonic-maceration')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'carbonic-maceration' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'carbonic-maceration' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border border-amber-300' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Carbonic Mac.</button>
                   <button onClick={() => setEditProcess('koji')}
-                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'koji' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-[7px] px-2 py-0.5 rounded font-bold transition-colors ${editProcess === 'koji' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border border-amber-300' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >Koji</button>
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[7px] text-slate-400 uppercase font-semibold">Roast level</span>
-                  <span className="text-[7px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">{roastLabel}</span>
+                  <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Roast level</span>
+                  <span className="text-[7px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">{roastLabel}</span>
                 </div>
                 <input type="range" min={0} max={100} value={editRoastValue}
                   onChange={e => handleRoastChange(parseInt(e.target.value))}
                   className="w-full h-1.5 accent-amber-600"
                 />
-                <div className="flex justify-between text-[6px] text-slate-300 mt-0.5">
+                <div className="flex justify-between text-[6px] text-slate-300 dark:text-slate-600 mt-0.5">
                   <span>Nordic</span>
                   <span>Dark</span>
                 </div>
@@ -444,7 +444,7 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
 
               {/* Flavor selector */}
               <div>
-                <span className="text-[7px] text-slate-400 uppercase font-semibold">Flavors from bag notes</span>
+                <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Flavors from bag notes</span>
                 <div className="mt-1">
                   <FlavorSelector selected={editFlavors} onToggle={toggleFlavor} />
                 </div>
@@ -455,7 +455,7 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                         <span className="text-xs">{f.emoji}</span>
                         <span className="text-[8px] font-medium text-violet-700">{f.label}</span>
                         <button onClick={() => removeFlavor(f.id)}
-                          className="text-[7px] text-violet-400 hover:text-red-500"
+                          className="text-[7px] text-violet-400 hover:text-red-500 dark:text-red-400"
                         >✕</button>
                       </div>
                     ))}
@@ -466,20 +466,20 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
               {/* Selected flavor details */}
               {selectedFlavors.length > 0 && (
                 <div className="space-y-1">
-                  <span className="text-[7px] text-slate-400 uppercase font-semibold">Selected flavor profiles</span>
+                  <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Selected flavor profiles</span>
                   <div className="space-y-1">
                     {selectedFlavors.map(f => (
-                      <div key={f.id} className="bg-white border border-slate-200 rounded-lg p-2">
+                      <div key={f.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
                         <div className="flex items-center gap-1.5 mb-1">
                           <span className="text-sm">{f.emoji}</span>
-                          <span className="text-[9px] font-semibold text-slate-700">{f.label}</span>
-                          {'wcr_ref' in f && f.wcr_ref && <span className="text-[6px] text-slate-400 bg-slate-100 px-1 rounded">WCR</span>}
+                          <span className="text-[9px] font-semibold text-slate-700 dark:text-slate-300">{f.label}</span>
+                          {'wcr_ref' in f && f.wcr_ref && <span className="text-[6px] text-slate-400 dark:text-slate-500 bg-slate-100 px-1 rounded">WCR</span>}
                           <span className="text-[6px] px-1 rounded text-white ml-auto"
                             style={{ backgroundColor: BIG_CATEGORIES.find(c => c.key === f.bigCategory)?.color ?? '#999' }}
                           >{BIG_CATEGORIES.find(c => c.key === f.bigCategory)?.label}</span>
                         </div>
                         <MiniTasteBars taste={f.taste} />
-                        <p className="text-[7px] text-slate-500 mt-1 leading-relaxed">{f.description}</p>
+                        <p className="text-[7px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{f.description}</p>
                       </div>
                     ))}
                   </div>
@@ -491,28 +491,28 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                 <div className="bg-gradient-to-br from-violet-50 to-white border border-violet-200 rounded-lg p-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[9px] font-bold text-violet-700">Sensory Composition</span>
-                    <span className="text-[7px] text-slate-400">{analysis.selectedCount} flavors · {analysis.wcrCount} WCR</span>
+                    <span className="text-[7px] text-slate-400 dark:text-slate-500">{analysis.selectedCount} flavors · {analysis.wcrCount} WCR</span>
                   </div>
 
                   {/* Taste profile bars */}
                   <div className="mb-2">
-                    <span className="text-[7px] text-slate-400 uppercase font-semibold">Taste profile</span>
+                    <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Taste profile</span>
                     <div className="flex flex-col gap-0.5 mt-1">
                       {TASTE_LABELS.map(t => {
                         const val = analysis.avgTaste[t.key];
                         if (val === 0) return null;
                         return (
                           <div key={t.key} className="flex items-center gap-1">
-                            <span className="text-[6px] text-slate-400 w-6 text-right">{t.label}</span>
+                            <span className="text-[6px] text-slate-400 dark:text-slate-500 w-6 text-right">{t.label}</span>
                             <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                               <div className={`h-full rounded-full ${t.color}`} style={{ width: `${(val / 5) * 100}%` }} />
                             </div>
-                            <span className="text-[7px] text-slate-400 w-3 text-right">{val}</span>
+                            <span className="text-[7px] text-slate-400 dark:text-slate-500 w-3 text-right">{val}</span>
                           </div>
                         );
                       })}
                       {Object.values(analysis.avgTaste).every(v => v === 0) && (
-                        <span className="text-[7px] text-slate-300 italic">No dominant taste</span>
+                        <span className="text-[7px] text-slate-300 dark:text-slate-600 italic">No dominant taste</span>
                       )}
                     </div>
                   </div>
@@ -520,7 +520,7 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                   {/* Big category breakdown */}
                   {analysis.categoryCounts && Object.keys(analysis.categoryCounts).length > 0 && (
                     <div className="mb-1.5">
-                      <span className="text-[7px] text-slate-400 uppercase font-semibold">Aroma categories</span>
+                      <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Aroma categories</span>
                       <div className="flex gap-1 mt-1 flex-wrap">
                         {BIG_CATEGORIES.map(cat => {
                           const count = analysis.categoryCounts![cat.key] ?? 0;
@@ -530,7 +530,7 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                             <div key={cat.key} className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: cat.bgColor, borderColor: cat.borderColor, borderWidth: 1 }}>
                               <span className="text-[8px]" style={{ color: cat.color }}>●</span>
                               <span className={`text-[7px] font-semibold ${cat.textColor}`}>{cat.label}</span>
-                              <span className="text-[7px] text-slate-400">{count} ({pct}%)</span>
+                              <span className="text-[7px] text-slate-400 dark:text-slate-500">{count} ({pct}%)</span>
                             </div>
                           );
                         })}
@@ -541,11 +541,11 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                   {/* Subgroup breakdown */}
                   {analysis.subgroupCounts && Object.keys(analysis.subgroupCounts).length > 0 && (
                     <div className="mb-1.5">
-                      <span className="text-[7px] text-slate-400 uppercase font-semibold">Notes</span>
+                      <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Notes</span>
                       <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
                         {Object.entries(analysis.subgroupCounts).sort((a, b) => b[1] - a[1]).map(([label, count]) => (
-                          <span key={label} className="text-[8px] text-slate-600">
-                            {label} <span className="text-slate-300">×{count}</span>
+                          <span key={label} className="text-[8px] text-slate-600 dark:text-slate-400">
+                            {label} <span className="text-slate-300 dark:text-slate-600">×{count}</span>
                           </span>
                         ))}
                       </div>
@@ -556,13 +556,13 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                   {analysis.vibrancyScore !== undefined && analysis.depthScore !== undefined && (
                     <div className="flex gap-3 mb-2">
                       <div className="flex-1">
-                        <span className="text-[6px] text-slate-400 uppercase">Vibrancy</span>
+                        <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Vibrancy</span>
                         <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
                           <div className="h-full rounded-full bg-pink-400" style={{ width: `${analysis.vibrancyScore}%` }} />
                         </div>
                       </div>
                       <div className="flex-1">
-                        <span className="text-[6px] text-slate-400 uppercase">Depth</span>
+                        <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Depth</span>
                         <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
                           <div className="h-full rounded-full bg-orange-600" style={{ width: `${analysis.depthScore}%` }} />
                         </div>
@@ -572,7 +572,7 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
 
                   {/* Dimension prediction */}
                   <div className="mb-2">
-                    <span className="text-[7px] text-slate-400 uppercase font-semibold">Predicted expression</span>
+                    <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Predicted expression</span>
                     <div className={`text-[10px] font-bold mt-0.5 ${
                       analysis.dimension === 'aroma' ? 'text-pink-600' :
                       analysis.dimension === 'mouthfeel' ? 'text-orange-600' :
@@ -584,12 +584,12 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                        analysis.dimension === 'balanced' ? '⚖️ Balanced expression' :
                        '👅 Flavor-forward'}
                     </div>
-                    <p className="text-[8px] text-slate-500 mt-0.5 leading-relaxed">{analysis.dimensionReason}</p>
+                    <p className="text-[8px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{analysis.dimensionReason}</p>
                   </div>
 
                   {/* Possibility score */}
                   <div>
-                    <span className="text-[7px] text-slate-400 uppercase font-semibold">Possibility of finding these notes</span>
+                    <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Possibility of finding these notes</span>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
                         <div className={`h-full rounded-full transition-all ${
@@ -598,9 +598,9 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                           'bg-red-400'
                         }`} style={{ width: `${analysis.possibilityScore}%` }} />
                       </div>
-                      <span className="text-[10px] font-bold text-slate-600">{analysis.possibilityScore}%</span>
+                      <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">{analysis.possibilityScore}%</span>
                     </div>
-                    <div className="text-[7px] text-slate-400 mt-0.5">
+                    <div className="text-[7px] text-slate-400 dark:text-slate-500 mt-0.5">
                       {analysis.selectedCount} flavors · {analysis.wcrCount} WCR-validated · {analysis.customCount} custom
                     </div>
                   </div>
@@ -609,11 +609,11 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
 
               {/* Notes */}
               <div>
-                <span className="text-[7px] text-slate-400 uppercase font-semibold">Personal notes</span>
+                <span className="text-[7px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Personal notes</span>
                 <textarea value={editNotes} onChange={e => setEditNotes(e.target.value)}
                   rows={3}
                   placeholder="Your tasting impressions, brew notes, etc."
-                  className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none"
+                  className="w-full mt-0.5 px-2 py-1 text-[10px] border border-slate-200 dark:border-slate-700 rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none"
                 />
               </div>
 

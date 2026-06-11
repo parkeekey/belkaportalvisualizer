@@ -3,9 +3,11 @@ import { FLAVORS } from './flavors';
 import { loadCustomFlavors } from './customFlavors';
 import {
   BIG_CATEGORIES, TASTE_LABELS, BIG_SUBGROUP_LABEL,
-  type CoffeeProfile, type FlavorEntry, type AggregateAnalysis, type BigAromaCategory,
+  type CoffeeProfile, type FlavorEntry, type AggregateAnalysis, type BigAromaCategory, type SensoryProfile,
 } from './types';
 import CoffeeOriginSelect from '../components/CoffeeOriginSelect';
+
+const SENSORY_PROFILES_KEY = 'belka.sensoryProfiles';
 
 const PROFILES_KEY = 'belka.coffeeProfiles';
 
@@ -196,6 +198,10 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
   };
   const [editNotes, setEditNotes] = useState('');
   const [editFlavors, setEditFlavors] = useState<string[]>([]);
+  const [sensoryProfiles, setSensoryProfiles] = useState<SensoryProfile[]>(() => {
+    try { const r = localStorage.getItem(SENSORY_PROFILES_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
+  });
+  const [importSensoryOpen, setImportSensoryOpen] = useState(false);
 
   useEffect(() => { saveProfiles(profiles); }, [profiles]);
 
@@ -241,6 +247,21 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     }]);
     setActiveId(id);
+    setImportSensoryOpen(false);
+  };
+
+  const handleImportSensory = (sp: SensoryProfile) => {
+    const id = generateId();
+    const flavorIds = Object.keys(sp.checkedFlavors).filter(k => sp.checkedFlavors[k].checked);
+    const p: CoffeeProfile = {
+      id, name: sp.coffeeName?.trim() || sp.name || 'Untitled coffee',
+      roaster: sp.roaster, origin: sp.origin, process: sp.process, roastLevel: sp.roastLevel,
+      flavorIds,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+    setProfiles(prev => [...prev, p]);
+    setActiveId(id);
+    setImportSensoryOpen(false);
   };
 
   const handleSave = () => {
@@ -288,6 +309,30 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
           <button onClick={handleNew}
             className="text-[9px] font-semibold px-2 py-1 rounded border border-violet-200 text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors"
           >+ New</button>
+          {sensoryProfiles.length > 0 && (
+            <div className="relative">
+              <button onClick={() => setImportSensoryOpen(v => !v)}
+                className="text-[9px] font-semibold px-2 py-1 rounded border border-amber-200 text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors"
+              >📥 Sensory</button>
+              {importSensoryOpen && (
+                <div className="absolute top-full right-0 mt-1 z-20 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto min-w-[200px]">
+                  {sensoryProfiles.length === 0 ? (
+                    <div className="px-3 py-2 text-[8px] text-slate-400">No sensory sessions saved</div>
+                  ) : sensoryProfiles.map(sp => (
+                    <button key={sp.id} onClick={() => handleImportSensory(sp)}
+                      className="w-full text-left px-3 py-2 hover:bg-amber-50 transition-colors border-b border-slate-100 last:border-0"
+                    >
+                      <div className="text-[9px] font-semibold text-slate-700">{sp.name}</div>
+                      <div className="text-[7px] text-slate-400">
+                        {sp.coffeeName && <span>{sp.coffeeName} · </span>}
+                        {Object.keys(sp.checkedFlavors).length} tracked flavors
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {onClose && (
             <button onClick={onClose}
               className="text-[9px] text-slate-400 hover:text-slate-600 underline decoration-dotted"
@@ -304,7 +349,7 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
           )}
           {profiles.map(p => (
             <div key={p.id} className={`rounded-lg border overflow-hidden ${activeId === p.id ? 'border-violet-300 bg-violet-50' : 'border-slate-200 bg-white'}`}>
-              <button onClick={() => setActiveId(p.id)}
+              <button onClick={() => { setActiveId(p.id); setImportSensoryOpen(false); }}
                 className="w-full text-left px-2 py-1.5"
               >
                 <div className="text-[9px] font-semibold text-slate-700 truncate">{p.name}</div>

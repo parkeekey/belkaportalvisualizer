@@ -250,21 +250,21 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
   const tickAngle = (v: number) => posToAngle(v);
 
   return (
-    <div className="border border-emerald-200 rounded-lg bg-emerald-50/50 p-3 space-y-2">
+    <div className="border border-emerald-200 dark:border-emerald-800 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/10 p-3 space-y-2">
       <div className="flex items-center gap-2 text-xs flex-wrap">
-        <label className="text-slate-400">Grinder:</label>
-        <input type="text" value={grinderName} onChange={(e) => onGrinderNameChange(e.target.value)} placeholder="e.g. Ode Gen 2" className="w-20 px-1.5 py-0.5 text-xs border border-emerald-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-        <span className="text-slate-300">|</span>
-        <label className="text-slate-400">Total clicks:</label>
-        <input type="number" value={totalClicks || ''} max={100} onChange={(e) => setTotalClicks(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="w-12 px-1 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="0" />
-        <span className="text-slate-300">|</span>
-        <label className="text-slate-400">Micro:</label>
-        <input type="number" min={1} max={10} step={1} value={microStep} onChange={(e) => setMicroStep(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))} className="w-10 px-1 py-0.5 text-xs border border-emerald-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-        <span className="text-[10px] text-slate-400">(step {step})</span>
-        <span className="text-slate-300">|</span>
+        <label className="text-slate-400 dark:text-slate-500">Grinder:</label>
+        <input type="text" value={grinderName} onChange={(e) => onGrinderNameChange(e.target.value)} placeholder="e.g. Ode Gen 2" className="w-20 px-1.5 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <span className="text-slate-300 dark:text-slate-600">|</span>
+        <label className="text-slate-400 dark:text-slate-500">Total clicks:</label>
+        <input type="number" value={totalClicks || ''} max={100} onChange={(e) => setTotalClicks(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="w-12 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="0" />
+        <span className="text-slate-300 dark:text-slate-600">|</span>
+        <label className="text-slate-400 dark:text-slate-500">Micro:</label>
+        <input type="number" min={1} max={10} step={1} value={microStep} onChange={(e) => setMicroStep(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))} className="w-10 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <span className="text-[10px] text-slate-400 dark:text-slate-500">(step {step})</span>
+        <span className="text-slate-300 dark:text-slate-600">|</span>
         <label className="flex items-center gap-1 cursor-pointer">
           <input type="checkbox" checked={isElectric} onChange={(e) => setIsElectric(e.target.checked)} className="rounded" />
-          <span className="text-slate-400">Electric</span>
+          <span className="text-slate-400 dark:text-slate-500">Electric</span>
         </label>
       </div>
 
@@ -366,7 +366,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
             );
           })}
 
-          <div className="absolute rounded-full border-2 border-emerald-400 bg-white shadow-sm"
+          <div className="absolute rounded-full border-2 border-emerald-400 bg-white dark:bg-slate-200 shadow-sm"
             style={{
               width: knobPx, height: knobPx,
               left: (outerPx - knobPx) / 2,
@@ -436,7 +436,7 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
         </div>
 
         <div className="flex flex-col gap-2 min-w-[180px] flex-1">
-          <div className="inline-flex items-center self-start border border-emerald-300 rounded-lg bg-white shadow-sm overflow-hidden">
+          <div className="inline-flex items-center self-start border border-emerald-300 dark:border-emerald-700 rounded-lg bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
             <button onPointerDown={holdMinus.start} onPointerUp={holdMinus.stop} onPointerLeave={holdMinus.stop} className="w-8 h-9 text-emerald-700 font-bold text-sm hover:bg-emerald-100 flex items-center justify-center border-r border-emerald-200 select-none" style={{ touchAction: 'none' }}>−</button>
             <input type="text" inputMode="decimal" value={clickInput}
               onChange={(e) => setClickInput(e.target.value)}
@@ -455,35 +455,35 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
             <button onPointerDown={holdPlus.start} onPointerUp={holdPlus.stop} onPointerLeave={holdPlus.stop} className="w-8 h-9 text-emerald-700 font-bold text-sm hover:bg-emerald-100 flex items-center justify-center border-l border-emerald-200 select-none" style={{ touchAction: 'none' }}>+</button>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
-            <div className="text-[10px] text-slate-400 tabular-nums">#{grindSize > 0 ? grindSize : '—'}  |  {micron > 0 ? `${micron}µm` : '—'}</div>
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 tabular-nums">#{grindSize > 0 ? grindSize : '—'}  |  {micron > 0 ? `${micron}µm` : '—'}</div>
             <button onClick={recordEntry} className="px-4 py-2 rounded text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 border border-emerald-600 shadow-sm">Record</button>
             <button onClick={() => flashEntry(makeEntry(true))} className="px-3 py-2 rounded text-xs font-bold bg-green-100 text-green-700 hover:bg-green-200 border border-green-300">👍</button>
             <button onClick={() => flashEntry(makeEntry(false))} className="px-3 py-2 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 border border-red-300">👎</button>
-            <button onClick={() => setShowCalc(v => !v)} className={`px-2.5 py-2 rounded text-xs font-bold border ${showCalc ? 'bg-emerald-200 text-emerald-800 border-emerald-400' : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-100'}`}>±</button>
-            <button onClick={() => { setFocusMode(v => !v); if (!focusMode) { setFocusFrom(Math.max(0, Math.floor(clicks) - 1)); setFocusTo(Math.min(totalClicks, Math.ceil(clicks) + 1)); } }} className={`px-2.5 py-2 rounded text-xs font-bold border ${focusMode ? 'bg-amber-200 text-amber-800 border-amber-400' : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-100'}`}>🔍</button>
+            <button onClick={() => setShowCalc(v => !v)} className={`px-2.5 py-2 rounded text-xs font-bold border ${showCalc ? 'bg-emerald-200 text-emerald-800 border-emerald-400 dark:bg-emerald-800 dark:text-emerald-200 dark:border-emerald-600' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>±</button>
+            <button onClick={() => { setFocusMode(v => !v); if (!focusMode) { setFocusFrom(Math.max(0, Math.floor(clicks) - 1)); setFocusTo(Math.min(totalClicks, Math.ceil(clicks) + 1)); } }} className={`px-2.5 py-2 rounded text-xs font-bold border ${focusMode ? 'bg-amber-200 text-amber-800 border-amber-400 dark:bg-amber-800 dark:text-amber-200 dark:border-amber-600' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>🔍</button>
           </div>
           {showCalc && (
-            <div className="flex items-center gap-2 text-[10px] bg-white border border-emerald-200 rounded-lg px-3 py-2 shadow-sm flex-wrap">
+            <div className="flex items-center gap-2 text-[10px] bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2 shadow-sm flex-wrap">
               <div className="flex items-center gap-1">
-                <label className="text-slate-400">#grind1</label>
-                <input type="number" value={calcLow} onChange={(e) => setCalcLow(parseFloat(e.target.value) || 0)} className="w-12 px-1 py-0.5 text-xs border border-slate-200 rounded text-center" />
+                <label className="text-slate-400 dark:text-slate-500">#grind1</label>
+                <input type="number" value={calcLow} onChange={(e) => setCalcLow(parseFloat(e.target.value) || 0)} className="w-12 px-1 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded text-center" />
               </div>
               <div className="flex items-center gap-1">
-                <label className="text-slate-400">#grind2</label>
-                <input type="number" value={calcHigh} onChange={(e) => setCalcHigh(parseFloat(e.target.value) || 0)} className="w-12 px-1 py-0.5 text-xs border border-slate-200 rounded text-center" />
+                <label className="text-slate-400 dark:text-slate-500">#grind2</label>
+                <input type="number" value={calcHigh} onChange={(e) => setCalcHigh(parseFloat(e.target.value) || 0)} className="w-12 px-1 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded text-center" />
               </div>
-              <span className="text-slate-300">|</span>
+              <span className="text-slate-300 dark:text-slate-600">|</span>
               <label className="flex items-center gap-1 cursor-pointer">
                 <input type="radio" name="calcDir" checked={calcDir === 'coarser'} onChange={() => setCalcDir('coarser')} className="rounded-full" />
-                <span className="text-slate-500">% coarser</span>
+                <span className="text-slate-500 dark:text-slate-400">% coarser</span>
               </label>
               <label className="flex items-center gap-1 cursor-pointer">
                 <input type="radio" name="calcDir" checked={calcDir === 'finer'} onChange={() => setCalcDir('finer')} className="rounded-full" />
-                <span className="text-slate-500">% finer</span>
+                <span className="text-slate-500 dark:text-slate-400">% finer</span>
               </label>
               <div className="flex items-center gap-1">
-                <input type="number" min={0} max={100} value={calcPct} onChange={(e) => setCalcPct(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))} className="w-12 px-1 py-0.5 text-xs border border-slate-200 rounded text-center" />
-                <span className="text-slate-400">%</span>
+                <input type="number" min={0} max={100} value={calcPct} onChange={(e) => setCalcPct(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))} className="w-12 px-1 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded text-center" />
+                <span className="text-slate-400 dark:text-slate-500">%</span>
               </div>
               <button onClick={() => {
                 const diff = calcHigh - calcLow;
@@ -493,39 +493,39 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
                 setClickInput(clamped.toFixed(decimals));
                 onGrindSizeChange(clamped);
               }} className="px-3 py-1 rounded text-[10px] font-bold bg-emerald-500 text-white hover:bg-emerald-600">Calculate</button>
-              <span className="font-bold text-emerald-700 tabular-nums">
+              <span className="font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
                 = {precise(Math.max(0, Math.min(totalClicks, calcDir === 'coarser' ? calcLow + (calcHigh - calcLow) * calcPct / 100 : calcHigh - (calcHigh - calcLow) * calcPct / 100)))}
               </span>
             </div>
           )}
           <div className="flex items-center gap-2 text-[10px] flex-wrap">
-            <label className="text-slate-400">Turn Speed</label>
+            <label className="text-slate-400 dark:text-slate-500">Turn Speed</label>
             <input type="range" min={0} max={0.003} step={0.0001} value={turnSpeed} onChange={(e) => setTurnSpeed(parseFloat(e.target.value))} className="w-16 h-1 accent-emerald-500" />
-            <span className="text-slate-500 tabular-nums w-5">{(turnSpeed * 10000).toFixed(0)}</span>
+            <span className="text-slate-500 dark:text-slate-400 tabular-nums w-5">{(turnSpeed * 10000).toFixed(0)}</span>
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={() => persistedSetZoom(z => Math.max(0.5, z - 0.25))} disabled={zoomLocked} className="w-5 h-5 rounded border border-slate-300 bg-white text-slate-500 text-[9px] font-bold hover:bg-slate-100 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed">−</button>
-            <span className="text-[9px] text-slate-400 tabular-nums w-6 text-center">{(zoom * 100).toFixed(0)}%</span>
-            <button onClick={() => persistedSetZoom(z => Math.min(3, z + 0.25))} disabled={zoomLocked} className="w-5 h-5 rounded border border-slate-300 bg-white text-slate-500 text-[9px] font-bold hover:bg-slate-100 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed">+</button>
-            <button onClick={() => { const next = !zoomLocked; setZoomLocked(next); localStorage.setItem('belkaKnobZoomLocked', String(next)); }} className={`w-5 h-5 rounded border text-[9px] font-bold flex items-center justify-center transition-all ${zoomLocked ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-white border-slate-300 text-slate-400 hover:bg-slate-50'}`} title={zoomLocked ? 'Zoom locked' : 'Lock zoom'}>
+            <button onClick={() => persistedSetZoom(z => Math.max(0.5, z - 0.25))} disabled={zoomLocked} className="w-5 h-5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed">−</button>
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 tabular-nums w-6 text-center">{(zoom * 100).toFixed(0)}%</span>
+            <button onClick={() => persistedSetZoom(z => Math.min(3, z + 0.25))} disabled={zoomLocked} className="w-5 h-5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+            <button onClick={() => { const next = !zoomLocked; setZoomLocked(next); localStorage.setItem('belkaKnobZoomLocked', String(next)); }} className={`w-5 h-5 rounded border text-[9px] font-bold flex items-center justify-center transition-all ${zoomLocked ? 'bg-emerald-100 border-emerald-300 text-emerald-700 dark:bg-emerald-900 dark:border-emerald-700 dark:text-emerald-300' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'}`} title={zoomLocked ? 'Zoom locked' : 'Lock zoom'}>
               {zoomLocked ? '🔒' : '🔓'}
             </button>
           </div>
           {focusMode && (
-            <div className="flex items-center gap-2 text-[10px] bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex-wrap">
-              <span className="text-amber-600 font-semibold">Focus</span>
-              <span className="text-slate-300">|</span>
-              <label className="text-slate-400">From</label>
+            <div className="flex items-center gap-2 text-[10px] bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 flex-wrap">
+              <span className="text-amber-600 dark:text-amber-400 font-semibold">Focus</span>
+              <span className="text-slate-300 dark:text-slate-600">|</span>
+              <label className="text-slate-400 dark:text-slate-500">From</label>
               <input type="number" value={focusFrom} onChange={(e) => {
                 const v = Math.max(0, Math.min(totalClicks, parseFloat(e.target.value) || 0));
                 setFocusFrom(v);
-              }} className="w-14 px-1 py-0.5 text-xs border border-amber-300 rounded text-center" />
-              <span className="text-slate-300">→</span>
-              <label className="text-slate-400">To</label>
+              }} className="w-14 px-1 py-0.5 text-xs border border-amber-300 dark:border-amber-700 rounded text-center" />
+              <span className="text-slate-300 dark:text-slate-600">→</span>
+              <label className="text-slate-400 dark:text-slate-500">To</label>
               <input type="number" value={focusTo} onChange={(e) => {
                 const v = Math.max(0, Math.min(totalClicks, parseFloat(e.target.value) || 0));
                 setFocusTo(v);
-              }} className="w-14 px-1 py-0.5 text-xs border border-amber-300 rounded text-center" />
+              }} className="w-14 px-1 py-0.5 text-xs border border-amber-300 dark:border-amber-700 rounded text-center" />
               <button onClick={() => setFocusMode(false)} className="ml-auto px-2 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-700 hover:bg-amber-300">×</button>
             </div>
           )}
@@ -533,49 +533,49 @@ const GrinderKnob: React.FC<GrinderKnobProps> = ({ grinderName, onGrinderNameCha
       </div>
 
       <div className="flex items-center gap-2 text-xs">
-        <label className={`${tdsAutoFilled ? 'text-amber-500' : 'text-slate-400'}`}>
+        <label className={`${tdsAutoFilled ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`}>
           {tdsAutoFilled ? 'Expect TDS (from plan)' : 'Expect TDS:'}
         </label>
-        <input type="number" step="0.01" value={tdsMin} onChange={(e) => { setTdsMin(e.target.value); setTdsAutoFilled(false); }} placeholder="min" className={`w-14 px-1 py-0.5 text-xs border rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 ${tdsAutoFilled ? 'border-amber-300 bg-amber-50' : 'border-emerald-200'}`} />
-        <span className="text-slate-300">~</span>
-        <input type="number" step="0.01" value={tdsMax} onChange={(e) => { setTdsMax(e.target.value); setTdsAutoFilled(false); }} placeholder="max" className={`w-14 px-1 py-0.5 text-xs border rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 ${tdsAutoFilled ? 'border-amber-300 bg-amber-50' : 'border-emerald-200'}`} />
+        <input type="number" step="0.01" value={tdsMin} onChange={(e) => { setTdsMin(e.target.value); setTdsAutoFilled(false); }} placeholder="min" className={`w-14 px-1 py-0.5 text-xs border rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 ${tdsAutoFilled ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/30 dark:border-amber-700' : 'border-emerald-200 dark:border-emerald-800'}`} />
+        <span className="text-slate-300 dark:text-slate-600">~</span>
+        <input type="number" step="0.01" value={tdsMax} onChange={(e) => { setTdsMax(e.target.value); setTdsAutoFilled(false); }} placeholder="max" className={`w-14 px-1 py-0.5 text-xs border rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 ${tdsAutoFilled ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/30 dark:border-amber-700' : 'border-emerald-200 dark:border-emerald-800'}`} />
         <button onClick={() => setShowHistory(v => !v)} className="ml-auto text-xs text-emerald-600 hover:text-emerald-800 font-medium">{showHistory ? 'Hide' : 'History'} ({history.length})</button>
       </div>
 
       {showHistory && history.length > 0 && (
-        <div className="max-h-48 overflow-y-auto space-y-1 border-t border-emerald-200 pt-2">
+        <div className="max-h-48 overflow-y-auto space-y-1 border-t border-emerald-200 dark:border-emerald-800 pt-2">
           {history.map((e) => (
             editingId === e.id ? (
-              <div key={e.id} className="flex flex-col gap-1 text-[10px] bg-white rounded px-2 py-1.5 border border-emerald-300">
+              <div key={e.id} className="flex flex-col gap-1 text-[10px] bg-white dark:bg-slate-800 rounded px-2 py-1.5 border border-emerald-300 dark:border-emerald-700">
                 <div className="flex items-center gap-1 flex-wrap">
-                  <span className="text-slate-400">#</span>
+                  <span className="text-slate-400 dark:text-slate-500">#</span>
                   <button onClick={() => updateEntry(e.id, { like: !e.like, dislike: e.like ? false : e.dislike })} className={`px-0.5 ${e.like ? '' : 'opacity-40'} hover:opacity-100`}>👍</button>
                   <button onClick={() => updateEntry(e.id, { dislike: !e.dislike, like: e.dislike ? false : e.like })} className={`px-0.5 ${e.dislike ? '' : 'opacity-40'} hover:opacity-100`}>👎</button>
-                  <span className="text-slate-400">#</span>
-                  <input type="number" step={step} value={e.clicks} onChange={(v) => updateEntry(e.id, { clicks: parseFloat(parseFloat(v.target.value).toFixed(decimals)) || 0 })} className="w-12 px-1 py-0.5 text-xs border border-slate-200 rounded text-center" />
-                  <span className="text-slate-400">µm</span>
-                  <input type="number" step={1} value={e.micron} onChange={(v) => updateEntry(e.id, { micron: parseFloat(v.target.value) || 0 })} className="w-12 px-1 py-0.5 text-xs border border-slate-200 rounded text-center" />
-                  <span className="text-slate-300">|</span>
-                  <span className="text-slate-400">TDS</span>
-                  <input type="number" step="0.01" value={e.expectedTDSMin} onChange={(v) => updateEntry(e.id, { expectedTDSMin: parseFloat(v.target.value) || 0 })} className="w-12 px-1 py-0.5 text-xs border border-slate-200 rounded text-center" />
-                  <span className="text-slate-300">~</span>
-                  <input type="number" step="0.01" value={e.expectedTDSMax} onChange={(v) => updateEntry(e.id, { expectedTDSMax: parseFloat(v.target.value) || 0 })} className="w-12 px-1 py-0.5 text-xs border border-slate-200 rounded text-center" />
+                  <span className="text-slate-400 dark:text-slate-500">#</span>
+                  <input type="number" step={step} value={e.clicks} onChange={(v) => updateEntry(e.id, { clicks: parseFloat(parseFloat(v.target.value).toFixed(decimals)) || 0 })} className="w-12 px-1 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded text-center" />
+                  <span className="text-slate-400 dark:text-slate-500">µm</span>
+                  <input type="number" step={1} value={e.micron} onChange={(v) => updateEntry(e.id, { micron: parseFloat(v.target.value) || 0 })} className="w-12 px-1 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded text-center" />
+                  <span className="text-slate-300 dark:text-slate-600">|</span>
+                  <span className="text-slate-400 dark:text-slate-500">TDS</span>
+                  <input type="number" step="0.01" value={e.expectedTDSMin} onChange={(v) => updateEntry(e.id, { expectedTDSMin: parseFloat(v.target.value) || 0 })} className="w-12 px-1 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded text-center" />
+                  <span className="text-slate-300 dark:text-slate-600">~</span>
+                  <input type="number" step="0.01" value={e.expectedTDSMax} onChange={(v) => updateEntry(e.id, { expectedTDSMax: parseFloat(v.target.value) || 0 })} className="w-12 px-1 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded text-center" />
                   <button onClick={() => setEditingId(null)} className="text-emerald-600 hover:text-emerald-800 font-bold px-1">✓</button>
                 </div>
               </div>
             ) : (
-              <div key={e.id} className={`flex items-center gap-1.5 text-[10px] rounded px-2 py-1 border ${newEntryId === e.id ? 'border-emerald-400 bg-emerald-50 shadow-sm' : 'border-slate-100 bg-white'}`}>
+              <div key={e.id} className={`flex items-center gap-1.5 text-[10px] rounded px-2 py-1 border ${newEntryId === e.id ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 shadow-sm' : 'border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800'}`}>
                 <input type="checkbox" checked={e.showLine} onChange={() => updateEntry(e.id, { showLine: !e.showLine })} className="rounded" title="Show on knob" />
                 <button onClick={() => updateEntry(e.id, { like: !e.like, dislike: e.like ? false : e.dislike })} className={`px-0.5 ${e.like ? '' : 'opacity-30'} hover:opacity-100`}>👍</button>
                 <button onClick={() => updateEntry(e.id, { dislike: !e.dislike, like: e.dislike ? false : e.like })} className={`px-0.5 ${e.dislike ? '' : 'opacity-30'} hover:opacity-100`}>👎</button>
-                <span className={`font-medium tabular-nums ${e.like ? 'text-green-600' : e.dislike ? 'text-red-500' : 'text-slate-500'}`}>#{e.clicks}</span>
-                {e.micron > 0 && <span className="tabular-nums text-slate-400">{e.micron}µm</span>}
-                {e.rpm > 0 && <span className="tabular-nums text-slate-400">{e.rpm}rpm</span>}
-                <span className="text-slate-300">|</span>
-                <span className={`tabular-nums ${e.tdsIsPlan ? 'text-amber-600' : 'text-slate-500'}`}>{e.expectedTDSMin > 0 ? e.expectedTDSMin.toFixed(2) : '?'}–{e.expectedTDSMax > 0 ? e.expectedTDSMax.toFixed(2) : '?'}%{e.tdsIsPlan ? ' (plan)' : ' (manual)'}</span>
-                <span className="ml-auto text-slate-300">{e.date}</span>
-                <button onClick={() => setEditingId(e.id)} className="text-slate-400 hover:text-slate-600 px-0.5">✎</button>
-                <button onClick={() => deleteEntry(e.id)} className="text-red-300 hover:text-red-500 font-bold px-0.5">×</button>
+                <span className={`font-medium tabular-nums ${e.like ? 'text-green-600 dark:text-green-400' : e.dislike ? 'text-red-500 dark:text-red-400' : 'text-slate-500 dark:text-slate-400'}`}>#{e.clicks}</span>
+                {e.micron > 0 && <span className="tabular-nums text-slate-400 dark:text-slate-500">{e.micron}µm</span>}
+                {e.rpm > 0 && <span className="tabular-nums text-slate-400 dark:text-slate-500">{e.rpm}rpm</span>}
+                <span className="text-slate-300 dark:text-slate-600">|</span>
+                <span className={`tabular-nums ${e.tdsIsPlan ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}>{e.expectedTDSMin > 0 ? e.expectedTDSMin.toFixed(2) : '?'}–{e.expectedTDSMax > 0 ? e.expectedTDSMax.toFixed(2) : '?'}%{e.tdsIsPlan ? ' (plan)' : ' (manual)'}</span>
+                <span className="ml-auto text-slate-300 dark:text-slate-600">{e.date}</span>
+                <button onClick={() => setEditingId(e.id)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 px-0.5">✎</button>
+                <button onClick={() => deleteEntry(e.id)} className="text-red-300 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 font-bold px-0.5">×</button>
               </div>
             )
           ))}

@@ -109,6 +109,8 @@ export default function Brew({
   const [wetRipples, setWetRipples] = useState<{ x: number; y: number; birth: number; strength: number }[]>([]);
   const [showSalami, setShowSalami] = useState(false);
   const [salamiSlices, setSalamiSlices] = useState<{ slice: number; drainStart: number; drainEnd: number; timeSec: number; tds: number; compound: string }[]>([]);
+  const [extractionDepthPct, setExtractionDepthPct] = useState(0);
+  const [extractionWarning, setExtractionWarning] = useState<'none' | 'exhausting' | 'tannin' | 'over'>('none');
 
   const pouredRef = useRef(0);
   const drainedRef = useRef(0);
@@ -128,7 +130,7 @@ export default function Brew({
   const wetContactRef = useRef(0);
   const agitationRef = useRef(0);
   const extractedRef = useRef(0);
-  const tdsBreakdownRef = useRef({ extracted: 0, waterMass: 0, accessibleFrac: 0, lambdaEff: 0, maxExtractable: 0, effectiveTau: 0, tds: 0, ey: 0 });
+  const tdsBreakdownRef = useRef({ extracted: 0, waterMass: 0, accessibleFrac: 0, lambdaEff: 0, maxExtractable: 0, effectiveTau: 0, fastDrainDil: 0, bypassDil: 0, lowContactDil: 0, cupDilution: 1, rawTds: 0, floor: 0.9, ceil: 3.2, finalTds: 0, tds: 0, ey: 0, tdsSlurry: 0, fAbs: 0.3 });
   const ecSlurryRef = useRef(0);
   const ecOutTrueRef = useRef(0);
   const ecOutRef = useRef(0);
@@ -464,7 +466,7 @@ export default function Brew({
 
         // Percolation depth multiplier: fresh water maintains gradient
         const drainForDepth = Math.max(0, effectiveDrainRateNow);
-        const percDepthMult = Math.sqrt(1 + Math.min(5, drainForDepth * 1.2));
+        const percDepthMult = 1 + Math.min(10, drainForDepth * 3);
         const lambdaEff = LAMBDA_BASE * percDepthMult;
 
         // Weighted accessible fraction across particle distribution
@@ -487,18 +489,52 @@ export default function Brew({
         // Max extractable in V60 timescale
         const maxExtractable = Math.max(0, dose * Y_MAX * accessibleFrac * extractionEfficiency);
 
-        // First-order kinetics toward accessible pool ceiling
+        // First-order kinetics with progress stiffness toward accessible pool ceiling
         const remaining = Math.max(0, maxExtractable - extractedRef.current);
-        const extractionRate = remaining / effectiveTau;
+        const progress = maxExtractable > 0
+          ? Math.min(1, extractedRef.current / maxExtractable)
+          : 0;
+        const stiffness = 1 + 5 * progress * progress;
+        const extractionRate = remaining / (effectiveTau * stiffness);
         extractedRef.current += extractionRate * timeStep;
         const extracted = Math.max(0, extractedRef.current);
 
-        // TDS = direct ratio, no fudge factors
+        const depthPct = progress * 100;
+        let warning: 'none' | 'exhausting' | 'tannin' | 'over' = 'none';
+        if (depthPct > 90) warning = 'over';
+        else if (depthPct > 80) warning = 'tannin';
+        else if (depthPct > 65) warning = 'exhausting';
+        setExtractionDepthPct(Math.min(100, depthPct));
+        setExtractionWarning(warning);
+
+        // TDS with dilution factors and realistic floor
         const waterMass = drainedRef.current > 0.1 ? drainedRef.current : Math.max(0.1, pouredRef.current);
-        const tdsVal = waterMass > 0 ? (extracted / waterMass) * 100 : 0;
-        const eyVal = (extracted / dose) * 100;
+        const fastDrainDilution = Math.max(0, effectiveDrainRateNow - 1.6) * 0.11;
+        const bypassDilution = channelRisk * 0.18;
+        const lowContactDilution = Math.max(0, 1 - avgWaterContactAgeRef.current / 35) * 0.14;
+        const cupDilutionFactor = Math.max(0.58, Math.min(1, 1 - fastDrainDilution - bypassDilution - lowContactDilution));
+        const tdsValRaw = (extracted / waterMass) * 100 * cupDilutionFactor;
+        const tdsFloor = (elapsedRef.current > 60 && pouredRef.current > dose * 0.3) ? 1.1 : 0.9;
+        const tdsCeil = 3.2;
+        const tdsVal = Math.max(tdsFloor, Math.min(tdsCeil, tdsValRaw));
+
+        // Gagné Universal Extraction formula: accounts for both percolation and immersion.
+        //   ExtY = 100 × ((TDS_B − TDS_S)/(100 − TDS_S) × m_B/m_D + TDS_S/(100 − TDS_S) × (m_W/m_D − f_abs))
+        const tdsSlurry = ecSlurryRef.current * ecCalibration.tdsFactor;
+        const brewMass = drainedRef.current;
+        const totalWater = pouredRef.current;
+        const fAbs = 0.3;
+        const tdsDenom = Math.max(0.01, 100 - tdsSlurry);
+        const percTerm = (tdsVal - tdsSlurry) / tdsDenom * brewMass / dose;
+        const immTerm = Math.max(0, tdsSlurry / tdsDenom * Math.max(0, totalWater / dose - fAbs));
+        const eyVal = 100 * (percTerm + immTerm);
+
         tdsBreakdownRef.current = {
-          extracted, waterMass, accessibleFrac, lambdaEff, maxExtractable, effectiveTau, tds: tdsVal, ey: eyVal,
+          extracted, waterMass, accessibleFrac, lambdaEff, maxExtractable, effectiveTau,
+          fastDrainDil: fastDrainDilution, bypassDil: bypassDilution,
+          lowContactDil: lowContactDilution, cupDilution: cupDilutionFactor,
+          rawTds: tdsValRaw, floor: tdsFloor, ceil: tdsCeil, finalTds: tdsVal, tds: tdsVal, ey: eyVal,
+          tdsSlurry, fAbs,
         };
         setTds(tdsVal);
         setEy(eyVal);
@@ -704,6 +740,7 @@ export default function Brew({
     setWetRipples([]);
     setPourPoints([]); setBedProfile(Array(SEGMENTS).fill(1));
     setServed(false); setIsPouring(false); setEcPoints([]); setFlowPoints([]); setPourRate(0); setBedMoisture(0); setBedIntegrity(1); setPourFlowTrim(0); setEcZoom(1);
+    setExtractionDepthPct(0); setExtractionWarning('none');
     setImmersionGrindUm(micronSetting);
   }, [micronSetting]);
 
@@ -752,14 +789,14 @@ export default function Brew({
         ? 'Settled'
         : 'Fading';
   const turbulencePct = Math.round(Math.min(100, turbulenceTerm * 220));
-  const targetEyCenter = Math.max(17.5, Math.min(21.5, 19.2 + (ratio - 16) * 0.18));
-  const suggestedEyLow = Math.max(16.8, targetEyCenter - 1.1);
-  const suggestedEyHigh = Math.min(22.5, targetEyCenter + 1.1);
+  const targetEyCenter = Math.max(14, Math.min(23, 19.2 + (ratio - 16) * 0.18));
+  const suggestedEyLow = Math.max(13, targetEyCenter - 1.1);
+  const suggestedEyHigh = Math.min(23, targetEyCenter + 1.1);
   const eyGoalLow = eyTargetMode === 'single' ? eyTargetSingle : Math.min(eyTargetMin, eyTargetMax);
   const eyGoalHigh = eyTargetMode === 'single' ? eyTargetSingle : Math.max(eyTargetMin, eyTargetMax);
-  const targetTdsCenter = Math.max(1.05, Math.min(1.7, 1.42 - (ratio - 16) * 0.08));
-  const suggestedTdsLow = Math.max(0.95, targetTdsCenter - 0.16);
-  const suggestedTdsHigh = Math.min(1.95, targetTdsCenter + 0.16);
+  const targetTdsCenter = Math.max(0.7, Math.min(3.5, 1.42 - (ratio - 16) * 0.08));
+  const suggestedTdsLow = Math.max(0.6, targetTdsCenter - 0.16);
+  const suggestedTdsHigh = Math.min(4.0, targetTdsCenter + 0.16);
   const tdsGoalLow = tdsTargetMode === 'single' ? tdsTargetSingle : Math.min(tdsTargetMin, tdsTargetMax);
   const tdsGoalHigh = tdsTargetMode === 'single' ? tdsTargetSingle : Math.max(tdsTargetMin, tdsTargetMax);
   const eyCenter = (eyGoalLow + eyGoalHigh) / 2;
@@ -1811,13 +1848,45 @@ export default function Brew({
                 <div className="flex justify-between"><span>λ effective</span><span className="font-mono">{b.lambdaEff.toFixed(0)} µm</span></div>
                 <div className="flex justify-between"><span>Max extractable</span><span className="font-mono">{b.maxExtractable.toFixed(4)} g</span></div>
                 <div className="flex justify-between"><span>τ effective</span><span className="font-mono">{b.effectiveTau.toFixed(2)} s</span></div>
-                <div className="flex justify-between font-bold text-slate-600"><span>TDS (direct)</span><span className="font-mono">{tds.toFixed(2)}%</span></div>
-                <div className="flex justify-between font-bold text-slate-600"><span>EY</span><span className="font-mono">{(b.ey).toFixed(1)}%</span></div>
+                <div className="flex justify-between"><span>TDS Slurry</span><span className="font-mono">{b.tdsSlurry.toFixed(2)}%</span></div>
+                <div className="flex justify-between"><span>f abs</span><span className="font-mono">{b.fAbs.toFixed(2)}</span></div>
+                <div className="flex justify-between font-bold text-slate-600"><span>TDS (cup)</span><span className="font-mono">{tds.toFixed(2)}%</span></div>
+                <div className="flex justify-between font-bold text-slate-600"><span>EY (Gagné UE)</span><span className="font-mono">{(b.ey).toFixed(1)}%</span></div>
               </div>
             );
           })()}
 
-
+          {/* Extraction depth — shows how far into the solubles we are */}
+          {poured > 0 && (
+            <>
+              <div className="flex items-center justify-between text-[7px] mt-1">
+                <span className="text-slate-400">Extraction depth</span>
+                <span className={`font-bold ${extractionWarning === 'over' ? 'text-red-500' : extractionWarning === 'tannin' ? 'text-orange-500' : extractionWarning === 'exhausting' ? 'text-amber-500' : 'text-slate-400'}`}>
+                  {extractionDepthPct.toFixed(0)}%
+                </span>
+              </div>
+              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden relative">
+                <div className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, extractionDepthPct)}%`,
+                    backgroundColor: extractionWarning === 'over' ? '#dc2626' : extractionWarning === 'tannin' ? '#ea580c' : extractionWarning === 'exhausting' ? '#d97706' : '#3b82f6',
+                  }} />
+                <div className="absolute top-0 h-full w-0.5 bg-red-400/60" style={{ left: '65%' }} />
+                <div className="absolute top-0 h-full w-0.5 bg-black/20" style={{ left: '80%' }} />
+              </div>
+              {extractionWarning !== 'none' && (
+                <div className="flex items-center gap-1 mt-0.5">
+                  {extractionWarning === 'over' ? (
+                    <span className="text-[6px] text-red-500 font-bold">⛔ Over-extracted — tannins dominate, bitter/astringent cup</span>
+                  ) : extractionWarning === 'tannin' ? (
+                    <span className="text-[6px] text-orange-600 font-bold">⚠ Tannin release — good pool spent, pulling bitter compounds</span>
+                  ) : (
+                    <span className="text-[6px] text-amber-600">△ Good pool nearly depleted — tannin risk rising</span>
+                  )}
+                </div>
+              )}
+            </>
+          )}
 
           <div className="flex items-center justify-between text-[8px]">
             <span className="text-slate-400">EC out</span>

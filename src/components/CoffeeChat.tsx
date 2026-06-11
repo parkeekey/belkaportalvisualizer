@@ -735,21 +735,21 @@ Want specific advice for this process? Ask about grind, temp, or water.`,
     })();
 
     if (state.step === 0 && ratioNum) {
-      if (eyNum && ratioNum >= 8) {
+      if (eyNum && ratioNum >= 5) {
         const tds = getReferenceTDS(ratioNum, eyNum);
         return {
           reply: `At **1:${ratioNum}** with **${eyNum}% EY** → TDS = **${tds.toFixed(2)}%**`,
           newState: { mode: 'menu', step: 0, data: {} }
         };
       }
-      if (tdsNum && ratioNum >= 8) {
+      if (tdsNum && ratioNum >= 5) {
         const ey = getReferenceEY(ratioNum, tdsNum);
         return {
           reply: `At **1:${ratioNum}** with **${tdsNum.toFixed(2)}% TDS** → EY = **${ey.toFixed(1)}%**`,
           newState: { mode: 'menu', step: 0, data: {} }
         };
       }
-      if (matchKeyword(text, ['range']) && ratioNum >= 8) {
+      if (matchKeyword(text, ['range']) && ratioNum >= 5) {
         const tds18 = getReferenceTDS(ratioNum, 18);
         const tds22 = getReferenceTDS(ratioNum, 22);
         return {
@@ -760,7 +760,7 @@ Want specific advice for this process? Ask about grind, temp, or water.`,
     }
 
     if (state.step >= 0) {
-      if (ratioNum && ratioNum >= 8) {
+      if (ratioNum && ratioNum >= 5) {
         const tds18 = getReferenceTDS(ratioNum, 18);
         const tds22 = getReferenceTDS(ratioNum, 22);
         const tds20 = getReferenceTDS(ratioNum, 20);
@@ -1067,7 +1067,7 @@ Want specific advice for this process? Ask about grind, temp, or water.`,
       reply += `**Risk:** ${risk}\n\n`;
       reply += `**Advice:** ${advice}\n\n`;
 
-      if (ratioNum && ratioNum >= 8) {
+      if (ratioNum && ratioNum >= 5) {
         reply += `Your ratio is **1:${ratioNum}**. `;
         if (ecNum <= 15 && ratioNum > 16) {
           reply += `That's a loose ratio — combined with low EC it suggests water is running through too fast. Try tightening to 1:14-1:15.`;

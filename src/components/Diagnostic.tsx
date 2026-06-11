@@ -453,7 +453,6 @@ function MiniRadar({ profile, label }: { profile: Profile; label?: string }) {
 
 export default function Diagnostic({ onClose }: { onClose: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const ratioDraft = useRef('');
   const [profile, setProfile] = useState<Profile>({ acidity: 5, sweetness: 5, flavor: 5, mouthfeel: 5, aftertaste: 5, overall: 5 });
   const [expandedIntegrity, setExpandedIntegrity] = useState<string | null>(null);
   const [improveTo, setImproveTo] = useState(5);
@@ -501,10 +500,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
   const [eyMin, setEyMin] = useState('18');
   const [eyMax, setEyMax] = useState('22');
   const [yieldOut, setYieldOut] = useState('');
-  const ratioInputRef = useRef<HTMLInputElement>(null);
 
   const ratioNum = useMemo(() => {
-    const m = extractionRatio.match(/:(\d+(?:\.\d+)?)/);
+    const m = extractionRatio.match(/:(\d+(?:\.\d*)?)/);
     return m ? parseFloat(m[1]) : 0;
   }, [extractionRatio]);
 
@@ -518,7 +516,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
     const yieldOutNum = parseFloat(yieldOut) || 0;
     const waterOut = yieldOutNum > 0 ? yieldOutNum : Math.max(0, waterIn - doseNum * 2);
     const ey = tdsNum > 0 && doseNum > 0 && waterOut > 0 ? tdsNum * waterOut / doseNum : 0;
-    const validRatio = ratioNum >= 10 && ratioNum <= 30;
+    const validRatio = ratioNum >= 5 && ratioNum <= 22;
     const scaRange = validRatio ? getReferenceTDSRange(ratioNum, 18, 22) : null;
     const scaLo = scaRange?.tdsMin ?? 0;
     const scaHi = scaRange?.tdsMax ?? 0;
@@ -2185,16 +2183,20 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   <div className="flex-1">
                     <label className="text-[8px] font-semibold text-slate-500 block mb-0.5">Ratio</label>
                     <div className="flex items-center gap-0.5">
-                      <button onClick={() => { const v = ratioNum || 0; if (v > 5) setExtractionRatio(`1:${Math.max(5, v - 0.5)}`); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">−</button>
                       <span className="text-[10px] text-slate-400 font-mono">1:</span>
-                      <input ref={ratioInputRef} type="text" inputMode="decimal" key={extractionRatio}
-                        defaultValue={extractionRatio.split(':')[1] || ''}
-                        onFocus={(e) => { ratioDraft.current = e.target.value; }}
-                        onChange={(e) => { ratioDraft.current = e.target.value; }}
-                        onBlur={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v) && v >= 5) { setExtractionRatio(`1:${Math.min(30, v)}`); } else { e.target.value = extractionRatio.split(':')[1] || ''; } } }
+                      <input type="text" inputMode="decimal"
+                        value={extractionRatio.split(':')[1] || ''}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (/^\d*\.?\d*$/.test(v) || v === '') {
+                            const num = v === '' ? 5 : parseFloat(v);
+                            if (num >= 5 && num <= 22) {
+                              setExtractionRatio(`1:${v}`);
+                            }
+                          }
+                        }}
                         placeholder="16"
                         className="w-full text-[10px] border border-sky-300 rounded px-1 py-1.5 text-sky-800 bg-white font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                      <button onClick={() => { const v = ratioNum || 0; setExtractionRatio(`1:${Math.min(30, v + 0.5)}`); }} className="w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600">+</button>
                     </div>
                   </div>
                   <div className="flex-1">
@@ -2227,6 +2229,18 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Ratio slider bar — 1:5 to 1:22 */}
+                <div className="mb-3 px-1">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-[7px] text-slate-400">1:5</span>
+                    <span className="text-[9px] font-bold text-sky-700">1:{ratioNum.toFixed(1)}</span>
+                    <span className="text-[7px] text-slate-400">1:22</span>
+                  </div>
+                  <input type="range" min={5} max={22} step={0.1} value={Math.min(22, Math.max(5, ratioNum))}
+                    onChange={(e) => setExtractionRatio(`1:${e.target.value}`)}
+                    className="w-full h-1.5 accent-sky-500 cursor-pointer" />
                 </div>
 
                 {/* Integrated diagnosis card */}
@@ -2356,7 +2370,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                             </span>
                           </div>
                           <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (ey / 30) * 100)}%`, backgroundColor: !eyUnder && !eyOver ? '#22c55e' : eyUnder ? '#0ea5e9' : '#ef4444' }} />
+                            <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (ey / Math.max(30, eyMaxNum * 1.3)) * 100)}%`, backgroundColor: !eyUnder && !eyOver ? '#22c55e' : eyUnder ? '#0ea5e9' : '#ef4444' }} />
                           </div>
                           <div className="flex items-center justify-between mt-1">
                             <span className="text-[8px] text-slate-400">Range {eyMinNum}–{eyMaxNum}%</span>
@@ -2373,7 +2387,7 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                             </span>
                           </div>
                           <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (tdsNum / 2) * 100)}%`, backgroundColor: tdsInSCA ? '#22c55e' : tdsUnderSCA ? '#0ea5e9' : tdsOverSCA ? '#ef4444' : '#94a3b8' }} />
+                            <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (tdsNum / Math.max(2, scaHi * 1.3)) * 100)}%`, backgroundColor: tdsInSCA ? '#22c55e' : tdsUnderSCA ? '#0ea5e9' : tdsOverSCA ? '#ef4444' : '#94a3b8' }} />
                           </div>
                           <div className="flex items-center justify-between mt-1">
                             <span className="text-[8px] text-slate-400">SCA {scaRange && `${scaLo.toFixed(2)}–${scaHi.toFixed(2)}%`}</span>

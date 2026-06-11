@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "project": {
+    "name": "Belka Portal",
+    "repo": "windsurf-project",
+    "description": "EC digitizer, brew diagnostics, sensory mapping"
+  },
+  "extraction": {
+    "ratioMin": 5,
+    "ratioMax": 22,
+    "eyMin": 17,
+    "eyMax": 30,
+    "tdsTargetMode": "sca-zone"
+  },
+  "ecThresholds": {
+    "redLight": 3.0,
+    "collapse": 3.0,
+    "stall": 14.0
+  },
+  "features": {
+    "sandboxEnabled": false,
+    "debugMode": false,
+    "chatEnabled": true
+  },
+  "ui": {
+    "defaultBrewTimeSec": 180,
+    "theme": "light",
+    "layoutStyle": "sidebar"
+  }
+}

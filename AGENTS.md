@@ -68,6 +68,16 @@ When committing to a branch that serves docs/ (GitHub Pages), every file referen
 
 Likewise, never rely on untracked files — `git status` will show them; if they're build output referenced by committed files, they must be included.
 
+## Git Push Convention
+
+On Windows PowerShell, NEVER use `2>&1` with `git push` — it routes git's success output through PowerShell's error display, making pushes look like failures. Always use clean:
+
+```
+git push origin <branch>
+```
+
+No piping, no redirect. The output will look correct.
+
 ## EC Model — Bed HP Bar, Not Concentration Meter
 
 ### What EC actually is (2026-06-08 insight)

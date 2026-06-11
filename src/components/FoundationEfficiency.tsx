@@ -47,7 +47,8 @@ function grindAdvice(drainRate: number, finesPct: number, grindSetting: number):
 }
 
 function ratioAdvice(ratio: number): string {
-  if (ratio < 13) return 'Increase ratio to 1:16+ ΓÇö tight ratios are hard to control EY and drain stability';
+  if (ratio < 9) return 'Very tight ratio ΓÇö ristretto range, expect high TDS concentration and lower EY';
+  if (ratio < 12) return 'Tight ratio ΓÇö increase to 1:14-1:15 for more forgiving TDS/EY balance';
   if (ratio < 14) return 'Consider 1:15-1:16 for a more forgiving TDS/EY balance';
   if (ratio > 19) return 'Decrease ratio to 1:16 ΓÇö dilute brews risk low TDS and weak body';
   if (ratio > 18) return 'Consider 1:16-1:17 for better concentration';
@@ -103,7 +104,7 @@ export default function FoundationEfficiency({
 
   const bars: { key: AdviceKey; label: string; score: number; desc: string }[] = [
     { key: 'grind', label: 'Grind', score: grindScore, desc: drainRate < 0.4 ? 'Too fine ΓÇö clogging' : drainRate > 2.5 ? 'Too coarse ΓÇö fast flow' : `${drainRate.toFixed(1)} g/s drain` },
-    { key: 'ratio', label: 'Ratio', score: ratioScore, desc: ratio < 13 ? 'Concentrated ΓÇö hard to control EY' : ratio > 19 ? 'Dilute ΓÇö low TDS risk' : `${ratio}:1 ΓÇö balanced range` },
+    { key: 'ratio', label: 'Ratio', score: ratioScore, desc: ratio < 9 ? 'Very tight ΓÇö ristretto' : ratio < 13 ? 'Concentrated ΓÇö hard to control EY' : ratio > 19 ? 'Dilute ΓÇö low TDS risk' : `${ratio}:1 ΓÇö balanced range` },
     { key: 'turb', label: 'Turbulence', score: turbScore, desc: pourRate < 4.5 ? 'Low agitation ΓÇö weak extraction' : channelRisk > 0.45 ? 'High channel risk ΓÇö too aggressive' : 'Good agitation for extraction' },
     { key: 'temp', label: 'Temp', score: tempScore, desc: waterTempC < 85 ? 'Low solubility ΓÇö under-extraction risk' : waterTempC > 96 ? 'Near boiling ΓÇö bitterness risk' : `${waterTempC}┬░C ΓÇö good solubility` },
   ];

@@ -10,7 +10,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
       className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-8 px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full my-auto">
+      <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-3xl w-full my-auto">
 
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-7 py-5 bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-2xl">
@@ -27,11 +27,11 @@ export function InfoModal({ onClose }: InfoModalProps) {
           </button>
         </div>
 
-        <div className="px-7 py-6 space-y-8 text-slate-700 text-sm leading-relaxed">
+        <div className="px-7 py-6 space-y-8 text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
 
           {/* ── What is EC ── */}
           <section>
-            <h3 className="text-base font-bold text-slate-800 mb-2 flex items-center gap-2">
+            <h3 className="text-base font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
               What is EC and Why Is It Used?
             </h3>
@@ -54,7 +54,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
 
           {/* ── EC vs TDS ── */}
           <section>
-            <h3 className="text-base font-bold text-slate-800 mb-2 flex items-center gap-2">
+            <h3 className="text-base font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
               How Are EC and TDS Different?
             </h3>
@@ -77,12 +77,12 @@ export function InfoModal({ onClose }: InfoModalProps) {
 
           {/* ── What EC can / cannot measure ── */}
           <section>
-            <h3 className="text-base font-bold text-slate-800 mb-2 flex items-center gap-2">
+            <h3 className="text-base font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
               What EC Can — and Cannot — Measure in Coffee
             </h3>
             <div className="grid sm:grid-cols-2 gap-4">
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
                 <p className="font-semibold text-green-800 mb-2">✓ EC Can Measure</p>
                 <ul className="space-y-1 text-green-900 text-xs">
                   <li>• Total dissolved solids concentration</li>
@@ -93,7 +93,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
                   <li>• Time windows of high vs. low extraction</li>
                 </ul>
               </div>
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
                 <p className="font-semibold text-red-800 mb-2">✗ EC Cannot Measure</p>
                 <ul className="space-y-1 text-red-900 text-xs">
                   <li>• Individual compounds (caffeine, chlorogenic acids, lipids…)</li>
@@ -105,7 +105,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
                 </ul>
               </div>
             </div>
-            <p className="mt-3 text-xs text-slate-500 italic">
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 italic">
               EC is a blunt but powerful instrument. High EC ≠ good coffee; low EC ≠ bad coffee.
               It must always be paired with sensory evaluation.
             </p>
@@ -113,7 +113,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
 
           {/* ── How TDS fills the gap ── */}
           <section>
-            <h3 className="text-base font-bold text-slate-800 mb-2 flex items-center gap-2">
+            <h3 className="text-base font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-purple-500"></span>
               How TDS (Refractometer) Fills Some Gaps
             </h3>
@@ -144,12 +144,12 @@ export function InfoModal({ onClose }: InfoModalProps) {
 
             <div className="space-y-4">
               {/* Use case 1 */}
-              <div className="border border-slate-200 rounded-xl p-4">
-                <p className="font-bold text-slate-800 mb-1">
+              <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+                <p className="font-bold text-slate-800 dark:text-white mb-1">
                   <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-100 text-rose-700 text-xs font-bold mr-2">1</span>
                   Cut Off the Negative Extraction — Track the Low-EC Tail
                 </p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   As extraction progresses, EC typically rises sharply early then tapers. When EC drops
                   below a threshold — indicated by the <strong className="text-rose-600">red guide line</strong> — the brew is
                   entering the over-extraction tail where harsh, bitter, and astringent compounds
@@ -161,12 +161,12 @@ export function InfoModal({ onClose }: InfoModalProps) {
               </div>
 
               {/* Use case 2 */}
-              <div className="border border-slate-200 rounded-xl p-4">
-                <p className="font-bold text-slate-800 mb-1">
+              <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+                <p className="font-bold text-slate-800 dark:text-white mb-1">
                   <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold mr-2">2</span>
                   Log, Detect & Map Extraction Phases with a Sensory Guide
                 </p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   The phase logging system lets you mark distinct brew events — pre-infusion, bloom,
                   first pour, agitation, drain — and overlay them on the EC curve. Over multiple
                   sessions you can build a <strong>sensory map</strong>: which EC range or time window
@@ -178,12 +178,12 @@ export function InfoModal({ onClose }: InfoModalProps) {
               </div>
 
               {/* Use case 3 */}
-              <div className="border border-slate-200 rounded-xl p-4">
-                <p className="font-bold text-slate-800 mb-1">
+              <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+                <p className="font-bold text-slate-800 dark:text-white mb-1">
                   <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">3</span>
                   Plan, Adjust & Understand Extraction Behaviour
                 </p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   The Target Assistant lets you set a TDS or EY goal and immediately see which
                   time windows and water-in amounts hit that target for your specific coffee and
                   dose. By comparing brews with different grind sizes, water temperatures, or
@@ -197,13 +197,13 @@ export function InfoModal({ onClose }: InfoModalProps) {
           </section>
 
           {/* ── Credits & Disclaimer ── */}
-          <section className="border-t border-slate-100 pt-6">
+          <section className="border-t border-slate-100 dark:border-slate-700 pt-6">
             <h3 className="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-slate-400"></span>
               Credits &amp; Disclaimer
             </h3>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 mb-4">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 text-xs text-amber-900 dark:text-amber-200 mb-4">
               <p className="font-semibold mb-1">⚠ Disclaimer</p>
               <p>
                 This project is an independent, personal endeavour built out of curiosity and a passion
@@ -220,18 +220,18 @@ export function InfoModal({ onClose }: InfoModalProps) {
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4 text-xs">
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <p className="font-bold text-slate-700 mb-2">Creators</p>
-                <ul className="space-y-1 text-slate-600">
+              <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                <p className="font-bold text-slate-700 dark:text-slate-300 mb-2">Creators</p>
+                <ul className="space-y-1 text-slate-600 dark:text-slate-400">
                   <li>☕ <strong>Blacklistbrewer</strong> — coffee knowledge, concept &amp; direction</li>
                   <li>🗂 <strong>parkeekey</strong> — repository &amp; project owner</li>
                   <li>🤖 <strong>GitHub Copilot</strong> (Claude Sonnet &amp; various AI models) — code generation &amp; implementation</li>
                 </ul>
               </div>
 
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <p className="font-bold text-slate-700 mb-2">Technical Stack</p>
-                <ul className="space-y-1 text-slate-600">
+              <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                <p className="font-bold text-slate-700 dark:text-slate-300 mb-2">Technical Stack</p>
+                <ul className="space-y-1 text-slate-600 dark:text-slate-400">
                   <li>⚛ React 18 + TypeScript</li>
                   <li>⚡ Vite 4</li>
                   <li>🎨 Tailwind CSS</li>
@@ -241,8 +241,8 @@ export function InfoModal({ onClose }: InfoModalProps) {
               </div>
             </div>
 
-            <div className="mt-4 bg-slate-50 rounded-xl p-4 border border-slate-200 text-xs text-slate-600">
-              <p className="font-bold text-slate-700 mb-1">Version Info</p>
+            <div className="mt-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
+              <p className="font-bold text-slate-700 dark:text-slate-300 mb-1">Version Info</p>
               <p>Version 1.0.0 &nbsp;·&nbsp; Built May 2026 &nbsp;·&nbsp; MIT Licence</p>
               <p className="mt-1 text-slate-400">
                 "A brewer who can read EC is a brewer who can talk to their coffee."
@@ -253,7 +253,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
         </div>
 
         {/* Footer close */}
-        <div className="px-7 py-4 bg-slate-50 rounded-b-2xl border-t border-slate-100 flex justify-end">
+        <div className="px-7 py-4 bg-slate-50 dark:bg-slate-900/50 rounded-b-2xl border-t border-slate-100 dark:border-slate-700 flex justify-end">
           <button
             onClick={onClose}
             className="px-5 py-2 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-700 transition-colors"

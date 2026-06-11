@@ -16,7 +16,7 @@ export default function TDSHUD({ tdsMin, tdsMax, currentTDS, eyTarget, onTDSChan
   const [editValue, setEditValue] = useState(String(currentTDS));
 
   const SLIDER_MIN = 0;
-  const SLIDER_RANGE = 3;
+  const SLIDER_RANGE = scaTdsMax != null ? Math.max(3, Math.ceil(scaTdsMax * 1.3 * 10) / 10) : 3;
 
   const status = currentTDS < tdsMin ? 'UNDER' : currentTDS > tdsMax ? 'OVER' : 'IDEAL';
   const statusColor = status === 'UNDER' ? '#38bdf8' : status === 'OVER' ? '#ef4444' : '#22d65e';
@@ -97,15 +97,20 @@ export default function TDSHUD({ tdsMin, tdsMax, currentTDS, eyTarget, onTDSChan
         })()}
 
         {/* Tick marks */}
-        {[0.5, 1.0, 1.5, 2.0, 2.5, 3.0].map((v) => {
-          const pct = (v - SLIDER_MIN) / SLIDER_RANGE * 100;
-          return (
-            <div key={v} className="absolute top-0 bottom-0" style={{ left: `${pct}%` }}>
-              <div className="w-px h-full bg-emerald-500/20" />
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[8px] text-emerald-500/50 tabular-nums">{v.toFixed(1)}</div>
-            </div>
-          );
-        })}
+        {(() => {
+          const step = SLIDER_RANGE <= 4 ? 0.5 : 1;
+          const ticks: number[] = [];
+          for (let v = step; v <= SLIDER_RANGE; v += step) ticks.push(parseFloat(v.toFixed(1)));
+          return ticks.map((v) => {
+            const pct = (v - SLIDER_MIN) / SLIDER_RANGE * 100;
+            return (
+              <div key={v} className="absolute top-0 bottom-0" style={{ left: `${pct}%` }}>
+                <div className="w-px h-full bg-emerald-500/20" />
+                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[8px] text-emerald-500/50 tabular-nums">{v.toFixed(1)}</div>
+              </div>
+            );
+          });
+        })()}
 
         {/* Zone labels */}
         <div className="absolute top-1 left-2 text-[9px] font-bold text-sky-400/60 uppercase tracking-wider">UNDER</div>
@@ -179,7 +184,7 @@ export default function TDSHUD({ tdsMin, tdsMax, currentTDS, eyTarget, onTDSChan
           <span className="text-emerald-500/50 uppercase tracking-wider font-bold">EY</span>
           <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
             <div className="h-full rounded-full bg-emerald-400/60 transition-all"
-              style={{ width: `${Math.min(100, (eyTarget / 25) * 100)}%` }}
+              style={{ width: `${Math.min(100, (eyTarget / Math.max(25, eyTarget * 1.3)) * 100)}%` }}
             />
           </div>
           <span className="text-emerald-400 font-bold tabular-nums">{eyTarget > 0 ? `${eyTarget.toFixed(1)}%` : '—'}</span>

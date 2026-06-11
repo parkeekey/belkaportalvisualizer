@@ -2290,6 +2290,7 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             const ratio = tdsPlanRatio || 16;
             const scaLo = getReferenceTDS(ratio, 18);
             const scaHi = getReferenceTDS(ratio, 22);
+            const tdsGaugeMax = Math.max(3, scaHi * 1.5);
             const actualEY = getReferenceEY(ratio, currentTDS);
             const isUnder = currentTDS < scaLo;
             const isOver = currentTDS > scaHi;
@@ -2300,6 +2301,9 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             else advice = `TDS is ${tdsDelta.toFixed(2)}% above SCA zone. Loosen ratio to 1:${(ratio + 1).toFixed(0)}, coarsen grind, or reduce dose.`;
             const statusLabel = isUnder ? 'UNDER' : isOver ? 'OVER' : '✓ IDEAL';
             const statusColor = isUnder ? 'text-sky-600 bg-sky-50 border-sky-200' : isOver ? 'text-red-600 bg-red-50 border-red-200' : 'text-emerald-600 bg-emerald-50 border-emerald-200';
+            const gaugeLeft = Math.max(0, (scaLo / tdsGaugeMax) * 100);
+            const gaugeWidth = Math.min(100 - gaugeLeft, (scaHi - scaLo) / tdsGaugeMax * 100);
+            const markerLeft = Math.max(0, Math.min(100, (currentTDS / tdsGaugeMax) * 100));
             return (
               <div className="px-4 py-3 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-white">
                 <div className="flex items-start gap-4">
@@ -2329,8 +2333,8 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
                   <span className="text-slate-400">at 1:{ratio}</span>
                 </div>
                 <div className="relative h-2 mt-2 mb-1 rounded-full bg-slate-100 overflow-hidden max-w-xs">
-                  <div className="absolute inset-y-0 bg-emerald-300/40 border-x border-emerald-400/50" style={{ left: `${Math.max(0, (scaLo - 0.7) / 1.4 * 100)}%`, width: `${Math.min(100, (scaHi - scaLo) / 1.4 * 100)}%` }} />
-                  <div className="absolute top-0 bottom-0 w-0.5 bg-slate-600 transition-all duration-300" style={{ left: `${Math.max(0, Math.min(100, (currentTDS - 0.7) / 1.4 * 100))}%` }} />
+                  <div className="absolute inset-y-0 bg-emerald-300/40 border-x border-emerald-400/50" style={{ left: `${gaugeLeft}%`, width: `${gaugeWidth}%` }} />
+                  <div className="absolute top-0 bottom-0 w-0.5 bg-slate-600 transition-all duration-300" style={{ left: `${markerLeft}%` }} />
                 </div>
                 <p className="text-[10px] text-slate-500 leading-relaxed mt-1">{advice}</p>
               </div>
@@ -2438,9 +2442,10 @@ const SetupProfile = forwardRef<SetupProfileHandle>((_props, ref) => {
             {tdsPlanRatio > 0 && (() => {
               const scaLo = getReferenceTDS(tdsPlanRatio, 18);
               const scaHi = getReferenceTDS(tdsPlanRatio, 22);
-              const scaWidth = (scaHi - scaLo) / 1.4 * 100;
-              const scaLeft = Math.max(0, (scaLo - 0.7) / 1.4 * 100);
-              const markerPct = Math.max(0, Math.min(100, (currentTDS - 0.7) / 1.4 * 100));
+              const tdsGaugeMax = Math.max(3, scaHi * 1.5);
+              const scaWidth = (scaHi - scaLo) / tdsGaugeMax * 100;
+              const scaLeft = Math.max(0, (scaLo / tdsGaugeMax) * 100);
+              const markerPct = Math.max(0, Math.min(100, (currentTDS / tdsGaugeMax) * 100));
               const isUnder = currentTDS < scaLo;
               const isOver = currentTDS > scaHi;
               const delta = isUnder ? (scaLo - currentTDS) : isOver ? (currentTDS - scaHi) : 0;

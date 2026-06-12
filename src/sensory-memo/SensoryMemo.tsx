@@ -358,13 +358,17 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
     const avgDepth = (totalTaste.bitter + totalTaste.umami) / n;
     const vibrancyScore = Math.min(100, Math.round((avgVibrancy / 5) * 100));
     const depthScore = Math.min(100, Math.round((avgDepth / 5) * 100));
+    // Flavor pillar: balance between aroma and mouthfeel, plus complexity from diversity
+    const flavorBalance = 100 - Math.abs(vibrancyScore - depthScore);
+    const flavorComplexity = Math.min(checkedFlavorList.length * 5, 25);
+    const flavorScore = Math.min(100, Math.round(flavorBalance * 0.75 + flavorComplexity));
     let possibilityScore = 70;
     if (wcrCount > 0) possibilityScore += 10;
     if (checkedFlavorList.length >= 3) possibilityScore += 10;
     if (checkedFlavorList.length <= 1) possibilityScore -= 15;
     possibilityScore = Math.max(25, Math.min(95, possibilityScore));
     const avgTaste = { sour: Math.round((totalTaste.sour / n) * 10) / 10, sweet: Math.round((totalTaste.sweet / n) * 10) / 10, bitter: Math.round((totalTaste.bitter / n) * 10) / 10, salty: Math.round((totalTaste.salty / n) * 10) / 10, umami: Math.round((totalTaste.umami / n) * 10) / 10 };
-    return { totalTaste, avgTaste, n, wcrCount, customCount, categoryCounts, subgroupCounts, vibrancyScore, depthScore, possibilityScore };
+    return { totalTaste, avgTaste, n, wcrCount, customCount, categoryCounts, subgroupCounts, vibrancyScore, depthScore, flavorScore, possibilityScore };
   }, [checkedFlavorList]);
 
   // Smell lean filter: computes sour-sweet balance
@@ -728,14 +732,39 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
           {/* Taste vibrancy vs depth */}
           <div className="flex gap-3">
             <div className="flex-1">
-              <span className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 uppercase">Vibrancy</span>
-              <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
+              <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Vibrancy</span>
+              <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
                 <div className="h-full rounded-full bg-pink-400" style={{ width: `${analysis.vibrancyScore}%` }} />
               </div>
             </div>
             <div className="flex-1">
-              <span className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 uppercase">Depth</span>
-              <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
+              <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Depth</span>
+              <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
+                <div className="h-full rounded-full bg-orange-600" style={{ width: `${analysis.depthScore}%` }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Three-pillar composition: Aroma / Flavor / Mouthfeel */}
+          <div className="mt-2 mb-0.5">
+            <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Three-pillar composition</span>
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Aroma</span>
+              <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
+                <div className="h-full rounded-full bg-rose-400" style={{ width: `${analysis.vibrancyScore}%` }} />
+              </div>
+            </div>
+            <div className="flex-1">
+              <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Flavor</span>
+              <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
+                <div className="h-full rounded-full bg-amber-400" style={{ width: `${analysis.flavorScore}%` }} />
+              </div>
+            </div>
+            <div className="flex-1">
+              <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Mouthfeel</span>
+              <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
                 <div className="h-full rounded-full bg-orange-600" style={{ width: `${analysis.depthScore}%` }} />
               </div>
             </div>

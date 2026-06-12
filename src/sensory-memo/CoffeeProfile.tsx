@@ -198,7 +198,7 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
   };
   const [editNotes, setEditNotes] = useState('');
   const [editFlavors, setEditFlavors] = useState<string[]>([]);
-  const [sensoryProfiles, setSensoryProfiles] = useState<SensoryProfile[]>(() => {
+  const [sensoryProfiles, _setSensoryProfiles] = useState<SensoryProfile[]>(() => {
     try { const r = localStorage.getItem(SENSORY_PROFILES_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
   });
   const [importSensoryOpen, setImportSensoryOpen] = useState(false);

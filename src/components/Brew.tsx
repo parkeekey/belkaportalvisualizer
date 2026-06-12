@@ -39,12 +39,6 @@ const PROFILE_LABELS: Record<BurrProfileName, string> = {
   standard: 'Standard Conical',
 };
 
-function computeKValue(r: Roast, p: Process) {
-  const base = r === 'light' ? 80 : r === 'medium' ? 50 : 25;
-  const mod = p === 'washed' ? 5 : p === 'honey' ? 0 : p === 'natural' ? -5 : -10;
-  return Math.max(10, Math.min(100, base + mod));
-}
-
 function waterViscosityPaS(tempC: number) {
   const t = Math.max(1, Math.min(100, tempC));
   const tk = t + 273.15;
@@ -57,7 +51,7 @@ function solubilityFactor(tempC: number) {
 
 export default function Brew({
   dose: initialDose, grindSetting, micronSetting, finesPct, surfaceArea,
-  roast, process, humidity, waterTempC, burrProfileName, grindDistribution,
+  roast, process, waterTempC, burrProfileName, grindDistribution,
 }: Props) {
   const [dose, setDose] = useState(initialDose);
   const [ratio, setRatio] = useState(16);
@@ -143,7 +137,6 @@ export default function Brew({
   const pourBarRef = useRef<HTMLDivElement>(null);
   const pourPctRef = useRef<HTMLSpanElement>(null);
 
-  const kValue = computeKValue(roast, process);
 
   const inDripper = Math.max(0, poured - drained);
   const remaining = Math.max(0, waterVol - poured);
@@ -178,7 +171,6 @@ export default function Brew({
   const V60_LX = (y: number) => 20 + (y - V60_TOP_Y) * V60_SLOPE;
   const V60_RX = (y: number) => 80 - (y - V60_TOP_Y) * V60_SLOPE;
   const BED_TOP_Y = V60_TOP_Y + V60_HEIGHT * (1 - Math.min(0.85, dose * 0.02));
-  const BED_BOT_Y = V60_BOT_Y;
 
   // Darcy + Carman-Kozeny + V60 rib-corrected paper filter model
   const rho = 1000; // kg/m^3
@@ -236,8 +228,6 @@ export default function Brew({
   const groundStatus = groundCompaction < 0.33 ? 'Loose' : groundCompaction < 0.7 ? 'Muddy' : 'Stuck';
   const drawdownForceFactor = Math.max(0.45, Math.min(1.08, 1.05 - groundCompaction * 0.55));
 
-  const retainedWaterEq = bedMoisture * dose * 0.18;
-  const saturationDepth = Math.min(1, Math.max(0, (inDripper + retainedWaterEq) / Math.max(1, dose * 1.05)));
   const bloomTimeSec = 40;
   const bloomWaterTarget = dose * 2.8;
   const bloomProgress = poured <= 0
@@ -854,8 +844,8 @@ export default function Brew({
       </button>
 
       {/* Dose + Ratio + Grind Profile */}
-      <div className="flex gap-2 mb-2 items-center text-[8px]">
-        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Dose</span>
+      <div className="flex flex-wrap gap-x-2 gap-y-1 mb-2 items-center text-[8px]">
+        <span className="text-slate-400 dark:text-slate-500">Dose</span>
         <input type="number" min={5} max={60} step={0.5} value={dose}
           onChange={e => {
             const v = parseFloat(e.target.value);
@@ -865,9 +855,9 @@ export default function Brew({
             }
           }}
           disabled={poured > 0}
-          className="w-10 text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5 disabled:opacity-40" />
-        <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
-        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Ratio 1:</span>
+          className="w-10 text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 disabled:opacity-40" />
+        <span className="text-slate-300 dark:text-slate-600">|</span>
+        <span className="text-slate-400 dark:text-slate-500">Ratio 1:</span>
         <input type="number" min={5} max={25} step={0.5} value={ratio}
           onChange={e => {
             const v = parseFloat(e.target.value);
@@ -877,36 +867,36 @@ export default function Brew({
             }
           }}
           disabled={poured > 0}
-          className="w-10 text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5 disabled:opacity-40" />
-        <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
-        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Size</span>
+          className="w-10 text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 disabled:opacity-40" />
+        <span className="text-slate-300 dark:text-slate-600">|</span>
+        <span className="text-slate-400 dark:text-slate-500">Size</span>
         <select value={v60Size} onChange={e => setV60Size(e.target.value as '01' | '02' | '03')}
           disabled={poured > 0}
-          className="text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
+          className="text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
           <option value="01">01</option>
           <option value="02">02</option>
           <option value="03">03</option>
         </select>
-        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Dripper</span>
+        <span className="text-slate-400 dark:text-slate-500">Dripper</span>
         <select value={dripperProfile} onChange={e => setDripperProfile(e.target.value as 'classic' | 'neo2026' | 'coneOther')}
           disabled={poured > 0}
-          className="text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
+          className="text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
           <option value="classic">Classic</option>
           <option value="neo2026">Neo 2026</option>
           <option value="coneOther">Other Cone</option>
         </select>
-        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Paper</span>
+        <span className="text-slate-400 dark:text-slate-500">Paper</span>
         <select value={paperProfile} onChange={e => setPaperProfile(e.target.value as 'normal' | 'fast' | 'veryfast')}
           disabled={poured > 0}
-          className="text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
+          className="text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
           <option value="normal">Normal</option>
           <option value="fast">Fast</option>
           <option value="veryfast">Very Fast</option>
         </select>
-        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">= {waterVol}g</span>
-        <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
-        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">{PROFILE_LABELS[burrProfileName]}</span>
-        <span className="text-[6px] text-slate-300 dark:text-slate-600 dark:text-slate-600">{roast}/{process}</span>
+        <span className="text-slate-400 dark:text-slate-500">= {waterVol}g</span>
+        <span className="text-slate-300 dark:text-slate-600">|</span>
+        <span className="text-slate-400 dark:text-slate-500">{PROFILE_LABELS[burrProfileName]}</span>
+        <span className="text-[6px] text-slate-300 dark:text-slate-600">{roast}/{process}</span>
       </div>
 
       <div className="bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded px-3 py-2 mb-2 text-[7px] space-y-1.5">
@@ -1916,20 +1906,22 @@ export default function Brew({
             <button
               onClick={() => setPourFlowTrim(v => Math.max(-3, Number((v - 0.5).toFixed(1))))}
               disabled={served}
-              className="text-[7px] font-bold rounded px-1.5 py-0.5 border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-600 dark:text-slate-400 dark:text-slate-400 bg-white dark:bg-slate-800 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50 disabled:opacity-30"
+              className="text-[7px] font-bold rounded px-1.5 py-0.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-30"
             >
               -
             </button>
-            <input
-              type="range"
-              min={-3}
-              max={6}
-              step={0.1}
-              value={pourFlowTrim}
-              onChange={e => setPourFlowTrim(Number(e.target.value))}
-              disabled={served}
-              className="flex-1 h-1 accent-blue-500"
-            />
+            <div className="flex-1 min-w-0">
+              <input
+                type="range"
+                min={-3}
+                max={6}
+                step={0.1}
+                value={pourFlowTrim}
+                onChange={e => setPourFlowTrim(Number(e.target.value))}
+                disabled={served}
+                className="w-full h-1 accent-blue-500"
+              />
+            </div>
             <button
               onClick={() => setPourFlowTrim(v => Math.min(6, Number((v + 0.5).toFixed(1))))}
               disabled={served}
@@ -1940,7 +1932,7 @@ export default function Brew({
             <button
               onClick={() => setPourFlowTrim(0)}
               disabled={served}
-              className="text-[7px] font-bold rounded px-1.5 py-0.5 border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-600 dark:text-slate-400 dark:text-slate-400 bg-white dark:bg-slate-800 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50 disabled:opacity-30"
+              className="text-[7px] font-bold rounded px-1.5 py-0.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-30"
             >
               0
             </button>

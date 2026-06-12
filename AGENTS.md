@@ -324,3 +324,55 @@ Assign the big aroma category + subgroup, write a 1–2 sentence sensory descrip
 - `Apply` button sets dose, ratio, waterVol, targetFinishSec, targetFinishText from selected profile
 - Reference label shows grind µm, water temp, ratio, source name for the selected profile
 - Only renders when profiles exist — zero footprint otherwise
+
+## Goals (Planned)
+
+### Next session — Layout overflow + General polish
+1. **Language translation on Settings page** — logged for future public launch (not needed now).
+2. **Layout overflow fixes** — find and fix more UI overflow / breakage issues across components (similar pattern to today's V60 input row + pour flow tune slider).
+3. **General polish** — tidy up remaining duplicate Tailwind classes from script injection, clean up script artifacts, deduplicate CSS where practical.
+
+### Belka Portal — Data pipeline unlock (strategic)
+- **Hard limitation**: No non-Ultrakoki Bluetooth app allows JSON/graph export. Data stays locked in their ecosystem.
+- **Current reality**: Continue with manual data capture / digitizing as the primary input method.
+- **Short-term improvement**: Add color-coded data points to distinguish sources/brew sessions visually.
+- **Medium-term unlock**: Buy an Ultrakoki scale (or other BLE scale with open JSON) for real graph data.
+- **Long-term possibility**: DIY IoT load cell + ESP32 → direct to Portal (no app dependency). Hardware + aesthetic integration to solve.
+- **Non-option (discarded)**: Web Bluetooth — can't extract app graphs or EC data, only raw weight. Doesn't solve the core problem.
+
+### Session 2026-06-12 — Identity: The BOSS
+- **Future project name**: `#blacklistbrewer` Brewing Optimization/Observation Sensory Standardize/Study System = **The BOSS**
+- Rename targets (when ready): `index.html` title, `docs/index.html` title, `src/App.tsx` h1, `package.json` name, `AGENTS.md` headings, deploy base path, localStorage key names
+- Deploy path change (`/belkaportalvisualizer/` → `/boss/`) affects GitHub Pages — coordinate with rebuilding docs
+  
+## EC Model — Bed HP Bar, Not Concentration Meter
+
+### What EC actually is (2026-06-08 insight)
+
+EC is **bed structural integrity**, not a concentration reading. Treat it like HP of the coffee bed:
+
+- **Fine grind + bloom** → degas swells the bed, packs tight → EC **rises** (bed is resisting flow)
+- **Light roast / Gesha** → bed collapses, density washed away → EC **crashes to ~2** → under-extraction
+- **Low EC means the bed collapsed** → every fresh pour runs through the same exhausted cell walls → pulls tannin/polyphenols regardless of remaining solubles
+- **EC alone can't tell you the fix** — you need grind size context to interpret "EC=2" as "grind finer"
+
+### What EC should drive in the app
+
+A **dial-in recommendation engine** that maps EC curve + grind size → actionable next-brew advice:
+
+- EC dropped below 3 before 60s → bed collapsed → grind **finer**
+- EC stayed above 14 past 90s → bed stalling → grind **coarser** or pulse pour
+- EC held steady 6-10 through extraction → stable bed → you're in the window
+
+### Foundation / time relationship
+
+- Low EC (collapsed bed) → we reduce brew time to avoid tannin
+- But reducing time without fixing grind = wrong approach
+- The real lever is **grind size sweet spot** that keeps bed integrity through the full extraction
+- EC curve shape + time-to-low-EC = the dial-in signal
+
+### Future implementation notes
+
+- Replace or augment current `ecSlurry`/`ecOut` model with bed-integrity-aware EC
+- EC curve coloring or zone markers (green = stable, yellow = weakening, red = collapsed)
+- Post-brew: show "what to change" summary based on EC trajectory vs grind/dose profile

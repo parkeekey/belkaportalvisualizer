@@ -36,7 +36,7 @@ interface AppNavProps {
 export default function AppNav({ mode, activePage, onNavigate, chatOpen, onToggleChat, onShowInfo }: AppNavProps) {
   if (mode === 'sidebar') {
     return (
-      <nav className="fixed left-0 top-0 h-full w-14 dark:w-14 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 z-50 flex flex-col items-stretch py-2 px-1 gap-0.5">
+      <nav className="fixed left-0 top-0 h-full w-14 dark:w-14 bg-white dark:bg-slate-800 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 dark:border-slate-700 z-50 flex flex-col items-stretch py-2 px-1 gap-0.5">
         {NAV_ITEMS.map(item => {
           const isActive = activePage === item.page;
           return (
@@ -44,7 +44,7 @@ export default function AppNav({ mode, activePage, onNavigate, chatOpen, onToggl
               {isActive && <div className={`absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full ${item.activeBg}`} />}
               <button
                 onClick={() => onNavigate(item.page)}
-                className={`w-full h-10 flex items-center justify-center rounded-lg text-base transition-all group relative ml-0.5 ${isActive ? `${item.activeBg} text-white shadow-sm ring-1 ring-white/20` : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                className={`w-full h-10 flex items-center justify-center rounded-lg text-base transition-all group relative ml-0.5 ${isActive ? `${item.activeBg} text-white shadow-sm ring-1 ring-white/20` : 'text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-300 dark:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-800'}`}
                 title={item.title}
               >
                 <span>{item.icon}</span>
@@ -59,7 +59,7 @@ export default function AppNav({ mode, activePage, onNavigate, chatOpen, onToggl
         <div className="relative flex items-center">
           <button
             onClick={onToggleChat}
-            className={`w-full h-10 flex items-center justify-center rounded-lg text-base transition-colors group relative ml-0.5 ${chatOpen ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+            className={`w-full h-10 flex items-center justify-center rounded-lg text-base transition-colors group relative ml-0.5 ${chatOpen ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' : 'text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-300 dark:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-800'}`}
             title="Brew Chat"
           >
             <span>💬</span>
@@ -69,7 +69,7 @@ export default function AppNav({ mode, activePage, onNavigate, chatOpen, onToggl
         <div className="relative flex items-center">
           <button
             onClick={onShowInfo}
-            className="w-full h-10 flex items-center justify-center rounded-lg text-base text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group relative ml-0.5"
+            className="w-full h-10 flex items-center justify-center rounded-lg text-base text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-300 dark:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-800 transition-colors group relative ml-0.5"
             title="About"
           >
             <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-400 dark:bg-slate-500 text-white text-[10px] font-bold">i</span>
@@ -89,7 +89,7 @@ export default function AppNav({ mode, activePage, onNavigate, chatOpen, onToggl
             <button
               key={item.page}
               onClick={() => onNavigate(item.page)}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors ${isActive ? `${item.activeBg} text-white` : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors ${isActive ? `${item.activeBg} text-white` : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
               title={item.title}
             >
               <span>{item.icon}</span>
@@ -109,7 +109,7 @@ export default function AppNav({ mode, activePage, onNavigate, chatOpen, onToggl
           <button
             key={item.page}
             onClick={() => onNavigate(item.page)}
-            className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${isActive ? `${item.activeBg} ${item.activeBorder} text-white` : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${isActive ? `${item.activeBg} ${item.activeBorder} text-white` : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
             title={item.title}
           >
             {item.icon} {item.label}

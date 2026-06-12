@@ -1328,16 +1328,16 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
           stripe: 'even:bg-rose-50/40',
         }
       : {
-          border: 'border-amber-200 dark:border-amber-800/80',
+          border: 'border-amber-200 dark:border-amber-800 dark:border-amber-800/80',
           headerBg: 'bg-gradient-to-r from-amber-50 to-white',
-          badgeBg: 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200',
+          badgeBg: 'bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 dark:text-amber-200',
           label: 'text-amber-700',
           tableBorder: 'border-amber-100',
-          stripe: 'even:bg-amber-50 dark:bg-amber-900/20/40',
+          stripe: 'even:bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20/40',
         };
 
     return (
-      <div className="mt-3 grid gap-3 text-xs text-slate-700 dark:text-slate-300">
+      <div className="mt-3 grid gap-3 text-xs text-slate-700 dark:text-slate-300 dark:text-slate-300">
         {windows.slice(0, 3).map((window, idx) => {
           const rows = [
             ['EC25', `${window.minEC.toFixed(2)}-${window.maxEC.toFixed(2)} mS/cm`],
@@ -1365,7 +1365,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
           });
 
           return (
-            <div key={`${tone}-target-window-${idx}`} className={`overflow-hidden rounded-2xl border bg-white dark:bg-slate-800 shadow-sm ${palette.border}`}>
+            <div key={`${tone}-target-window-${idx}`} className={`overflow-hidden rounded-2xl border bg-white dark:bg-slate-800 dark:bg-slate-800 shadow-sm ${palette.border}`}>
               <button
                 type="button"
                 onClick={toggleHidden}
@@ -1375,13 +1375,13 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                   <span className={`inline-flex rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${palette.badgeBg}`}>
                     Window {idx + 1}
                   </span>
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white">
                     {formatClock(window.startTime)} - {formatClock(window.endTime)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <label
-                    className="inline-flex items-center gap-1.5 rounded-md border border-white/80 bg-white dark:bg-slate-800/80 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-white/80 bg-white dark:bg-slate-800 dark:bg-slate-800/80 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300"
                     onClick={(event) => event.stopPropagation()}
                   >
                     <input
@@ -1408,7 +1408,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                           <th className={`w-32 border-t px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] ${palette.label} ${palette.tableBorder}`}>
                             {label}
                           </th>
-                          <td className={`border-t px-3 py-2 font-medium text-slate-800 ${palette.tableBorder}`}>
+                          <td className={`border-t px-3 py-2 font-medium text-slate-800 dark:text-white ${palette.tableBorder}`}>
                             {value}
                           </td>
                         </tr>
@@ -1559,18 +1559,18 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
 
   if (ecPoints.length === 0) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600">
           <h3 className="text-white font-semibold text-sm">TDS &amp; Extraction Yield Analysis</h3>
           <p className="text-emerald-100 text-xs mt-0.5">Extract EC data from a screenshot to enable this analysis</p>
         </div>
-        <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-sm">No EC data available yet.</div>
+        <div className="p-6 text-center text-slate-400 dark:text-slate-500 dark:text-slate-500 text-sm">No EC data available yet.</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600">
         <div className="flex flex-wrap items-start justify-between gap-2">
@@ -1586,65 +1586,65 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
           <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => setShowTDSCurve(v => !v)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showTDSCurve ? 'bg-emerald-200 text-emerald-900' : 'bg-white dark:bg-slate-800/20 text-white/70'}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showTDSCurve ? 'bg-emerald-200 text-emerald-900' : 'bg-white dark:bg-slate-800 dark:bg-slate-800/20 text-white/70'}`}
             >
               TDS {showTDSCurve ? '✓' : '–'}
             </button>
             <button
               onClick={() => setShowEYCurve(v => !v)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showEYCurve ? 'bg-amber-200 text-amber-900' : 'bg-white dark:bg-slate-800/20 text-white/70'}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showEYCurve ? 'bg-amber-200 text-amber-900' : 'bg-white dark:bg-slate-800 dark:bg-slate-800/20 text-white/70'}`}
             >
               EY {showEYCurve ? '✓' : '–'}
             </button>
             <button
               onClick={() => setShowECOverlay(v => !v)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showECOverlay ? 'bg-violet-200 text-violet-900' : 'bg-white dark:bg-slate-800/20 text-white/70'}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showECOverlay ? 'bg-violet-200 text-violet-900' : 'bg-white dark:bg-slate-800 dark:bg-slate-800/20 text-white/70'}`}
             >
               EC curve {showECOverlay ? '✓' : '–'}
             </button>
             <button
               onClick={() => setShowPourPlanOverlay(v => !v)}
               disabled={pourPlan.length === 0}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showPourPlanOverlay && pourPlan.length > 0 ? 'bg-indigo-200 text-indigo-900' : 'bg-white dark:bg-slate-800/20 text-white/60'}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showPourPlanOverlay && pourPlan.length > 0 ? 'bg-indigo-200 text-indigo-900' : 'bg-white dark:bg-slate-800 dark:bg-slate-800/20 text-white/60'}`}
             >
               Pour Plan {showPourPlanOverlay && pourPlan.length > 0 ? '✓' : '–'}
             </button>
             <button
               onClick={() => setShowPourOverlay(v => !v)}
               disabled={!brewData}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showPourOverlay && brewData ? 'bg-blue-200 text-blue-900' : 'bg-white dark:bg-slate-800/20 text-white/60'}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showPourOverlay && brewData ? 'bg-blue-200 text-blue-900' : 'bg-white dark:bg-slate-800 dark:bg-slate-800/20 text-white/60'}`}
             >
               Water-in {showPourOverlay && brewData ? '✓' : '–'}
             </button>
             <button
               onClick={() => setShowFlowOverlay(v => !v)}
               disabled={!brewData}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showFlowOverlay && brewData ? 'bg-sky-200 text-sky-900' : 'bg-white dark:bg-slate-800/20 text-white/60'}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showFlowOverlay && brewData ? 'bg-sky-200 text-sky-900' : 'bg-white dark:bg-slate-800 dark:bg-slate-800/20 text-white/60'}`}
             >
               Flow Overlay {showFlowOverlay && brewData ? '✓' : '–'}
             </button>
             <button
               onClick={() => setShowTargetAssistant(v => !v)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showTargetAssistant ? 'bg-rose-200 text-rose-900' : 'bg-white dark:bg-slate-800/20 text-white/70'}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showTargetAssistant ? 'bg-rose-200 text-rose-900' : 'bg-white dark:bg-slate-800 dark:bg-slate-800/20 text-white/70'}`}
             >
               Target Assistant {showTargetAssistant ? '✓' : '–'}
             </button>
             <button
               onClick={() => setShowPhaseLog(v => !v)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showPhaseLog ? 'bg-amber-200 text-amber-900' : 'bg-white dark:bg-slate-800/20 text-white/70'}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showPhaseLog ? 'bg-amber-200 text-amber-900' : 'bg-white dark:bg-slate-800 dark:bg-slate-800/20 text-white/70'}`}
             >
               Phase Log {showPhaseLog ? '✓' : '–'}
             </button>
             <button
               onClick={() => onShowRedLightChange?.(!showRedLight)}
               disabled={redLightTime == null}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showRedLight && redLightTime != null ? 'bg-red-200 text-red-900' : 'bg-white dark:bg-slate-800/20 text-white/60'} ${redLightTime == null ? 'opacity-60 cursor-not-allowed' : ''}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showRedLight && redLightTime != null ? 'bg-red-200 text-red-900' : 'bg-white dark:bg-slate-800 dark:bg-slate-800/20 text-white/60'} ${redLightTime == null ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
               Red Light {showRedLight && redLightTime != null ? '✓' : '–'}
             </button>
             <button
               onClick={() => setShowBlind(v => !v)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showBlind ? 'bg-slate-400 text-white' : 'bg-white dark:bg-slate-800/20 text-white/70'}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showBlind ? 'bg-slate-400 text-white' : 'bg-white dark:bg-slate-800 dark:bg-slate-800/20 text-white/70'}`}
             >
               Blind {showBlind ? '✓' : '–'}
             </button>
@@ -1653,10 +1653,10 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       </div>
 
       {showECOverlay && (
-        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 bg-violet-50/50">
+        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 dark:border-slate-700 bg-violet-50/50">
           <div className="flex flex-wrap items-center gap-4 text-xs">
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">EC line:</span>
+              <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">EC line:</span>
               <input
                 type="range"
                 min={0.5}
@@ -1666,10 +1666,10 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                 onChange={(e) => setEcLineWidth(Number(e.target.value))}
                 className="w-20"
               />
-              <span className="text-slate-600 dark:text-slate-400 tabular-nums w-8">{ecLineWidth.toFixed(1)}px</span>
+              <span className="text-slate-600 dark:text-slate-400 dark:text-slate-400 tabular-nums w-8">{ecLineWidth.toFixed(1)}px</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Dots:</span>
+              <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">Dots:</span>
               <input
                 type="range"
                 min={0}
@@ -1679,10 +1679,10 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                 onChange={(e) => setEcDotRadius(Number(e.target.value))}
                 className="w-20"
               />
-              <span className="text-slate-600 dark:text-slate-400 tabular-nums w-8">{ecDotRadius.toFixed(1)}px</span>
+              <span className="text-slate-600 dark:text-slate-400 dark:text-slate-400 tabular-nums w-8">{ecDotRadius.toFixed(1)}px</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Fill:</span>
+              <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">Fill:</span>
               <input
                 type="range"
                 min={0}
@@ -1692,17 +1692,17 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                 onChange={(e) => setEcFillOpacity(Number(e.target.value))}
                 className="w-20"
               />
-              <span className="text-slate-600 dark:text-slate-400 tabular-nums w-8">{ecFillOpacity}%</span>
+              <span className="text-slate-600 dark:text-slate-400 dark:text-slate-400 tabular-nums w-8">{ecFillOpacity}%</span>
             </div>
           </div>
         </div>
       )}
 
       {showBlind && (
-        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 bg-slate-100/70">
+        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 dark:border-slate-700 bg-slate-100/70">
           <div className="flex flex-wrap items-center gap-4 text-xs">
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Blind at:</span>
+              <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">Blind at:</span>
               <input
                 type="range"
                 min={0}
@@ -1712,19 +1712,19 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                 onChange={(e) => setBlindPercent(Number(e.target.value))}
                 className="w-32"
               />
-              <span className="text-slate-600 dark:text-slate-400 font-semibold tabular-nums w-10">{blindPercent}%</span>
+              <span className="text-slate-600 dark:text-slate-400 dark:text-slate-400 font-semibold tabular-nums w-10">{blindPercent}%</span>
             </div>
-            <div className="text-slate-400 dark:text-slate-500">
+            <div className="text-slate-400 dark:text-slate-500 dark:text-slate-500">
               Shows 0–{blindPercent}% &nbsp;|&nbsp; greys out {blindPercent}–100%
             </div>
             {pourPlan.length > 0 && (
               <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-slate-400 dark:text-slate-500 mr-1">From pour plan:</span>
+                <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500 mr-1">From pour plan:</span>
                 {pourPlan.map((entry, i) => (
                   <button
                     key={i}
                     onClick={() => setBlindPercent(entry.cumulativePercent)}
-                    className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${blindPercent === entry.cumulativePercent ? 'bg-indigo-200 text-indigo-900 ring-1 ring-indigo-400' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 border border-slate-300 dark:border-slate-600'}`}
+                    className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${blindPercent === entry.cumulativePercent ? 'bg-indigo-200 text-indigo-900 ring-1 ring-indigo-400' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-200 border border-slate-300 dark:border-slate-600 dark:border-slate-600'}`}
                   >
                     {entry.cumulativePercent}%
                   </button>
@@ -1736,12 +1736,12 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       )}
 
       {showFlowOverlay && brewData && (
-        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-sky-50/50">
+        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 dark:border-slate-700 bg-sky-50/50">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1">
+            <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800 px-2 py-1">
               <button
                 onClick={() => setShowPourFlowSeries((v) => !v)}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showPourFlowSeries ? 'bg-sky-100 text-sky-800' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showPourFlowSeries ? 'bg-sky-100 text-sky-800' : 'text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700'}`}
                 title="Show/hide pour flow overlay"
               >
                 Pour {showPourFlowSeries ? '✓' : '–'}
@@ -1749,7 +1749,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
               <button
                 onClick={() => setShowDripFlowSeries((v) => !v)}
                 disabled={!flowOverlayData?.dripValues}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showDripFlowSeries && flowOverlayData?.dripValues ? 'bg-teal-100 text-teal-800' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'} ${!flowOverlayData?.dripValues ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showDripFlowSeries && flowOverlayData?.dripValues ? 'bg-teal-100 text-teal-800' : 'text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700'} ${!flowOverlayData?.dripValues ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title={flowOverlayData?.dripValues ? 'Show/hide drip rate overlay' : 'No drip data available'}
               >
                 Drip {showDripFlowSeries && flowOverlayData?.dripValues ? '✓' : '–'}
@@ -1757,7 +1757,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Flow height</span>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-400">Flow height</span>
               <input
                 type="range"
                 min={0.2}
@@ -1767,11 +1767,11 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                 onChange={(event) => setFlowVisibilityZoom(Number(event.target.value))}
                 className="w-28 accent-sky-600"
               />
-              <span className="w-10 text-right text-xs font-semibold text-slate-700 dark:text-slate-300">{Math.round(flowVisibilityZoom * 100)}%</span>
+              <span className="w-10 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300">{Math.round(flowVisibilityZoom * 100)}%</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Flow cap (g/s)</span>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-400">Flow cap (g/s)</span>
               <input
                 type="number"
                 min={0}
@@ -1781,13 +1781,13 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                   const next = Number(event.target.value);
                   setFlowCap(Number.isFinite(next) ? Math.max(0, next) : 0);
                 }}
-                className="w-20 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                className="w-20 rounded-md border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300"
               />
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">0 = no cap</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 dark:text-slate-400">0 = no cap</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+              <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 dark:text-slate-400">
                 <input
                   type="checkbox"
                   checked={cleanShortFlowSpikes}
@@ -1799,7 +1799,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
               <select
                 value={flowSpikeDurationSeconds}
                 onChange={(event) => setFlowSpikeDurationSeconds(Number(event.target.value))}
-                className="rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                className="rounded-md border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300"
                 title="Remove above-cap spikes up to this duration"
               >
                 <option value={1}>1s</option>
@@ -1811,10 +1811,10 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
         </div>
       )}
 
-      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">Coffee dose (g):</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 whitespace-nowrap">Coffee dose (g):</label>
             <input
               type="number"
               min={1}
@@ -1824,11 +1824,11 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                 const v = Math.max(0.1, parseFloat(e.target.value) || 15);
                 onDoseWeightChange?.(v);
               }}
-              className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">Brew ratio (1:x):</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 whitespace-nowrap">Brew ratio (1:x):</label>
             <input
               type="number"
               min={1}
@@ -1839,11 +1839,11 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                 const v = Math.min(30, Math.max(1, parseFloat(e.target.value) || 15));
                 onBrewRatioChange?.(v);
               }}
-              className="w-20 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-20 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">Total water-in (g):</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 whitespace-nowrap">Total water-in (g):</label>
             <input
               type="number"
               min={1}
@@ -1853,12 +1853,12 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                 const v = Math.max(1, parseFloat(e.target.value) || (doseWeight * brewRatio));
                 onTotalWaterInChange?.(v);
               }}
-              className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
             />
-            <span className="text-xs text-slate-500 dark:text-slate-400">{waterInSourceLabel}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">{waterInSourceLabel}</span>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">EC→TDS factor:</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 whitespace-nowrap">EC→TDS factor:</label>
             <input
               type="number"
               min={conversionFactorConfig.min}
@@ -1874,12 +1874,12 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                 );
                 onConversionFactorChange?.(v);
               }}
-              className="w-20 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-20 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
             />
-            <span className="text-xs text-slate-500 dark:text-slate-400">(0.5 = standard, 0.55 = mineral-rich)</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">(0.5 = standard, 0.55 = mineral-rich)</span>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">Refractometer TDS % (optional):</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 whitespace-nowrap">Refractometer TDS % (optional):</label>
             <input
               type="number"
               min={0}
@@ -1888,12 +1888,12 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
               placeholder="e.g. 1.35"
               value={refractometerInputValue}
               onChange={(e) => onRefractometerTDSInputChange?.(e.target.value)}
-              className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
             />
             {refractometerInputValue.trim().length > 0 && (
               <button
                 onClick={() => onRefractometerTDSInputChange?.('')}
-                className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300"
+                className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 dark:text-slate-300"
               >
                 Clear
               </button>
@@ -1901,7 +1901,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
           </div>
         </div>
         {isEstimatedWaterInMode && (
-          <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+          <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-800 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-800 dark:text-amber-200 dark:text-amber-200">
             <span className="font-semibold">Tip:</span> Without Ultrakoki JSON, the water-in curve is an idealized estimate from brew ratio and EC timeline. Treat absolute pour values and EY as reference-only. Use this mode mainly to compare extraction behavior shape (flow-rate and thermal influence reflected in the EC curve), not exact real-world water-in totals.
           </div>
         )}
@@ -1910,16 +1910,16 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       {showTargetAssistant && (
         <div className={`px-4 py-3 border-b ${targetMode === 'tds' ? 'border-rose-100 bg-gradient-to-r from-rose-50 to-pink-50' : 'border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50'}`}>
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="inline-flex rounded-lg border border-white/70 bg-white dark:bg-slate-800/70 p-1 shadow-sm">
+            <div className="inline-flex rounded-lg border border-white/70 bg-white dark:bg-slate-800 dark:bg-slate-800/70 p-1 shadow-sm">
               <button
                 onClick={() => setTargetMode('tds')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold ${targetMode === 'tds' ? 'bg-rose-200 text-rose-900' : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:bg-slate-800'}`}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold ${targetMode === 'tds' ? 'bg-rose-200 text-rose-900' : 'text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:bg-white dark:bg-slate-800 dark:bg-slate-800'}`}
               >
                 TDS
               </button>
               <button
                 onClick={() => setTargetMode('ey')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold ${targetMode === 'ey' ? 'bg-amber-200 text-amber-900' : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:bg-slate-800'}`}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold ${targetMode === 'ey' ? 'bg-amber-200 text-amber-900' : 'text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:bg-white dark:bg-slate-800 dark:bg-slate-800'}`}
               >
                 EY
               </button>
@@ -1938,12 +1938,12 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                 if (targetMode === 'tds') setTargetTDSInput(e.target.value);
                 else setTargetEYInput(e.target.value);
               }}
-              className={`w-24 px-2.5 py-1.5 text-sm font-semibold border rounded-lg bg-white dark:bg-slate-800 shadow-sm focus:outline-none ${targetMode === 'tds' ? 'border-rose-200 focus:ring-2 focus:ring-rose-300' : 'border-amber-200 dark:border-amber-800 focus:ring-2 focus:ring-amber-300'}`}
+              className={`w-24 px-2.5 py-1.5 text-sm font-semibold border rounded-lg bg-white dark:bg-slate-800 dark:bg-slate-800 shadow-sm focus:outline-none ${targetMode === 'tds' ? 'border-rose-200 focus:ring-2 focus:ring-rose-300' : 'border-amber-200 dark:border-amber-800 dark:border-amber-800 focus:ring-2 focus:ring-amber-300'}`}
             />
             <span className={`text-xs ${targetMode === 'tds' ? 'text-rose-700/90' : 'text-amber-700/90'}`}>
               Shows EC range, time window, water-in amount, and brew ratio for your target.
             </span>
-            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap ml-2">Start after (s):</label>
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400 whitespace-nowrap ml-2">Start after (s):</label>
             <input
               type="number"
               min={0}
@@ -1951,7 +1951,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
               placeholder="60"
               value={targetStartInput}
               onChange={(e) => setTargetStartInput(e.target.value)}
-              className="w-16 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+              className="w-16 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:bg-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
             />
           </div>
 
@@ -1959,7 +1959,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             renderTargetWindows(targetTDSWindows, 'rose')
           )}
           {targetMode === 'tds' && targetTDS != null && targetTDSWindows.length === 0 && nearestTargetPoint && (
-            <div className="mt-3 text-xs text-slate-700 dark:text-slate-300 rounded-xl border border-rose-200/80 bg-white dark:bg-slate-800 px-3 py-2 shadow-sm">
+            <div className="mt-3 text-xs text-slate-700 dark:text-slate-300 dark:text-slate-300 rounded-xl border border-rose-200/80 bg-white dark:bg-slate-800 dark:bg-slate-800 px-3 py-2 shadow-sm">
               No direct window found. Nearest: {formatClock(nearestTargetPoint.point.time)} | TDS {nearestTargetPoint.point.tds.toFixed(2)}% (Δ {nearestTargetPoint.diff.toFixed(2)}), EC25 {nearestTargetPoint.point.ec25.toFixed(2)} mS/cm, Water-in {nearestTargetPoint.point.beverageWeight.toFixed(0)} ml ({waterInPercentBase != null && waterInPercentBase > 0 ? `${((nearestTargetPoint.point.beverageWeight / waterInPercentBase) * 100).toFixed(1)}%` : 'n/a'}), Ratio {formatBrewRatio(nearestTargetPoint.point.beverageWeight, doseWeight)}.
             </div>
           )}
@@ -1968,7 +1968,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             renderTargetWindows(targetEYWindows, 'amber')
           )}
           {targetMode === 'ey' && targetEY != null && targetEYWindows.length === 0 && nearestTargetEYPoint && (
-            <div className="mt-3 text-xs text-slate-700 dark:text-slate-300 rounded-xl border border-amber-200 dark:border-amber-800/80 bg-white dark:bg-slate-800 px-3 py-2 shadow-sm">
+            <div className="mt-3 text-xs text-slate-700 dark:text-slate-300 dark:text-slate-300 rounded-xl border border-amber-200 dark:border-amber-800 dark:border-amber-800/80 bg-white dark:bg-slate-800 dark:bg-slate-800 px-3 py-2 shadow-sm">
               No direct window found. Nearest: {formatClock(nearestTargetEYPoint.point.time)} | EY {nearestTargetEYPoint.point.ey.toFixed(1)}% (Δ {nearestTargetEYPoint.diff.toFixed(1)}), EC25 {nearestTargetEYPoint.point.ec25.toFixed(2)} mS/cm, Water-in {nearestTargetEYPoint.point.beverageWeight.toFixed(0)} ml ({waterInPercentBase != null && waterInPercentBase > 0 ? `${((nearestTargetEYPoint.point.beverageWeight / waterInPercentBase) * 100).toFixed(1)}%` : 'n/a'}), Ratio {formatBrewRatio(nearestTargetEYPoint.point.beverageWeight, doseWeight)}.
             </div>
           )}
@@ -1977,41 +1977,41 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
 
       {/* Overall summary cards */}
       {overall && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
-          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 shadow-sm">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Peak TDS</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 dark:border-slate-700 px-3 py-2 shadow-sm">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 dark:text-slate-400">Peak TDS</div>
             <div className="mt-1 flex items-end justify-between gap-2">
               <div className="text-lg font-bold leading-none text-emerald-600">{overall.peakTDS.toFixed(2)}%</div>
-              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">@ {formatClock(overall.peakTime)}</div>
+              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400">@ {formatClock(overall.peakTime)}</div>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 shadow-sm">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Final EY</div>
+          <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 dark:border-slate-700 px-3 py-2 shadow-sm">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 dark:text-slate-400">Final EY</div>
             <div className="mt-1 flex items-end justify-between gap-2">
-              <div className="text-lg font-bold leading-none text-amber-600 dark:text-amber-400">{overall.finalEY.toFixed(1)}%</div>
-              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 text-right">
+              <div className="text-lg font-bold leading-none text-amber-600 dark:text-amber-400 dark:text-amber-400">{overall.finalEY.toFixed(1)}%</div>
+              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 text-right">
                 {overall.refractometerFinalEY != null ? `ref ${overall.refractometerFinalEY.toFixed(1)}%` : 'calculated'}
               </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 shadow-sm">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+          <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 dark:border-slate-700 px-3 py-2 shadow-sm">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 dark:text-slate-400">
               {overallWaterIn != null ? 'Water-in' : 'Beverage'}
             </div>
             <div className="mt-1 flex items-end justify-between gap-2">
               <div className="text-lg font-bold leading-none text-blue-600">{overallWaterIn != null ? `${overallWaterIn.toFixed(0)} g` : `${overall.finalBev.toFixed(0)} g`}</div>
-              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 text-right">
+              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 text-right">
                 {overallWaterIn != null ? waterInSourceLabel : 'final weight'}
               </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 shadow-sm">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+          <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 dark:border-slate-700 px-3 py-2 shadow-sm">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 dark:text-slate-400">
               {overallBrewRatio != null ? 'Brew Ratio' : (adjustedConversionFactor != null ? 'Correction' : 'Dose')}
             </div>
             <div className="mt-1 flex items-end justify-between gap-2">
-              <div className="text-lg font-bold leading-none text-slate-700 dark:text-slate-300">{overallBrewRatio != null ? `1:${overallBrewRatio.toFixed(1)}` : (adjustedConversionFactor != null ? adjustedConversionFactor.toFixed(3) : `${doseWeight.toFixed(1)} g`)}</div>
-              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 text-right">
+              <div className="text-lg font-bold leading-none text-slate-700 dark:text-slate-300 dark:text-slate-300">{overallBrewRatio != null ? `1:${overallBrewRatio.toFixed(1)}` : (adjustedConversionFactor != null ? adjustedConversionFactor.toFixed(3) : `${doseWeight.toFixed(1)} g`)}</div>
+              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 text-right">
                 {overallBrewRatio != null ? waterInSourceLabel : (adjustedConversionFactor != null ? 'TDS only' : 'coffee')}
               </div>
             </div>
@@ -2024,7 +2024,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             onClick={downloadGraphScreenshot}
-            className="px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700"
+            className="px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700"
           >
             Screenshot
           </button>
@@ -2033,7 +2033,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             title={screenshotBg === 'white' ? 'Currently: white background — click for transparent' : 'Currently: transparent background — click for white'}
             className={`h-7 px-2 rounded-lg border text-xs font-medium ${
               screenshotBg === 'white'
-                ? 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
+                ? 'bg-white dark:bg-slate-800 dark:bg-slate-800 border-slate-300 dark:border-slate-600 dark:border-slate-600 text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
                 : 'bg-slate-800 border-slate-600 text-white hover:bg-slate-700'
             }`}
           >
@@ -2043,8 +2043,8 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
             onClick={() => setShowRecipeInScreenshot(v => !v)}
             className={`h-7 px-2 rounded-lg border text-xs font-medium ${
               showRecipeInScreenshot
-                ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-400 text-amber-800 dark:text-amber-200'
-                : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
+                ? 'bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 border-amber-400 text-amber-800 dark:text-amber-200 dark:text-amber-200'
+                : 'bg-white dark:bg-slate-800 dark:bg-slate-800 border-slate-300 dark:border-slate-600 dark:border-slate-600 text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
             }`}
             title="Toggle recipe info on graph screenshot"
           >
@@ -2052,15 +2052,15 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
           </button>
         </div>
         <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-500 dark:text-slate-400">Zoom</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">Zoom</span>
         <button
           onClick={() => setZoomLevel(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}
-          className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center"
+          className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 flex items-center justify-center"
         >−</button>
-        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 w-8 text-center">{zoomLevel === 1 ? '1×' : `${zoomLevel}×`}</span>
+        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300 w-8 text-center">{zoomLevel === 1 ? '1×' : `${zoomLevel}×`}</span>
         <button
           onClick={() => setZoomLevel(z => Math.min(4, parseFloat((z + 0.25).toFixed(2))))}
-          className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center"
+          className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 flex items-center justify-center"
         >+</button>
         </div>
       </div>
@@ -2078,16 +2078,16 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
       {showPhaseLog && phaseSummary.length > 0 && (
         <div className="px-4 pb-4">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-[0.14em]">Phase Extraction Summary</div>
+            <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-400 uppercase tracking-[0.14em]">Phase Extraction Summary</div>
             <div className="flex flex-wrap items-center justify-end gap-1.5">
-              <div className="mr-1 flex items-center gap-1.5 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-1.5 py-1">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Zoom</span>
+              <div className="mr-1 flex items-center gap-1.5 rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 px-1.5 py-1">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400">Zoom</span>
                 <button
                   onClick={() => {
                     setPhaseSummaryHasManualZoom(false);
                     setPhaseSummaryZoom(computePhaseSummaryFitZoom());
                   }}
-                  className="h-5 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="h-5 rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 px-2 text-[11px] font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                   title="Fit table to available width"
                 >
                   Fit
@@ -2097,18 +2097,18 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                     setPhaseSummaryHasManualZoom(true);
                     setPhaseSummaryZoom(z => Math.max(0.45, Number((z - 0.1).toFixed(2))));
                   }}
-                  className="h-5 w-5 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold leading-none hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="h-5 w-5 rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 text-xs font-bold leading-none hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                   title="Zoom out"
                 >
                   -
                 </button>
-                <span className="w-10 text-center text-[11px] font-semibold text-slate-700 dark:text-slate-300">{Math.round(phaseSummaryZoom * 100)}%</span>
+                <span className="w-10 text-center text-[11px] font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300">{Math.round(phaseSummaryZoom * 100)}%</span>
                 <button
                   onClick={() => {
                     setPhaseSummaryHasManualZoom(true);
                     setPhaseSummaryZoom(z => Math.min(1.8, Number((z + 0.1).toFixed(2))));
                   }}
-                  className="h-5 w-5 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold leading-none hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="h-5 w-5 rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 text-xs font-bold leading-none hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                   title="Zoom in"
                 >
                   +
@@ -2130,7 +2130,7 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
                       ...prev,
                       [metric.key]: !prev[metric.key as keyof typeof prev],
                     }))}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${visible ? 'border-indigo-300 bg-indigo-100 text-indigo-800' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${visible ? 'border-indigo-300 bg-indigo-100 text-indigo-800' : 'border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                   >
                     {metric.label}
                   </button>
@@ -2139,71 +2139,71 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
               <button
                 onClick={() => onShowRedLightChange?.(!showRedLight)}
                 disabled={redLightTime == null}
-                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${showRedLight && redLightTime != null ? 'border-red-300 bg-red-100 text-red-800' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'} ${redLightTime == null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${showRedLight && redLightTime != null ? 'border-red-300 bg-red-100 text-red-800' : 'border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'} ${redLightTime == null ? 'opacity-60 cursor-not-allowed' : ''}`}
                 title={redLightTime == null ? 'Red light time is not available yet' : 'Toggle red light marker on graph'}
               >
                 Red line {showRedLight && redLightTime != null ? 'ON' : 'OFF'}
               </button>
             </div>
           </div>
-          <div ref={phaseSummaryWrapRef} className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm" style={{ zoom: phaseSummaryZoom }}>
+          <div ref={phaseSummaryWrapRef} className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 shadow-sm" style={{ zoom: phaseSummaryZoom }}>
             <table ref={phaseSummaryTableRef} className="w-full min-w-[760px] text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-100/90">
-                  <th className="text-left px-3 py-2 border border-slate-200 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-400">Phase</th>
-                  <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-400">Time range</th>
-                  <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-400">Duration</th>
-                  {phaseMetricVisibility.peakTDS && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 font-semibold text-emerald-700 dark:text-emerald-400">Peak TDS%</th>}
-                  {phaseMetricVisibility.avgTDS && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 font-semibold text-emerald-700 dark:text-emerald-400">Avg TDS%</th>}
-                  {phaseMetricVisibility.eyStart && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 font-semibold text-amber-700">EY start</th>}
-                  {phaseMetricVisibility.eyEnd && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 font-semibold text-amber-700">EY end</th>}
-                  {phaseMetricVisibility.pourEnd && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 font-semibold text-blue-700">Pour at end</th>}
-                  {phaseMetricVisibility.pourPercent && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 font-semibold text-blue-700">Pour %</th>}
+                  <th className="text-left px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-400">Phase</th>
+                  <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-400">Time range</th>
+                  <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-400">Duration</th>
+                  {phaseMetricVisibility.peakTDS && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-semibold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400">Peak TDS%</th>}
+                  {phaseMetricVisibility.avgTDS && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-semibold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400">Avg TDS%</th>}
+                  {phaseMetricVisibility.eyStart && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-semibold text-amber-700">EY start</th>}
+                  {phaseMetricVisibility.eyEnd && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-semibold text-amber-700">EY end</th>}
+                  {phaseMetricVisibility.pourEnd && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-semibold text-blue-700">Pour at end</th>}
+                  {phaseMetricVisibility.pourPercent && <th className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-semibold text-blue-700">Pour %</th>}
                 </tr>
               </thead>
               <tbody>
                 {phaseSummary.map(({ phase, peakTDS, avgTDS, endEY, startEY, endPour, duration }) => (
-                  <tr key={phase.id} className="odd:bg-white dark:bg-slate-800 even:bg-slate-50 dark:bg-slate-900/50/60 hover:bg-blue-50/40 transition-colors">
-                    <td className="px-3 py-2 border border-slate-200 dark:border-slate-700">
+                  <tr key={phase.id} className="odd:bg-white dark:bg-slate-800 dark:bg-slate-800 even:bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50/60 hover:bg-blue-50/40 transition-colors">
+                    <td className="px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700">
                       <span
                         className="inline-block w-2 h-2 rounded-full mr-1.5"
                         style={{ background: phase.color }}
                       />
-                      <span className="font-semibold text-slate-800">{phase.name}</span>
+                      <span className="font-semibold text-slate-800 dark:text-white">{phase.name}</span>
                     </td>
-                    <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 font-mono text-slate-600 dark:text-slate-400">
+                    <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-mono text-slate-600 dark:text-slate-400 dark:text-slate-400">
                       {formatClock(phase.startTime)} → {formatClock(phase.endTime)}
                     </td>
-                    <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
+                    <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-600 dark:text-slate-400 dark:text-slate-400">
                       {duration.toFixed(0)} s
                     </td>
                     {phaseMetricVisibility.peakTDS && (
-                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 font-bold text-emerald-700 dark:text-emerald-400">
+                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-bold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400">
                         {peakTDS.toFixed(2)}%
                       </td>
                     )}
                     {phaseMetricVisibility.avgTDS && (
-                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 text-emerald-600">
+                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-emerald-600">
                         {avgTDS.toFixed(2)}%
                       </td>
                     )}
                     {phaseMetricVisibility.eyStart && (
-                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 text-amber-600 dark:text-amber-400">
+                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-amber-600 dark:text-amber-400 dark:text-amber-400">
                         {startEY.toFixed(1)}%
                       </td>
                     )}
                     {phaseMetricVisibility.eyEnd && (
-                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 font-bold text-amber-700">
+                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 font-bold text-amber-700">
                         {endEY.toFixed(1)}%
                       </td>
                     )}
                     {phaseMetricVisibility.pourEnd && (
-                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 text-blue-700">
+                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-blue-700">
                         {endPour.toFixed(0)} g
                       </td>
                     )}
                     {phaseMetricVisibility.pourPercent && (
-                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 text-blue-700">
+                      <td className="text-center px-3 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-blue-700">
                         {overallWaterIn != null && overallWaterIn > 0 ? `${((endPour / overallWaterIn) * 100).toFixed(1)}%` : 'n/a'}
                       </td>
                     )}
@@ -2214,25 +2214,25 @@ export const TDSAnalysisGraph: React.FC<TDSAnalysisGraphProps> = ({
           </div>
 
           {/* Interpretation guide */}
-          <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 space-y-1">
-            <div className="font-semibold text-slate-700 dark:text-slate-300 mb-1">Reading guide</div>
+          <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 dark:text-slate-400 space-y-1">
+            <div className="font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">Reading guide</div>
             <div><span className="text-emerald-600 font-medium">TDS 1.2–1.5%</span> = ideal extraction window for most filter coffee</div>
-            <div><span className="text-amber-600 dark:text-amber-400 font-medium">EY 18–22%</span> = specialty target range (SCA standard)</div>
+            <div><span className="text-amber-600 dark:text-amber-400 dark:text-amber-400 font-medium">EY 18–22%</span> = specialty target range (SCA standard)</div>
             {isEstimatedWaterInMode && (
               <div><span className="text-amber-700 font-medium">Estimated water-in mode:</span> values are idealized and may not match real pours exactly; use trends and phase behavior as reference.</div>
             )}
             {refractometerAnchor != null && adjustedConversionFactor != null && (
               <div><span className="text-violet-600 font-medium">Ref anchor:</span> TDS/EY are scaled so final cup equals {refractometerAnchor.toFixed(2)}%; EC curve and EC values are not modified.</div>
             )}
-            <div><span className="text-slate-500 dark:text-slate-400">EY rising fast</span> = high extraction rate phase — watch for over-extraction</div>
-            <div><span className="text-slate-500 dark:text-slate-400">TDS falling + EY flat</span> = dilution phase, grounds nearly exhausted</div>
+            <div><span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">EY rising fast</span> = high extraction rate phase — watch for over-extraction</div>
+            <div><span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">TDS falling + EY flat</span> = dilution phase, grounds nearly exhausted</div>
           </div>
         </div>
       )}
 
       {/* No phase logs hint */}
       {showPhaseLog && phaseSummary.length === 0 && series.length > 0 && (
-        <div className="px-4 pb-4 text-xs text-slate-400 dark:text-slate-500 italic">
+        <div className="px-4 pb-4 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-500 italic">
           Add phase logs in the Phase Analysis panel to see per-phase TDS/EY breakdown.
         </div>
       )}

@@ -92,12 +92,12 @@ const UTILITY_TAGS = ['counter', 'pct', 'score'];
 type TagGroup = { name: string; icon: string; base: string; active: string; hover: string; tags: string[] };
 const TAG_GROUPS: TagGroup[] = [
   { name: '↑ Under', icon: '', base: 'bg-green-50 text-green-700 border-green-200', active: 'bg-green-700 text-white border-green-700', hover: 'hover:bg-green-100', tags: UNDER_TAGS },
-  { name: '↓ Over', icon: '', base: 'bg-red-50 dark:bg-red-900/20 text-red-700 border-red-200', active: 'bg-red-700 text-white border-red-700', hover: 'hover:bg-red-100', tags: OVER_TAGS },
-  { name: '📊 Recipe', icon: '', base: 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700', active: 'bg-slate-700 text-white border-slate-700', hover: 'hover:bg-slate-100 dark:hover:bg-slate-700', tags: RECIPE_TAGS },
+  { name: '↓ Over', icon: '', base: 'bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 text-red-700 border-red-200', active: 'bg-red-700 text-white border-red-700', hover: 'hover:bg-red-100', tags: OVER_TAGS },
+  { name: '📊 Recipe', icon: '', base: 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-600 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700', active: 'bg-slate-700 text-white border-slate-700', hover: 'hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700', tags: RECIPE_TAGS },
   { name: '🔧 Equipment', icon: '', base: 'bg-indigo-50 text-indigo-600 border-indigo-200', active: 'bg-indigo-700 text-white border-indigo-700', hover: 'hover:bg-indigo-100', tags: EQUIPMENT_TAGS },
-  { name: '☕ Bed', icon: '', base: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 border-amber-200 dark:border-amber-800', active: 'bg-amber-700 text-white border-amber-700', hover: 'hover:bg-amber-100 dark:bg-amber-900/30', tags: BED_TAGS },
-  { name: '🧰 Utility', icon: '', base: 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700', active: 'bg-slate-700 text-white border-slate-700', hover: 'hover:bg-slate-100 dark:hover:bg-slate-700', tags: UTILITY_TAGS },
-  { name: '🔄 You decide', icon: '', base: 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700', active: 'bg-slate-700 text-white border-slate-700', hover: 'hover:bg-slate-100 dark:hover:bg-slate-700', tags: ['intensity', 'body', 'acidity', 'sweetness', 'balance'] },
+  { name: '☕ Bed', icon: '', base: 'bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 text-amber-700 border-amber-200 dark:border-amber-800 dark:border-amber-800', active: 'bg-amber-700 text-white border-amber-700', hover: 'hover:bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30', tags: BED_TAGS },
+  { name: '🧰 Utility', icon: '', base: 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700', active: 'bg-slate-700 text-white border-slate-700', hover: 'hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700', tags: UTILITY_TAGS },
+  { name: '🔄 You decide', icon: '', base: 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700', active: 'bg-slate-700 text-white border-slate-700', hover: 'hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700', tags: ['intensity', 'body', 'acidity', 'sweetness', 'balance'] },
 ];
 
 const FOUNDATION_ACTIONS: Record<string, string[]> = {
@@ -1272,48 +1272,48 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       onTouchEnd={handleTouchEnd}
     >
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/70 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800/70 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">☯ Zen</span>
-          <span className="text-[10px] text-slate-400 dark:text-slate-500 italic hidden sm:inline">connect your taste to the fundamentals</span>
+          <span className="text-sm font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 uppercase tracking-widest">☯ Zen</span>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-500 italic hidden sm:inline">connect your taste to the fundamentals</span>
         </div>
         <div className="flex items-center gap-2 overflow-x-auto">
           <button onClick={() => { saveState({ notes, arrows, lockedFoundations, foundationPositions }); }}
-            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 dark:border-slate-600 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 shrink-0"
+            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-md text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 shrink-0"
           >💾</button>
           <button onClick={() => { setSaveName(''); setShowSaveDialog(true); setShowLoadDialog(false); }}
-            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 dark:border-slate-600 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 shrink-0"
+            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-md text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 shrink-0"
           >Save As</button>
           <button onClick={() => { setSaves(getSaves()); setShowLoadDialog(true); setShowSaveDialog(false); }}
-            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 dark:border-slate-600 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 shrink-0"
+            className="px-2 py-1 text-[10px] font-semibold border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-md text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 shrink-0"
           >Load</button>
           <button onClick={() => { setShowFoundations(p => !p); }}
-            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 dark:border-slate-600 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 shrink-0"
+            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-md text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 shrink-0"
           >{showFoundations ? '🧭 Hide' : '🧭 Show'}</button>
-          <div className="flex items-center gap-0.5 border-l border-slate-200 dark:border-slate-700 pl-2 shrink-0">
+          <div className="flex items-center gap-0.5 border-l border-slate-200 dark:border-slate-700 dark:border-slate-700 pl-2 shrink-0">
             {(['canvas', 'layout'] as const).map(v => (
               <button key={v} onClick={() => setViewMode(v)}
-                className={`px-2 py-1 text-[10px] font-semibold border rounded-md transition-colors ${viewMode === v ? 'bg-slate-700 text-white border-slate-700' : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                className={`px-2 py-1 text-[10px] font-semibold border rounded-md transition-colors ${viewMode === v ? 'bg-slate-700 text-white border-slate-700' : 'border-slate-300 dark:border-slate-600 dark:border-slate-600 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700'}`}
               >{v === 'canvas' ? '▦ Canvas' : '⊞ Layout'}</button>
             ))}
           </div>
           {viewMode === 'layout' && (
-            <div className="flex items-center gap-0.5 border-l border-slate-200 dark:border-slate-700 pl-2">
+            <div className="flex items-center gap-0.5 border-l border-slate-200 dark:border-slate-700 dark:border-slate-700 pl-2">
               {(['feed', '2x2', '3x3'] as const).map(m => (
                 <button key={m} onClick={() => setLayoutMode(m)}
-                  className={`px-2 py-1 text-[10px] font-semibold border rounded-md transition-colors ${layoutMode === m ? 'bg-slate-700 text-white border-slate-700' : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                  className={`px-2 py-1 text-[10px] font-semibold border rounded-md transition-colors ${layoutMode === m ? 'bg-slate-700 text-white border-slate-700' : 'border-slate-300 dark:border-slate-600 dark:border-slate-600 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700'}`}
                 >{m === 'feed' ? '≡ Feed' : `⊟ ${m}`}</button>
               ))}
             </div>
           )}
           <button onClick={() => setCollision(p => !p)}
-            className={`px-2 py-1 text-[10px] font-semibold border rounded-md transition-colors ${collision ? 'bg-slate-700 text-white border-slate-700' : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+            className={`px-2 py-1 text-[10px] font-semibold border rounded-md transition-colors ${collision ? 'bg-slate-700 text-white border-slate-700' : 'border-slate-300 dark:border-slate-600 dark:border-slate-600 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700'}`}
           >⊡ Snap</button>
           <button onClick={() => setFoundationPositions({})}
-            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 dark:border-slate-600 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-md text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
           >↺ Restore</button>
           <button onClick={() => { setNotes([]); setArrows([]); }}
-            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 dark:border-slate-600 rounded-md text-slate-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 dark:bg-red-900/20 hover:text-red-600 hover:border-red-200 shrink-0"
+            className="px-3 py-1 text-[11px] font-semibold border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-md text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 dark:bg-red-900/20 dark:hover:bg-red-900/20 dark:bg-red-900/20 hover:text-red-600 hover:border-red-200 shrink-0"
           >Clear</button>
         </div>
       </div>
@@ -1321,14 +1321,14 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       {/* Floating close button — always visible top-right */}
       {onClose && (
         <button onClick={onClose}
-          className="fixed top-2 right-2 z-[60] w-7 h-7 rounded-full bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-600 shadow-sm flex items-center justify-center text-[13px] text-slate-500 dark:text-slate-400 hover:text-red-500 dark:text-red-400 hover:border-red-300 transition-colors"
+          className="fixed top-2 right-2 z-[60] w-7 h-7 rounded-full bg-white dark:bg-slate-800 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-600 dark:border-slate-600 shadow-sm flex items-center justify-center text-[13px] text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-red-500 dark:text-red-400 dark:text-red-400 hover:border-red-300 transition-colors"
           title="Exit Zen Mode"
         >✕</button>
       )}
 
       {/* Instructions */}
-      <div className="px-4 py-1.5 text-[10px] text-slate-400 dark:text-slate-500 italic border-b border-slate-100 dark:border-slate-700 bg-[#f8f6f0] shrink-0 select-none">
-        Drag notes freely · <span className="font-medium text-slate-500 dark:text-slate-400">Drag the ◉ dot</span> from a note toward a foundation's dot to connect · Click arrow: dashed (hyp) → green (✓) → red (✗) · Right-click to delete
+      <div className="px-4 py-1.5 text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-500 italic border-b border-slate-100 dark:border-slate-700 dark:border-slate-700 bg-[#f8f6f0] shrink-0 select-none">
+        Drag notes freely · <span className="font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400">Drag the ◉ dot</span> from a note toward a foundation's dot to connect · Click arrow: dashed (hyp) → green (✓) → red (✗) · Right-click to delete
       </div>
 
       {/* SVG layer — fixed to viewport, behind notes so lines don't overlap */}
@@ -1412,8 +1412,8 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
           >
             <div data-fid={f.id}
               className={`foundation-dot w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-150 -ml-2 mr-2 z-10 cursor-crosshair
-                ${lockedFoundations.includes(f.id) ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 opacity-40' : ''}
-                ${hoverDot === f.id ? 'scale-150 border-blue-500 bg-blue-100 shadow-lg shadow-blue-300' : (!lockedFoundations.includes(f.id) ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-slate-400' : '')}`}
+                ${lockedFoundations.includes(f.id) ? 'border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 opacity-40' : ''}
+                ${hoverDot === f.id ? 'scale-150 border-blue-500 bg-blue-100 shadow-lg shadow-blue-300' : (!lockedFoundations.includes(f.id) ? 'border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 hover:border-slate-400' : '')}`}
               style={{ borderColor: lockedFoundations.includes(f.id) ? '#e2e8f0' : (hoverDot === f.id ? '#3b82f6' : f.color + '80') }}
             >
               <div className={`w-2 h-2 rounded-full transition-all duration-150 ${hoverDot === f.id ? 'bg-blue-500' : (lockedFoundations.includes(f.id) ? 'bg-slate-200' : '')}`}
@@ -1431,27 +1431,27 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 const t = e.touches[0];
                 setFoundationDrag({ fid: f.id, offsetX: t.clientX - pos.x, offsetY: t.clientY - pos.y });
               }}
-              className={`w-36 rounded-2xl border-2 flex flex-col items-center select-none cursor-grab active:cursor-grabbing shadow-sm px-3 py-2.5 transition-all duration-150 ${lockedFoundations.includes(f.id) ? 'bg-white dark:bg-slate-800/40 opacity-50 border-slate-200 dark:border-slate-700 shadow-none' : 'bg-white dark:bg-slate-800/90 shadow-sm'} ${hoverDot === f.id ? 'shadow-md shadow-blue-200/50' : ''}`}
+              className={`w-36 rounded-2xl border-2 flex flex-col items-center select-none cursor-grab active:cursor-grabbing shadow-sm px-3 py-2.5 transition-all duration-150 ${lockedFoundations.includes(f.id) ? 'bg-white dark:bg-slate-800 dark:bg-slate-800/40 opacity-50 border-slate-200 dark:border-slate-700 dark:border-slate-700 shadow-none' : 'bg-white dark:bg-slate-800 dark:bg-slate-800/90 shadow-sm'} ${hoverDot === f.id ? 'shadow-md shadow-blue-200/50' : ''}`}
               style={{ borderColor: lockedFoundations.includes(f.id) ? '#e2e8f0' : (hoverDot === f.id ? '#3b82f6' : f.color + '60'), touchAction: 'none' }}
             >
               <div className="flex items-center gap-1.5 w-full">
                 <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[7px] font-bold text-white"
                   style={{ backgroundColor: lockedFoundations.includes(f.id) ? '#cbd5e1' : f.color }}>{f.rank}</span>
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${lockedFoundations.includes(f.id) ? 'text-slate-300 dark:text-slate-600' : ''}`}
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${lockedFoundations.includes(f.id) ? 'text-slate-300 dark:text-slate-600 dark:text-slate-600' : ''}`}
                   style={{ color: lockedFoundations.includes(f.id) ? undefined : f.color }}>{f.label}</span>
                 <button onClick={(e) => { e.stopPropagation(); setLockedFoundations(prev => prev.includes(f.id) ? prev.filter(x => x !== f.id) : [...prev, f.id]); }}
-                  className={`ml-1 text-[11px] transition-colors w-5 h-5 rounded-full inline-flex items-center justify-center ${lockedFoundations.includes(f.id) ? 'bg-red-100 text-red-500 dark:text-red-400 hover:bg-red-200' : 'text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:text-slate-400'}`}
+                  className={`ml-1 text-[11px] transition-colors w-5 h-5 rounded-full inline-flex items-center justify-center ${lockedFoundations.includes(f.id) ? 'bg-red-100 text-red-500 dark:text-red-400 dark:text-red-400 hover:bg-red-200' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-slate-500 dark:text-slate-400 dark:text-slate-400'}`}
                 >{lockedFoundations.includes(f.id) ? '🔒' : '🔓'}</button>
                 <button onClick={(e) => { e.stopPropagation(); setExpandedFoundation(prev => prev === f.id ? null : f.id); }}
-                  className="ml-auto text-[13px] text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:text-slate-400 transition-colors w-6 h-6 rounded-full inline-flex items-center justify-center"
+                  className="ml-auto text-[13px] text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-slate-500 dark:text-slate-400 dark:text-slate-400 transition-colors w-6 h-6 rounded-full inline-flex items-center justify-center"
                 >{expandedFoundation === f.id ? '▾' : '▸'}</button>
               </div>
-              <span className={`text-[8px] mt-0.5 text-center leading-tight ${lockedFoundations.includes(f.id) ? 'text-slate-300 dark:text-slate-600' : 'text-slate-400 dark:text-slate-500'}`}>{f.desc}</span>
+              <span className={`text-[8px] mt-0.5 text-center leading-tight ${lockedFoundations.includes(f.id) ? 'text-slate-300 dark:text-slate-600 dark:text-slate-600' : 'text-slate-400 dark:text-slate-500 dark:text-slate-500'}`}>{f.desc}</span>
               {expandedFoundation === f.id && (
-                <div className="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-700 w-full">
+                <div className="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-700 dark:border-slate-700 w-full">
                   {FOUNDATION_ACTIONS[f.id]?.map((line, i) => (
-                    <div key={i} className="text-[6px] text-slate-500 dark:text-slate-400 leading-relaxed flex gap-1">
-                      <span className="text-slate-300 dark:text-slate-600 mt-0.5">•</span>
+                    <div key={i} className="text-[6px] text-slate-500 dark:text-slate-400 dark:text-slate-400 leading-relaxed flex gap-1">
+                      <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600 mt-0.5">•</span>
                       <span>{line}</span>
                     </div>
                   ))}
@@ -1471,7 +1471,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
           return (
             <div key={note.id}
               ref={el => { if (el) noteElsRef.current.set(note.id, el); else noteElsRef.current.delete(note.id); }}
-              className={`absolute z-40 bg-white dark:bg-slate-800 rounded-xl shadow-lg border select-none transition-shadow ${note.locked ? 'border-slate-200 dark:border-slate-700 opacity-70 cursor-default' : note.starred ? 'border-amber-300 ring-2 ring-amber-200/60' : dragLock === note.id ? 'border-amber-400 ring-2 ring-amber-300/50 shadow-amber-200/50' : 'border-slate-300 dark:border-slate-600'} ${dragLock === note.id ? 'cursor-grab' : 'cursor-grab active:cursor-grabbing'}`}
+              className={`absolute z-40 bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl shadow-lg border select-none transition-shadow ${note.locked ? 'border-slate-200 dark:border-slate-700 dark:border-slate-700 opacity-70 cursor-default' : note.starred ? 'border-amber-300 ring-2 ring-amber-200/60' : dragLock === note.id ? 'border-amber-400 ring-2 ring-amber-300/50 shadow-amber-200/50' : 'border-slate-300 dark:border-slate-600 dark:border-slate-600'} ${dragLock === note.id ? 'cursor-grab' : 'cursor-grab active:cursor-grabbing'}`}
               style={{ left: note.x, top: note.y, touchAction: dragLock === note.id ? 'none' as const : undefined } as React.CSSProperties}
               onMouseDown={(e) => startDrag(note.id, e)}
               onTouchStart={(e) => { startDragTouch(note.id, e); }}
@@ -1486,7 +1486,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 <div className="px-2.5 py-1.5">
                   {/* Drag handle — only touch target on mobile for dragging */}
                   <div data-drag-handle
-                    className={`flex items-center justify-center gap-0.5 mb-1 cursor-pointer select-none -mt-0.5 rounded transition-colors ${dragLock === note.id ? 'bg-amber-200 py-0.5 shadow-sm' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
+                    className={`flex items-center justify-center gap-0.5 mb-1 cursor-pointer select-none -mt-0.5 rounded transition-colors ${dragLock === note.id ? 'bg-amber-200 py-0.5 shadow-sm' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                     onMouseDown={(e) => { e.stopPropagation(); startDrag(note.id, e); }}
                     onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); const active = dragLock === note.id; setDragLock(active ? null : note.id); if (!active) startDragTouch(note.id, e); }}
                   >
@@ -1495,48 +1495,48 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                   <div className="flex items-center gap-1 mb-1">
                     <button onClick={(e) => { e.stopPropagation(); setShowTagPicker(p => p === note.id ? null : note.id); }}
                       onMouseDown={e => e.stopPropagation()}
-                      className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700' : 'text-slate-300 dark:text-slate-600 border-dashed border-slate-200 dark:border-slate-700 hover:text-slate-400 dark:text-slate-500'}`}
+                      className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600 border-dashed border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:text-slate-400 dark:text-slate-500 dark:text-slate-500'}`}
                     >{note.tag || '+ tag'}</button>
                     {note.tag && (
                       <button onClick={(e) => { e.stopPropagation(); setSelectedArrow(prev => prev === note.id ? null : note.id); }}
                         onMouseDown={e => e.stopPropagation()}
-                        className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 dark:text-slate-600 hover:bg-amber-100 dark:bg-amber-900/30 hover:text-amber-500'}`}
+                        className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 hover:text-amber-500'}`}
                         title="Show reasoning"
                       >💡</button>
                     )}
                     {note.tag && (
                       <div className="flex gap-0.5 ml-1" onMouseDown={e => e.stopPropagation()}>
                         <button onClick={() => updateNote(note.id, { direction: 'under' })}
-                          className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 hover:text-green-600 dark:text-green-400'}`}
+                          className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-green-600 dark:text-green-400 dark:text-green-400'}`}
                         >↑</button>
                         <button onClick={() => updateNote(note.id, { direction: 'over' })}
-                          className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 hover:text-red-600'}`}
+                          className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-red-600'}`}
                         >↓</button>
                       </div>
                     )}
                   </div>
                   {/* Recipe input — only when a recipe tag is selected */}
                   {RECIPE_TAGS.includes(note.tag) && (
-                  <div className="flex items-center gap-1 mb-1.5 px-1 py-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded" onMouseDown={e => e.stopPropagation()}>
+                  <div className="flex items-center gap-1 mb-1.5 px-1 py-1 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded" onMouseDown={e => e.stopPropagation()}>
                     {note.tag === 'time' && <>
-                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">⏱</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">⏱</span>
                       <input type="number" min={0} max={59} value={note.timeM ?? 0}
                         onChange={e => updateNote(note.id, { timeM: Math.min(59, Math.max(0, +e.target.value || 0)) })}
-                        className="w-6 px-0.5 py-0 text-[10px] text-center border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      /><span className="text-[9px] text-slate-400 dark:text-slate-500">:</span>
+                        className="w-6 px-0.5 py-0 text-[10px] text-center border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 dark:text-slate-300 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      /><span className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500">:</span>
                       <input type="number" min={0} max={59} value={note.timeS ?? 0}
                         onChange={e => updateNote(note.id, { timeS: Math.min(59, Math.max(0, +e.target.value || 0)) })}
-                        className="w-6 px-0.5 py-0 text-[10px] text-center border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-6 px-0.5 py-0 text-[10px] text-center border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 dark:text-slate-300 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
-                      <span className="text-[8px] text-slate-400 dark:text-slate-500 ml-auto italic">MM:SS</span>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 ml-auto italic">MM:SS</span>
                     </>}
                     {note.tag === 'temp' && <>
-                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">🌡</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">🌡</span>
                       <input type="number" value={note.temp}
                         onChange={e => updateNote(note.id, { temp: +e.target.value || 0 })}
-                        className="w-12 px-1 py-0 text-[10px] text-center border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-12 px-1 py-0 text-[10px] text-center border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 dark:text-slate-300 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
-                      <span className="text-[8px] text-slate-400 dark:text-slate-500">°C</span>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500">°C</span>
                     </>}
                     {note.tag === 'grindsize' && <>
                       <div className="flex flex-col items-center gap-0.5 w-full">
@@ -1619,75 +1619,75 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                           {/* Center dot */}
                           <circle cx="50" cy="50" r="3" fill="#475569" />
                         </svg>
-                        <div className="flex items-center gap-1 text-[7px] text-slate-400 dark:text-slate-500 w-full justify-center">
-                          <span className="text-[7px] font-medium text-slate-400 dark:text-slate-500">max</span>
+                        <div className="flex items-center gap-1 text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 w-full justify-center">
+                          <span className="text-[7px] font-medium text-slate-400 dark:text-slate-500 dark:text-slate-500">max</span>
                           <input type="number" min={1} max={200} value={note.grindMax ?? 30}
                             onChange={e => updateNote(note.id, { grindMax: Math.max(1, parseInt(e.target.value, 10) || 1), grind: 0, grindLow: 0, grindHigh: 0 })}
-                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spinner-button]:appearance-none"
+                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 dark:text-slate-400 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spinner-button]:appearance-none"
                           />
-                          <span className="mx-1 text-slate-300 dark:text-slate-600">|</span>
+                          <span className="mx-1 text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
                           <span>zone</span>
                           <input type="number" min={0} max={note.grindMax ?? 30} step={0.1} value={note.grindLow ?? 0}
                             onChange={e => updateNote(note.id, { grindLow: Math.min(note.grindMax ?? 30, Math.max(0, parseFloat(e.target.value) || 0)) })}
-                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spinner-button]:appearance-none"
+                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 dark:text-slate-400 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spinner-button]:appearance-none"
                           />
                           <span>—</span>
                           <input type="number" min={0} max={note.grindMax ?? 30} step={0.1} value={note.grindHigh ?? 0}
                             onChange={e => updateNote(note.id, { grindHigh: Math.min(note.grindMax ?? 30, Math.max(0, parseFloat(e.target.value) || 0)) })}
-                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spinner-button]:appearance-none"
+                            className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 dark:text-slate-400 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spinner-button]:appearance-none"
                           />
                           <button onClick={() => updateNote(note.id, { grind: Math.max(0, (note.grind ?? 0) - 1) })}
-                            className="px-1 py-0 text-[10px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 leading-none"
+                            className="px-1 py-0 text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 leading-none"
                           >−</button>
                           <span className="font-medium" style={{ color: '#22c55e' }}>{(note.grind ?? 0)}</span>
                           <button onClick={() => updateNote(note.id, { grind: Math.min(note.grindMax ?? 30, (note.grind ?? 0) + 1) })}
-                            className="px-1 py-0 text-[10px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 leading-none"
+                            className="px-1 py-0 text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 leading-none"
                           >+</button>
                         </div>
                       </div>
                     </>}
                     {note.tag === 'ratio' && <>
-                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">÷</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">÷</span>
                       <input type="number" step={0.1} min={0} value={note.ratio}
                         onChange={e => updateNote(note.id, { ratio: +e.target.value || 0 })}
-                        className="w-12 px-1 py-0 text-[10px] text-center border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-12 px-1 py-0 text-[10px] text-center border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 dark:text-slate-300 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
-                      <span className="text-[8px] text-slate-400 dark:text-slate-500">:1</span>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500">:1</span>
                     </>}
                     {note.tag === 'turbulence' && <>
-                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">🌊</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">🌊</span>
                       <input type="number" min={1} max={10} step={1} value={note.turbulence}
                         onChange={e => updateNote(note.id, { turbulence: Math.min(10, Math.max(1, +e.target.value || 1)) })}
-                        className="w-8 px-1 py-0 text-[10px] text-center border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-8 px-1 py-0 text-[10px] text-center border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 dark:text-slate-300 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
-                      <span className="text-[8px] text-slate-400 dark:text-slate-500">/10</span>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500">/10</span>
                     </>}
                   </div>
                   )}
                   {UTILITY_TAGS.includes(note.tag) && (
-                    <div className="flex items-center gap-1 mb-1.5 px-1 py-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded" onMouseDown={e => e.stopPropagation()}>
+                    <div className="flex items-center gap-1 mb-1.5 px-1 py-1 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded" onMouseDown={e => e.stopPropagation()}>
                     {note.tag === 'counter' && <>
-                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">#</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">#</span>
                       <input type="text" value={note.counterLabel ?? ''}
                         onChange={e => updateNote(note.id, { counterLabel: e.target.value })}
                         placeholder="label..."
-                        className="w-14 px-0.5 py-0 text-[8px] border border-slate-200 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 outline-none focus:border-slate-400 bg-white dark:bg-slate-800"
+                        className="w-14 px-0.5 py-0 text-[8px] border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 dark:text-slate-400 outline-none focus:border-slate-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
                       />
                       <button onClick={() => updateNote(note.id, { counter: Math.max(0, (note.counter ?? 1) - 1) })}
-                        className="px-1 py-0 text-[10px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+                        className="px-1 py-0 text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                       >−</button>
-                      <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 min-w-[20px] text-center">{note.counter ?? 1}</span>
+                      <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300 min-w-[20px] text-center">{note.counter ?? 1}</span>
                       <button onClick={() => updateNote(note.id, { counter: (note.counter ?? 1) + 1 })}
-                        className="px-1 py-0 text-[10px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+                        className="px-1 py-0 text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                       >+</button>
                     </>}
                     {note.tag === 'pct' && <>
-                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">%</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">%</span>
                       <input type="range" min={0} max={100} value={note.pct ?? 50}
                         onChange={e => updateNote(note.id, { pct: +e.target.value })}
                         className="w-20 h-1 accent-slate-500"
                       />
-                      <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 min-w-[32px] text-right">{note.pct ?? 50}%</span>
+                      <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300 min-w-[32px] text-right">{note.pct ?? 50}%</span>
                     </>}
                     {note.tag === 'score' && (() => {
                       const ss = note.scores ?? [];
@@ -1706,26 +1706,26 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                               updateNote(note.id, { scoreIdx: next });
                             }
                           }}
-                            className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 leading-none px-0.5"
+                            className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 dark:text-slate-300 leading-none px-0.5"
                           >★ {cur ? cur.label : '+ Score'}</button>
                           {cur && <>
                             <button onClick={() => { const c = [...ss]; c[si] = { ...c[si], value: Math.max(0, c[si].value - 1) }; updateNote(note.id, { scores: c }); }}
-                              className="px-1 py-0 text-[9px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 leading-none"
+                              className="px-1 py-0 text-[9px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 leading-none"
                             >−</button>
                             <input type="number" min={0} max={cur.max} value={cur.value}
                               onChange={e => { const c = [...ss]; c[si] = { ...c[si], value: Math.min(cur.max, Math.max(0, parseInt(e.target.value, 10) || 0)) }; updateNote(note.id, { scores: c }); }}
-                              className="w-6 px-0.5 py-0 text-[8px] text-center border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400 font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-6 px-0.5 py-0 text-[8px] text-center border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 dark:text-slate-300 outline-none focus:border-slate-400 font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                             <button onClick={() => { const c = [...ss]; c[si] = { ...c[si], value: Math.min(cur.max, c[si].value + 1) }; updateNote(note.id, { scores: c }); }}
-                              className="px-1 py-0 text-[9px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 leading-none"
+                              className="px-1 py-0 text-[9px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 leading-none"
                             >+</button>
-                            <span className="text-[6px] text-slate-300 dark:text-slate-600">/</span>
+                            <span className="text-[6px] text-slate-300 dark:text-slate-600 dark:text-slate-600">/</span>
                             <input type="number" min={1} max={999} value={cur.max}
                               onChange={e => { const c = [...ss]; const nm = Math.max(1, parseInt(e.target.value, 10) || 1); c[si] = { ...c[si], max: nm, value: Math.min(nm, c[si].value) }; updateNote(note.id, { scores: c }); }}
-                              className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 dark:border-slate-700 rounded text-slate-400 dark:text-slate-500 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-5 px-0.5 py-0 text-[7px] text-center border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-400 dark:text-slate-500 dark:text-slate-500 outline-none focus:border-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                             {ss.length > 1 && <button onClick={() => { const c = [...ss]; c.splice(si, 1); updateNote(note.id, { scores: c, scoreIdx: Math.min(si, c.length - 1) }); }}
-                              className="px-0.5 py-0 text-[6px] text-slate-300 dark:text-slate-600 hover:text-red-400 leading-none"
+                              className="px-0.5 py-0 text-[6px] text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-red-400 leading-none"
                             >✕</button>}
                           </>}
                         </div>
@@ -1746,13 +1746,13 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       onMouseDown={(e) => { if (note.locked) e.stopPropagation(); else e.stopPropagation(); }}
                       onTouchStart={(e) => { e.stopPropagation(); }}
                       readOnly={note.locked}
-                      className={`w-full text-[11px] bg-transparent border-none outline-none resize-none leading-tight font-sans ${note.locked ? 'text-slate-400 dark:text-slate-500 italic' : 'text-slate-700 dark:text-slate-300'} max-h-24 overflow-y-auto`}
+                      className={`w-full text-[11px] bg-transparent border-none outline-none resize-none leading-tight font-sans ${note.locked ? 'text-slate-400 dark:text-slate-500 dark:text-slate-500 italic' : 'text-slate-700 dark:text-slate-300 dark:text-slate-300'} max-h-24 overflow-y-auto`}
                       rows={1}
                       ref={el => { if (el && !el.dataset.autosized) { el.dataset.autosized = 'true'; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
                     />
                     <div className="flex flex-col items-center gap-0.5 shrink-0">
                       <div
-                        className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-slate-400 cursor-crosshair inline-flex items-center justify-center text-[7px] text-white font-bold transition-colors border border-slate-300 dark:border-slate-600 hover:border-slate-500 note-connect-dot"
+                        className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-slate-400 cursor-crosshair inline-flex items-center justify-center text-[7px] text-white font-bold transition-colors border border-slate-300 dark:border-slate-600 dark:border-slate-600 hover:border-slate-500 note-connect-dot"
                         data-noteid={note.id}
                         title="Drag to connect to a foundation or another note"
                         onMouseDown={(e) => { e.stopPropagation(); startConnect(note.id, e); }}
@@ -1762,10 +1762,10 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                         className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${note.starred ? 'text-amber-400' : 'text-slate-200 hover:text-amber-300'}`}
                       >{note.starred ? '⭐' : '☆'}</button>
                       <button onClick={(e) => { e.stopPropagation(); updateNote(note.id, { locked: !note.locked }); }}
-                        className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[7px] font-bold transition-colors ${note.locked ? 'bg-amber-200 text-amber-700' : 'bg-slate-200 text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:text-amber-400'}`}
+                        className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[7px] font-bold transition-colors ${note.locked ? 'bg-amber-200 text-amber-700' : 'bg-slate-200 text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-amber-600 dark:text-amber-400 dark:text-amber-400'}`}
                       >{note.locked ? '🔒' : '🔓'}</button>
                       <button onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
-                        className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-red-300 inline-flex items-center justify-center text-[7px] text-slate-400 dark:text-slate-500 hover:text-white font-bold leading-none transition-colors"
+                        className="w-3.5 h-3.5 rounded-full bg-slate-200 hover:bg-red-300 inline-flex items-center justify-center text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-white font-bold leading-none transition-colors"
                       >×</button>
                     </div>
                   </div>
@@ -1782,8 +1782,8 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                         const f = FOUNDATIONS.find(ff => ff.id === a.toFoundation);
                         const label = f ? f.label : a.toNoteId ? (notes.find(n => n.id === a.toNoteId)?.tag || 'note') : '?';
                         const bg = a.color === 'confirmed'
-                          ? (f ? `${f.color}20 text-slate-700 dark:text-slate-300` : 'bg-green-100 text-green-700')
-                          : a.color === 'wrong' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500 dark:text-slate-400';
+                          ? (f ? `${f.color}20 text-slate-700 dark:text-slate-300 dark:text-slate-300` : 'bg-green-100 text-green-700')
+                          : a.color === 'wrong' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500 dark:text-slate-400 dark:text-slate-400';
                         const dotColor = a.color === 'confirmed' && f ? f.color : undefined;
                         return (
                           <span key={a.id} className={`inline-flex items-center gap-0.5 text-[6px] px-1 py-0.5 rounded ${bg}`}>
@@ -1799,7 +1799,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                         const fromNote = notes.find(n => n.id === a.fromNoteId);
                         const label = fromNote?.tag || 'note';
                         return (
-                          <span key={a.id} className="inline-flex items-center gap-0.5 text-[6px] px-1 py-0.5 rounded bg-slate-100 text-slate-500 dark:text-slate-400">
+                          <span key={a.id} className="inline-flex items-center gap-0.5 text-[6px] px-1 py-0.5 rounded bg-slate-100 text-slate-500 dark:text-slate-400 dark:text-slate-400">
                             <span>← {label}</span>
                             <button onClick={(e) => { e.stopPropagation(); deleteArrow(a.id); }}
                               className="hover:text-red-600 font-bold leading-none ml-0.5"
@@ -1816,17 +1816,17 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                   const dir = note.direction ? EXTRACTION_DIRECTIONS[note.direction] : null;
                   const mech = MECHANISM_KNOWLEDGE[note.tag];
                   return (
-                    <div className="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-700 w-56 px-2 pb-2" onMouseDown={e => e.stopPropagation()}>
+                    <div className="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-700 dark:border-slate-700 w-56 px-2 pb-2" onMouseDown={e => e.stopPropagation()}>
                       {dir ? (
-                        <div className="mb-1.5 pb-1.5 border-b border-slate-100 dark:border-slate-700">
+                        <div className="mb-1.5 pb-1.5 border-b border-slate-100 dark:border-slate-700 dark:border-slate-700">
                           <div className="flex items-center gap-1 mb-0.5">
                             <span className="text-[13px] font-bold leading-none" style={{ color: dir.color }}>{dir.arrow}</span>
                             <span className="text-[8px] font-bold" style={{ color: dir.color }}>{dir.label}</span>
-                            <span className="text-[6px] text-slate-300 dark:text-slate-600 ml-auto italic">{note.tag}</span>
+                            <span className="text-[6px] text-slate-300 dark:text-slate-600 dark:text-slate-600 ml-auto italic">{note.tag}</span>
                           </div>
-                          <p className="text-[7px] text-slate-400 dark:text-slate-500 leading-relaxed mb-1">{dir.desc}</p>
+                          <p className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 leading-relaxed mb-1">{dir.desc}</p>
                           <div className="flex items-center gap-0.5 flex-wrap">
-                            <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase mr-0.5">Adjust:</span>
+                            <span className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 uppercase mr-0.5">Adjust:</span>
                             {dir.priority.map((fid, i) => {
                               const f = FOUNDATIONS.find(ff => ff.id === fid);
                               const link = dir.foundations[fid];
@@ -1845,7 +1845,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
 
                           </div>
-                          <div className="text-[5px] text-slate-300 dark:text-slate-600 mt-0.5 leading-none">
+                          <div className="text-[5px] text-slate-300 dark:text-slate-600 dark:text-slate-600 mt-0.5 leading-none">
                             <span className="mr-1">●●●●● = BIG rock (adjust tiny)</span>
                             <span>●○○○○ = small rock (adjust more)</span>
                           </div>
@@ -1853,9 +1853,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       ) : null}
 
                       {DEFECT_KNOWLEDGE[note.tag] && (
-                        <div className="mb-1.5 pb-1.5 border-b border-slate-100 dark:border-slate-700">
+                        <div className="mb-1.5 pb-1.5 border-b border-slate-100 dark:border-slate-700 dark:border-slate-700">
                           <div onClick={() => setDefectOpen(v => !v)}
-                            className="flex items-center gap-1 cursor-pointer select-none hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 rounded px-1 py-0.5 transition-colors"
+                            className="flex items-center gap-1 cursor-pointer select-none hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 rounded px-1 py-0.5 transition-colors"
                           >
                             <span className="text-[9px]">⚠️</span>
                             <span className="text-[7px] font-medium text-amber-700">Could be bean defect?</span>
@@ -1864,10 +1864,10 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                           {defectOpen && (() => {
                             const d = DEFECT_KNOWLEDGE[note.tag];
                             return (
-                              <div className="mt-1 px-1.5 py-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-[7px]">
-                                <div className="font-semibold text-amber-800 dark:text-amber-200 mb-0.5">{d.defect}</div>
+                              <div className="mt-1 px-1.5 py-1 bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 dark:border-amber-800 rounded text-[7px]">
+                                <div className="font-semibold text-amber-800 dark:text-amber-200 dark:text-amber-200 mb-0.5">{d.defect}</div>
                                 <p className="text-amber-700 leading-relaxed mb-0.5">{d.desc}</p>
-                                <div className="text-amber-600 dark:text-amber-400 mb-0.5">
+                                <div className="text-amber-600 dark:text-amber-400 dark:text-amber-400 mb-0.5">
                                   <span className="font-medium">🔍 Check:</span> {d.signs}
                                 </div>
                                 <div className="text-amber-700 font-medium">
@@ -1881,8 +1881,8 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
 
                       {mech ? (
                         <>
-                          <div className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5">{mech.mechanism}</div>
-                          <p className="text-[7px] text-slate-400 dark:text-slate-500 leading-relaxed mb-1">{mech.summary}</p>
+                          <div className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-0.5">{mech.mechanism}</div>
+                          <p className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 leading-relaxed mb-1">{mech.summary}</p>
                           {mech.priority.map((fid, i) => {
                             const f = FOUNDATIONS.find(ff => ff.id === fid);
                             const link = mech.foundations[fid];
@@ -1895,45 +1895,45 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                                 style={{ borderColor: open ? f.color + '30' : 'transparent', backgroundColor: open ? f.color + '06' : 'transparent' }}
                               >
                                 <div onClick={() => setExpandedChain(open ? null : key)}
-                                  className="flex items-center gap-1 px-1.5 py-1 cursor-pointer select-none hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 rounded transition-colors"
+                                  className="flex items-center gap-1 px-1.5 py-1 cursor-pointer select-none hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50 rounded transition-colors"
                                 >
                                   <span className="text-[9px] font-bold shrink-0" style={{ color: f.color }}>
                                     {i === 0 ? '①' : i === 1 ? '②' : i === 2 ? '③' : '④'}
                                   </span>
-                                  <span className="text-[7px] font-semibold text-slate-600 dark:text-slate-400">{f.label}</span>
+                                  <span className="text-[7px] font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-400">{f.label}</span>
                                   {dirLink?.action && (
-                                    <span className="text-[7px] text-slate-400 dark:text-slate-500 font-mono">{dirLink.action}</span>
+                                    <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-mono">{dirLink.action}</span>
                                   )}
                                   {dirLink?.impact != null && (
                                     <span className="text-[6px] opacity-40 ml-auto" title={dirLink.impactDesc}>
                                       {'●'.repeat(dirLink.impact)}{'○'.repeat(5 - dirLink.impact)}
                                     </span>
                                   )}
-                                  <span className="text-[8px] text-slate-300 dark:text-slate-600 ml-1 shrink-0">{open ? '▾' : '▸'}</span>
+                                  <span className="text-[8px] text-slate-300 dark:text-slate-600 dark:text-slate-600 ml-1 shrink-0">{open ? '▾' : '▸'}</span>
                                 </div>
                                 {open && (
                                   <div className="px-2.5 pb-2 pt-0.5">
-                                    <div className="text-[6px] text-slate-400 dark:text-slate-500 mb-0.5">
+                                    <div className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 mb-0.5">
                                       <span className="font-medium">sub:</span> {link.subTopic ?? '—'}
                                     </div>
                                     {link.causalChain && (
                                       <div className="flex flex-col items-center gap-0 my-1">
                                         {link.causalChain.split('→').map((step, si) => (
                                           <span key={si} className="flex flex-col items-center">
-                                            {si > 0 && <span className="text-slate-300 dark:text-slate-600 text-[9px] leading-none">↓</span>}
-                                            <span className="text-[7px] text-center px-1.5 py-0.5 rounded-sm bg-slate-100 text-slate-600 dark:text-slate-400 leading-snug">{step.trim()}</span>
+                                            {si > 0 && <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600 text-[9px] leading-none">↓</span>}
+                                            <span className="text-[7px] text-center px-1.5 py-0.5 rounded-sm bg-slate-100 text-slate-600 dark:text-slate-400 dark:text-slate-400 leading-snug">{step.trim()}</span>
                                           </span>
                                         ))}
                                       </div>
                                     )}
-                                    <div className="text-[7px] text-slate-500 dark:text-slate-400 italic mt-0.5">
+                                    <div className="text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 italic mt-0.5">
                                       <span className="font-medium">Try:</span> {link.experiment}
                                     </div>
                                     {link.tell && (
-                                      <div className="text-[6px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">⚡ {link.tell}</div>
+                                      <div className="text-[6px] text-amber-600 dark:text-amber-400 dark:text-amber-400 font-medium mt-0.5">⚡ {link.tell}</div>
                                     )}
                                     {link.whyNot && (
-                                      <div className="text-[6px] text-slate-400 dark:text-slate-500 italic mt-0.5">↳ {link.whyNot}</div>
+                                      <div className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 italic mt-0.5">↳ {link.whyNot}</div>
                                     )}
                                   </div>
                                 )}
@@ -1943,11 +1943,11 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                         </>
                       ) : (
                         <div>
-                          <div className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5">Exploring "{note.tag}"</div>
-                          <p className="text-[7px] text-slate-400 dark:text-slate-500 leading-relaxed mb-1">No mechanism data yet. Investigate which foundation this symptom connects to.</p>
+                          <div className="text-[8px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-0.5">Exploring "{note.tag}"</div>
+                          <p className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 leading-relaxed mb-1">No mechanism data yet. Investigate which foundation this symptom connects to.</p>
                           {!dir && (
                             <div className="flex items-center gap-0.5 mb-1 flex-wrap">
-                              <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase mr-0.5">Check each:</span>
+                              <span className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 uppercase mr-0.5">Check each:</span>
                               {FOUNDATIONS.map((f, i) => (
                                 <span key={f.id} className="text-[7px] font-semibold px-1 py-0.5 rounded-sm"
                                   style={{ backgroundColor: f.color + '15', color: f.color }}
@@ -1955,12 +1955,12 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                               ))}
                             </div>
                           )}
-                          <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded px-1.5 py-1 mb-1">
-                            <p className="text-[7px] text-slate-500 dark:text-slate-400 leading-relaxed"><span className="font-medium">Set direction ↑ or ↓</span> on the note — then the priority chain appears here based on whether you need more or less extraction.</p>
+                          <div className="bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 dark:border-slate-700 rounded px-1.5 py-1 mb-1">
+                            <p className="text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 leading-relaxed"><span className="font-medium">Set direction ↑ or ↓</span> on the note — then the priority chain appears here based on whether you need more or less extraction.</p>
                           </div>
                         </div>
                       )}
-                      <div className="text-[6px] text-slate-300 dark:text-slate-600 italic mt-0.5 leading-tight">
+                      <div className="text-[6px] text-slate-300 dark:text-slate-600 dark:text-slate-600 italic mt-0.5 leading-tight">
                         {dir ? '↑↓ toggle direction · drag ◉ to foundation · click arrow to confirm/wrong' : 'Drag ◉ to the foundation you suspect · click arrow to confirm/wrong'}
                       </div>
                     </div>
@@ -1979,7 +1979,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="text-center">
                       <div className="text-3xl mb-2">☯</div>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500">Click <span className="font-semibold text-slate-500 dark:text-slate-400">+ Add Note</span> to start mapping your brew</p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 dark:text-slate-500">Click <span className="font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400">+ Add Note</span> to start mapping your brew</p>
                     </div>
                   </div>
                 )}
@@ -1992,7 +1992,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                   arrows.some(a => a.fromNoteId === note.id && a.toFoundation === f.id && a.color === 'confirmed')
                 );
                 return (
-                  <div key={note.id} className="relative bg-white dark:bg-slate-800 rounded-xl shadow-lg border select-none border-slate-300 dark:border-slate-600">
+                  <div key={note.id} className="relative bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl shadow-lg border select-none border-slate-300 dark:border-slate-600 dark:border-slate-600">
                     {linkedFoundations.length > 0 && (
                       <div className="h-1 rounded-t-xl overflow-hidden flex">
                         {linkedFoundations.map(f => (
@@ -2004,21 +2004,21 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       <div className="flex items-center gap-1 mb-1">
                         <button onClick={(e) => { e.stopPropagation(); setShowTagPicker(p => p === note.id ? null : note.id); }}
                           onMouseDown={e => e.stopPropagation()}
-                          className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700' : 'text-slate-300 dark:text-slate-600 border-dashed border-slate-200 dark:border-slate-700 hover:text-slate-400 dark:text-slate-500'}`}
+                          className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600 border-dashed border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:text-slate-400 dark:text-slate-500 dark:text-slate-500'}`}
                         >{note.tag || '+ tag'}</button>
                         {note.tag && (
                           <button onClick={(e) => { e.stopPropagation(); setSelectedArrow(prev => prev === note.id ? null : note.id); }}
                             onMouseDown={e => e.stopPropagation()}
-                            className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 dark:text-slate-600 hover:bg-amber-100 dark:bg-amber-900/30 hover:text-amber-500'}`}
+                            className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 hover:text-amber-500'}`}
                           >💡</button>
                         )}
                         {note.tag && (
                           <div className="flex gap-0.5 ml-1" onMouseDown={e => e.stopPropagation()}>
                             <button onClick={() => updateNote(note.id, { direction: 'under' })}
-                              className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 hover:text-green-600 dark:text-green-400'}`}
+                              className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-green-600 dark:text-green-400 dark:text-green-400'}`}
                             >↑</button>
                             <button onClick={() => updateNote(note.id, { direction: 'over' })}
-                              className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 hover:text-red-600'}`}
+                              className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-red-600'}`}
                             >↓</button>
                           </div>
                         )}
@@ -2026,7 +2026,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                       <textarea value={note.text}
                         onChange={(e) => { if (note.locked) return; updateNote(note.id, { text: e.target.value }); e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }}
                         readOnly={note.locked}
-                        className={`w-full text-[11px] bg-transparent border-none outline-none resize-none leading-tight font-sans max-h-24 overflow-y-auto ${note.locked ? 'text-slate-400 dark:text-slate-500 italic' : 'text-slate-700 dark:text-slate-300'}`}
+                        className={`w-full text-[11px] bg-transparent border-none outline-none resize-none leading-tight font-sans max-h-24 overflow-y-auto ${note.locked ? 'text-slate-400 dark:text-slate-500 dark:text-slate-500 italic' : 'text-slate-700 dark:text-slate-300 dark:text-slate-300'}`}
                         rows={1}
                         placeholder="note..."
                       />
@@ -2035,9 +2035,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                         const m = MECHANISM_KNOWLEDGE[note.tag];
                         if (!dir || !m) return null;
                         return (
-                          <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-700">
-                            <div className="text-[6px] text-slate-400 dark:text-slate-500 font-medium">{m.mechanism}</div>
-                            <div className="text-[6px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{m.summary}</div>
+                          <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-700 dark:border-slate-700">
+                            <div className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-medium">{m.mechanism}</div>
+                            <div className="text-[6px] text-slate-500 dark:text-slate-400 dark:text-slate-400 leading-tight mt-0.5">{m.summary}</div>
                           </div>
                         );
                       })()}
@@ -2047,7 +2047,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
               }) : (
                 <div className="text-center py-16">
                   <div className="text-3xl mb-3">☯</div>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Tap <span className="font-semibold text-slate-500 dark:text-slate-400">+ Add Note</span> to start mapping your brew</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 dark:text-slate-500">Tap <span className="font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400">+ Add Note</span> to start mapping your brew</p>
                 </div>
               )}
             </div>
@@ -2059,7 +2059,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                     arrows.some(a => a.fromNoteId === note.id && a.toFoundation === f.id && a.color === 'confirmed')
                   );
                   return (
-                    <div key={note.id} className="relative bg-white dark:bg-slate-800 rounded-xl shadow-lg border select-none border-slate-300 dark:border-slate-600">
+                    <div key={note.id} className="relative bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl shadow-lg border select-none border-slate-300 dark:border-slate-600 dark:border-slate-600">
                       {linkedFoundations.length > 0 && (
                         <div className="h-1 rounded-t-xl overflow-hidden flex">
                           {linkedFoundations.map(f => (
@@ -2071,21 +2071,21 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                         <div className="flex items-center gap-1 mb-1">
                           <button onClick={(e) => { e.stopPropagation(); setShowTagPicker(p => p === note.id ? null : note.id); }}
                             onMouseDown={e => e.stopPropagation()}
-                            className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700' : 'text-slate-300 dark:text-slate-600 border-dashed border-slate-200 dark:border-slate-700 hover:text-slate-400 dark:text-slate-500'}`}
+                            className={`text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded border transition-colors ${note.tag ? 'bg-slate-100 text-slate-600 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600 border-dashed border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:text-slate-400 dark:text-slate-500 dark:text-slate-500'}`}
                           >{note.tag || '+ tag'}</button>
                           {note.tag && (
                             <button onClick={(e) => { e.stopPropagation(); setSelectedArrow(prev => prev === note.id ? null : note.id); }}
                               onMouseDown={e => e.stopPropagation()}
-                              className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 dark:text-slate-600 hover:bg-amber-100 dark:bg-amber-900/30 hover:text-amber-500'}`}
+                              className={`w-3.5 h-3.5 rounded-full inline-flex items-center justify-center text-[8px] transition-colors ${selectedArrow === note.id ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 hover:text-amber-500'}`}
                             >💡</button>
                           )}
                           {note.tag && (
                             <div className="flex gap-0.5 ml-1" onMouseDown={e => e.stopPropagation()}>
                               <button onClick={() => updateNote(note.id, { direction: 'under' })}
-                                className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 hover:text-green-600 dark:text-green-400'}`}
+                                className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'under' ? 'bg-green-200 text-green-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-green-600 dark:text-green-400 dark:text-green-400'}`}
                               >↑</button>
                               <button onClick={() => updateNote(note.id, { direction: 'over' })}
-                                className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 hover:text-red-600'}`}
+                                className={`text-[7px] px-1 py-0.5 rounded leading-none ${note.direction === 'over' ? 'bg-red-200 text-red-800 font-bold' : 'bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-red-600'}`}
                               >↓</button>
                             </div>
                           )}
@@ -2093,7 +2093,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                         <textarea value={note.text}
                           onChange={(e) => { if (note.locked) return; updateNote(note.id, { text: e.target.value }); e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }}
                           readOnly={note.locked}
-                          className={`w-full text-[11px] bg-transparent border-none outline-none resize-none leading-tight font-sans max-h-24 overflow-y-auto ${note.locked ? 'text-slate-400 dark:text-slate-500 italic' : 'text-slate-700 dark:text-slate-300'}`}
+                          className={`w-full text-[11px] bg-transparent border-none outline-none resize-none leading-tight font-sans max-h-24 overflow-y-auto ${note.locked ? 'text-slate-400 dark:text-slate-500 dark:text-slate-500 italic' : 'text-slate-700 dark:text-slate-300 dark:text-slate-300'}`}
                           rows={1}
                           placeholder="note..."
                         />
@@ -2102,9 +2102,9 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                           const m = MECHANISM_KNOWLEDGE[note.tag];
                           if (!dir || !m) return null;
                           return (
-                            <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-700">
-                              <div className="text-[6px] text-slate-400 dark:text-slate-500 font-medium">{m.mechanism}</div>
-                              <div className="text-[6px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{m.summary}</div>
+                            <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-700 dark:border-slate-700">
+                              <div className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-medium">{m.mechanism}</div>
+                              <div className="text-[6px] text-slate-500 dark:text-slate-400 dark:text-slate-400 leading-tight mt-0.5">{m.summary}</div>
                             </div>
                           );
                         })()}
@@ -2114,7 +2114,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
                 }) : (
                   <div className="text-center py-16 col-span-full">
                     <div className="text-3xl mb-3">☯</div>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500">Tap <span className="font-semibold text-slate-500 dark:text-slate-400">+ Add Note</span> to start mapping your brew</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 dark:text-slate-500">Tap <span className="font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400">+ Add Note</span> to start mapping your brew</p>
                   </div>
                 )}
               </div>
@@ -2127,28 +2127,28 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         <div className="fixed bottom-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 bg-amber-500 text-white rounded-full shadow-lg text-[10px] font-semibold">
           <span>☰ Drag mode</span>
           <button onClick={() => setDragLock(null)}
-            className="ml-1 w-4 h-4 rounded-full bg-white dark:bg-slate-800/20 hover:bg-white dark:bg-slate-800/30 inline-flex items-center justify-center text-[8px]"
+            className="ml-1 w-4 h-4 rounded-full bg-white dark:bg-slate-800 dark:bg-slate-800/20 hover:bg-white dark:bg-slate-800 dark:bg-slate-800/30 inline-flex items-center justify-center text-[8px]"
           >✕</button>
         </div>
       )}
 
       {/* Bottom bar */}
-      <div className="flex items-center gap-3 px-4 py-2 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/70 shrink-0">
+      <div className="flex items-center gap-3 px-4 py-2 border-t border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800/70 shrink-0">
         <button onClick={addNote}
-          className="px-4 py-1.5 text-[11px] font-semibold border border-slate-300 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-400 transition-colors"
+          className="px-4 py-1.5 text-[11px] font-semibold border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 hover:border-slate-400 transition-colors"
         >+ Add Note</button>
-        <span className="text-[10px] text-slate-400 dark:text-slate-500">{notes.length} note{notes.length !== 1 ? 's' : ''} · {arrows.length} connection{arrows.length !== 1 ? 's' : ''}</span>
+        <span className="text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-500">{notes.length} note{notes.length !== 1 ? 's' : ''} · {arrows.length} connection{arrows.length !== 1 ? 's' : ''}</span>
         {alignment.under !== null && (
           <span className="text-[10px] text-emerald-600 font-medium whitespace-nowrap">
             ↑ {alignment.under}%
           </span>
         )}
         {alignment.over !== null && (
-          <span className="text-[10px] text-red-500 dark:text-red-400 font-medium whitespace-nowrap">
+          <span className="text-[10px] text-red-500 dark:text-red-400 dark:text-red-400 font-medium whitespace-nowrap">
             ↓ {alignment.over}%
           </span>
         )}
-        <div className="flex items-center gap-2 ml-auto text-[10px] text-slate-400 dark:text-slate-500">
+        <div className="flex items-center gap-2 ml-auto text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-500">
           <span className="inline-block w-2 h-0.5 bg-slate-400" style={{ borderTop: '2px dashed #94a3b8', height: 0, width: 12 }} /> hypothesis
           <span className="inline-block w-3 h-0.5 bg-green-500" /> confirmed
           <span className="inline-block w-3 h-0.5 bg-red-500" /> wrong
@@ -2165,7 +2165,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
         return (
           <>
             <div className="fixed inset-0 z-[99]" onMouseDown={() => setShowTagPicker(null)} onTouchStart={() => setShowTagPicker(null)} />
-            <div className="fixed z-[100] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl px-2 py-1.5 pointer-events-auto max-w-[260px]"
+            <div className="fixed z-[100] bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-xl shadow-xl px-2 py-1.5 pointer-events-auto max-w-[260px]"
               style={{ left: px, top: py }}
             >
             <div className="grid grid-cols-2 gap-1 mb-1">
@@ -2185,7 +2185,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
             <div className="grid grid-cols-4 gap-1 mb-1">
               {TAG_GROUPS.slice(2, 6).map(g => (
                 <div key={g.name}>
-                  <div className="text-[5px] font-semibold uppercase tracking-wider mb-0.5 text-slate-400 dark:text-slate-500">{g.name}</div>
+                  <div className="text-[5px] font-semibold uppercase tracking-wider mb-0.5 text-slate-400 dark:text-slate-500 dark:text-slate-500">{g.name}</div>
                   <div className="flex flex-wrap gap-0.5">
                     {g.tags.map(t => (
                       <button key={t} onClick={() => { updateNote(showTagPicker, { tag: t }); setShowTagPicker(null); }}
@@ -2197,7 +2197,7 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
               ))}
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-[6px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0">🔄</span>
+              <span className="text-[6px] font-semibold text-slate-400 dark:text-slate-500 dark:text-slate-500 uppercase tracking-wider shrink-0">🔄</span>
               <div className="flex flex-wrap gap-0.5">
                 {TAG_GROUPS[6].tags.map(t => (
                   <button key={t} onClick={() => { updateNote(showTagPicker, { tag: t }); setShowTagPicker(null); }}
@@ -2208,10 +2208,10 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
               <input type="text" placeholder="+custom"
                 onMouseDown={e => e.stopPropagation()}
                 onKeyDown={e => { if (e.key === 'Enter') { const val = (e.target as HTMLInputElement).value.trim(); if (val) { const d = TAG_DIRECTION[val] ?? ''; updateNote(showTagPicker, { tag: val, direction: notes.find(x => x.id === showTagPicker)?.direction || d }); setShowTagPicker(null); } } }}
-                className="w-12 px-0.5 py-0 text-[7px] border border-slate-200 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 outline-none focus:border-slate-400"
+                className="w-12 px-0.5 py-0 text-[7px] border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 dark:text-slate-400 outline-none focus:border-slate-400"
               />
               <button onClick={() => setShowTagPicker(null)}
-                className="px-0.5 py-0 text-[7px] rounded border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="px-0.5 py-0 text-[7px] rounded border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
               >✕</button>
             </div>
           </div>
@@ -2222,17 +2222,17 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       {/* Save As dialog */}
       {showSaveDialog && (
         <div className="fixed inset-0 z-[200] flex items-start justify-center pt-20" onClick={() => setShowSaveDialog(false)}>
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl px-3 py-2 w-64" onClick={e => e.stopPropagation()}>
-            <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Save current board as...</div>
+          <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-xl shadow-xl px-3 py-2 w-64" onClick={e => e.stopPropagation()}>
+            <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-400 mb-1.5">Save current board as...</div>
             <input type="text" value={saveName} placeholder="profile name"
               onChange={e => setSaveName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && saveName.trim()) { putSave(saveName.trim(), { notes, arrows, lockedFoundations, foundationPositions }); setSaves(getSaves()); setShowSaveDialog(false); } }}
-              className="w-full px-1.5 py-1 text-[10px] border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400 mb-1.5"
+              className="w-full px-1.5 py-1 text-[10px] border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 dark:text-slate-300 outline-none focus:border-slate-400 mb-1.5"
               autoFocus
             />
             <div className="flex items-center gap-1 justify-end">
               <button onClick={() => setShowSaveDialog(false)}
-                className="px-2 py-0.5 text-[9px] border border-slate-200 dark:border-slate-700 rounded text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="px-2 py-0.5 text-[9px] border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
               >Cancel</button>
               <button onClick={() => { if (saveName.trim()) { putSave(saveName.trim(), { notes, arrows, lockedFoundations, foundationPositions }); setSaves(getSaves()); setShowSaveDialog(false); } }}
                 className="px-2 py-0.5 text-[9px] font-semibold bg-slate-700 text-white border border-slate-700 rounded hover:bg-slate-800"
@@ -2245,25 +2245,25 @@ export default function ZenMode({ onClose }: { onClose?: () => void }) {
       {/* Load dialog */}
       {showLoadDialog && (
         <div className="fixed inset-0 z-[200] flex items-start justify-center pt-20" onClick={() => setShowLoadDialog(false)}>
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl px-3 py-2 w-64 max-h-48 overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Saved profiles</div>
+          <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-xl shadow-xl px-3 py-2 w-64 max-h-48 overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-400 mb-1.5">Saved profiles</div>
             {saves.length === 0 ? (
-              <p className="text-[9px] text-slate-400 dark:text-slate-500 italic">No saved profiles yet</p>
+              <p className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 italic">No saved profiles yet</p>
             ) : saves.map(name => (
               <div key={name} className="flex items-center justify-between py-1 border-b border-slate-50 last:border-0">
-                <span className="text-[10px] text-slate-700 dark:text-slate-300">{name}</span>
+                <span className="text-[10px] text-slate-700 dark:text-slate-300 dark:text-slate-300">{name}</span>
                 <div className="flex items-center gap-1">
                   <button onClick={() => { const data = getSaveData(name); if (data) { setNotes(data.notes); setArrows(data.arrows); setLockedFoundations(data.lockedFoundations); setFoundationPositions(data.foundationPositions); setShowLoadDialog(false); } }}
                     className="px-1.5 py-0.5 text-[8px] font-semibold bg-slate-700 text-white border border-slate-700 rounded hover:bg-slate-800"
                   >Load</button>
                   <button onClick={() => { if (confirm(`Delete "${name}"?`)) { deleteSave(name); setSaves(getSaves()); } }}
-                    className="px-1 py-0.5 text-[8px] border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 rounded hover:bg-red-50 dark:hover:bg-red-900/20 dark:bg-red-900/20 hover:text-red-500 dark:text-red-400"
+                    className="px-1 py-0.5 text-[8px] border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-400 dark:text-slate-500 dark:text-slate-500 rounded hover:bg-red-50 dark:hover:bg-red-900/20 dark:bg-red-900/20 dark:hover:bg-red-900/20 dark:bg-red-900/20 hover:text-red-500 dark:text-red-400 dark:text-red-400"
                   >✕</button>
                 </div>
               </div>
             ))}
             <button onClick={() => setShowLoadDialog(false)}
-              className="w-full mt-1 px-2 py-0.5 text-[9px] border border-slate-200 dark:border-slate-700 rounded text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="w-full mt-1 px-2 py-0.5 text-[9px] border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
             >Close</button>
           </div>
         </div>

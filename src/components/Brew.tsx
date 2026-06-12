@@ -836,26 +836,26 @@ export default function Brew({
   };
 
   return (
-    <section className="max-w-4xl mx-auto w-full mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-      <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+    <section className="max-w-4xl mx-auto w-full mt-6 pt-4 border-t border-slate-200 dark:border-slate-700 dark:border-slate-700">
+      <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-3">
         V60 Pour Game
       </h3>
       <button onClick={() => setShowLabels(v => !v)}
-        className="text-[7px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 mb-1 underline decoration-dotted">
+        className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-400 mb-1 underline decoration-dotted">
         {showLabels ? 'Hide labels' : 'Show labels'}
       </button>
       <button onClick={() => setShowPourTrace(v => !v)}
-        className="text-[7px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 mb-2 underline decoration-dotted ml-2">
+        className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-400 mb-2 underline decoration-dotted ml-2">
         {showPourTrace ? 'Trace pour: On' : 'Trace pour: Off'}
       </button>
       <button onClick={() => setShowAdvancedDetails(v => !v)}
-        className="text-[7px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 mb-2 underline decoration-dotted ml-2">
+        className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-400 mb-2 underline decoration-dotted ml-2">
         {showAdvancedDetails ? 'Hide advanced details' : 'Show advanced details'}
       </button>
 
       {/* Dose + Ratio + Grind Profile */}
       <div className="flex gap-2 mb-2 items-center text-[8px]">
-        <span className="text-slate-400 dark:text-slate-500">Dose</span>
+        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Dose</span>
         <input type="number" min={5} max={60} step={0.5} value={dose}
           onChange={e => {
             const v = parseFloat(e.target.value);
@@ -865,9 +865,9 @@ export default function Brew({
             }
           }}
           disabled={poured > 0}
-          className="w-10 text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 disabled:opacity-40" />
-        <span className="text-slate-300 dark:text-slate-600">|</span>
-        <span className="text-slate-400 dark:text-slate-500">Ratio 1:</span>
+          className="w-10 text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5 disabled:opacity-40" />
+        <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Ratio 1:</span>
         <input type="number" min={5} max={25} step={0.5} value={ratio}
           onChange={e => {
             const v = parseFloat(e.target.value);
@@ -877,80 +877,80 @@ export default function Brew({
             }
           }}
           disabled={poured > 0}
-          className="w-10 text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 disabled:opacity-40" />
-        <span className="text-slate-300 dark:text-slate-600">|</span>
-        <span className="text-slate-400 dark:text-slate-500">Size</span>
+          className="w-10 text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5 disabled:opacity-40" />
+        <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Size</span>
         <select value={v60Size} onChange={e => setV60Size(e.target.value as '01' | '02' | '03')}
           disabled={poured > 0}
-          className="text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
+          className="text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
           <option value="01">01</option>
           <option value="02">02</option>
           <option value="03">03</option>
         </select>
-        <span className="text-slate-400 dark:text-slate-500">Dripper</span>
+        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Dripper</span>
         <select value={dripperProfile} onChange={e => setDripperProfile(e.target.value as 'classic' | 'neo2026' | 'coneOther')}
           disabled={poured > 0}
-          className="text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
+          className="text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
           <option value="classic">Classic</option>
           <option value="neo2026">Neo 2026</option>
           <option value="coneOther">Other Cone</option>
         </select>
-        <span className="text-slate-400 dark:text-slate-500">Paper</span>
+        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Paper</span>
         <select value={paperProfile} onChange={e => setPaperProfile(e.target.value as 'normal' | 'fast' | 'veryfast')}
           disabled={poured > 0}
-          className="text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
+          className="text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
           <option value="normal">Normal</option>
           <option value="fast">Fast</option>
           <option value="veryfast">Very Fast</option>
         </select>
-        <span className="text-slate-400 dark:text-slate-500">= {waterVol}g</span>
-        <span className="text-slate-300 dark:text-slate-600">|</span>
-        <span className="text-slate-400 dark:text-slate-500">{PROFILE_LABELS[burrProfileName]}</span>
-        <span className="text-[6px] text-slate-300 dark:text-slate-600">{roast}/{process}</span>
+        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">= {waterVol}g</span>
+        <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">{PROFILE_LABELS[burrProfileName]}</span>
+        <span className="text-[6px] text-slate-300 dark:text-slate-600 dark:text-slate-600">{roast}/{process}</span>
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded px-3 py-2 mb-2 text-[7px] space-y-1.5">
+      <div className="bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded px-3 py-2 mb-2 text-[7px] space-y-1.5">
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
-          <span className="text-slate-500 dark:text-slate-400">Grind <strong className="text-slate-700 dark:text-slate-300">#{Math.round(grindSetting)}</strong> <span className="text-slate-400 dark:text-slate-500">{micronSetting}µm</span></span>
-          <span className="text-slate-300 dark:text-slate-600">|</span>
-          <span className="text-slate-500 dark:text-slate-400">Ratio <strong className="text-slate-700 dark:text-slate-300">1:{ratio.toFixed(1)}</strong> <span className="text-slate-400 dark:text-slate-500">({waterVol}g)</span></span>
+          <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">Grind <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">#{Math.round(grindSetting)}</strong> <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">{micronSetting}µm</span></span>
+          <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+          <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">Ratio <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">1:{ratio.toFixed(1)}</strong> <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">({waterVol}g)</span></span>
           {poured <= 0 && (
             <button type="button" onClick={() => { const r = Number(recommendedRatioFromTargets.toFixed(1)); setRatio(r); setWaterVol(Math.round(dose * r)); }}
-              className="text-[6px] text-slate-500 dark:text-slate-400 underline decoration-dotted" title={`from EY/TDS: 1:${recommendedRatioFromTargets.toFixed(1)}`}>
+              className="text-[6px] text-slate-500 dark:text-slate-400 dark:text-slate-400 underline decoration-dotted" title={`from EY/TDS: 1:${recommendedRatioFromTargets.toFixed(1)}`}>
               Apply rec
             </button>
           )}
           {waterVol > spec.holdMax && (
-            <span className="text-[6px] text-amber-600 dark:text-amber-400 font-semibold">⚠ {waterVol}g exceeds V60 {v60Size} max ({spec.holdMax}ml)</span>
+            <span className="text-[6px] text-amber-600 dark:text-amber-400 dark:text-amber-400 font-semibold">⚠ {waterVol}g exceeds V60 {v60Size} max ({spec.holdMax}ml)</span>
           )}
-          <span className="text-slate-300 dark:text-slate-600">|</span>
-          <span className="text-slate-500 dark:text-slate-400">Temp <strong className="text-slate-700 dark:text-slate-300">{waterTempC}°C</strong></span>
-          <span className="text-slate-300 dark:text-slate-600">|</span>
-          <span className="text-slate-500 dark:text-slate-400">⏱ <strong className="text-slate-700 dark:text-slate-300">{formatClock(expectedFinishSec)}</strong></span>
-          <span className={`${Math.abs(finishDeltaSec) < 12 ? 'text-emerald-600' : finishDeltaSec > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-sky-600'}`}>
+          <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+          <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">Temp <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{waterTempC}°C</strong></span>
+          <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+          <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">⏱ <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{formatClock(expectedFinishSec)}</strong></span>
+          <span className={`${Math.abs(finishDeltaSec) < 12 ? 'text-emerald-600' : finishDeltaSec > 0 ? 'text-amber-600 dark:text-amber-400 dark:text-amber-400' : 'text-sky-600'}`}>
             ({finishDeltaSec > 0 ? `+${Math.round(finishDeltaSec)}s` : `${Math.round(Math.abs(finishDeltaSec))}s`})
           </span>
-          <span className="text-slate-300 dark:text-slate-600">|</span>
-          <span className="text-slate-500 dark:text-slate-400">Turb <strong className="text-slate-700 dark:text-slate-300">{turbulencePct}%</strong></span>
+          <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+          <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">Turb <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{turbulencePct}%</strong></span>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
-          <span>Ground <strong className={`${groundStatus === 'Stuck' ? 'text-red-600' : groundStatus === 'Muddy' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600'}`}>{groundStatus}</strong> <span className="text-slate-400 dark:text-slate-500">({groundPoints}pts)</span></span>
-          <span className="text-slate-300 dark:text-slate-600">|</span>
-          <span className="text-slate-500 dark:text-slate-400">Drain <strong className="text-slate-700 dark:text-slate-300">{drainRate.toFixed(1)} g/s</strong></span>
-          <span className="text-slate-300 dark:text-slate-600">|</span>
-          <span className="text-slate-500 dark:text-slate-400">Water <strong className="text-slate-700 dark:text-slate-300">{(waterEffectiveness * 100).toFixed(0)}%</strong></span>
-          <span className="text-slate-300 dark:text-slate-600">|</span>
-          <span className="text-slate-500 dark:text-slate-400">Contact <strong className="text-slate-700 dark:text-slate-300">{avgWaterContactSec.toFixed(0)}s</strong></span>
-          <span className="text-slate-300 dark:text-slate-600">|</span>
-          <span className="text-slate-500 dark:text-slate-400">Cake <strong>{Math.round(filterCakeLoad * 100)}%</strong> · Fines <strong>{finesPct.toFixed(0)}%</strong></span>
+          <span>Ground <strong className={`${groundStatus === 'Stuck' ? 'text-red-600' : groundStatus === 'Muddy' ? 'text-amber-600 dark:text-amber-400 dark:text-amber-400' : 'text-emerald-600'}`}>{groundStatus}</strong> <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">({groundPoints}pts)</span></span>
+          <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+          <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">Drain <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{drainRate.toFixed(1)} g/s</strong></span>
+          <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+          <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">Water <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{(waterEffectiveness * 100).toFixed(0)}%</strong></span>
+          <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+          <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">Contact <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{avgWaterContactSec.toFixed(0)}s</strong></span>
+          <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+          <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">Cake <strong>{Math.round(filterCakeLoad * 100)}%</strong> · Fines <strong>{finesPct.toFixed(0)}%</strong></span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 border-t border-slate-200 dark:border-slate-700">
-          <span className="text-slate-500 dark:text-slate-400 font-semibold">Targets:</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 border-t border-slate-200 dark:border-slate-700 dark:border-slate-700">
+          <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-semibold">Targets:</span>
 
           <select value={eyTargetMode} onChange={e => setEyTargetMode(e.target.value as 'range' | 'single')}
-            className="text-[7px] font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5">
+            className="text-[7px] font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded px-1 py-0.5">
             <option value="range">EY</option>
             <option value="single">EY</option>
           </select>
@@ -958,23 +958,23 @@ export default function Brew({
             <>
               <input type="number" min={15} max={25} step={0.1} value={eyTargetMin}
                 onChange={e => setEyTargetMin(Number(e.target.value))}
-                className="w-10 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5" />
-              <span className="text-slate-400 dark:text-slate-500">-</span>
+                className="w-10 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5" />
+              <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">-</span>
               <input type="number" min={15} max={25} step={0.1} value={eyTargetMax}
                 onChange={e => setEyTargetMax(Number(e.target.value))}
-                className="w-10 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5" />
+                className="w-10 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5" />
             </>
           ) : (
             <input type="number" min={15} max={25} step={0.1} value={eyTargetSingle}
               onChange={e => setEyTargetSingle(Number(e.target.value))}
-              className="w-12 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5" />
+              className="w-12 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5" />
           )}
-          <span className="font-bold text-emerald-700 dark:text-emerald-400">{eyGoalLow.toFixed(1)}{eyGoalLow === eyGoalHigh ? '' : `-${eyGoalHigh.toFixed(1)}`}%</span>
+          <span className="font-bold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400">{eyGoalLow.toFixed(1)}{eyGoalLow === eyGoalHigh ? '' : `-${eyGoalHigh.toFixed(1)}`}%</span>
 
-          <span className="text-slate-300 dark:text-slate-600">|</span>
+          <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
 
           <select value={tdsTargetMode} onChange={e => setTdsTargetMode(e.target.value as 'range' | 'single')}
-            className="text-[7px] font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5">
+            className="text-[7px] font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded px-1 py-0.5">
             <option value="range">TDS</option>
             <option value="single">TDS</option>
           </select>
@@ -982,36 +982,36 @@ export default function Brew({
             <>
               <input type="number" min={0.8} max={2.2} step={0.01} value={tdsTargetMin}
                 onChange={e => setTdsTargetMin(Number(e.target.value))}
-                className="w-11 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5" />
-              <span className="text-slate-400 dark:text-slate-500">-</span>
+                className="w-11 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5" />
+              <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">-</span>
               <input type="number" min={0.8} max={2.2} step={0.01} value={tdsTargetMax}
                 onChange={e => setTdsTargetMax(Number(e.target.value))}
-                className="w-11 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5" />
+                className="w-11 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5" />
             </>
           ) : (
             <input type="number" min={0.8} max={2.2} step={0.01} value={tdsTargetSingle}
               onChange={e => setTdsTargetSingle(Number(e.target.value))}
-              className="w-12 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5" />
+              className="w-12 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5" />
           )}
           <span className="font-bold text-blue-700">{tdsGoalLow.toFixed(2)}{tdsGoalLow === tdsGoalHigh ? '' : `-${tdsGoalHigh.toFixed(2)}`}%</span>
 
-          <span className="text-slate-300 dark:text-slate-600">|</span>
+          <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
 
-          <span className="text-slate-500 dark:text-slate-400">⏱</span>
+          <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">⏱</span>
           <input type="text" inputMode="numeric" value={targetFinishText}
             onChange={e => { setTargetFinishText(e.target.value); const p = parseMmSs(e.target.value); if (p !== null) setTargetFinishSec(p); }}
             onBlur={() => { const p = parseMmSs(targetFinishText); const f = p ?? targetFinishSec; setTargetFinishSec(f); setTargetFinishText(formatClock(f)); }}
-            className="w-14 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5" />
+            className="w-14 text-[7px] text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5" />
         </div>
 
         {/* Use suggestion buttons */}
         <div className="flex gap-2">
           <button type="button" onClick={() => { setEyTargetMode('range'); setEyTargetMin(Number(suggestedEyLow.toFixed(1))); setEyTargetMax(Number(suggestedEyHigh.toFixed(1))); }}
-            className="text-[6px] text-slate-500 dark:text-slate-400 underline decoration-dotted">
+            className="text-[6px] text-slate-500 dark:text-slate-400 dark:text-slate-400 underline decoration-dotted">
             EY suggestion: {suggestedEyLow.toFixed(1)}-{suggestedEyHigh.toFixed(1)}%
           </button>
           <button type="button" onClick={() => { setTdsTargetMode('range'); setTdsTargetMin(Number(suggestedTdsLow.toFixed(2))); setTdsTargetMax(Number(suggestedTdsHigh.toFixed(2))); }}
-            className="text-[6px] text-slate-500 dark:text-slate-400 underline decoration-dotted">
+            className="text-[6px] text-slate-500 dark:text-slate-400 dark:text-slate-400 underline decoration-dotted">
             TDS suggestion: {suggestedTdsLow.toFixed(2)}-{suggestedTdsHigh.toFixed(2)}%
           </button>
         </div>
@@ -1019,30 +1019,30 @@ export default function Brew({
 
       {/* Immersion baseline — cupping / French press TDS reference (no turbulence, no flow) */}
       {waterVol > 0 && (
-        <div className="bg-amber-50 dark:bg-amber-900/20/40 border border-amber-200 dark:border-amber-800/50 rounded px-3 py-1.5 mb-2 text-[7px]">
+        <div className="bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20/40 border border-amber-200 dark:border-amber-800 dark:border-amber-800/50 rounded px-3 py-1.5 mb-2 text-[7px]">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-amber-700 font-semibold whitespace-nowrap">Immersion baseline</span>
             <span className="text-amber-400">|</span>
-            <span className="text-amber-800 dark:text-amber-200/70 whitespace-nowrap">Grind</span>
+            <span className="text-amber-800 dark:text-amber-200 dark:text-amber-200/70 whitespace-nowrap">Grind</span>
             <input type="number" step={10} value={immersionGrindUm}
               onChange={e => setImmersionGrindUm(Number(e.target.value))}
-              className="w-14 text-center font-bold text-amber-900 bg-amber-100 dark:bg-amber-900/30/60 border border-amber-300/50 rounded py-0.5" />
+              className="w-14 text-center font-bold text-amber-900 bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30/60 border border-amber-300/50 rounded py-0.5" />
             <button type="button" onClick={() => setImmersionGrindUm(micronSetting)}
               className="text-amber-500 text-[6px] hover:text-amber-700 underline decoration-dotted whitespace-nowrap cursor-pointer">
               ↺ V60 {micronSetting}µm
             </button>
             <span className="text-amber-400">|</span>
             {immersionAnchors.map((a, i) => (
-              <span key={a.sec} className="text-amber-800 dark:text-amber-200/80 whitespace-nowrap">
+              <span key={a.sec} className="text-amber-800 dark:text-amber-200 dark:text-amber-200/80 whitespace-nowrap">
                 @{a.sec / 60}' <strong className="text-amber-900">{a.tds.toFixed(2)}%</strong>
                 {i < immersionAnchors.length - 1 && <span className="text-amber-300 ml-1">·</span>}
               </span>
             ))}
             <span className="text-amber-400">|</span>
             <span className="whitespace-nowrap">
-              V60 <strong className={tdsDelta > 0.02 ? 'text-emerald-600' : tdsDelta < -0.02 ? 'text-red-500 dark:text-red-400' : 'text-slate-500 dark:text-slate-400'}>{tds.toFixed(2)}%</strong>
+              V60 <strong className={tdsDelta > 0.02 ? 'text-emerald-600' : tdsDelta < -0.02 ? 'text-red-500 dark:text-red-400 dark:text-red-400' : 'text-slate-500 dark:text-slate-400 dark:text-slate-400'}>{tds.toFixed(2)}%</strong>
               {elapsed > 0 && (
-                <span className={tdsDelta > 0.02 ? 'text-emerald-600' : tdsDelta < -0.02 ? 'text-red-500 dark:text-red-400' : 'text-slate-400 dark:text-slate-500'}>
+                <span className={tdsDelta > 0.02 ? 'text-emerald-600' : tdsDelta < -0.02 ? 'text-red-500 dark:text-red-400 dark:text-red-400' : 'text-slate-400 dark:text-slate-500 dark:text-slate-500'}>
                   {' '}{tdsDelta > 0 ? '▲' : tdsDelta < 0 ? '▼' : '◆'}{Math.abs(tdsDelta).toFixed(2)}
                 </span>
               )}
@@ -1054,7 +1054,7 @@ export default function Brew({
       <div className="mb-2">
         <div className="flex items-center justify-between mb-0.5">
           <button onClick={() => setShowFoundationEff(v => !v)}
-            className="text-[7px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 underline decoration-dotted cursor-pointer">
+            className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-400 underline decoration-dotted cursor-pointer">
             {showFoundationEff ? '− Hide Foundation Efficiency' : '+ Show Foundation Efficiency'}
           </button>
         </div>
@@ -1078,39 +1078,39 @@ export default function Brew({
 
       {showAdvancedDetails && (
         <>
-          <div className="text-[7px] text-slate-500 dark:text-slate-400 mb-2">
+          <div className="text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
             V60-{v60Size}: rim {spec.top}mm • base {spec.bottom}mm • h {spec.height}mm • hold ~{spec.holdMax}ml max
           </div>
 
-          <div className="text-[7px] text-slate-500 dark:text-slate-400 mb-2">
+          <div className="text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
             Dripper: {dripperMeta.label} • ribs {dripperMeta.ribCount} • drain x{dripperMeta.drainGain.toFixed(2)} • pour ramp {dripperMeta.pourRampSec.toFixed(0)}s
           </div>
 
-          <div className="text-[7px] text-slate-500 dark:text-slate-400 mb-2">
+          <div className="text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
             Paper: {paperMeta.label} • permeability x{paperMeta.permScale.toFixed(2)} • fines load x{paperMeta.finesLoad.toFixed(2)}
           </div>
 
-          <div className="text-[7px] text-slate-500 dark:text-slate-400 mb-2">
+          <div className="text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
             Grind #{Math.round(grindSetting)} (~{micronSetting}um) • fines {finesPct.toFixed(1)}% • area {Math.round(surfaceArea)} cm^2
           </div>
 
-          <div className="text-[7px] text-slate-500 dark:text-slate-400 mb-2">
+          <div className="text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
             Darcy model: rib contact {Math.round(alpha * 100)}% • filter load {(rFilterEffective / 1e8).toFixed(1)}e8 m^-1 • cake {Math.round(filterCakeLoad * 100)}% • bed porosity {eps.toFixed(2)}
           </div>
 
-          <div className="text-[7px] text-slate-500 dark:text-slate-400 mb-2">
+          <div className="text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
             Temperature: {waterTempC}C • viscosity {(mu * 1000).toFixed(2)} mPa.s • solubility x{tempSolubility.toFixed(2)}
           </div>
 
-          <div className="text-[7px] text-slate-500 dark:text-slate-400 mb-2">
+          <div className="text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
             Coffee age: {coffeeAgeDays}d ({ageBand}) • degas absorb {degasLevel}% • bloom shield {(absorbShield * 100).toFixed(0)}% • channel memory {Math.round(channelMemory * 100)}%
           </div>
 
-          <div className="flex items-center gap-2 text-[7px] text-slate-500 dark:text-slate-400 mb-2">
+          <div className="flex items-center gap-2 text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
             <span>EC calibration</span>
             <select value={ecCalibrationProfile} onChange={e => setEcCalibrationProfile(e.target.value as EcCalibrationProfile)}
               disabled={served}
-              className="text-center font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
+              className="text-center font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-0.5 disabled:opacity-40">
               <option value="default">Default Meter</option>
               <option value="soft-water">Soft Water</option>
               <option value="hard-water">Hard Water</option>
@@ -1118,7 +1118,7 @@ export default function Brew({
             <span>lag {ecCalibration.lagSec.toFixed(2)}s</span>
           </div>
 
-          <div className="text-[7px] text-slate-500 dark:text-slate-400 mb-2">
+          <div className="text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
             Pour height: {pourHeightCm.toFixed(1)}cm from kettle spout
           </div>
         </>
@@ -1130,8 +1130,8 @@ export default function Brew({
           {/* Top-down bed */}
           <div className="grid grid-cols-[104px_160px_96px] items-center gap-2 w-full max-w-[380px] mx-auto">
             <div className="flex items-center gap-1 h-40">
-              <div className="flex flex-col items-center justify-center h-40 w-12 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/70">
-                <span className="text-[6px] text-slate-400 dark:text-slate-500 mb-1">Flow</span>
+              <div className="flex flex-col items-center justify-center h-40 w-12 rounded border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800/70">
+                <span className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 mb-1">Flow</span>
                 <input
                   type="range"
                   min={2}
@@ -1143,12 +1143,12 @@ export default function Brew({
                   className="h-20 w-24 accent-cyan-500"
                   style={{ transform: 'rotate(-90deg)' }}
                 />
-                <span className="text-[6px] text-slate-400 dark:text-slate-500 -mt-1">2-30</span>
+                <span className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 -mt-1">2-30</span>
                 <span className="text-[7px] font-bold text-cyan-600">{maxPourRate.toFixed(0)}</span>
               </div>
 
-              <div className="flex flex-col items-center justify-center h-40 w-12 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/70">
-                <span className="text-[6px] text-slate-400 dark:text-slate-500 mb-1">Height</span>
+              <div className="flex flex-col items-center justify-center h-40 w-12 rounded border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800/70">
+                <span className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 mb-1">Height</span>
                 <input
                   type="range"
                   min={1}
@@ -1160,7 +1160,7 @@ export default function Brew({
                   className="h-20 w-24 accent-indigo-500"
                   style={{ transform: 'rotate(-90deg)' }}
                 />
-                <span className="text-[6px] text-slate-400 dark:text-slate-500 -mt-1">1-20cm</span>
+                <span className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 -mt-1">1-20cm</span>
                 <span className="text-[7px] font-bold text-indigo-600">{pourHeightCm.toFixed(1)}</span>
               </div>
             </div>
@@ -1279,37 +1279,37 @@ export default function Brew({
               </div>
             </div>
 
-            <div className="flex flex-col justify-between h-40 w-24 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 px-1.5 py-1.5">
+            <div className="flex flex-col justify-between h-40 w-24 rounded border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800/80 px-1.5 py-1.5">
               <div>
-                <div className="text-[6px] text-slate-400 dark:text-slate-500 uppercase tracking-wide">Timer</div>
-                <div className="text-[12px] font-bold text-slate-700 dark:text-slate-300 tabular-nums leading-none mt-0.5">
+                <div className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 uppercase tracking-wide">Timer</div>
+                <div className="text-[12px] font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 tabular-nums leading-none mt-0.5">
                   {String(Math.floor(elapsed / 60)).padStart(2, '0')}:{String(Math.floor(elapsed % 60)).padStart(2, '0')}
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 dark:border-slate-700 pt-1">
-                <div className="text-[6px] text-slate-400 dark:text-slate-500 uppercase tracking-wide">EC Live</div>
+              <div className="border-t border-slate-100 dark:border-slate-700 dark:border-slate-700 pt-1">
+                <div className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 uppercase tracking-wide">EC Live</div>
                 <div className="flex items-baseline justify-between mt-0.5">
                   <span className="text-[6px] text-emerald-600">Slurry</span>
-                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{liveSlurryEc.toFixed(1)}</span>
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 tabular-nums">{liveSlurryEc.toFixed(1)}</span>
                 </div>
                 <div className="flex items-baseline justify-between">
                   <span className="text-[6px] text-sky-600">Out</span>
                   <span className="text-[10px] font-bold text-sky-700 tabular-nums">{liveOutEc.toFixed(1)}</span>
                 </div>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-[6px] text-amber-600 dark:text-amber-400">DRN</span>
+                  <span className="text-[6px] text-amber-600 dark:text-amber-400 dark:text-amber-400">DRN</span>
                   <span className="text-[10px] font-bold text-amber-700 tabular-nums">{effectiveDrainRate.toFixed(2)}</span>
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 dark:border-slate-700 pt-1">
-                <div className="text-[6px] text-slate-400 dark:text-slate-500">Ground Status</div>
-                <div className={`text-[7px] font-bold ${groundStatus === 'Stuck' ? 'text-red-600' : groundStatus === 'Muddy' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600'}`}>
+              <div className="border-t border-slate-100 dark:border-slate-700 dark:border-slate-700 pt-1">
+                <div className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500">Ground Status</div>
+                <div className={`text-[7px] font-bold ${groundStatus === 'Stuck' ? 'text-red-600' : groundStatus === 'Muddy' ? 'text-amber-600 dark:text-amber-400 dark:text-amber-400' : 'text-emerald-600'}`}>
                   {groundStatus}
                 </div>
-                <div className="text-[6px] text-slate-500 dark:text-slate-400">{groundPoints}/100 pts</div>
-                <div className="text-[6px] text-slate-500 dark:text-slate-400">H2O eff {Math.round(waterEffectiveness * 100)}%</div>
+                <div className="text-[6px] text-slate-500 dark:text-slate-400 dark:text-slate-400">{groundPoints}/100 pts</div>
+                <div className="text-[6px] text-slate-500 dark:text-slate-400 dark:text-slate-400">H2O eff {Math.round(waterEffectiveness * 100)}%</div>
               </div>
             </div>
           </div>
@@ -1526,14 +1526,14 @@ export default function Brew({
           {/* EC Graph */}
           <div className="w-full" style={{ maxWidth: 260 }}>
             <div className="flex items-center justify-between text-[8px] mb-0.5 gap-1">
-              <span className="text-slate-400 dark:text-slate-500">EC</span>
-              <span className="text-slate-400 dark:text-slate-500">
+              <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">EC</span>
+              <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">
                 {cleanEcPoints.length > 0
                   ? `Slurry ${cleanEcPoints[cleanEcPoints.length - 1].ecSlurry.toFixed(1)} • Out ${cleanEcPoints[cleanEcPoints.length - 1].ecOut.toFixed(1)}`
                   : '--'}
               </span>
             </div>
-            <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded overflow-hidden">
+            <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} className="bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded overflow-hidden">
               {cleanEcPoints.length > 1 && (() => {
                 const pts = cleanEcPoints;
                 const fullMin = pts[0].t;
@@ -1585,7 +1585,7 @@ export default function Brew({
                 </text>
               )}
             </svg>
-            <div className="flex justify-between text-[7px] text-slate-300 dark:text-slate-600 mt-px">
+            <div className="flex justify-between text-[7px] text-slate-300 dark:text-slate-600 dark:text-slate-600 mt-px">
               <span>0</span>
               <span>{elapsed > 60 ? `${Math.floor(elapsed / 60)}m` : `${Math.floor(elapsed)}s`}</span>
             </div>
@@ -1596,27 +1596,27 @@ export default function Brew({
                 <button
                   type="button"
                   onClick={() => setEcZoom(z => Math.max(1, Number((z / 1.4).toFixed(2))))}
-                  className="px-1 rounded border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50"
+                  className="px-1 rounded border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50"
                 >
                   -
                 </button>
                 <button
                   type="button"
                   onClick={() => setEcZoom(1)}
-                  className="px-1 rounded border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50"
+                  className="px-1 rounded border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50"
                 >
                   All
                 </button>
                 <button
                   type="button"
                   onClick={() => setEcZoom(z => Math.min(6, Number((z * 1.4).toFixed(2))))}
-                  className="px-1 rounded border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50"
+                  className="px-1 rounded border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50"
                 >
                   +
                 </button>
               </span>
             </div>
-            <div className="text-[7px] text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
+            <div className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 mt-0.5 leading-tight">
               EC {ecTrendLabel} ({ecTrendPerSec >= 0 ? '+' : ''}{ecTrendPerSec.toFixed(2)}/s) • bed {integrityPct}% {integrityState}
             </div>
           </div>
@@ -1625,18 +1625,18 @@ export default function Brew({
           {served && (
             <div className="w-full">
               <button onClick={() => setShowSalami(v => !v)}
-                className="text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 underline decoration-dotted font-medium">
+                className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 dark:text-slate-300 underline decoration-dotted font-medium">
                 {showSalami ? '− Salami batch test' : '+ Salami batch test'}
               </button>
               {showSalami && salamiSlices.length > 0 && (
-                <div className="mt-1 text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed select-all" onClick={e => {
+                <div className="mt-1 text-[10px] text-slate-600 dark:text-slate-400 dark:text-slate-400 leading-relaxed select-all" onClick={e => {
                   const sel = window.getSelection();
                   const range = document.createRange();
                   range.selectNodeContents(e.currentTarget);
                   sel?.removeAllRanges();
                   sel?.addRange(range);
                 }}>
-                  <div className="flex justify-between font-bold text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 pb-0.5 mb-0.5">
+                  <div className="flex justify-between font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 dark:border-slate-700 pb-0.5 mb-0.5">
                     <span className="w-12">Batch</span>
                     <span className="w-24">Drain</span>
                     <span className="w-12">Time</span>
@@ -1644,15 +1644,15 @@ export default function Brew({
                     <span className="text-right flex-1">Compounds</span>
                   </div>
                   {salamiSlices.map(s => (
-                    <div key={s.slice} className="flex justify-between py-px border-b border-slate-100 dark:border-slate-700 last:border-b-0">
-                      <span className="w-12 font-bold text-slate-700 dark:text-slate-300">#{s.slice}</span>
+                    <div key={s.slice} className="flex justify-between py-px border-b border-slate-100 dark:border-slate-700 dark:border-slate-700 last:border-b-0">
+                      <span className="w-12 font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300">#{s.slice}</span>
                       <span className="w-24">{s.drainStart.toFixed(0)}–{s.drainEnd.toFixed(0)}g</span>
                       <span className="w-12">{Math.floor(s.timeSec / 60)}:{String(Math.floor(s.timeSec % 60)).padStart(2, '0')}</span>
                       <span className="w-14 font-mono font-bold" style={{ color: s.tds > 1.4 ? '#059669' : s.tds > 1.0 ? '#d97706' : '#dc2626' }}>{s.tds.toFixed(2)}%</span>
                       <span className="text-right flex-1">{s.compound}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between pt-0.5 mt-0.5 border-t border-slate-300 dark:border-slate-600 font-bold text-slate-700 dark:text-slate-300">
+                  <div className="flex justify-between pt-0.5 mt-0.5 border-t border-slate-300 dark:border-slate-600 dark:border-slate-600 font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300">
                     <span className="w-12">Total</span>
                     <span className="w-24">{drained.toFixed(0)}g</span>
                     <span className="w-12">{Math.floor(elapsed / 60)}:{String(Math.floor(elapsed % 60)).padStart(2, '0')}</span>
@@ -1667,10 +1667,10 @@ export default function Brew({
             {/* Flow Graph (Pour vs Drain-down) */}
             <div className="w-full" style={{ maxWidth: 260 }}>
               <div className="flex items-center justify-between text-[8px] mb-0.5">
-                <span className="text-slate-400 dark:text-slate-500">Flow Curve</span>
-                <span className="text-slate-400 dark:text-slate-500">Pour {pourRate.toFixed(1)} • Drain {effectiveDrainRate.toFixed(1)} • In {inDripper.toFixed(0)}g</span>
+                <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Flow Curve</span>
+                <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Pour {pourRate.toFixed(1)} • Drain {effectiveDrainRate.toFixed(1)} • In {inDripper.toFixed(0)}g</span>
               </div>
-              <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded overflow-hidden">
+              <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} className="bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded overflow-hidden">
                 {flowPoints.length > 1 && (() => {
                   const pts = flowPoints;
                   const tMin = pts[0].t; const tMax = Math.max(tMin + 1, pts[pts.length - 1].t);
@@ -1705,24 +1705,24 @@ export default function Brew({
 
         {/* Right: Controls + Metrics */}
         <div className="flex flex-col gap-1 min-w-[120px]">
-          <div className="text-[8px] text-slate-700 dark:text-slate-300 font-bold">Brew {served ? '✓ Done' : ''}</div>
+          <div className="text-[8px] text-slate-700 dark:text-slate-300 dark:text-slate-300 font-bold">Brew {served ? '✓ Done' : ''}</div>
 
           <div className="flex items-center justify-between text-[8px]">
-            <span className="text-slate-400 dark:text-slate-500">Poured</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Poured</span>
             <span className="font-bold tabular-nums text-blue-700">{poured.toFixed(0)}g</span>
           </div>
           <div className="flex items-center justify-between text-[8px]">
-            <span className="text-slate-400 dark:text-slate-500">Drained</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Drained</span>
             <span className="font-bold tabular-nums text-amber-700">{drained.toFixed(0)}g</span>
           </div>
           <div className="flex items-center justify-between text-[8px]">
-            <span className="text-slate-400 dark:text-slate-500">In dripper</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">In dripper</span>
             <span className="font-bold tabular-nums text-sky-600">{inDripper.toFixed(0)}g</span>
           </div>
 
           <div className="mt-0.5">
             <div className="flex items-center justify-between text-[7px] mb-0.5">
-              <span className="text-slate-400 dark:text-slate-500">Pour</span>
+              <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Pour</span>
               <span ref={pourPctRef} className="font-bold text-blue-600">0%</span>
             </div>
             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -1732,8 +1732,8 @@ export default function Brew({
 
           <div>
             <div className="flex items-center justify-between text-[7px] mb-0.5">
-              <span className="text-slate-400 dark:text-slate-500">Drain</span>
-              <span className="font-bold text-amber-600 dark:text-amber-400">{Math.round(drainPct)}%</span>
+              <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Drain</span>
+              <span className="font-bold text-amber-600 dark:text-amber-400 dark:text-amber-400">{Math.round(drainPct)}%</span>
             </div>
             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${Math.min(100, drainPct)}%` }} />
@@ -1748,28 +1748,28 @@ export default function Brew({
           </div>
 
           <div className="flex items-center justify-between text-[8px]">
-            <span className="text-slate-400 dark:text-slate-500">Time</span>
-            <span className="font-bold tabular-nums text-slate-700 dark:text-slate-300">
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Time</span>
+            <span className="font-bold tabular-nums text-slate-700 dark:text-slate-300 dark:text-slate-300">
               {Math.floor(elapsed / 60)}:{String(Math.floor(elapsed % 60)).padStart(2, '0')}
             </span>
           </div>
 
           <div className="flex items-center justify-between text-[7px]">
-            <span className="text-slate-400 dark:text-slate-500">Phase</span>
-            <span className={`font-bold ${inBloom ? 'text-blue-600' : 'text-slate-600 dark:text-slate-400'}`}>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Phase</span>
+            <span className={`font-bold ${inBloom ? 'text-blue-600' : 'text-slate-600 dark:text-slate-400 dark:text-slate-400'}`}>
               {inBloom ? `Bloom ${Math.round(bloomProgress * 100)}%` : 'Extraction'}
             </span>
           </div>
 
           <div className="flex items-center justify-between text-[7px]">
-            <span className="text-slate-400 dark:text-slate-500">Flow</span>
-            <span className={`font-bold ${drainRate < 0.4 ? 'text-red-500 dark:text-red-400' : drainRate < 0.7 ? 'text-amber-500' : 'text-emerald-600'}`}>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Flow</span>
+            <span className={`font-bold ${drainRate < 0.4 ? 'text-red-500 dark:text-red-400 dark:text-red-400' : drainRate < 0.7 ? 'text-amber-500' : 'text-emerald-600'}`}>
               {drainRate < 0.4 ? 'Slow (fines)' : drainRate < 0.7 ? 'Moderate' : 'Fast'}
             </span>
           </div>
 
           <div className="flex items-center justify-between text-[7px]">
-            <span className="text-slate-400 dark:text-slate-500">Resistance</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Resistance</span>
             <span className="font-bold tabular-nums"
               style={{ color: resistanceVal > 5 ? '#dc2626' : resistanceVal > 2.5 ? '#d97706' : '#059669' }}>
               {resistanceVal.toFixed(1)} kPa·s/g
@@ -1783,18 +1783,18 @@ export default function Brew({
                 backgroundColor: resistanceVal > 5 ? '#dc2626' : resistanceVal > 2.5 ? '#d97706' : '#059669',
               }} />
             {[2.5, 5].map(th => (
-              <div key={th} className="absolute top-0 h-full w-px bg-white dark:bg-slate-800/60" style={{ left: `${th * 10}%` }} />
+              <div key={th} className="absolute top-0 h-full w-px bg-white dark:bg-slate-800 dark:bg-slate-800/60" style={{ left: `${th * 10}%` }} />
             ))}
           </div>
-          <div className="flex justify-between text-[5px] text-slate-400 dark:text-slate-500 -mt-0.5">
+          <div className="flex justify-between text-[5px] text-slate-400 dark:text-slate-500 dark:text-slate-500 -mt-0.5">
             <span>Free</span>
             <span>Moderate</span>
             <span>Clogged</span>
           </div>
 
           <div className="flex items-center justify-between text-[7px]">
-            <span className="text-slate-400 dark:text-slate-500">Channel risk (est.)</span>
-            <span className={`font-bold ${channelRisk > 0.6 ? 'text-red-500 dark:text-red-400' : channelRisk > 0.35 ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'}`}>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Channel risk (est.)</span>
+            <span className={`font-bold ${channelRisk > 0.6 ? 'text-red-500 dark:text-red-400 dark:text-red-400' : channelRisk > 0.35 ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500 dark:text-slate-500'}`}>
               {channelRisk < 0.2 ? 'Low' : channelRisk < 0.45 ? 'Moderate' : channelRisk < 0.65 ? 'High' : 'Very high'}
             </span>
           </div>
@@ -1807,8 +1807,8 @@ export default function Brew({
           </div>
 
           <div className="flex items-center justify-between text-[7px] mt-0.5">
-            <span className="text-slate-400 dark:text-slate-500">Bed integrity</span>
-            <span className={`font-bold ${bedIntegrity > 0.75 ? 'text-emerald-600' : bedIntegrity > 0.55 ? 'text-amber-500' : 'text-red-500 dark:text-red-400'}`}>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Bed integrity</span>
+            <span className={`font-bold ${bedIntegrity > 0.75 ? 'text-emerald-600' : bedIntegrity > 0.55 ? 'text-amber-500' : 'text-red-500 dark:text-red-400 dark:text-red-400'}`}>
               {integrityPct}%
             </span>
           </div>
@@ -1821,21 +1821,21 @@ export default function Brew({
           </div>
 
           <div className="flex items-center justify-between text-[8px]">
-            <span className="text-slate-400 dark:text-slate-500">TDS</span>
-            <span className={`font-bold tabular-nums ${tds > 0 ? 'text-blue-700' : 'text-slate-300 dark:text-slate-600'}`}>{tds.toFixed(2)}%</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">TDS</span>
+            <span className={`font-bold tabular-nums ${tds > 0 ? 'text-blue-700' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600'}`}>{tds.toFixed(2)}%</span>
           </div>
           <div className="flex items-center justify-between text-[8px]">
-            <span className="text-slate-400 dark:text-slate-500">EY</span>
-            <span className={`font-bold tabular-nums ${ey > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-300 dark:text-slate-600'}`}>{ey.toFixed(1)}%</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">EY</span>
+            <span className={`font-bold tabular-nums ${ey > 0 ? 'text-emerald-700 dark:text-emerald-400 dark:text-emerald-400' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600'}`}>{ey.toFixed(1)}%</span>
           </div>
           <button onClick={() => setShowTdsReport(v => !v)}
-            className="text-[6px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 underline decoration-dotted mt-0.5 text-left">
+            className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-400 underline decoration-dotted mt-0.5 text-left">
             {showTdsReport ? '− TDS calc report' : '+ TDS calc report'}
           </button>
           {showTdsReport && tds > 0 && (() => {
             const b = tdsBreakdownRef.current;
             return (
-              <div className="text-[6px] text-slate-500 dark:text-slate-400 leading-relaxed mt-1 pt-1 border-t border-slate-200 dark:border-slate-700 space-y-0.5 select-all" onClick={e => {
+              <div className="text-[6px] text-slate-500 dark:text-slate-400 dark:text-slate-400 leading-relaxed mt-1 pt-1 border-t border-slate-200 dark:border-slate-700 dark:border-slate-700 space-y-0.5 select-all" onClick={e => {
                 const sel = window.getSelection();
                 const range = document.createRange();
                 range.selectNodeContents(e.currentTarget);
@@ -1850,8 +1850,8 @@ export default function Brew({
                 <div className="flex justify-between"><span>τ effective</span><span className="font-mono">{b.effectiveTau.toFixed(2)} s</span></div>
                 <div className="flex justify-between"><span>TDS Slurry</span><span className="font-mono">{b.tdsSlurry.toFixed(2)}%</span></div>
                 <div className="flex justify-between"><span>f abs</span><span className="font-mono">{b.fAbs.toFixed(2)}</span></div>
-                <div className="flex justify-between font-bold text-slate-600 dark:text-slate-400"><span>TDS (cup)</span><span className="font-mono">{tds.toFixed(2)}%</span></div>
-                <div className="flex justify-between font-bold text-slate-600 dark:text-slate-400"><span>EY (Gagné UE)</span><span className="font-mono">{(b.ey).toFixed(1)}%</span></div>
+                <div className="flex justify-between font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400"><span>TDS (cup)</span><span className="font-mono">{tds.toFixed(2)}%</span></div>
+                <div className="flex justify-between font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400"><span>EY (Gagné UE)</span><span className="font-mono">{(b.ey).toFixed(1)}%</span></div>
               </div>
             );
           })()}
@@ -1860,8 +1860,8 @@ export default function Brew({
           {poured > 0 && (
             <>
               <div className="flex items-center justify-between text-[7px] mt-1">
-                <span className="text-slate-400 dark:text-slate-500">Extraction depth</span>
-                <span className={`font-bold ${extractionWarning === 'over' ? 'text-red-500 dark:text-red-400' : extractionWarning === 'tannin' ? 'text-orange-500' : extractionWarning === 'exhausting' ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Extraction depth</span>
+                <span className={`font-bold ${extractionWarning === 'over' ? 'text-red-500 dark:text-red-400 dark:text-red-400' : extractionWarning === 'tannin' ? 'text-orange-500' : extractionWarning === 'exhausting' ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500 dark:text-slate-500'}`}>
                   {extractionDepthPct.toFixed(0)}%
                 </span>
               </div>
@@ -1877,11 +1877,11 @@ export default function Brew({
               {extractionWarning !== 'none' && (
                 <div className="flex items-center gap-1 mt-0.5">
                   {extractionWarning === 'over' ? (
-                    <span className="text-[6px] text-red-500 dark:text-red-400 font-bold">⛔ Over-extracted — tannins dominate, bitter/astringent cup</span>
+                    <span className="text-[6px] text-red-500 dark:text-red-400 dark:text-red-400 font-bold">⛔ Over-extracted — tannins dominate, bitter/astringent cup</span>
                   ) : extractionWarning === 'tannin' ? (
                     <span className="text-[6px] text-orange-600 font-bold">⚠ Tannin release — good pool spent, pulling bitter compounds</span>
                   ) : (
-                    <span className="text-[6px] text-amber-600 dark:text-amber-400">△ Good pool nearly depleted — tannin risk rising</span>
+                    <span className="text-[6px] text-amber-600 dark:text-amber-400 dark:text-amber-400">△ Good pool nearly depleted — tannin risk rising</span>
                   )}
                 </div>
               )}
@@ -1889,34 +1889,34 @@ export default function Brew({
           )}
 
           <div className="flex items-center justify-between text-[8px]">
-            <span className="text-slate-400 dark:text-slate-500">EC out</span>
-            <span className={`font-bold tabular-nums ${liveOutEc > 0 ? 'text-sky-700' : 'text-slate-300 dark:text-slate-600'}`}>{liveOutEc.toFixed(2)}</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">EC out</span>
+            <span className={`font-bold tabular-nums ${liveOutEc > 0 ? 'text-sky-700' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600'}`}>{liveOutEc.toFixed(2)}</span>
           </div>
           <div className="flex items-center justify-between text-[8px]">
-            <span className="text-slate-400 dark:text-slate-500">EC × Flow</span>
-            <span className={`font-bold tabular-nums ${liveOutEc > 0 && effectiveDrainRate > 0 ? 'text-violet-700' : 'text-slate-300 dark:text-slate-600'}`}>{(liveOutEc * effectiveDrainRate).toFixed(2)}</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">EC × Flow</span>
+            <span className={`font-bold tabular-nums ${liveOutEc > 0 && effectiveDrainRate > 0 ? 'text-violet-700' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600'}`}>{(liveOutEc * effectiveDrainRate).toFixed(2)}</span>
           </div>
 
           <div className="flex items-center justify-between text-[7px]">
-            <span className="text-slate-400 dark:text-slate-500">Max pour</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Max pour</span>
             <div className="flex items-center gap-1">
               <input type="number" min={2} max={30} step={1} value={maxPourRate}
                 onChange={e => setMaxPourRate(Math.max(2, Math.min(30, Number(e.target.value))))}
                 disabled={served}
-                className="w-10 text-right text-[7px] font-bold text-blue-600 bg-transparent border-b border-slate-200 dark:border-slate-700 outline-none disabled:opacity-30" />
-              <span className="text-[6px] text-slate-400 dark:text-slate-500">g/s</span>
+                className="w-10 text-right text-[7px] font-bold text-blue-600 bg-transparent border-b border-slate-200 dark:border-slate-700 dark:border-slate-700 outline-none disabled:opacity-30" />
+              <span className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500">g/s</span>
             </div>
           </div>
 
           <div className="flex items-center justify-between text-[7px] mt-0.5">
-            <span className="text-slate-400 dark:text-slate-500">Pour flow tune</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Pour flow tune</span>
             <span className="font-bold text-blue-600">{pourFlowTrim > 0 ? `+${pourFlowTrim.toFixed(1)}` : pourFlowTrim.toFixed(1)} g/s</span>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPourFlowTrim(v => Math.max(-3, Number((v - 0.5).toFixed(1))))}
               disabled={served}
-              className="text-[7px] font-bold rounded px-1.5 py-0.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 disabled:opacity-30"
+              className="text-[7px] font-bold rounded px-1.5 py-0.5 border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-600 dark:text-slate-400 dark:text-slate-400 bg-white dark:bg-slate-800 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50 disabled:opacity-30"
             >
               -
             </button>
@@ -1940,15 +1940,15 @@ export default function Brew({
             <button
               onClick={() => setPourFlowTrim(0)}
               disabled={served}
-              className="text-[7px] font-bold rounded px-1.5 py-0.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 disabled:opacity-30"
+              className="text-[7px] font-bold rounded px-1.5 py-0.5 border border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-600 dark:text-slate-400 dark:text-slate-400 bg-white dark:bg-slate-800 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50 disabled:opacity-30"
             >
               0
             </button>
           </div>
 
           <div className="flex items-center justify-between text-[7px] mt-0.5">
-            <span className="text-slate-400 dark:text-slate-500">Coffee age</span>
-            <span className={`font-bold ${degasLevel < 30 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600'}`}>{coffeeAgeDays}d</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Coffee age</span>
+            <span className={`font-bold ${degasLevel < 30 ? 'text-amber-600 dark:text-amber-400 dark:text-amber-400' : 'text-emerald-600'}`}>{coffeeAgeDays}d</span>
           </div>
           <input
             type="range"
@@ -1960,7 +1960,7 @@ export default function Brew({
             disabled={served}
             className="w-full h-1 accent-emerald-500"
           />
-          <div className="text-[6px] text-slate-400 dark:text-slate-500 -mt-0.5">
+          <div className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 -mt-0.5">
             {degasLevel < 25 ? 'Older coffee: low degas buffering, faster channel risk and flatter cup.' : 'Fresh coffee: better bloom buffering and bed protection.'}
           </div>
 
@@ -1969,7 +1969,7 @@ export default function Brew({
             {([{ k: 'single', l: '⏺ Spot' }, { k: 'circle', l: '⭘ Circle' }, { k: 'even', l: '⊞ Even' }] as const).map(p => (
               <button key={p.k} onClick={() => patternPour(p.k)}
                 disabled={served || remaining <= 0}
-                className="text-[7px] font-bold rounded px-1.5 py-1 border transition-all disabled:opacity-30 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50">
+                className="text-[7px] font-bold rounded px-1.5 py-1 border transition-all disabled:opacity-30 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-600 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50">
                 {p.l}
               </button>
             ))}
@@ -1982,7 +1982,7 @@ export default function Brew({
               ☕ Serve
             </button>
             <button onClick={reset}
-              className="text-[7px] font-bold rounded px-2 py-1.5 border border-red-200 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100">
+              className="text-[7px] font-bold rounded px-2 py-1.5 border border-red-200 text-red-500 dark:text-red-400 dark:text-red-400 bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 hover:bg-red-100">
               ↻
             </button>
           </div>
@@ -1995,7 +1995,7 @@ export default function Brew({
                 backgroundColor: ey >= 18 && ey <= 22 ? '#ecfdf5' : '#fffbeb',
               }}>
               {ey >= 18 && ey <= 22 ? '✓ Balanced' : ey < 18 ? '⬇ Under' : '⬆ Over'}
-              <div className="text-[7px] text-slate-400 dark:text-slate-500">{dose}g · 1:{ratio.toFixed(0)} · {Math.floor(elapsed / 60)}:{String(Math.floor(elapsed % 60)).padStart(2, '0')} · TDS {tds.toFixed(2)}%</div>
+              <div className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500">{dose}g · 1:{ratio.toFixed(0)} · {Math.floor(elapsed / 60)}:{String(Math.floor(elapsed % 60)).padStart(2, '0')} · TDS {tds.toFixed(2)}%</div>
             </div>
           )}
         </div>

@@ -50,14 +50,19 @@ const MAPPINGS = [
   { from: /(?<!dark:)(?<!\w)bg-emerald-100(?!\S*?dark:)(?!\w)/g, to: 'bg-emerald-100 dark:bg-emerald-900/30' },
   { from: /(?<!dark:)(?<!\w)bg-amber-100(?!\S*?dark:)(?!\w)/g, to: 'bg-amber-100 dark:bg-amber-900/30' },
 
-  // Text colors
+  // Text colors (dark headers → white)
+  { from: /(?<!dark:)(?<!\w)text-slate-800(?!\S*?dark:)(?!\w)/g, to: 'text-slate-800 dark:text-white' },
+  { from: /(?<!dark:)(?<!\w)text-slate-900(?!\S*?dark:)(?!\w)/g, to: 'text-slate-900 dark:text-white' },
+  { from: /(?<!dark:)(?<!\w)text-gray-800(?!\S*?dark:)(?!\w)/g, to: 'text-gray-800 dark:text-white' },
+  { from: /(?<!dark:)(?<!\w)text-gray-900(?!\S*?dark:)(?!\w)/g, to: 'text-gray-900 dark:text-white' },
+  // Text colors (dark body → lighter slate)
   { from: /(?<!dark:)(?<!\w)text-slate-700(?!\S*?dark:)(?!\w)/g, to: 'text-slate-700 dark:text-slate-300' },
   { from: /(?<!dark:)(?<!\w)text-slate-600(?!\S*?dark:)(?!\w)/g, to: 'text-slate-600 dark:text-slate-400' },
   { from: /(?<!dark:)(?<!\w)text-slate-500(?!\S*?dark:)(?!\w)/g, to: 'text-slate-500 dark:text-slate-400' },
   { from: /(?<!dark:)(?<!\w)text-slate-400(?!\S*?dark:)(?!\w)/g, to: 'text-slate-400 dark:text-slate-500' },
   { from: /(?<!dark:)(?<!\w)text-slate-300(?!\S*?dark:)(?!\w)/g, to: 'text-slate-300 dark:text-slate-600' },
-  { from: /(?<!dark:)(?<!\w)text-gray-800(?!\S*?dark:)(?!\w)/g, to: 'text-gray-800 dark:text-slate-200' },
   { from: /(?<!dark:)(?<!\w)text-gray-600(?!\S*?dark:)(?!\w)/g, to: 'text-gray-600 dark:text-slate-400' },
+  { from: /(?<!dark:)(?<!\w)text-gray-700(?!\S*?dark:)(?!\w)/g, to: 'text-gray-700 dark:text-slate-300' },
 
   // Border colors
   { from: /(?<!dark:)(?<!\w)border-slate-200(?!\S*?dark:)(?!\w)/g, to: 'border-slate-200 dark:border-slate-700' },

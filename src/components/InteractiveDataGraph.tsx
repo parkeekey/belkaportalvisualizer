@@ -510,18 +510,18 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
   const summaryCards = [
     { label: 'Total Points', value: `${dataPoints.length}`, tone: 'bg-blue-50 text-blue-900 border-blue-100' },
     { label: 'Auto / Manual', value: `${dataPoints.filter(p => p.isAutoDetected).length} / ${dataPoints.filter(p => !p.isAutoDetected).length}`, tone: 'bg-violet-50 text-violet-900 border-violet-100' },
-    { label: 'Phases', value: `${phaseLogs.length}`, tone: 'bg-amber-50 dark:bg-amber-900/20 text-amber-900 border-amber-100' },
+    { label: 'Phases', value: `${phaseLogs.length}`, tone: 'bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 text-amber-900 border-amber-100' },
     { label: 'Pour Total', value: cumulativePourData ? `${Math.max(...cumulativePourData.values.filter(Number.isFinite), 0).toFixed(1)} g` : 'Not loaded', tone: 'bg-cyan-50 text-cyan-900 border-cyan-100' },
   ];
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
-      <div className="border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-sky-50 via-white to-cyan-50 px-4 py-4 sm:px-5">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800 shadow-sm">
+      <div className="border-b border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-gradient-to-r from-sky-50 via-white to-cyan-50 px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <div className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Custom EC Chart</div>
-            <h3 className="mt-1 text-lg font-semibold text-slate-900">Generated curve + timed overlays</h3>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            <div className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 dark:text-slate-400">Custom EC Chart</div>
+            <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Generated curve + timed overlays</h3>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400">
               Your EC curve stays primary. When Ultrakoki flow is loaded, total pour is drawn on the same time axis for back-and-forth comparison.
             </p>
           </div>
@@ -543,10 +543,10 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* X-axis (Time) Controls */}
           <div className="space-y-3">
-            <h4 className="font-medium text-gray-700">Time Axis (seconds)</h4>
+            <h4 className="font-medium text-gray-700 dark:text-slate-300">Time Axis (seconds)</h4>
             <div className="flex items-center space-x-4">
               <div className="flex-1">
-                <label className="block text-sm text-gray-600 dark:text-slate-400 mb-1">Min: {xMin}s</label>
+                <label className="block text-sm text-gray-600 dark:text-slate-400 dark:text-slate-400 mb-1">Min: {xMin}s</label>
                 <input
                   type="number"
                   value={xMin}
@@ -557,7 +557,7 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm text-gray-600 dark:text-slate-400 mb-1">Max: {xMax}s</label>
+                <label className="block text-sm text-gray-600 dark:text-slate-400 dark:text-slate-400 mb-1">Max: {xMax}s</label>
                 <input
                   type="number"
                   value={xMax}
@@ -572,10 +572,10 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
           
           {/* Y-axis (EC) Controls */}
           <div className="space-y-3">
-            <h4 className="font-medium text-gray-700">EC Axis</h4>
+            <h4 className="font-medium text-gray-700 dark:text-slate-300">EC Axis</h4>
             <div className="flex items-center space-x-4">
               <div className="flex-1">
-                <label className="block text-sm text-gray-600 dark:text-slate-400 mb-1">Min: {yMin}</label>
+                <label className="block text-sm text-gray-600 dark:text-slate-400 dark:text-slate-400 mb-1">Min: {yMin}</label>
                 <input
                   type="number"
                   value={yMin}
@@ -586,7 +586,7 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm text-gray-600 dark:text-slate-400 mb-1">Max: {yMax}</label>
+                <label className="block text-sm text-gray-600 dark:text-slate-400 dark:text-slate-400 mb-1">Max: {yMax}</label>
                 <input
                   type="number"
                   value={yMax}
@@ -606,7 +606,7 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             onClick={downloadCustomGraphScreenshot}
-            className="h-7 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+            className="h-7 rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 px-3 text-xs font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
             title="Download screenshot of this custom graph"
           >
             Screenshot
@@ -616,30 +616,30 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
             title={screenshotBg === 'white' ? 'Currently: white background — click for transparent' : 'Currently: transparent background — click for white'}
             className={`h-7 px-2 rounded-full border text-xs font-medium ${
               screenshotBg === 'white'
-                ? 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
+                ? 'bg-white dark:bg-slate-800 dark:bg-slate-800 border-slate-300 dark:border-slate-600 dark:border-slate-600 text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
                 : 'bg-slate-800 border-slate-600 text-white hover:bg-slate-700'
             }`}
           >
             {screenshotBg === 'white' ? 'BG: White' : 'BG: Alpha'}
           </button>
         </div>
-        <span className="text-xs text-slate-500 dark:text-slate-400">Zoom</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">Zoom</span>
         <button
           onClick={() => setZoomLevel(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}
-          className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center"
+          className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 flex items-center justify-center"
         >−</button>
-        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 w-8 text-center">{zoomLevel === 1 ? '1×' : `${zoomLevel}×`}</span>
+        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300 w-8 text-center">{zoomLevel === 1 ? '1×' : `${zoomLevel}×`}</span>
         <button
           onClick={() => setZoomLevel(z => Math.min(4, parseFloat((z + 0.25).toFixed(2))))}
-          className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center"
+          className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 flex items-center justify-center"
         >+</button>
       </div>
-      <div ref={containerRef} className="relative w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50/40 p-2 sm:p-3 overflow-x-auto">
+      <div ref={containerRef} className="relative w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50/40 p-2 sm:p-3 overflow-x-auto">
         <canvas
           ref={canvasRef}
           width={canvasWidth}
           height={canvasHeight}
-          className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl cursor-crosshair"
+          className="border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl cursor-crosshair"
           style={{ width: canvasWidth, height: canvasHeight }}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
@@ -647,7 +647,7 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
         
         {/* Red Light Display */}
         {showRedLight && redLightTime !== null && redLightTime !== undefined && (
-          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg">
+          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 border border-red-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 bg-red-500 rounded-full"></div>
@@ -685,27 +685,27 @@ export const InteractiveDataGraph: React.FC<InteractiveDataGraphProps> = ({
       </div>
       
       {/* Data Summary */}
-      <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-950 rounded-lg">
+      <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 rounded-lg">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
-            <span className="font-medium text-gray-700">Total Points:</span>
-            <span className="ml-2 text-gray-900">{dataPoints.length}</span>
+            <span className="font-medium text-gray-700 dark:text-slate-300">Total Points:</span>
+            <span className="ml-2 text-gray-900 dark:text-white">{dataPoints.length}</span>
           </div>
           <div>
-            <span className="font-medium text-gray-700">Auto-detected:</span>
+            <span className="font-medium text-gray-700 dark:text-slate-300">Auto-detected:</span>
             <span className="ml-2 text-purple-600">
               {dataPoints.filter(p => p.isAutoDetected).length}
             </span>
           </div>
           <div>
-            <span className="font-medium text-gray-700">Manual:</span>
+            <span className="font-medium text-gray-700 dark:text-slate-300">Manual:</span>
             <span className="ml-2 text-blue-600">
               {dataPoints.filter(p => !p.isAutoDetected).length}
             </span>
           </div>
           <div>
-            <span className="font-medium text-gray-700">Time Range:</span>
-            <span className="ml-2 text-gray-900">
+            <span className="font-medium text-gray-700 dark:text-slate-300">Time Range:</span>
+            <span className="ml-2 text-gray-900 dark:text-white">
               {Math.floor(dataPoints[0]?.time || 0)}s - {Math.floor(dataPoints[dataPoints.length - 1]?.time || 0)}s
             </span>
           </div>

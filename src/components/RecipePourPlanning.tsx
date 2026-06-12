@@ -329,7 +329,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
   }, [pourPlan, doseWeight, brewRatio, totalWaterIn, grinderName, grindSize, micron, ecProps, ecAtTime]);
 
   return (
-    <div className="border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-emerald-50 to-white">
+    <div className="border-b border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-gradient-to-r from-emerald-50 to-white">
       <div className="p-4">
         <div className="mb-3">
           <div className="flex items-center gap-2 mb-2">
@@ -340,7 +340,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
           </div>
           <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
             <div className="flex flex-col gap-0.5">
-              <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Dose</label>
+              <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Dose</label>
               <div className="flex items-center gap-1">
                 <input
                   type="number"
@@ -352,15 +352,15 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                     setDoseWeight(v);
                     localStorage.setItem('belkaDoseWeight', String(v));
                   }}
-                  className="w-20 px-2 py-1.5 text-sm font-bold text-emerald-800 dark:text-emerald-200 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-800 shadow-sm"
+                  className="w-20 px-2 py-1.5 text-sm font-bold text-emerald-800 dark:text-emerald-200 dark:text-emerald-200 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-800 dark:bg-slate-800 shadow-sm"
                 />
-                <span className="text-xs font-medium text-slate-400 dark:text-slate-500">g</span>
+                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-500">g</span>
               </div>
             </div>
             <div className="flex flex-col gap-0.5">
-              <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Ratio</label>
+              <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Ratio</label>
               <div className="flex items-center gap-1">
-                <span className="text-sm font-bold text-slate-400 dark:text-slate-500">1:</span>
+                <span className="text-sm font-bold text-slate-400 dark:text-slate-500 dark:text-slate-500">1:</span>
                 <input
                   type="number"
                   value={brewRatio}
@@ -369,7 +369,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                     setBrewRatio(v);
                     localStorage.setItem('belkaBrewRatio', String(v));
                   }}
-                  className="w-16 px-2 py-1.5 text-sm font-bold text-emerald-800 dark:text-emerald-200 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-800 shadow-sm"
+                  className="w-16 px-2 py-1.5 text-sm font-bold text-emerald-800 dark:text-emerald-200 dark:text-emerald-200 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-800 dark:bg-slate-800 shadow-sm"
                 />
               </div>
             </div>
@@ -380,14 +380,14 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
             >
               Calculate
             </button>
-            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums px-1">
+            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 tabular-nums px-1">
               {(() => {
                 const w = totalWaterIn > 0 ? totalWaterIn : doseWeight * brewRatio;
                 return `${w}g water`;
               })()}
             </span>
             <div className="flex flex-col gap-0.5">
-              <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Finish Time</label>
+              <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Finish Time</label>
               <div className="flex items-center gap-1">
                 <input
                   type="number"
@@ -397,9 +397,9 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                     setRecipeFinishTimeSec(m * 60 + (recipeFinishTimeSec % 60));
                   }}
                   placeholder={totalBrewTime > 0 ? String(Math.floor(totalBrewTime / 60)) : 'mm'}
-                  className="w-14 px-2 py-1.5 text-sm font-bold text-emerald-800 dark:text-emerald-200 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-800 shadow-sm"
+                  className="w-14 px-2 py-1.5 text-sm font-bold text-emerald-800 dark:text-emerald-200 dark:text-emerald-200 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-800 dark:bg-slate-800 shadow-sm"
                 />
-                <span className="text-sm font-bold text-slate-400 dark:text-slate-500">:</span>
+                <span className="text-sm font-bold text-slate-400 dark:text-slate-500 dark:text-slate-500">:</span>
                 <input
                   type="number"
                   value={recipeFinishTimeSec > 0 ? (recipeFinishTimeSec % 60) || '' : ''}
@@ -408,14 +408,14 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                     setRecipeFinishTimeSec(Math.floor(recipeFinishTimeSec / 60) * 60 + s);
                   }}
                   placeholder={totalBrewTime > 0 ? String(totalBrewTime % 60).padStart(2, '0') : 'ss'}
-                  className="w-14 px-2 py-1.5 text-sm font-bold text-emerald-800 dark:text-emerald-200 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-800 shadow-sm"
+                  className="w-14 px-2 py-1.5 text-sm font-bold text-emerald-800 dark:text-emerald-200 dark:text-emerald-200 border-2 border-emerald-400 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-800 dark:bg-slate-800 shadow-sm"
                 />
                 {brewTargetSec != null && (
                   <button
                     type="button"
                     onClick={() => setRecipeFinishTimeSec(brewTargetSec)}
                     title={`Import plan time (${Math.floor(brewTargetSec / 60)}:${String(brewTargetSec % 60).padStart(2, '0')})`}
-                    className="px-2 py-1.5 rounded-lg text-xs font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 border border-amber-300 hover:bg-amber-200 shadow-sm"
+                    className="px-2 py-1.5 rounded-lg text-xs font-bold bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-700 border border-amber-300 hover:bg-amber-200 shadow-sm"
                   >
                     ← Plan
                   </button>
@@ -440,10 +440,10 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
         {/* Pour steps */}
         <div className="mt-6 pt-4 border-t border-emerald-100">
           <div className="flex items-center gap-2 mb-3 px-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Pour Steps</span>
-            <span className="h-px flex-1 bg-emerald-100 dark:bg-emerald-900/30" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 dark:text-emerald-400">Pour Steps</span>
+            <span className="h-px flex-1 bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30" />
             {pourPlan.length > 0 && (
-              <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">{pourPlan.length} pour{pourPlan.length > 1 ? 's' : ''}</span>
+              <span className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-medium">{pourPlan.length} pour{pourPlan.length > 1 ? 's' : ''}</span>
             )}
             <button type="button" onClick={() => {
               try {
@@ -466,10 +466,10 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                   };
                 }));
               } catch {}
-            }} className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-md px-2 py-0.5 transition-colors">🌊 Apply from Plan</button>
+            }} className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 dark:border-emerald-800 rounded-md px-2 py-0.5 transition-colors">🌊 Apply from Plan</button>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-          <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+          <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800">
+          <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-semibold uppercase tracking-wider px-3 py-2 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 dark:border-slate-700">
             <span className="w-12">Pour</span>
             <span className="w-24">Target %</span>
             <span className="w-24 text-right">Cumul. g</span>
@@ -491,7 +491,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
             const pourTime = useTime > 0 ? (entry.cumulativePercent / 100) * useTime : 0;
             const ecVal = ecProps ? ecAtTime(pourTime) : null;
             return (
-              <div key={idx} className={`flex items-center gap-2 text-sm px-3 py-2 ${idx % 2 === 1 ? 'bg-slate-50 dark:bg-slate-900/50' : 'bg-white dark:bg-slate-800'} border-b border-slate-100 dark:border-slate-700 last:border-b-0`}>
+              <div key={idx} className={`flex items-center gap-2 text-sm px-3 py-2 ${idx % 2 === 1 ? 'bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50' : 'bg-white dark:bg-slate-800 dark:bg-slate-800'} border-b border-slate-100 dark:border-slate-700 dark:border-slate-700 last:border-b-0`}>
                 <span className="w-12 text-xs font-bold text-emerald-600">#{idx + 1}</span>
                 <div className="flex items-center gap-0.5">
                   <button type="button" onClick={() => {
@@ -500,7 +500,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                       next[idx] = { ...next[idx], cumulativePercent: Math.max(0, (next[idx].cumulativePercent ?? 0) - 1) };
                       return next;
                     });
-                  }} className="w-5 h-5 flex items-center justify-center text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded hover:bg-emerald-100 dark:bg-emerald-900/30 leading-none">−</button>
+                  }} className="w-5 h-5 flex items-center justify-center text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 dark:border-emerald-800 rounded hover:bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 leading-none">−</button>
                   <input
                     type="number"
                     value={entry.cumulativePercent || ''}
@@ -524,7 +524,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                         });
                       }
                     }}
-                    className="w-16 h-7 px-1 text-sm font-semibold text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400 text-center bg-white dark:bg-slate-800"
+                    className="w-16 h-7 px-1 text-sm font-semibold text-emerald-800 dark:text-emerald-200 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400 text-center bg-white dark:bg-slate-800 dark:bg-slate-800"
                     placeholder="0"
                   />
                   <button type="button" onClick={() => {
@@ -533,12 +533,12 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                       next[idx] = { ...next[idx], cumulativePercent: Math.min(100, (next[idx].cumulativePercent ?? 0) + 1) };
                       return next;
                     });
-                  }} className="w-5 h-5 flex items-center justify-center text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded hover:bg-emerald-100 dark:bg-emerald-900/30 leading-none">+</button>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-0.5">%</span>
+                  }} className="w-5 h-5 flex items-center justify-center text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 dark:border-emerald-800 rounded hover:bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 leading-none">+</button>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-500 ml-0.5">%</span>
                 </div>
-                <span className="w-28 text-right text-sm font-medium text-slate-700 dark:text-slate-300 tabular-nums">{cumulativeG}g</span>
-                <span className="w-24 text-right text-xs text-slate-500 dark:text-slate-400 tabular-nums">+{deltaG}g</span>
-                <span className="w-16 text-right text-[10px] text-slate-400 dark:text-slate-500 tabular-nums">({deltaPct > 0 ? '+' : ''}{deltaPct}%)</span>
+                <span className="w-28 text-right text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 tabular-nums">{cumulativeG}g</span>
+                <span className="w-24 text-right text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 tabular-nums">+{deltaG}g</span>
+                <span className="w-16 text-right text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-500 tabular-nums">({deltaPct > 0 ? '+' : ''}{deltaPct}%)</span>
                 <div className="flex items-center gap-0.5">
                   <button type="button" onClick={() => {
                     setPourPlan(prev => {
@@ -546,7 +546,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                       next[idx] = { ...next[idx], duration: Math.max(0, (next[idx].duration ?? 1) - 1) };
                       return next;
                     });
-                  }} className="w-4 h-4 flex items-center justify-center text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 leading-none">−</button>
+                  }} className="w-4 h-4 flex items-center justify-center text-[9px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 leading-none">−</button>
                   <input
                     type="number"
                     min={0}
@@ -561,7 +561,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                       });
                     }}
                     placeholder="s"
-                    className="w-12 h-6 px-1 text-xs border border-slate-200 dark:border-slate-700 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800"
+                    className="w-12 h-6 px-1 text-xs border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
                   />
                   <button type="button" onClick={() => {
                     setPourPlan(prev => {
@@ -569,22 +569,22 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                       next[idx] = { ...next[idx], duration: (next[idx].duration ?? 1) + 1 };
                       return next;
                     });
-                  }} className="w-4 h-4 flex items-center justify-center text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 leading-none">+</button>
+                  }} className="w-4 h-4 flex items-center justify-center text-[9px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 leading-none">+</button>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <button type="button" onClick={() => setPourPlan(prev => { const n = [...prev]; n[idx] = { ...n[idx], pourRate: Math.max(2, (n[idx].pourRate ?? 5) - 1) }; return n; })} className="w-4 h-4 flex items-center justify-center text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 leading-none">−</button>
-                  <input type="number" min={2} max={10} step={0.5} value={entry.pourRate ?? 5} onChange={(e) => { const raw = e.target.value; if (raw === '') return; const v = parseFloat(raw); if (Number.isFinite(v)) setPourPlan(prev => { const n = [...prev]; n[idx] = { ...n[idx], pourRate: Math.min(10, Math.max(2, v)) }; return n; }); }} className="w-10 h-6 px-1 text-xs border border-slate-200 dark:border-slate-700 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800" />
-                  <button type="button" onClick={() => setPourPlan(prev => { const n = [...prev]; n[idx] = { ...n[idx], pourRate: Math.min(10, (n[idx].pourRate ?? 5) + 1) }; return n; })} className="w-4 h-4 flex items-center justify-center text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 leading-none">+</button>
-                  <span className="text-[8px] text-slate-400 dark:text-slate-500 ml-0.5">ml/s</span>
+                  <button type="button" onClick={() => setPourPlan(prev => { const n = [...prev]; n[idx] = { ...n[idx], pourRate: Math.max(2, (n[idx].pourRate ?? 5) - 1) }; return n; })} className="w-4 h-4 flex items-center justify-center text-[9px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 leading-none">−</button>
+                  <input type="number" min={2} max={10} step={0.5} value={entry.pourRate ?? 5} onChange={(e) => { const raw = e.target.value; if (raw === '') return; const v = parseFloat(raw); if (Number.isFinite(v)) setPourPlan(prev => { const n = [...prev]; n[idx] = { ...n[idx], pourRate: Math.min(10, Math.max(2, v)) }; return n; }); }} className="w-10 h-6 px-1 text-xs border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800 dark:bg-slate-800" />
+                  <button type="button" onClick={() => setPourPlan(prev => { const n = [...prev]; n[idx] = { ...n[idx], pourRate: Math.min(10, (n[idx].pourRate ?? 5) + 1) }; return n; })} className="w-4 h-4 flex items-center justify-center text-[9px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 leading-none">+</button>
+                  <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 ml-0.5">ml/s</span>
                 </div>
-                <span className="w-16 text-right text-xs text-slate-600 dark:text-slate-400 tabular-nums font-medium">{Math.floor(pourTime / 60)}:{Math.round(pourTime % 60).toString().padStart(2, '0')}</span>
+                <span className="w-16 text-right text-xs text-slate-600 dark:text-slate-400 dark:text-slate-400 tabular-nums font-medium">{Math.floor(pourTime / 60)}:{Math.round(pourTime % 60).toString().padStart(2, '0')}</span>
                 {ecVal != null && (
                   <span className="w-16 text-right text-violet-600 tabular-nums text-xs font-semibold">{ecVal.toFixed(2)}</span>
                 )}
                 <button
                   type="button"
                   onClick={() => setPourPlan(prev => prev.filter((_, i) => i !== idx))}
-                  className="ml-1 text-red-300 hover:text-red-500 dark:text-red-400 text-xs font-bold px-1"
+                  className="ml-1 text-red-300 hover:text-red-500 dark:text-red-400 dark:text-red-400 text-xs font-bold px-1"
                   title="Remove pour"
                 >
                   ✕
@@ -597,7 +597,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
             <button
               type="button"
               onClick={() => setPourPlan(prev => [...prev, { cumulativePercent: prev.length === 0 ? 100 : 100, pourHeight: 10, pourRate: 5, spoutType: 'medium', pattern: 'spiral' }])}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 rounded-lg px-3 py-1.5 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 hover:bg-emerald-200 rounded-lg px-3 py-1.5 transition-colors"
             >
               + Add Pour
             </button>
@@ -641,7 +641,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                     pattern: e.pattern,
                   })));
                 }}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:bg-emerald-900/30 rounded-lg px-3 py-1.5 transition-colors border border-emerald-200 dark:border-emerald-800"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 rounded-lg px-3 py-1.5 transition-colors border border-emerald-200 dark:border-emerald-800 dark:border-emerald-800"
               >
                 Distribute Evenly
               </button>
@@ -661,11 +661,11 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                         style={{ width: `${Math.min(100, lastPct)}%` }}
                       />
                     </div>
-                    <span className={`font-semibold tabular-nums ${ok ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700'}`}>
+                    <span className={`font-semibold tabular-nums ${ok ? 'text-emerald-700 dark:text-emerald-400 dark:text-emerald-400' : 'text-amber-700'}`}>
                       {lastPct.toFixed(0)}% cumulative
                     </span>
                     {!ok && (
-                      <span className="text-amber-600 dark:text-amber-400">{(100 - lastPct).toFixed(0)}% to target</span>
+                      <span className="text-amber-600 dark:text-amber-400 dark:text-amber-400">{(100 - lastPct).toFixed(0)}% to target</span>
                     )}
                   </div>
                 );
@@ -675,14 +675,14 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
           </div>
 
           {/* Stopwatch */}
-          <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg">
+          <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xl font-bold text-slate-700 dark:text-slate-300 tabular-nums font-mono tracking-wider">
+              <span className="text-xl font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 tabular-nums font-mono tracking-wider">
                 {String(Math.floor(swTime / 60)).padStart(2, '0')}:{String(swTime % 60).padStart(2, '0')}
               </span>
               <div className="flex items-center gap-2">
                 {!swRunning ? (
-                  <button type="button" onClick={() => { setSwRunning(true); setSwLaps([]); setSwTime(0); }} className="px-4 py-1.5 rounded-lg text-sm font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 shadow-sm">▶ Start</button>
+                  <button type="button" onClick={() => { setSwRunning(true); setSwLaps([]); setSwTime(0); }} className="px-4 py-1.5 rounded-lg text-sm font-bold bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 dark:border-emerald-800 hover:bg-emerald-200 shadow-sm">▶ Start</button>
                 ) : (
                   <>
                     <button type="button" onClick={() => {
@@ -692,14 +692,14 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
                         setSwRunning(false);
                         setRecipeFinishTimeSec(swTime);
                       }
-                    }} className="px-4 py-1.5 rounded-lg text-sm font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 border border-amber-200 dark:border-amber-800 hover:bg-amber-200 shadow-sm">⏱ Lap {swLaps.length + 1}</button>
+                    }} className="px-4 py-1.5 rounded-lg text-sm font-bold bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-700 border border-amber-200 dark:border-amber-800 dark:border-amber-800 hover:bg-amber-200 shadow-sm">⏱ Lap {swLaps.length + 1}</button>
                     <button type="button" onClick={() => setSwRunning(false)} className="px-4 py-1.5 rounded-lg text-sm font-bold bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 shadow-sm">⏹ Stop</button>
                   </>
                 )}
               </div>
             </div>
             {swLaps.length > 0 && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">
                 {swLaps.map((lap, i) => (
                   <span key={i} className="tabular-nums font-medium">#{i + 1} {String(Math.floor(lap.time / 60)).padStart(2, '0')}:{String(lap.time % 60).padStart(2, '0')}</span>
                 ))}

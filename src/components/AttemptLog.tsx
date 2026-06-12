@@ -398,32 +398,32 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
       {/* Setup (collapsible) */}
       <div className="flex items-center gap-2">
         <button onClick={() => setShowSetup(!showSetup)}
-          className={`px-2 py-1 rounded-lg text-xs font-bold border transition-colors ${showSetup ? 'bg-sky-100 text-sky-700 border-sky-300' : 'text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-sky-200 hover:text-sky-500'}`}
+          className={`px-2 py-1 rounded-lg text-xs font-bold border transition-colors ${showSetup ? 'bg-sky-100 text-sky-700 border-sky-300' : 'text-slate-400 dark:text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:border-sky-200 hover:text-sky-500'}`}
         >
           ⚙ {showSetup ? '▲' : '▼'}
         </button>
-        {setup.grinder && <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Grinder: <strong className="text-slate-700 dark:text-slate-300">{setup.grinder}</strong></span>}
-        {setup.brewer && <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Brewer: <strong className="text-slate-700 dark:text-slate-300">{setup.brewer}</strong></span>}
-        {setup.filter && <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Filter: <strong className="text-slate-700 dark:text-slate-300">{setup.filter}</strong></span>}
+        {setup.grinder && <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">Grinder: <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{setup.grinder}</strong></span>}
+        {setup.brewer && <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">Brewer: <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{setup.brewer}</strong></span>}
+        {setup.filter && <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">Filter: <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{setup.filter}</strong></span>}
       </div>
       {showSetup && (
-        <div className="flex flex-wrap gap-2 p-3 bg-white dark:bg-slate-800 border border-sky-200 rounded-lg">
+        <div className="flex flex-wrap gap-2 p-3 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-sky-200 rounded-lg">
           <label className="flex flex-col gap-0.5">
-            <span className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Grinder</span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Grinder</span>
             <input type="text" value={setup.grinder || ''} onChange={(e) => setSetup((p: any) => ({ ...p, grinder: e.target.value }))}
-              className="w-32 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white dark:bg-slate-800" placeholder="e.g. Comandante C40"
+              className="w-32 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white dark:bg-slate-800 dark:bg-slate-800" placeholder="e.g. Comandante C40"
             />
           </label>
           <label className="flex flex-col gap-0.5">
-            <span className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Brewer</span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Brewer</span>
             <input type="text" value={setup.brewer || ''} onChange={(e) => setSetup((p: any) => ({ ...p, brewer: e.target.value }))}
-              className="w-32 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white dark:bg-slate-800" placeholder="e.g. V60"
+              className="w-32 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white dark:bg-slate-800 dark:bg-slate-800" placeholder="e.g. V60"
             />
           </label>
           <label className="flex flex-col gap-0.5">
-            <span className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Filter</span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Filter</span>
             <input type="text" value={setup.filter || ''} onChange={(e) => setSetup((p: any) => ({ ...p, filter: e.target.value }))}
-              className="w-32 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white dark:bg-slate-800" placeholder="e.g. Hario paper"
+              className="w-32 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white dark:bg-slate-800 dark:bg-slate-800" placeholder="e.g. Hario paper"
             />
           </label>
         </div>
@@ -431,24 +431,24 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
 
       {/* Stats bar */}
       <div className="flex items-center gap-4 text-xs px-1">
-        <span className="text-slate-400 dark:text-slate-500 font-medium">Attempts <strong className="text-slate-700 dark:text-slate-300">{total}</strong></span>
+        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500 font-medium">Attempts <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{total}</strong></span>
         <span className="text-emerald-600 font-medium">Ideal <strong>{idealCount}</strong></span>
-        <span className="text-amber-600 dark:text-amber-400 font-medium">Needs work <strong>{total - idealCount}</strong></span>
+        <span className="text-amber-600 dark:text-amber-400 dark:text-amber-400 font-medium">Needs work <strong>{total - idealCount}</strong></span>
         <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden max-w-32">
           <div className="h-full rounded-full bg-emerald-400 transition-all" style={{ width: `${successPct}%` }} />
         </div>
-        <span className={`font-bold tabular-nums ${successPct >= 60 ? 'text-emerald-600' : successPct >= 30 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>{successPct}%</span>
-        <label className="flex items-center gap-1 ml-auto text-[9px] text-slate-400 dark:text-slate-500 cursor-pointer select-none">
+        <span className={`font-bold tabular-nums ${successPct >= 60 ? 'text-emerald-600' : successPct >= 30 ? 'text-amber-600 dark:text-amber-400 dark:text-amber-400' : 'text-red-500 dark:text-red-400 dark:text-red-400'}`}>{successPct}%</span>
+        <label className="flex items-center gap-1 ml-auto text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 cursor-pointer select-none">
           <input type="checkbox" checked={mirrorEnabled}
             onChange={(e) => setMirrorEnabled(e.target.checked)}
-            className="w-3 h-3 rounded border-slate-300 dark:border-slate-600 text-sky-500 focus:ring-sky-400"
+            className="w-3 h-3 rounded border-slate-300 dark:border-slate-600 dark:border-slate-600 text-sky-500 focus:ring-sky-400"
           />
           Mirror
         </label>
       </div>
 
       {/* Log new attempt */}
-      <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
+      <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 dark:border-slate-700">
         {(pourPlanStandby || waterMixStandby) && (
           <div className="flex flex-wrap items-center gap-1.5 text-[9px]">
             {pourPlanStandby && (
@@ -465,44 +465,44 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
         )}
           <div className="flex flex-wrap items-end gap-2">
             <div className="flex flex-col gap-0.5">
-              <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Grind #</label>
+              <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Grind #</label>
               <input type="number" step={0.1} value={logGrind}
                 onChange={(e) => setLogGrind(e.target.value)}
-                className="w-14 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800"
+                className="w-14 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
                 placeholder={currentGrindSize > 0 ? `#${currentGrindSize}` : '#'}
               />
             </div>
             <div className="flex flex-col gap-0.5">
-              <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Dose</label>
+              <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Dose</label>
               <input type="number" step={0.1} value={currentDose > 0 ? currentDose : ''}
-                className="w-12 px-1.5 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded text-center bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400"
+                className="w-12 px-1.5 py-1 text-xs border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded text-center bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 dark:text-slate-400"
                 disabled
                 title="Pulled from digitizer"
               />
             </div>
             <div className="flex flex-col gap-0.5">
-              <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Ratio</label>
+              <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Ratio</label>
               <input type="number" step={0.1} min={1} value={logRatio}
                 onChange={(e) => setLogRatio(e.target.value)}
-                className="w-14 px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white dark:bg-slate-800"
+                className="w-14 px-1.5 py-1 text-xs border border-sky-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
                 placeholder={currentRatio > 0 ? `1:${Math.round(currentRatio)}` : '1:?'}
               />
             </div>
             <div className="flex flex-col gap-0.5">
-              <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Temp</label>
+              <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Temp</label>
               <input type="number" step={1} min={80} max={100} value={logTemp}
                 onChange={(e) => setLogTemp(e.target.value)}
-                className="w-12 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800"
+                className="w-12 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
                 placeholder={currentWaterTemp > 0 ? `${currentWaterTemp}°C` : '°C'}
               />
             </div>
             <div className="flex flex-col gap-0.5">
-              <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Actual TDS</label>
+              <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Actual TDS</label>
             <div className="flex items-center gap-0.5">
               <input type="number" step={0.01} value={logTDS}
                 onChange={(e) => setLogTDS(e.target.value)}
                 onBlur={handleLogTDSBlur}
-                className="w-16 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800"
+                className="w-16 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
               />
               <button type="button" onClick={() => document.getElementById('tds-target')?.scrollIntoView({ behavior: 'smooth' })}
                 className="px-1 py-1 rounded text-[9px] font-bold text-sky-600 bg-sky-50 border border-sky-200 hover:bg-sky-100 leading-none"
@@ -511,23 +511,23 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
             </div>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">EY%</label>
+            <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">EY%</label>
             <input type="number" step={0.1} value={logEY}
               onChange={(e) => setLogEY(e.target.value)}
-              className="w-14 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800"
+              className="w-14 px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
             />
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">EC µS</label>
+            <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">EC µS</label>
             <input type="number" step={1} min={0} max={2000} value={logEC}
               onChange={(e) => setLogEC(e.target.value)}
-              className="w-16 px-1.5 py-1 text-xs border border-purple-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white dark:bg-slate-800"
+              className="w-16 px-1.5 py-1 text-xs border border-purple-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
               placeholder="µS/cm"
               title="Electrical Conductivity (your scale: 15=collapsed, 30=healthy)"
             />
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Brew finished ⏱</label>
+            <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Brew finished ⏱</label>
             <div className="flex items-center gap-0.5">
               <input type="number" min={0} step={1} value={logBrewActual && parseInt(logBrewActual) > 0 ? Math.floor(parseInt(logBrewActual) / 60) : ''}
                 onChange={(e) => {
@@ -535,40 +535,40 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                   const s = parseInt(logBrewActual) || 0;
                   setLogBrewActual(String(m * 60 + (s % 60)));
                 }}
-                className="w-10 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800"
+                className="w-10 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
                 placeholder="mm"
               />
-              <span className="text-slate-300 dark:text-slate-600 text-[10px]">:</span>
+              <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600 text-[10px]">:</span>
               <input type="number" min={0} max={59} step={1} value={logBrewActual && parseInt(logBrewActual) > 0 ? (parseInt(logBrewActual) % 60) : ''}
                 onChange={(e) => {
                   const s = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
                   const base = parseInt(logBrewActual) || 0;
                   setLogBrewActual(String(Math.floor(base / 60) * 60 + s));
                 }}
-                className="w-10 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800"
+                className="w-10 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
                 placeholder="ss"
               />
             </div>
           </div>
           <div className="flex flex-col gap-0.5 flex-1 min-w-[100px]">
-            <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">Notes</label>
+            <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Notes</label>
             <input type="text" value={logNotes}
               onChange={(e) => setLogNotes(e.target.value)}
               placeholder="taste notes..."
-              className="w-full px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800"
+              className="w-full px-1.5 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
             />
           </div>
         </div>
           <div className="flex items-center gap-1">
             {[{v:1,e:'🥉'},{v:2,e:'🥈'},{v:3,e:'🥇'}].map(r => (
               <button key={r.v} onClick={() => setLogCupRating(logCupRating === r.v ? null : r.v)}
-                className={`text-lg px-2 py-1 rounded-lg border transition-all ${logCupRating === r.v ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 border-emerald-300 dark:border-emerald-700 shadow-sm' : 'text-slate-300 dark:text-slate-600 border-slate-200 dark:border-slate-700 hover:border-emerald-200 dark:border-emerald-800 hover:text-emerald-400'}`}
+                className={`text-lg px-2 py-1 rounded-lg border transition-all ${logCupRating === r.v ? 'bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 text-emerald-600 border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 shadow-sm' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:border-emerald-200 dark:border-emerald-800 dark:border-emerald-800 hover:text-emerald-400'}`}
                 title={r.v===1?'Needs work':r.v===2?'Getting closer':'Nailed it'}
               >{r.e}</button>
             ))}
-            <button disabled className="px-1 py-1 rounded text-[9px] text-slate-200 border border-dashed border-slate-200 dark:border-slate-700 cursor-not-allowed" title="Affective / sensory score — coming soon">+Sensory</button>
+            <button disabled className="px-1 py-1 rounded text-[9px] text-slate-200 border border-dashed border-slate-200 dark:border-slate-700 dark:border-slate-700 cursor-not-allowed" title="Affective / sensory score — coming soon">+Sensory</button>
             <button onClick={() => setShowChips(!showChips)}
-              className={`px-1.5 py-1 rounded text-[9px] font-bold border transition-colors ${showChips ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border-amber-300' : 'text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-amber-200 dark:border-amber-800 hover:text-amber-600 dark:text-amber-400'}`}
+              className={`px-1.5 py-1 rounded text-[9px] font-bold border transition-colors ${showChips ? 'bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-700 border-amber-300' : 'text-slate-400 dark:text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:border-amber-200 dark:border-amber-800 dark:border-amber-800 hover:text-amber-600 dark:text-amber-400 dark:text-amber-400'}`}
               title="Award chips (competition scoring)"
             >🎰 {showChips ? '▲' : '▼'}</button>
             <button onClick={() => {
@@ -611,10 +611,10 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                   <div onClick={() => setLogChips(p => p.includes(cat.key) ? p.filter(k => k !== cat.key) : [...p, cat.key])}
                     className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-[7px] uppercase tracking-wider border-2 cursor-pointer select-none active:scale-90 transition-all ${on
                       ? 'bg-gradient-to-br from-amber-200 to-amber-400 border-amber-500 text-amber-900 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.3),_0_2px_6px_rgba(0,0,0,0.12)]'
-                      : 'bg-slate-100 border-slate-300 dark:border-slate-600 text-slate-400 dark:text-slate-500 shadow-[inset_0_0_0_2px_rgba(148,163,184,0.2)]'}`}
+                      : 'bg-slate-100 border-slate-300 dark:border-slate-600 dark:border-slate-600 text-slate-400 dark:text-slate-500 dark:text-slate-500 shadow-[inset_0_0_0_2px_rgba(148,163,184,0.2)]'}`}
                     title={`${cat.label}${on ? ' ✅' : ''}`}
                   >{cat.short}</div>
-                  <span className={`text-[6px] font-bold uppercase tracking-wider ${on ? 'text-amber-600 dark:text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}>{cat.label}</span>
+                  <span className={`text-[6px] font-bold uppercase tracking-wider ${on ? 'text-amber-600 dark:text-amber-400 dark:text-amber-400' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600'}`}>{cat.label}</span>
                 </div>
               );
             })}
@@ -623,7 +623,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
 
         {/* Taste tag menu */}
         <div>
-          <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mb-1 block">Taste Profile</label>
+          <label className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold mb-1 block">Taste Profile</label>
           <div className="space-y-1">
             {TASTE_GROUPS.map(group => {
               const negTags = group.tags.filter(t => isNegative(t));
@@ -631,17 +631,17 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
               if (negTags.length === 0 && posTags.length === 0) return null;
               return (
                 <div key={group.label} className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[8px] text-slate-300 dark:text-slate-600 font-semibold uppercase tracking-wider w-16 shrink-0">{group.label}</span>
+                  <span className="text-[8px] text-slate-300 dark:text-slate-600 dark:text-slate-600 font-semibold uppercase tracking-wider w-16 shrink-0">{group.label}</span>
                   {negTags.map(tag => (
                     <button key={tag} onClick={() => toggleLogTag(tag)}
-                      className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border transition-colors ${logTags.includes(tag) ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-300' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-amber-200 dark:border-amber-800 hover:text-amber-600 dark:text-amber-400'}`}
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border transition-colors ${logTags.includes(tag) ? 'bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 dark:text-amber-200 border-amber-300' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:border-amber-200 dark:border-amber-800 dark:border-amber-800 hover:text-amber-600 dark:text-amber-400 dark:text-amber-400'}`}
                     >
                       {tag}
                     </button>
                   ))}
                   {posTags.map(tag => (
                     <button key={tag} onClick={() => toggleLogTag(tag)}
-                      className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border transition-colors ${logTags.includes(tag) ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-emerald-200 dark:border-emerald-800 hover:text-emerald-600'}`}
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border transition-colors ${logTags.includes(tag) ? 'bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:border-emerald-200 dark:border-emerald-800 dark:border-emerald-800 hover:text-emerald-600'}`}
                     >
                       {tag}
                     </button>
@@ -654,7 +654,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
 
       {/* Log table */}
       {entries.length === 0 ? (
-        <p className="text-xs text-slate-400 dark:text-slate-500 italic px-1">No attempts logged yet. Brew, measure your TDS, mark the taste, and log it.</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-500 italic px-1">No attempts logged yet. Brew, measure your TDS, mark the taste, and log it.</p>
       ) : (
         <div className="max-h-80 overflow-y-auto space-y-1.5">
           {entries.map((e) => {
@@ -666,7 +666,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
             const isEditing = editingId === e.id;
             return (
               <div id={`attempt-${e.id}`} key={e.id}
-                className={`rounded-lg px-3 py-2 border transition-colors ${isIdeal ? 'bg-emerald-50 dark:bg-emerald-900/20/60 border-emerald-200 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-900/20/40 border-amber-200 dark:border-amber-800'}`}
+                className={`rounded-lg px-3 py-2 border transition-colors ${isIdeal ? 'bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20/60 border-emerald-200 dark:border-emerald-800 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20/40 border-amber-200 dark:border-amber-800 dark:border-amber-800'}`}
               >
                 <div className="flex items-center gap-2 text-xs flex-wrap">
                   {/* Grind # */}
@@ -675,12 +675,12 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                       <span className="text-[7px] text-emerald-500 font-semibold uppercase tracking-wider">Grind</span>
                       <input type="number" step={0.1} value={editGrind}
                         onChange={(ee) => setEditGrind(ee.target.value)}
-                        className="w-12 px-1 py-0.5 text-xs font-bold border border-emerald-300 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 tabular-nums"
+                        className="w-12 px-1 py-0.5 text-xs font-bold border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 dark:bg-slate-800 tabular-nums"
                         onKeyDown={(ee) => { if (ee.key === 'Enter') saveEdit(e.id); if (ee.key === 'Escape') setEditingId(null); }}
                       />
                     </label>
                   ) : (
-                    <span className="text-slate-700 dark:text-slate-300 font-bold text-sm w-12 tabular-nums">#{e.grindSize > 0 ? e.grindSize : '—'}</span>
+                    <span className="text-slate-700 dark:text-slate-300 dark:text-slate-300 font-bold text-sm w-12 tabular-nums">#{e.grindSize > 0 ? e.grindSize : '—'}</span>
                   )}
 
                   {/* Dose + ratio + temp */}
@@ -690,31 +690,31 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                         <span className="text-[7px] text-emerald-500 font-semibold uppercase tracking-wider">Dose</span>
                         <input type="number" step={0.1} value={editDose}
                           onChange={(ee) => setEditDose(ee.target.value)}
-                          className="w-12 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 tabular-nums"
+                          className="w-12 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 dark:bg-slate-800 tabular-nums"
                         />
                       </label>
                       <label className="flex flex-col items-center gap-0">
                         <span className="text-[7px] text-emerald-500 font-semibold uppercase tracking-wider">Ratio</span>
                         <input type="number" step={0.1} value={editRatio}
                           onChange={(ee) => setEditRatio(ee.target.value)}
-                          className="w-12 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 tabular-nums"
+                          className="w-12 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 dark:bg-slate-800 tabular-nums"
                         />
                       </label>
                       <label className="flex flex-col items-center gap-0">
                         <span className="text-[7px] text-emerald-500 font-semibold uppercase tracking-wider">°C</span>
                         <input type="number" step={1} value={editTemp}
                           onChange={(ee) => setEditTemp(ee.target.value)}
-                          className="w-10 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 tabular-nums"
+                          className="w-10 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 dark:bg-slate-800 tabular-nums"
                         />
                       </label>
                     </>
                   ) : (
                     <>
-                      <span className="text-slate-400 dark:text-slate-500 tabular-nums">{e.doseWeight.toFixed(1)}g</span>
-                      <span className="text-slate-300 dark:text-slate-600">·</span>
-                      <span className="text-slate-400 dark:text-slate-500 tabular-nums">1:{e.brewRatio.toFixed(0)}</span>
+                      <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500 tabular-nums">{e.doseWeight.toFixed(1)}g</span>
+                      <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">·</span>
+                      <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500 tabular-nums">1:{e.brewRatio.toFixed(0)}</span>
                       {e.brewTemp > 0 && (
-                        <span className="text-slate-400 dark:text-slate-500 tabular-nums text-[10px]">{e.brewTemp}°C</span>
+                        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500 tabular-nums text-[10px]">{e.brewTemp}°C</span>
                       )}
                     </>
                   )}
@@ -727,7 +727,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                       <span className="text-[7px] text-emerald-500 font-semibold uppercase tracking-wider">TDS</span>
                       <input type="number" step={0.01} value={editTDS}
                         onChange={(ee) => setEditTDS(ee.target.value)}
-                        className="w-14 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800"
+                        className="w-14 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 dark:bg-slate-800"
                         autoFocus
                         onKeyDown={(ee) => { if (ee.key === 'Enter') saveEdit(e.id); if (ee.key === 'Escape') setEditingId(null); }}
                       />
@@ -737,7 +737,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                   )}
 
                   {/* Delta */}
-                  {!isEditing && <span className="tabular-nums text-slate-400 dark:text-slate-500 text-[10px]">{d > 0 ? '+' : ''}{d.toFixed(2)}</span>}
+                  {!isEditing && <span className="tabular-nums text-slate-400 dark:text-slate-500 dark:text-slate-500 text-[10px]">{d > 0 ? '+' : ''}{d.toFixed(2)}</span>}
 
                   {/* EY */}
                   {isEditing ? (
@@ -745,12 +745,12 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                       <span className="text-[7px] text-emerald-500 font-semibold uppercase tracking-wider">EY%</span>
                       <input type="number" step={0.1} value={editEY}
                         onChange={(ee) => setEditEY(ee.target.value)}
-                        className="w-12 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800"
+                        className="w-12 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 dark:bg-slate-800"
                         onKeyDown={(ee) => { if (ee.key === 'Enter') saveEdit(e.id); }}
                       />
                     </label>
                   ) : (
-                    <span className="tabular-nums text-slate-500 dark:text-slate-400">{e.ey > 0 ? `${e.ey.toFixed(1)}%` : '—'}</span>
+                    <span className="tabular-nums text-slate-500 dark:text-slate-400 dark:text-slate-400">{e.ey > 0 ? `${e.ey.toFixed(1)}%` : '—'}</span>
                   )}
 
                   {/* EC */}
@@ -759,12 +759,12 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                       <span className="text-[7px] text-purple-500 font-semibold uppercase tracking-wider">EC</span>
                       <input type="number" step={1} min={0} max={2000} value={editEC}
                         onChange={(ee) => setEditEC(ee.target.value)}
-                        className="w-14 px-1 py-0.5 text-xs border border-purple-300 rounded text-center bg-white dark:bg-slate-800"
+                        className="w-14 px-1 py-0.5 text-xs border border-purple-300 rounded text-center bg-white dark:bg-slate-800 dark:bg-slate-800"
                         onKeyDown={(ee) => { if (ee.key === 'Enter') saveEdit(e.id); }}
                       />
                     </label>
                   ) : (
-                    e.ec > 0 && <span className={`tabular-nums font-bold text-[10px] ${e.ec <= 15 ? 'text-red-500 dark:text-red-400' : e.ec <= 20 ? 'text-amber-500' : e.ec <= 25 ? 'text-yellow-600' : 'text-emerald-500'}`}
+                    e.ec > 0 && <span className={`tabular-nums font-bold text-[10px] ${e.ec <= 15 ? 'text-red-500 dark:text-red-400 dark:text-red-400' : e.ec <= 20 ? 'text-amber-500' : e.ec <= 25 ? 'text-yellow-600' : 'text-emerald-500'}`}
                       title={e.ec <= 15 ? 'Bed collapsed ⚠️' : e.ec <= 20 ? 'Partial bed deformation' : e.ec <= 25 ? 'Moderate breakdown' : 'Healthy extraction ✅'}
                     >{e.ec}µS</span>
                   )}
@@ -772,7 +772,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                   <span className="text-slate-200 mx-0.5">|</span>
 
                   {/* TDS target range */}
-                  <span className="text-[9px] text-slate-400 dark:text-slate-500 tabular-nums">({e.tdsMin.toFixed(2)}–{e.tdsMax.toFixed(2)})</span>
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 tabular-nums">({e.tdsMin.toFixed(2)}–{e.tdsMax.toFixed(2)})</span>
 
                   {/* Brew time */}
                   {isEditing ? (
@@ -785,24 +785,24 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                             const s = parseInt(editBrewActual) || 0;
                             setEditBrewActual(String(m * 60 + (s % 60)));
                           }}
-                          className="w-8 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800"
+                          className="w-8 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 dark:bg-slate-800"
                           placeholder="mm"
                         />
-                        <span className="text-slate-300 dark:text-slate-600 text-[9px]">:</span>
+                        <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600 text-[9px]">:</span>
                         <input type="number" min={0} max={59} step={1} value={editBrewActual && parseInt(editBrewActual) > 0 ? (parseInt(editBrewActual) % 60) : ''}
                           onChange={(ee) => {
                             const s = Math.max(0, Math.min(59, parseInt(ee.target.value) || 0));
                             const base = parseInt(editBrewActual) || 0;
                             setEditBrewActual(String(Math.floor(base / 60) * 60 + s));
                           }}
-                          className="w-8 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800"
+                          className="w-8 px-1 py-0.5 text-xs border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 rounded text-center bg-white dark:bg-slate-800 dark:bg-slate-800"
                           placeholder="ss"
                         />
                       </div>
                     </label>
                   ) : (
                     e.brewTimeActual != null && e.brewTimeActual > 0 && (
-                      <span className="text-[9px] text-slate-400 dark:text-slate-500 tabular-nums">⏱ {Math.floor(e.brewTimeActual / 60)}:{String(e.brewTimeActual % 60).padStart(2, '0')}</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 tabular-nums">⏱ {Math.floor(e.brewTimeActual / 60)}:{String(e.brewTimeActual % 60).padStart(2, '0')}</span>
                     )
                   )}
 
@@ -812,13 +812,13 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                   >
                     {tv}
                   </span>
-                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${isIdeal ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700' : 'text-amber-700 bg-amber-100 dark:bg-amber-900/30 border border-amber-300'}`}>
+                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${isIdeal ? 'text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700' : 'text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 border border-amber-300'}`}>
                     {isIdeal ? 'OK' : 'NEED IMPROVE'}
                   </span>
 
                   {/* EY target */}
                   {e.eyTarget > 0 && (
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500 tabular-nums">EY {e.ey > 0 ? `${e.ey.toFixed(1)}` : '?'}/{e.eyTarget}%</span>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 tabular-nums">EY {e.ey > 0 ? `${e.ey.toFixed(1)}` : '?'}/{e.eyTarget}%</span>
                   )}
 
                   {e.waterMix && (
@@ -833,7 +833,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                       <div className="flex flex-wrap gap-0.5">
                         {ALL_TASTE_TAGS.map(tag => (
                           <button key={tag} onClick={() => toggleEditTag(tag)}
-                            className={`px-1 py-0.5 rounded text-[7px] font-semibold uppercase tracking-wider border ${editTags.includes(tag) ? (isNegative(tag) ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-300' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700') : 'bg-white dark:bg-slate-800 text-slate-300 dark:text-slate-600 border-slate-200 dark:border-slate-700'}`}
+                            className={`px-1 py-0.5 rounded text-[7px] font-semibold uppercase tracking-wider border ${editTags.includes(tag) ? (isNegative(tag) ? 'bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 dark:text-amber-200 border-amber-300' : 'bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700 dark:border-emerald-700') : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-300 dark:text-slate-600 dark:text-slate-600 border-slate-200 dark:border-slate-700 dark:border-slate-700'}`}
                           >
                             {tag}
                           </button>
@@ -848,7 +848,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                               <div onClick={() => setEditChips(p => p.includes(cat.key) ? p.filter(k => k !== cat.key) : [...p, cat.key])}
                                 className={`w-5 h-5 rounded-full flex items-center justify-center font-bold border cursor-pointer select-none text-[6px] transition-all ${on
                                   ? 'bg-gradient-to-br from-amber-200 to-amber-400 border-amber-500 text-amber-900 shadow-[inset_0_0_0_1.5px_rgba(251,191,36,0.3)]'
-                                  : 'bg-slate-100 border-slate-300 dark:border-slate-600 text-slate-400 dark:text-slate-500 shadow-[inset_0_0_0_1.5px_rgba(148,163,184,0.2)]'}`}
+                                  : 'bg-slate-100 border-slate-300 dark:border-slate-600 dark:border-slate-600 text-slate-400 dark:text-slate-500 dark:text-slate-500 shadow-[inset_0_0_0_1.5px_rgba(148,163,184,0.2)]'}`}
                                 title={`${cat.label}${on ? ' ✅' : ''}`}
                               >{cat.short}</div>
                               <span className="text-[4px] font-bold uppercase tracking-wider" style={{color: on ? '#d97706' : '#94a3b8'}}>{cat.short}</span>
@@ -880,7 +880,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                   )}
 
                   {/* Date */}
-                  <span className="ml-auto text-[8px] text-slate-400 dark:text-slate-500 whitespace-nowrap">{e.date}</span>
+                  <span className="ml-auto text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 whitespace-nowrap">{e.date}</span>
 
                   {/* Like/Dislike — edit or view */}
                   {isEditing ? (
@@ -889,7 +889,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                       <div className="flex items-center gap-0.5">
                         {[{v:1,e:'🥉'},{v:2,e:'🥈'},{v:3,e:'🥇'}].map(r => (
                           <button key={r.v} onClick={() => setEditCupRating(editCupRating === r.v ? null : r.v)}
-                            className={`text-xs px-1.5 py-0.5 rounded border transition-all ${editCupRating === r.v ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 border-emerald-300 dark:border-emerald-700' : 'text-slate-300 dark:text-slate-600 border-slate-200 dark:border-slate-700 hover:border-emerald-200 dark:border-emerald-800'}`}
+                            className={`text-xs px-1.5 py-0.5 rounded border transition-all ${editCupRating === r.v ? 'bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 text-emerald-600 border-emerald-300 dark:border-emerald-700 dark:border-emerald-700' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:border-emerald-200 dark:border-emerald-800 dark:border-emerald-800'}`}
                             title={r.v===1?'Needs work':r.v===2?'Getting closer':'Nailed it'}
                           >{r.e}</button>
                         ))}
@@ -904,7 +904,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                   {/* Plan toggle */}
                   {(e.plan || e.pourPlan.length > 0) && !isEditing && (
                     <button onClick={() => setExpandedPlanId(expandedPlanId === e.id ? null : e.id)}
-                      className={`px-2 py-1 rounded text-xs font-bold border ${expandedPlanId === e.id ? 'bg-sky-100 text-sky-700 border-sky-300' : 'text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-sky-50 hover:text-sky-600'}`}
+                      className={`px-2 py-1 rounded text-xs font-bold border ${expandedPlanId === e.id ? 'bg-sky-100 text-sky-700 border-sky-300' : 'text-slate-500 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:bg-sky-50 hover:text-sky-600'}`}
                     >
                       {expandedPlanId === e.id ? '▲ Plan' : '▼ Plan'}
                     </button>
@@ -913,7 +913,7 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                   {/* Apply to Graph */}
                   {!isEditing && (
                     <button onClick={() => applyToGraph(e)}
-                      className="px-1.5 py-1 rounded text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900/30 transition-colors"
+                      className="px-1.5 py-1 rounded text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 dark:border-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 transition-colors"
                       title="Send this attempt's targets to the Main App graph"
                     >
                       {graphFeedback === e.id ? '✓ Sent!' : '↗ Graph'}
@@ -938,13 +938,13 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                   {/* Edit / Save / Delete */}
                   {isEditing ? (
                     <>
-                      <button onClick={() => saveEdit(e.id)} className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-200 font-bold px-1 text-xs">✓</button>
-                      <button onClick={() => setEditingId(null)} className="text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:text-slate-400 px-1 text-xs">✕</button>
+                      <button onClick={() => saveEdit(e.id)} className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-200 dark:text-emerald-200 font-bold px-1 text-xs">✓</button>
+                      <button onClick={() => setEditingId(null)} className="text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-slate-500 dark:text-slate-400 dark:text-slate-400 px-1 text-xs">✕</button>
                     </>
                   ) : (
-                    <button onClick={() => startEdit(e)} className="text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:text-slate-400 px-1 text-xs">✎</button>
+                    <button onClick={() => startEdit(e)} className="text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-slate-500 dark:text-slate-400 dark:text-slate-400 px-1 text-xs">✎</button>
                   )}
-                  <button onClick={() => deleteEntry(e.id)} className="text-red-200 hover:text-red-500 dark:text-red-400 font-bold px-0.5 text-xs">×</button>
+                  <button onClick={() => deleteEntry(e.id)} className="text-red-200 hover:text-red-500 dark:text-red-400 dark:text-red-400 font-bold px-0.5 text-xs">×</button>
                 </div>
 
                 {/* Notes row — edit or view */}
@@ -952,15 +952,15 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                   <input type="text" value={editNotes}
                     onChange={(ee) => setEditNotes(ee.target.value)}
                     placeholder="taste notes..."
-                    className="mt-1 ml-1 w-full px-1.5 py-0.5 text-[9px] border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    className="mt-1 ml-1 w-full px-1.5 py-0.5 text-[9px] border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded bg-white dark:bg-slate-800 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                   />
                 ) : (
-                  e.notes && <div className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 ml-14">{e.notes}</div>
+                  e.notes && <div className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 mt-1 ml-14">{e.notes}</div>
                 )}
 
                 {/* Expandable plan snapshot */}
                 {(e.plan || e.pourPlan.length > 0) && expandedPlanId === e.id && !isEditing && (
-                  <div className="mt-2 ml-14 p-2 bg-sky-50 border border-sky-200 rounded text-[9px] text-slate-600 dark:text-slate-400 space-y-1">
+                  <div className="mt-2 ml-14 p-2 bg-sky-50 border border-sky-200 rounded text-[9px] text-slate-600 dark:text-slate-400 dark:text-slate-400 space-y-1">
                     <div className="font-semibold text-sky-700 text-[10px] uppercase tracking-wider mb-1">Brew Plan</div>
                     {e.plan && (
                       <>
@@ -1031,8 +1031,8 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                           {e.pourPlan.map((p, i) => {
                             const prev = i === 0 ? 0 : e.pourPlan[i - 1].cumulativePercent;
                             return (
-                              <span key={i} className="text-[9px] text-slate-500 dark:text-slate-400">
-                                #{i + 1} <strong>{p.cumulativePercent}%</strong>{p.duration != null ? ` (${p.duration}s)` : ''} <span className="text-slate-300 dark:text-slate-600">+{p.cumulativePercent - prev}%</span>
+                              <span key={i} className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400">
+                                #{i + 1} <strong>{p.cumulativePercent}%</strong>{p.duration != null ? ` (${p.duration}s)` : ''} <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">+{p.cumulativePercent - prev}%</span>
                               </span>
                             );
                           })}
@@ -1052,11 +1052,11 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
         const good = entries.filter(e => overallVerdict(e.tdsActual, e.tdsMin, e.tdsMax, e.tasteTags) === 'IDEAL' && e.grindSize > 0);
         const sweetGinds = [...new Set(good.map(e => e.grindSize))].sort((a, b) => a - b);
         return sweetGinds.length > 0 ? (
-          <div className="text-[10px] text-slate-400 dark:text-slate-500 px-1 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2 flex-wrap">
+          <div className="text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-500 px-1 pt-2 border-t border-slate-100 dark:border-slate-700 dark:border-slate-700 flex items-center gap-2 flex-wrap">
             <span className="text-emerald-600 font-semibold">Sweet spot</span>
-            <span className="text-slate-400 dark:text-slate-500">:</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">:</span>
             {sweetGinds.map(g => (
-              <span key={g} className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold text-[9px] tabular-nums">#{g}</span>
+              <span key={g} className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 font-bold text-[9px] tabular-nums">#{g}</span>
             ))}
           </div>
         ) : null;
@@ -1071,9 +1071,9 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
           .sort(([, a], [, b]) => b - a)
           .slice(0, 4);
         return topIssues.length > 0 ? (
-          <div className="text-[10px] text-slate-400 dark:text-slate-500 px-1 pt-1 flex items-center gap-2 flex-wrap">
-            <span className="text-amber-600 dark:text-amber-400 font-semibold">Recurring</span>
-            <span className="text-slate-400 dark:text-slate-500">:</span>
+          <div className="text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-500 px-1 pt-1 flex items-center gap-2 flex-wrap">
+            <span className="text-amber-600 dark:text-amber-400 dark:text-amber-400 font-semibold">Recurring</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">:</span>
             {topIssues.map(([tag, count]) => (
               <span key={tag} className="text-amber-700 text-[9px]">
                 {tag} <strong className="text-amber-500">×{count}</strong>
@@ -1114,25 +1114,25 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
         const barColor = (r: number) => r === 3 ? '#f59e0b' : r === 2 ? '#94a3b8' : '#78350f';
         const barH = (r: number) => Math.max(r * 12, 0);
         return (
-          <div className="px-1 pt-3 pb-1 border-t border-slate-100 dark:border-slate-700">
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 mb-1.5">
-              <span className="font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Cup Map</span>
-              <span className="text-slate-300 dark:text-slate-600">|</span>
+          <div className="px-1 pt-3 pb-1 border-t border-slate-100 dark:border-slate-700 dark:border-slate-700">
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1.5">
+              <span className="font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300 uppercase tracking-wider">Cup Map</span>
+              <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
               <span className="text-emerald-600 font-semibold">Best 🥇</span>
-              {rated.filter(e=>e.cupRating===3).length>0&&<span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">#{rated.filter(e=>e.cupRating===3).map(e=>e.grindSize).join(', #')}</span>}
-              {rated.filter(e=>e.cupRating===2).length>0&&<span className="text-slate-400 dark:text-slate-500">· 🥈 #{rated.filter(e=>e.cupRating===2).map(e=>e.grindSize).join(', #')}</span>}
-              {rated.filter(e=>e.cupRating===1).length>0&&<span className="text-slate-400 dark:text-slate-500">· 🥉 #{rated.filter(e=>e.cupRating===1).map(e=>e.grindSize).join(', #')}</span>}
-              {trend && <span className="ml-auto text-slate-400 dark:text-slate-500 font-semibold text-sm">{trend}</span>}
+              {rated.filter(e=>e.cupRating===3).length>0&&<span className="text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 font-bold tabular-nums">#{rated.filter(e=>e.cupRating===3).map(e=>e.grindSize).join(', #')}</span>}
+              {rated.filter(e=>e.cupRating===2).length>0&&<span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">· 🥈 #{rated.filter(e=>e.cupRating===2).map(e=>e.grindSize).join(', #')}</span>}
+              {rated.filter(e=>e.cupRating===1).length>0&&<span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">· 🥉 #{rated.filter(e=>e.cupRating===1).map(e=>e.grindSize).join(', #')}</span>}
+              {trend && <span className="ml-auto text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold text-sm">{trend}</span>}
             </div>
             <div className="flex items-end gap-[3px] h-[116px] relative">
-              <div className="absolute inset-x-0 bottom-[16px] border-t border-dashed border-slate-200 dark:border-slate-700 pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-[16px] border-t border-dashed border-slate-200 dark:border-slate-700 dark:border-slate-700 pointer-events-none" />
               {chrono.map((e, i) => {
                 const r = e.cupRating ?? 0;
                 const h = barH(r);
                 const colors = ['#fee2e2','#fef3c7','#d1fae5'];
                 return (
                   <div key={e.id} onClick={() => scrollToAttempt(e.id)}
-                    className={`flex flex-col items-center justify-end w-[28px] cursor-pointer rounded-t-md transition-all hover:scale-110 hover:z-10 ${r > 0 ? 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50' : ''}`}
+                    className={`flex flex-col items-center justify-end w-[28px] cursor-pointer rounded-t-md transition-all hover:scale-110 hover:z-10 ${r > 0 ? 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50' : ''}`}
                     title={`#${i + 1}${e.grindSize > 0 ? ` · grind #${e.grindSize}` : ''}${r ? ` · ${['','🥉','🥈','🥇'][r]}` : ' · unrated'} — click to view`}
                   >
                     <span className={`text-base leading-none mb-0.5 ${r > 0 ? '' : 'opacity-0'}`}>
@@ -1143,14 +1143,14 @@ export default function AttemptLog({ currentGrindSize, currentDose, currentRatio
                       background: r > 0 ? `linear-gradient(180deg, ${barColor(r)}80 0%, ${barColor(r)} 100%)` : '#f1f5f9',
                       opacity: r > 0 ? 1 : 0.15,
                     }} />
-                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 tabular-nums mt-0.5 leading-none"
+                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 dark:text-slate-500 tabular-nums mt-0.5 leading-none"
                       style={{ color: r > 0 ? colors[r - 1] : '#cbd5e1' }}
                     >{i + 1}</span>
                     {e.chips && e.chips.length > 0 && (
-                      <span className="text-[7px] font-bold mt-px leading-none text-amber-600 dark:text-amber-400">🏅{e.chips.length}</span>
+                      <span className="text-[7px] font-bold mt-px leading-none text-amber-600 dark:text-amber-400 dark:text-amber-400">🏅{e.chips.length}</span>
                     )}
                     {e.ec > 0 && (
-                      <span className={`text-[6px] font-bold mt-px leading-none ${e.ec <= 15 ? 'text-red-500 dark:text-red-400' : e.ec <= 20 ? 'text-amber-500' : e.ec <= 25 ? 'text-yellow-600' : 'text-emerald-500'}`}
+                      <span className={`text-[6px] font-bold mt-px leading-none ${e.ec <= 15 ? 'text-red-500 dark:text-red-400 dark:text-red-400' : e.ec <= 20 ? 'text-amber-500' : e.ec <= 25 ? 'text-yellow-600' : 'text-emerald-500'}`}
                         title={`EC: ${e.ec}`}
                       >{e.ec}µ</span>
                     )}

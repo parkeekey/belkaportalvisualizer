@@ -193,7 +193,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:bg-slate-950">
       {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
 
       {layoutStyle === 'sidebar' && (
@@ -207,11 +207,11 @@ function App() {
         />
       )}
 
-      <header className={`bg-white dark:bg-slate-900 shadow-sm border-b dark:border-slate-700 ${layoutStyle === 'sidebar' ? 'ml-14' : ''}`}>
+      <header className={`bg-white dark:bg-slate-800 dark:bg-slate-900 shadow-sm border-b dark:border-slate-700 ${layoutStyle === 'sidebar' ? 'ml-14' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap justify-between items-center gap-y-2 py-3">
             <div className="flex items-center">
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white dark:text-white">
                 Belka Portal Graph Digitizer
               </h1>
             </div>
@@ -237,14 +237,14 @@ function App() {
                 <>
                   <button
                     onClick={() => setChatOpen(v => !v)}
-                    className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${chatOpen ? 'border-purple-300 bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300' : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                    className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border transition-colors ${chatOpen ? 'border-purple-300 bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300' : 'border-slate-200 dark:border-slate-700 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-700'}`}
                     title="Open Brew Chat — AI brew assistant"
                   >
                     Chat
                   </button>
                   <button
                     onClick={() => setShowInfo(true)}
-                    className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border border-slate-200 dark:border-slate-700 dark:border-slate-600 text-slate-600 dark:text-slate-400 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                     title="About this app — EC, TDS, use cases, credits"
                   >
                     <span className="inline-flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-slate-500 text-white text-[8px] sm:text-[10px] font-bold leading-none">i</span>
@@ -266,7 +266,7 @@ function App() {
                 title="Save the full workspace session as a portable JSON profile"
               >💾 Save Profile</button>
               <button onClick={() => profileInputRef.current?.click()}
-                className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-900 hover:bg-amber-100 dark:bg-amber-900/30"
                 title="Load a previously saved workspace profile"
               >📂 Load Profile</button>
             </div>
@@ -275,16 +275,16 @@ function App() {
 
           {/* Bed Health */}
           <section className="max-w-6xl mx-auto px-6 pb-6">
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Bed Health</h3>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Bed Health</h3>
                 <div className="flex items-center gap-1.5">
-                  <span className={`text-[9px] font-semibold uppercase tracking-wider ${liveECPoints.length > 0 && ecSource === 'digitizer' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  <span className={`text-[9px] font-semibold uppercase tracking-wider ${liveECPoints.length > 0 && ecSource === 'digitizer' ? 'text-emerald-600' : 'text-slate-400 dark:text-slate-500'}`}>
                     {liveECPoints.length > 0 && ecSource === 'digitizer' ? `● ${liveECPoints.length} pts` : 'preset'}
                   </span>
                   <button
                     onClick={() => setSandboxEnabled(v => !v)}
-                    className={`px-2 py-0.5 text-[9px] font-bold rounded border transition-colors ${sandboxEnabled ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                    className={`px-2 py-0.5 text-[9px] font-bold rounded border transition-colors ${sandboxEnabled ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                     title="Toggle EC dial-in sandbox"
                   >
                     🔬
@@ -294,10 +294,10 @@ function App() {
 
               {/* Red light threshold */}
               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Red Light:</span>
-                <span className="text-[9px] text-slate-400">EC &lt;</span>
+                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Red Light:</span>
+                <span className="text-[9px] text-slate-400 dark:text-slate-500">EC &lt;</span>
                 <input value={redLightECInput} onChange={e => setRedLightECInput(e.target.value)}
-                  className="w-12 px-1.5 py-0.5 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  className="w-12 px-1.5 py-0.5 text-[10px] border border-slate-200 dark:border-slate-700 rounded font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
                 />
                 <button onClick={() => {
                   const v = parseFloat(redLightECInput);
@@ -310,7 +310,7 @@ function App() {
                   className="px-2 py-0.5 text-[9px] font-bold bg-slate-800 text-white rounded hover:bg-slate-900"
                 >Set</button>
                 <span className="text-slate-200 mx-1">|</span>
-                <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Brew Time:</span>
+                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Brew Time:</span>
                 <input value={`${Math.floor(targetBrewTimeSec / 60)}:${String(Math.floor(targetBrewTimeSec % 60)).padStart(2, '0')}`}
                   onChange={e => {
                     const parts = e.target.value.split(':');
@@ -318,7 +318,7 @@ function App() {
                     const s = parseInt(parts[1]);
                     if (!isNaN(m) && !isNaN(s) && m >= 0 && s >= 0 && s < 60) setTargetBrewTimeSec(m * 60 + s);
                   }}
-                  className="w-16 px-1.5 py-0.5 text-[10px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  className="w-16 px-1.5 py-0.5 text-[10px] border border-slate-200 dark:border-slate-700 rounded font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
                   placeholder="m:ss"
                 />
               </div>
@@ -339,7 +339,7 @@ function App() {
               <div className="flex flex-col gap-3">
                 {liveECPoints.length === 0 && (
                   <div className="flex flex-col gap-2">
-                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
                       Digitize a graph to see its EC curve reflected here in real time. Or explore with a preset scenario below.
                     </p>
                   </div>
@@ -347,13 +347,13 @@ function App() {
 
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Shape Presets</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Shape Presets</span>
                     <label className="flex items-center gap-1 cursor-pointer select-none">
                       <input type="checkbox" checked={presetOverlay}
                         onChange={e => setPresetOverlay(e.target.checked)}
                         className="w-2.5 h-2.5 accent-slate-700"
                       />
-                      <span className="text-[8px] text-slate-400">Overlay</span>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500">Overlay</span>
                     </label>
                   </div>
                   <div className="flex flex-wrap gap-1.5 items-center">
@@ -400,22 +400,22 @@ function App() {
                       },
                     ].map(s => (
                       <button key={s.label} onClick={() => loadPresetEC(s.points)}
-                        className={`px-2 py-1 text-[9px] font-bold border rounded transition-all ${(ecSource === 'preset' && JSON.stringify(liveECPoints) === JSON.stringify(s.points)) || (presetOverlay && JSON.stringify(shapePresetPoints) === JSON.stringify(s.points)) ? 'bg-slate-800 text-white border-slate-800' : 'border-slate-200 hover:bg-slate-100 text-slate-600'}`}
+                        className={`px-2 py-1 text-[9px] font-bold border rounded transition-all ${(ecSource === 'preset' && JSON.stringify(liveECPoints) === JSON.stringify(s.points)) || (presetOverlay && JSON.stringify(shapePresetPoints) === JSON.stringify(s.points)) ? 'bg-slate-800 text-white border-slate-800' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400'}`}
                         title={s.desc}
                       >{s.label}</button>
                     ))}
                     {ecSource === 'preset' && (
                       <button onClick={goLiveEC}
-                        className="px-2 py-1 text-[9px] font-bold border border-slate-300 rounded hover:bg-slate-100 text-slate-500"
+                        className="px-2 py-1 text-[9px] font-bold border border-slate-300 dark:border-slate-600 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
                       >← Live</button>
                     )}
                     {presetOverlay && shapePresetPoints.length > 1 && (
                       <button onClick={() => { setPresetOverlay(false); setShapePresetPoints([]); }}
-                        className="px-2 py-1 text-[9px] font-bold border border-slate-300 rounded hover:bg-slate-100 text-slate-500"
+                        className="px-2 py-1 text-[9px] font-bold border border-slate-300 dark:border-slate-600 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
                       >✕ Clear overlay</button>
                     )}
                   </div>
-                  <div className="text-[8px] text-slate-400 mt-0.5">
+                  <div className="text-[8px] text-slate-400 dark:text-slate-500 mt-0.5">
                     {ecSource === 'preset' ? 'Preset replaces live data · toggle Overlay to draw as reference on top'
                       : presetOverlay ? 'Overlay on — presets draw as dotted reference without replacing data'
                       : 'Presets replace live data for exploration'}

@@ -3451,19 +3451,19 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg">
+      <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-lg shadow-lg">
         <div className="p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             Manual Belka Portal Digitizer
           </h2>
-          <p className="text-gray-600 dark:text-slate-400">
+          <p className="text-gray-600 dark:text-slate-400 dark:text-slate-400">
             Click-based calibration for accurate EC data extraction
           </p>
-          <div className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+          <div className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 dark:text-slate-400">
             Status (click to jump)
           </div>
           {!ultrakokiBrewData && (
-            <div className="mt-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+            <div className="mt-2 rounded-lg border border-amber-200 dark:border-amber-800 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-800 dark:text-amber-200 dark:text-amber-200">
               Non-Ultrakoki mode active: using estimated water-in behavior until Ultrakoki JSON is loaded.
             </div>
           )}
@@ -3471,33 +3471,33 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
           {(importedBean || Object.keys(savedBeanProfiles).length > 0) && (
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {importedBean && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs">
-                  <span className="text-amber-600 dark:text-amber-400 font-semibold">☕</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 dark:border-amber-800 rounded-lg text-xs">
+                  <span className="text-amber-600 dark:text-amber-400 dark:text-amber-400 font-semibold">☕</span>
                   <div className="flex flex-col">
                     <span className="font-bold text-amber-900 leading-tight">{importedBean.coffeeName || 'Untitled'}</span>
                     <span className="text-[10px] text-amber-700 leading-tight">
                       {[importedBean.roastery, importedBean.process, importedBean.origin, `${importedBean.altitude}m`, `🫘${importedBean.density}%`, `🔥${importedBean.roastLevel}`].filter(Boolean).join(' · ')}
                     </span>
                   </div>
-                  <button type="button" onClick={() => setImportedBean(null)} className="text-amber-400 hover:text-amber-600 dark:text-amber-400 ml-1">✕</button>
+                  <button type="button" onClick={() => setImportedBean(null)} className="text-amber-400 hover:text-amber-600 dark:text-amber-400 dark:text-amber-400 ml-1">✕</button>
                 </div>
               )}
               {Object.keys(savedBeanProfiles).length > 0 && (
                 <div className="relative">
-                  <button type="button" onClick={() => setShowBeanBrowser(v => !v)} className="text-xs font-medium text-amber-700 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 shadow-sm">
+                  <button type="button" onClick={() => setShowBeanBrowser(v => !v)} className="text-xs font-medium text-amber-700 bg-white dark:bg-slate-800 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 shadow-sm">
                     ☕ Saved ({Object.keys(savedBeanProfiles).length})
                   </button>
                   {showBeanBrowser && (
-                    <div className="absolute top-full left-0 mt-1 z-50 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl p-2 max-h-72 overflow-y-auto">
-                      <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 px-1">Saved Bean Profiles</div>
+                    <div className="absolute top-full left-0 mt-1 z-50 w-80 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg shadow-xl p-2 max-h-72 overflow-y-auto">
+                      <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-1 px-1">Saved Bean Profiles</div>
                       {Object.entries(savedBeanProfiles).map(([key, bp]) => (
                         <button key={key} type="button" onClick={() => {
                           setImportedBean(bp);
                           setShowBeanBrowser(false);
-                        }} className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 last:border-0">
-                          <span className="font-bold text-slate-700 dark:text-slate-300">{bp.coffeeName || key}</span>
-                          {bp.roastery && <span className="text-slate-400 dark:text-slate-500">— {bp.roastery}</span>}
-                          <span className="ml-auto text-[9px] text-slate-400 dark:text-slate-500">{bp.process} · {bp.altitude}m · 🫘{bp.density}%</span>
+                        }} className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 dark:border-slate-700 last:border-0">
+                          <span className="font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300">{bp.coffeeName || key}</span>
+                          {bp.roastery && <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">— {bp.roastery}</span>}
+                          <span className="ml-auto text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500">{bp.process} · {bp.altitude}m · 🫘{bp.density}%</span>
                         </button>
                       ))}
                     </div>
@@ -3515,7 +3515,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
                 selectedImage
                   ? 'bg-green-100 text-green-800'
-                  : 'bg-gray-100 text-gray-600 dark:text-slate-400'
+                  : 'bg-gray-100 text-gray-600 dark:text-slate-400 dark:text-slate-400'
               }`}
               title={selectedImage ? `Screenshot loaded: ${selectedImageName}` : 'No screenshot loaded'}
             >
@@ -3538,7 +3538,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                   type="button"
                   onClick={() => scrollToSection('calibration')}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
-                    ok ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 dark:text-slate-400'
+                    ok ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 dark:text-slate-400 dark:text-slate-400'
                   }`}
                   title={`Calibration status: ${label}`}
                 >
@@ -3566,13 +3566,13 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
           {/* Attempt profile imported from Setup */}
           {attemptProfile && (
-            <div className="mt-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 flex items-start gap-3">
+            <div className="mt-3 rounded-lg border border-emerald-200 dark:border-emerald-800 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 px-4 py-3 flex items-start gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold text-sm">Attempt profile loaded</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 font-semibold text-sm">Attempt profile loaded</span>
                   <span className="text-[10px] text-emerald-500 font-medium">from Setup → ↗ Graph</span>
                 </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-emerald-800 dark:text-emerald-200">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-emerald-800 dark:text-emerald-200 dark:text-emerald-200">
                   <span>{attemptProfile.doseWeight.toFixed(1)}g dose</span>
                   <span>1:{attemptProfile.brewRatio.toFixed(0)} ratio</span>
                   <span>{attemptProfile.totalWater.toFixed(0)}g water</span>
@@ -3591,7 +3591,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => { scrollToSection('graph'); }}
-                  className="px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 rounded hover:bg-emerald-200"
+                  className="px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 rounded hover:bg-emerald-200"
                 >View on graph</button>
                 <button
                   onClick={() => {
@@ -3613,16 +3613,16 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
         {/* Recipe & Pour Planning — rendered with EC data overlay */}
         {recipeCollapsed && (
           <button onClick={() => setRecipeCollapsed(false)}
-            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-gradient-to-r from-emerald-50 to-white border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-emerald-100 dark:bg-emerald-900/30 transition-colors mb-2"
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 bg-gradient-to-r from-emerald-50 to-white border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg hover:bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 transition-colors mb-2"
           >
             <span className="text-emerald-500">▶</span> Recipe & Pour Planning (collapsed)
           </button>
         )}
         {!recipeCollapsed && (<>
           <button onClick={() => setRecipeCollapsed(true)}
-            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-gradient-to-r from-emerald-50 to-white border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-emerald-100 dark:bg-emerald-900/30 transition-colors mb-2"
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 bg-gradient-to-r from-emerald-50 to-white border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg hover:bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 transition-colors mb-2"
           >
-            <span className="text-emerald-500">▼</span> Recipe &amp; Pour Planning <span className="ml-auto text-slate-400 dark:text-slate-500">click to collapse</span>
+            <span className="text-emerald-500">▼</span> Recipe &amp; Pour Planning <span className="ml-auto text-slate-400 dark:text-slate-500 dark:text-slate-500">click to collapse</span>
           </button>
         <RecipePourPlanning ref={recipePlanRef} ecProps={{
           getECAtTime,
@@ -3645,7 +3645,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
             {/* Upload Step */}
           {currentStep === 'upload' && (
             <div ref={uploadSectionRef} className="mb-6">
-              <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-950 hover:bg-gray-100">
+              <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 hover:bg-gray-100">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Upload className="w-10 h-10 mb-3 text-gray-400" />
                   <p className="mb-2 text-sm text-gray-500">
@@ -3663,11 +3663,11 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
             </div>
           )}
 
-          <div ref={ultrakokiSectionRef} className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3">
+          <div ref={ultrakokiSectionRef} className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 p-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wide text-amber-900">Ultrakoki Graph Sandbox</div>
-                <p className="text-xs text-amber-800 dark:text-amber-200">
+                <p className="text-xs text-amber-800 dark:text-amber-200 dark:text-amber-200">
                   Open Ultrakoki brew first so we can iterate on the custom graph layout in-app without touching calibration or JSON import.
                 </p>
               </div>
@@ -3678,14 +3678,14 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     setImportedJsonLabel('Preview brew / mock Ultrakoki data');
                     setUltrakokiImportWarning(null);
                   }}
-                  className={`rounded-md border px-3 py-2 text-sm font-medium ${ultrakokiBrewData ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-700' : 'border-amber-300 bg-white dark:bg-slate-800 text-amber-900 hover:bg-amber-100 dark:bg-amber-900/30'}`}
+                  className={`rounded-md border px-3 py-2 text-sm font-medium ${ultrakokiBrewData ? 'border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-700' : 'border-amber-300 bg-white dark:bg-slate-800 dark:bg-slate-800 text-amber-900 hover:bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30'}`}
                 >
                   {ultrakokiBrewData ? 'Ultrakoki Graph Loaded' : 'Load Ultrakoki Graph'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowJsonImportPrompt(true)}
-                  className="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-950"
+                  className="rounded-md border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-950"
                 >
                   Import Ultrakoki JSON
                 </button>
@@ -3698,7 +3698,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                         setImportedJsonLabel(null);
                       }
                     }}
-                    className="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    className="rounded-md border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                   >
                     Hide Graph
                   </button>
@@ -3706,7 +3706,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
               </div>
             </div>
             {ultrakokiImportWarning && (
-              <div className="mt-2 rounded-md border border-amber-300 bg-amber-100 dark:bg-amber-900/30 px-3 py-2 text-xs text-amber-900">
+              <div className="mt-2 rounded-md border border-amber-300 bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 px-3 py-2 text-xs text-amber-900">
                 <div className="font-semibold">Import file warning</div>
                 <div className="mt-0.5">{ultrakokiImportWarning}</div>
               </div>
@@ -3741,7 +3741,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                 {currentStep === 'calibrate-origin' && (
                   <div className="mt-3 flex items-center gap-3">
                     <label className="text-sm font-medium text-blue-800 whitespace-nowrap">Zero point value:</label>
-                    <span className="px-3 py-1 text-sm bg-white dark:bg-slate-800 border border-blue-300 rounded font-mono font-bold text-blue-900">0 (fixed)</span>
+                    <span className="px-3 py-1 text-sm bg-white dark:bg-slate-800 dark:bg-slate-800 border border-blue-300 rounded font-mono font-bold text-blue-900">0 (fixed)</span>
                     <span className="text-xs text-blue-600">Click the bottom-left corner where both axes meet. This is always (0, 0).</span>
                   </div>
                 )}
@@ -3791,7 +3791,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                             return next;
                           });
                         }}
-                        className={`px-3 py-1.5 text-sm rounded border ${useBoxCalibrationMode ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-blue-700 border-blue-300 hover:bg-blue-100'}`}
+                        className={`px-3 py-1.5 text-sm rounded border ${useBoxCalibrationMode ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-blue-700 border-blue-300 hover:bg-blue-100'}`}
                       >
                         {useBoxCalibrationMode ? 'Draw EC Box: ON' : 'Use Draw EC Box'}
                       </button>
@@ -3805,7 +3805,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                           type="button"
                           onClick={commitEditableBoxCalibration}
                           disabled={!editableCalibrationBox}
-                          className="px-3 py-1.5 text-sm rounded bg-emerald-600 text-white border border-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:border-slate-300 dark:border-slate-600 disabled:cursor-not-allowed"
+                          className="px-3 py-1.5 text-sm rounded bg-emerald-600 text-white border border-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:border-slate-300 dark:border-slate-600 dark:border-slate-600 disabled:cursor-not-allowed"
                         >
                           Confirm Box Calibration
                         </button>
@@ -3818,7 +3818,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                             setCalibrationBoxInitialRect(null);
                             setCalibrationPoints(prev => prev.slice(0, 1));
                           }}
-                          className="px-3 py-1.5 text-sm rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          className="px-3 py-1.5 text-sm rounded border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                         >
                           Clear Box
                         </button>
@@ -3868,7 +3868,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                         </span>
                       )}
                       {importedJsonLabel && (
-                        <span className="text-xs font-normal text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
+                        <span className="text-xs font-normal text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
                           JSON: {importedJsonLabel}
                         </span>
                       )}
@@ -3881,22 +3881,22 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     </button>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-green-800">
-                    <div className="bg-white dark:bg-slate-800 rounded border border-green-100 px-2 py-1.5">
+                    <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded border border-green-100 px-2 py-1.5">
                       <div className="font-medium text-green-700">Origin</div>
                       <div>({calibrationPoints[0].dataX}, {calibrationPoints[0].dataY})</div>
                       <div className="text-green-500">px ({Math.round(calibrationPoints[0].x)}, {Math.round(calibrationPoints[0].y)})</div>
                     </div>
-                    <div className="bg-white dark:bg-slate-800 rounded border border-green-100 px-2 py-1.5">
+                    <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded border border-green-100 px-2 py-1.5">
                       <div className="font-medium text-green-700">Time max</div>
                       <div>{calibrationPoints[1].dataX}s</div>
                       <div className="text-green-500">px ({Math.round(calibrationPoints[1].x)}, {Math.round(calibrationPoints[1].y)})</div>
                     </div>
-                    <div className="bg-white dark:bg-slate-800 rounded border border-green-100 px-2 py-1.5">
+                    <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded border border-green-100 px-2 py-1.5">
                       <div className="font-medium text-green-700">EC max</div>
                       <div>{calibrationPoints[2].dataY} EC</div>
                       <div className="text-green-500">px ({Math.round(calibrationPoints[2].x)}, {Math.round(calibrationPoints[2].y)})</div>
                     </div>
-                    <div className="bg-white dark:bg-slate-800 rounded border border-green-100 px-2 py-1.5">
+                    <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded border border-green-100 px-2 py-1.5">
                       <div className="font-medium text-green-700">Highest EC</div>
                       <div>{calibrationPoints[3].dataY.toFixed(2)} EC</div>
                       <div className="text-green-500">at {calibrationPoints[3].dataX.toFixed(1)}s</div>
@@ -3910,7 +3910,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                           setUltrakokiBrewData(buildPreviewUltrakokiBrewData());
                           setImportedJsonLabel('Preview brew / mock Ultrakoki data');
                         }}
-                        className={`py-2.5 font-medium rounded-lg text-sm border ${ultrakokiBrewData ? 'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-300 dark:border-emerald-700' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 hover:bg-amber-200 border-amber-200 dark:border-amber-800'}`}
+                        className={`py-2.5 font-medium rounded-lg text-sm border ${ultrakokiBrewData ? 'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-300 dark:border-emerald-700 dark:border-emerald-700' : 'bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-900 hover:bg-amber-200 border-amber-200 dark:border-amber-800 dark:border-amber-800'}`}
                       >
                         {ultrakokiBrewData ? 'Ultrakoki Graph Loaded' : 'Load Ultrakoki Graph'}
                       </button>
@@ -3929,13 +3929,13 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                 </div>
               )}
 
-              <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                <div className="text-sm font-semibold text-slate-800 mb-2">Calibration Profile</div>
+              <div className="bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg p-4">
+                <div className="text-sm font-semibold text-slate-800 dark:text-white mb-2">Calibration Profile</div>
                 <div className="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
                   <select
                     value={selectedCalibrationProfile}
                     onChange={(e) => setSelectedCalibrationProfile(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
                   >
                     <option value="">Select saved profile...</option>
                     {savedCalibrationProfiles.map(profile => (
@@ -3950,13 +3950,13 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     Load Selected Profile
                   </button>
                 </div>
-                <div className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                <div className="text-xs text-slate-600 dark:text-slate-400 dark:text-slate-400 mt-2">
                   Upload screenshot first, then load a saved calibration profile by name.
                 </div>
               </div>
 
               {currentStep === 'extract' && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg p-3">
+                <div className="bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 border border-red-200 rounded-lg p-3">
                   <div className="flex flex-wrap items-center gap-3">
                     <button
                       type="button"
@@ -3977,7 +3977,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                         }
                         return next;
                       })}
-                      className={`px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base border ${panMode ? 'bg-sky-600 text-white border-sky-600' : 'bg-white dark:bg-slate-800 text-sky-700 border-sky-300 hover:bg-sky-100'}`}
+                      className={`px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base border ${panMode ? 'bg-sky-600 text-white border-sky-600' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-sky-700 border-sky-300 hover:bg-sky-100'}`}
                     >
                       {panMode ? 'Exit Pan' : 'Pan'}
                     </button>
@@ -4028,7 +4028,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       />
                       <span className="text-sm text-red-700">px</span>
                     </div>
-                    <div className="flex items-center gap-1 rounded-md border border-red-300 bg-white dark:bg-slate-800 p-1">
+                    <div className="flex items-center gap-1 rounded-md border border-red-300 bg-white dark:bg-slate-800 dark:bg-slate-800 p-1">
                       <button
                         type="button"
                         onClick={() => setEraserDeleteMode('tap')}
@@ -4047,7 +4047,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     <button
                       type="button"
                       onClick={() => setPointsLocked(prev => !prev)}
-                      className={`px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base border ${pointsLocked ? 'bg-slate-800 text-white border-slate-800' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                      className={`px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base border ${pointsLocked ? 'bg-slate-800 text-white border-slate-800' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 border-slate-300 dark:border-slate-600 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700'}`}
                     >
                       {pointsLocked ? 'Unlock Points' : 'Lock Points'}
                     </button>
@@ -4068,7 +4068,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                           return next;
                         });
                       }}
-                      className={`px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base border ${drawTraceMode ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30'}`}
+                      className={`px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base border ${drawTraceMode ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30'}`}
                     >
                       {drawTraceMode ? 'Exit Draw Trace' : 'Draw Trace'}
                     </button>
@@ -4089,26 +4089,26 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
               {/* Canvas */}
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Screenshot zoom:</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300">Screenshot zoom:</span>
                 <button
                   type="button"
                   onClick={() => setScreenshotZoom(prev => Math.max(0.5, Number((prev - 0.1).toFixed(2))))}
-                  className="px-2 py-1 text-sm rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="px-2 py-1 text-sm rounded border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                 >
                   -
                 </button>
-                <span className="w-14 text-center text-sm font-semibold text-slate-800">{Math.round(screenshotZoom * 100)}%</span>
+                <span className="w-14 text-center text-sm font-semibold text-slate-800 dark:text-white">{Math.round(screenshotZoom * 100)}%</span>
                 <button
                   type="button"
                   onClick={() => setScreenshotZoom(prev => Math.min(2.5, Number((prev + 0.1).toFixed(2))))}
-                  className="px-2 py-1 text-sm rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="px-2 py-1 text-sm rounded border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                 >
                   +
                 </button>
                 <button
                   type="button"
                   onClick={() => setScreenshotZoom(1)}
-                  className="px-2 py-1 text-sm rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="px-2 py-1 text-sm rounded border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                 >
                   Reset
                 </button>
@@ -4119,7 +4119,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                 )}
               </div>
 
-              <div ref={canvasContainerRef} className="relative overflow-auto max-h-[75vh] rounded-lg border border-gray-300 bg-white dark:bg-slate-800">
+              <div ref={canvasContainerRef} className="relative overflow-auto max-h-[75vh] rounded-lg border border-gray-300 bg-white dark:bg-slate-800 dark:bg-slate-800">
                 <img
                   ref={imageRef}
                   src={selectedImage || ''}
@@ -4193,7 +4193,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                           setPhasePinSequenceLogId(null);
                           setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
                         }}
-                        className="px-2 py-1 bg-white dark:bg-slate-800/20 rounded hover:bg-white dark:bg-slate-800/30"
+                        className="px-2 py-1 bg-white dark:bg-slate-800 dark:bg-slate-800/20 rounded hover:bg-white dark:bg-slate-800 dark:bg-slate-800/30"
                       >
                         Cancel
                       </button>
@@ -4206,12 +4206,12 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
               {calibrationPoints.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {calibrationPoints.map((point, index) => (
-                    <div key={index} className="bg-gray-50 dark:bg-gray-950 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-gray-900">{point.label}</div>
-                      <div className="text-xs text-gray-600 dark:text-slate-400">
+                    <div key={index} className="bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">{point.label}</div>
+                      <div className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">
                         Pixel: ({Math.round(point.x)}, {Math.round(point.y)})
                       </div>
-                      <div className="text-xs text-gray-600 dark:text-slate-400">
+                      <div className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">
                         Data: ({point.dataX}, {point.dataY})
                       </div>
                     </div>
@@ -4242,14 +4242,14 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
                   {/* Finish Calibration Buttons for other steps */}
                   {(currentStep === 'calibrate-origin' || currentStep === 'calibrate-x' || currentStep === 'calibrate-y') && (
-                    <div className="bg-gray-50 dark:bg-gray-950 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <div className="text-sm font-medium text-gray-900 mb-2">
+                    <div className="bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 p-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:border-gray-700">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                         {currentStep === 'calibrate-origin' && 'Origin Point Calibration'}
                         {currentStep === 'calibrate-x' && 'X-Axis Calibration'}
                         {currentStep === 'calibrate-y' && 'Y-Axis Calibration'}
                       </div>
                       <div className="space-y-2">
-                        <div className="text-xs text-gray-600 dark:text-slate-400">
+                        <div className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">
                           {currentStep === 'calibrate-origin' && 'Click the origin corner (value = 0), then click Finish.'}
                           {currentStep === 'calibrate-x' && `Click the ${calibrateXValue}s mark on the time axis, then click Finish.`}
                           {currentStep === 'calibrate-y' && `Click the ${calibrateYValue} EC mark on the Y-axis, then click Finish.`}
@@ -4278,7 +4278,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
                       <div className="text-sm font-medium text-orange-900 mb-2">Temperature Minimum Calibration</div>
                       <div className="space-y-2">
-                        <div className="text-xs text-gray-600 dark:text-slate-400">
+                        <div className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">
                           Enter the minimum temperature from your phone (°C)
                         </div>
                         <input
@@ -4304,10 +4304,10 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
                   {/* Temperature Max Calibration */}
                   {currentStep === 'calibrate-temp-max' && calibrationPoints.length >= 6 && (
-                    <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200">
+                    <div className="bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 p-3 rounded-lg border border-red-200">
                       <div className="text-sm font-medium text-red-900 mb-2">Temperature Maximum Calibration</div>
                       <div className="space-y-2">
-                        <div className="text-xs text-gray-600 dark:text-slate-400">
+                        <div className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">
                           Enter the maximum temperature from your phone (°C)
                         </div>
                         <input
@@ -4334,7 +4334,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
               )}
 
               {/* Calibration Actions */}
-              <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 flex flex-wrap gap-2 mb-4">
+              <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-lg p-2 flex flex-wrap gap-2 mb-4">
                 <button
                   onClick={() => setShowECPrompt(true)}
                   className="px-3 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 flex-1 sm:flex-none"
@@ -4373,7 +4373,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       }}
                       placeholder="Profile name..."
                       autoFocus
-                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-400"
+                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-400"
                     />
                     <button
                       onClick={() => saveCalibrationProfile(newProfileName)}
@@ -4405,7 +4405,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
               </div>
 
               {loadedCalibrationProfileName && (
-                <div className="mb-4 text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
+                <div className="mb-4 text-sm text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg p-2">
                   Loaded calibration profile: <strong>{loadedCalibrationProfileName}</strong>
                 </div>
               )}
@@ -4429,28 +4429,28 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                   </div>
 
                   <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-3">
-                    <div className="rounded-md border border-red-200 bg-white dark:bg-slate-800/80 p-2.5">
+                    <div className="rounded-md border border-red-200 bg-white dark:bg-slate-800 dark:bg-slate-800/80 p-2.5">
                       <div className="text-xs font-medium text-gray-500">Detected Red Light</div>
-                      <div className="mt-0.5 text-sm font-semibold text-gray-900">
+                      <div className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">
                         {redLightTime !== null ? `${formatTime(redLightTime)} (${formatRawSeconds(redLightTime)}s)` : 'Not found'}
                       </div>
                     </div>
-                    <div className="rounded-md border border-red-200 bg-white dark:bg-slate-800/80 p-2.5">
+                    <div className="rounded-md border border-red-200 bg-white dark:bg-slate-800 dark:bg-slate-800/80 p-2.5">
                       <div className="text-xs font-medium text-gray-500">Lowest EC (profile)</div>
-                      <div className="mt-0.5 text-sm font-semibold text-gray-900">
+                      <div className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">
                         {redLightDataStats.minEC !== null ? redLightDataStats.minEC.toFixed(2) : 'n/a'}
                       </div>
                     </div>
-                    <div className="rounded-md border border-red-200 bg-white dark:bg-slate-800/80 p-2.5">
+                    <div className="rounded-md border border-red-200 bg-white dark:bg-slate-800 dark:bg-slate-800/80 p-2.5">
                       <div className="text-xs font-medium text-gray-500">Lowest EC after {redLightTimeThreshold}s</div>
-                      <div className="mt-0.5 text-sm font-semibold text-gray-900">
+                      <div className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">
                         {redLightDataStats.minAfterTimeThreshold !== null ? redLightDataStats.minAfterTimeThreshold.toFixed(2) : 'n/a'}
                       </div>
                     </div>
                   </div>
 
                   <div className="mb-2 flex flex-wrap items-center gap-3">
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-slate-300">
                       <input
                         type="checkbox"
                         checked={showRedLight}
@@ -4463,7 +4463,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       type="button"
                       onClick={applyMinimumDetectableRedLightThreshold}
                       disabled={redLightDataStats.minAfterTimeThreshold === null}
-                      className="rounded-md border border-red-300 bg-white dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 dark:bg-red-900/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-md border border-red-300 bg-white dark:bg-slate-800 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 dark:bg-red-900/20 dark:hover:bg-red-900/20 dark:bg-red-900/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Use lowest detectable EC ({redLightDataStats.minAfterTimeThreshold !== null ? redLightDataStats.minAfterTimeThreshold.toFixed(2) : 'n/a'})
                     </button>
@@ -4471,7 +4471,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                      <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-slate-300">
                         Time Threshold (seconds)
                       </label>
                       <input
@@ -4487,7 +4487,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                      <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-slate-300">
                         EC Threshold
                       </label>
                       <div className="flex">
@@ -4527,12 +4527,12 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                   </div>
 
                   {redLightThresholdTooLow && (
-                    <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-900">
+                    <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-900">
                       Current EC threshold ({redLightECThreshold.toFixed(2)}) is below the lowest EC after {redLightTimeThreshold}s ({redLightDataStats.minAfterTimeThreshold?.toFixed(2)}). Red Light cannot appear with this setting.
                     </div>
                   )}
 
-                  <div className="mt-3 text-xs text-gray-600 dark:text-slate-400">
+                  <div className="mt-3 text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">
                     Rule: first point where time &gt;= {redLightTimeThreshold}s and EC &lt;= {redLightECThreshold}.
                   </div>
                 </div>
@@ -4573,13 +4573,13 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     </div>
                   </div>
 
-                  <div className="mb-3 rounded-lg border border-indigo-200 bg-white dark:bg-slate-800 p-3">
+                  <div className="mb-3 rounded-lg border border-indigo-200 bg-white dark:bg-slate-800 dark:bg-slate-800 p-3">
                     <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Phase Summary Profile</div>
                     <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-center">
                       <select
                         value={selectedPhaseLogProfile}
                         onChange={(e) => setSelectedPhaseLogProfile(e.target.value)}
-                        className="flex-1 rounded border border-indigo-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 rounded border border-indigo-200 px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
                         <option value="">Select saved phase profile...</option>
                         {savedPhaseLogProfiles.map(profile => (
@@ -4625,7 +4625,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                           }}
                           placeholder="Phase profile name..."
                           autoFocus
-                          className="flex-1 rounded border border-indigo-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="flex-1 rounded border border-indigo-200 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                         <button
                           onClick={() => savePhaseLogProfile(newPhaseProfileName)}
@@ -4653,7 +4653,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                   </div>
 
                   {phasePinTarget && (
-                    <div className="mb-3 bg-white dark:bg-slate-800 border border-indigo-300 rounded-lg p-3 text-sm text-indigo-900">
+                    <div className="mb-3 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-indigo-300 rounded-lg p-3 text-sm text-indigo-900">
                       Click the screenshot to set
                       {' '}
                       <strong>{phasePinTarget.boundary === 'startTime' ? 'start' : 'end'}</strong>
@@ -4667,7 +4667,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                           setPhasePinSequenceLogId(null);
                           setPhasePinCursor(cursor => ({ ...cursor, visible: false }));
                         }}
-                        className="ml-3 px-2 py-1 bg-slate-200 text-slate-800 rounded hover:bg-slate-300"
+                        className="ml-3 px-2 py-1 bg-slate-200 text-slate-800 dark:text-white rounded hover:bg-slate-300"
                       >
                         Cancel Pinning
                       </button>
@@ -4681,10 +4681,10 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       {phaseLogs.map((log) => {
                         const metrics = getPhaseMetrics(log);
                         return (
-                        <div key={log.id} className="bg-white dark:bg-slate-800 border border-indigo-100 rounded-lg p-3">
+                        <div key={log.id} className="bg-white dark:bg-slate-800 dark:bg-slate-800 border border-indigo-100 rounded-lg p-3">
                           <div className="grid grid-cols-3 gap-2 items-end">
                             <div className="col-span-2">
-                              <label className="text-xs text-gray-600 dark:text-slate-400">Name</label>
+                              <label className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">Name</label>
                               <input
                                 type="text"
                                 value={log.name}
@@ -4693,7 +4693,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                               />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-600 dark:text-slate-400">Color</label>
+                              <label className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">Color</label>
                               <input
                                 type="color"
                                 value={log.color}
@@ -4703,7 +4703,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                             </div>
 
                             <div>
-                              <label className="text-xs text-gray-600 dark:text-slate-400">Start (s)</label>
+                              <label className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">Start (s)</label>
                               <input
                                 type="number"
                                 min={0}
@@ -4714,7 +4714,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                               />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-600 dark:text-slate-400">End (s)</label>
+                              <label className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">End (s)</label>
                               <input
                                 type="number"
                                 min={0}
@@ -4728,18 +4728,18 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                               {metrics.duration.toFixed(1)}s
                             </div>
 
-                            <div className="rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-2 py-2 text-xs text-slate-700 dark:text-slate-300">
+                            <div className="rounded border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 px-2 py-2 text-xs text-slate-700 dark:text-slate-300 dark:text-slate-300">
                               Start EC: <strong>{metrics.startEC !== null ? metrics.startEC.toFixed(2) : 'n/a'}</strong>
                             </div>
-                            <div className="rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-2 py-2 text-xs text-slate-700 dark:text-slate-300">
+                            <div className="rounded border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 px-2 py-2 text-xs text-slate-700 dark:text-slate-300 dark:text-slate-300">
                               End EC: <strong>{metrics.endEC !== null ? metrics.endEC.toFixed(2) : 'n/a'}</strong>
                             </div>
-                            <div className={`rounded border px-2 py-2 text-xs ${metrics.ecDelta !== null && metrics.ecDelta < 0 ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200' : 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200'}`}>
+                            <div className={`rounded border px-2 py-2 text-xs ${metrics.ecDelta !== null && metrics.ecDelta < 0 ? 'border-amber-200 dark:border-amber-800 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 dark:text-amber-200' : 'border-emerald-200 dark:border-emerald-800 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 dark:text-emerald-200'}`}>
                               EC Delta: <strong>{metrics.ecDelta !== null ? `${metrics.ecDelta > 0 ? '+' : ''}${metrics.ecDelta.toFixed(2)}` : 'n/a'}</strong>
                             </div>
 
                             <div>
-                              <label className="text-xs text-gray-600 dark:text-slate-400">Expected EC Min</label>
+                              <label className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">Expected EC Min</label>
                               <input
                                 type="number"
                                 step={0.1}
@@ -4749,7 +4749,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                               />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-600 dark:text-slate-400">Expected EC Max</label>
+                              <label className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">Expected EC Max</label>
                               <input
                                 type="number"
                                 step={0.1}
@@ -4760,7 +4760,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                             </div>
                             {pourPlan.length > 0 && (
                               <div>
-                                <label className="text-xs text-gray-600 dark:text-slate-400">Pour Plan %</label>
+                                <label className="text-xs text-gray-600 dark:text-slate-400 dark:text-slate-400">Pour Plan %</label>
                                 <select
                                   value={log.pourPlanPercent ?? ''}
                                   onChange={(e) => updatePhaseLog(log.id, { pourPlanPercent: e.target.value === '' ? null : Number(e.target.value) })}
@@ -4820,41 +4820,41 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                   )}
 
                   {phaseLogs.length > 0 && (
-                    <div className="mt-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white dark:bg-slate-800 shadow-sm">
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white dark:bg-slate-800 dark:bg-slate-800 shadow-sm">
                       <div className="border-b border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-sky-50 px-4 py-4">
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                           <div>
                             <div className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">Phase Summary</div>
-                            <h4 className="mt-1 text-lg font-semibold text-slate-900">Phase timing, EC and pour targets</h4>
-                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                            <h4 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Phase timing, EC and pour targets</h4>
+                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400">
                               Focus view for what each phase covers, how EC moves, and how much water is added inside that phase.
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
                               <button
                                 onClick={downloadPhaseSummaryText}
-                                className="rounded border border-indigo-300 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50"
+                                className="rounded border border-indigo-300 bg-white dark:bg-slate-800 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50"
                               >
                                 Export Phase TXT
                               </button>
                               <button
                                 onClick={downloadPhaseSummaryCsv}
-                                className="rounded border border-indigo-300 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50"
+                                className="rounded border border-indigo-300 bg-white dark:bg-slate-800 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50"
                               >
                                 Export Phase CSV
                               </button>
-                              <div className="ml-1 inline-flex items-center gap-1.5 rounded border border-indigo-200 bg-white dark:bg-slate-800 px-2 py-1">
+                              <div className="ml-1 inline-flex items-center gap-1.5 rounded border border-indigo-200 bg-white dark:bg-slate-800 dark:bg-slate-800 px-2 py-1">
                                 <span className="text-[11px] font-semibold text-indigo-600">Zoom</span>
                                 <button
                                   onClick={() => setPhaseSummaryZoom((z) => Math.max(0.8, Number((z - 0.1).toFixed(2))))}
-                                  className="h-5 w-5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                                  className="h-5 w-5 rounded border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                                   title="Zoom out"
                                 >
                                   -
                                 </button>
-                                <span className="w-10 text-center text-[11px] font-semibold text-slate-700 dark:text-slate-300">{Math.round(phaseSummaryZoom * 100)}%</span>
+                                <span className="w-10 text-center text-[11px] font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300">{Math.round(phaseSummaryZoom * 100)}%</span>
                                 <button
                                   onClick={() => setPhaseSummaryZoom((z) => Math.min(1.8, Number((z + 0.1).toFixed(2))))}
-                                  className="h-5 w-5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                                  className="h-5 w-5 rounded border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
                                   title="Zoom in"
                                 >
                                   +
@@ -4863,8 +4863,8 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                             </div>
                           </div>
                           {redLightTime !== null && (
-                            <div className="rounded-2xl border border-red-200 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-900">
-                              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-red-500 dark:text-red-400">Red Light Stop</div>
+                            <div className="rounded-2xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 px-4 py-3 text-sm text-red-900">
+                              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-red-500 dark:text-red-400 dark:text-red-400">Red Light Stop</div>
                               <div className="mt-1 text-base font-semibold">Stop at {formatPourAmount(getCumulativePourAtTime(redLightTime))}</div>
                               {effectiveWaterInTotal != null && getCumulativePourAtTime(redLightTime) != null && effectiveWaterInTotal > 0 && (
                                 <div className="mt-1 text-xs text-red-700">{((getCumulativePourAtTime(redLightTime) as number) / effectiveWaterInTotal * 100).toFixed(1)}% of total water-in</div>
@@ -4878,7 +4878,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       <div className="overflow-x-auto px-4 py-4" style={{ zoom: phaseSummaryZoom }}>
                         <table className="min-w-full text-sm">
                           <thead>
-                            <tr className="border-b border-slate-200 dark:border-slate-700 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            <tr className="border-b border-slate-200 dark:border-slate-700 dark:border-slate-700 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 dark:text-slate-400">
                               <th className="pb-3 pr-4">Phase</th>
                               <th className="pb-3 pr-4">Time</th>
                               <th className="pb-3 pr-4">Duration</th>
@@ -4892,23 +4892,23 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                               .map((log) => {
                                 const metrics = getPhaseMetrics(log);
                                 return (
-                                  <tr key={log.id} className="border-b border-slate-100 dark:border-slate-700 align-top last:border-b-0">
+                                  <tr key={log.id} className="border-b border-slate-100 dark:border-slate-700 dark:border-slate-700 align-top last:border-b-0">
                                     <td className="py-3 pr-4">
                                       <div className="flex items-center gap-2">
                                         <span className="inline-block h-3 w-3 rounded-full" style={{ background: log.color }} />
-                                        <span className="font-medium text-slate-900">{log.name}</span>
+                                        <span className="font-medium text-slate-900 dark:text-white">{log.name}</span>
                                       </div>
                                     </td>
-                                    <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                                    <td className="py-3 pr-4 text-slate-700 dark:text-slate-300 dark:text-slate-300">
                                       <div>{formatTime(log.startTime)} - {formatTime(log.endTime)}</div>
-                                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{formatRawSeconds(log.startTime)}s - {formatRawSeconds(log.endTime)}s</div>
+                                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">{formatRawSeconds(log.startTime)}s - {formatRawSeconds(log.endTime)}s</div>
                                     </td>
-                                    <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">{metrics.duration.toFixed(1)}s</td>
-                                    <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                                    <td className="py-3 pr-4 text-slate-700 dark:text-slate-300 dark:text-slate-300">{metrics.duration.toFixed(1)}s</td>
+                                    <td className="py-3 pr-4 text-slate-700 dark:text-slate-300 dark:text-slate-300">
                                       {metrics.startEC !== null ? (
                                         <>
                                           <div>{metrics.startEC.toFixed(2)} - {metrics.endEC !== null ? metrics.endEC.toFixed(2) : 'n/a'}</div>
-                                          <div className={`mt-1 text-xs font-semibold ${metrics.ecDelta !== null && metrics.ecDelta < 0 ? 'text-amber-700' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                                          <div className={`mt-1 text-xs font-semibold ${metrics.ecDelta !== null && metrics.ecDelta < 0 ? 'text-amber-700' : 'text-emerald-700 dark:text-emerald-400 dark:text-emerald-400'}`}>
                                             Delta {metrics.ecDelta !== null ? `${metrics.ecDelta > 0 ? '+' : ''}${metrics.ecDelta.toFixed(2)}` : 'n/a'}
                                           </div>
                                         </>
@@ -4916,9 +4916,9 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                                         'n/a'
                                       )}
                                     </td>
-                                    <td className="py-3 pl-4 pr-0 text-right text-slate-700 dark:text-slate-300">
-                                      <div className="font-medium text-slate-900">{formatPourAmount(metrics.pouredAmount)}</div>
-                                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{formatPourAmount(metrics.startPour)} - {formatPourAmount(metrics.endPour)}</div>
+                                    <td className="py-3 pl-4 pr-0 text-right text-slate-700 dark:text-slate-300 dark:text-slate-300">
+                                      <div className="font-medium text-slate-900 dark:text-white">{formatPourAmount(metrics.pouredAmount)}</div>
+                                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">{formatPourAmount(metrics.startPour)} - {formatPourAmount(metrics.endPour)}</div>
                                       {metrics.startPourPercent !== null && metrics.endPourPercent !== null && (
                                         <div className="mt-1 text-xs text-indigo-600">{metrics.startPourPercent.toFixed(1)}% - {metrics.endPourPercent.toFixed(1)}% ({metrics.pouredPercent !== null ? `+${metrics.pouredPercent.toFixed(1)}%` : 'n/a'})</div>
                                       )}
@@ -4927,7 +4927,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                                 );
                               })}
                             {redLightTime !== null && (
-                              <tr className="bg-red-50 dark:bg-red-900/20/80 align-top">
+                              <tr className="bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20/80 align-top">
                                 <td className="py-3 pr-4 font-semibold text-red-800">Red Light</td>
                                 <td className="py-3 pr-4 text-red-700">
                                   <div>{formatTime(redLightTime)}</div>
@@ -4952,7 +4952,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
               )}
 
               {/* Auto-Detect Preference */}
-              <div className="bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-4">
+              <div className="bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 border border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-lg p-3 mb-4">
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -4960,7 +4960,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     onChange={(e) => setAutoDetectPreference(e.target.checked)}
                     className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-gray-700 dark:text-slate-300">
                     Auto-detect curve after calibration (saves preference)
                   </span>
                 </label>
@@ -4974,7 +4974,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     onChange={(e) => setAutoGenerateAfterDetectPreference(e.target.checked)}
                     className="mr-2 w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
                   />
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-gray-700 dark:text-slate-300">
                     Auto-generate curve after auto-detect (uses selected interval)
                   </span>
                 </label>
@@ -4986,7 +4986,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
               {/* EC Calibration Prompt Modal */}
               {showECPrompt && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl max-w-md">
+                  <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 p-6 rounded-lg shadow-xl max-w-md">
                     <h3 className="text-lg font-bold mb-4">EC Calibration Options</h3>
                     <div className="space-y-3">
                       <button
@@ -5008,7 +5008,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       </button>
                       <button
                         onClick={() => setShowECPrompt(false)}
-                        className="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                        className="w-full px-4 py-2 bg-gray-300 text-gray-700 dark:text-slate-300 rounded hover:bg-gray-400"
                       >
                         Cancel
                       </button>
@@ -5020,9 +5020,9 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
               {/* Temperature Calibration Prompt Modal */}
               {showTempPrompt && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl max-w-md">
+                  <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 p-6 rounded-lg shadow-xl max-w-md">
                     <h3 className="text-lg font-bold mb-4">Temperature Calibration</h3>
-                    <p className="text-gray-600 dark:text-slate-400 mb-4">
+                    <p className="text-gray-600 dark:text-slate-400 dark:text-slate-400 mb-4">
                       Calibrate temperature using your phone readings for accurate temperature data extraction.
                     </p>
                     <div className="space-y-3">
@@ -5038,7 +5038,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       </button>
                       <button
                         onClick={() => setShowTempPrompt(false)}
-                        className="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                        className="w-full px-4 py-2 bg-gray-300 text-gray-700 dark:text-slate-300 rounded hover:bg-gray-400"
                       >
                         Skip Temperature
                       </button>
@@ -5049,16 +5049,16 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
               {showJsonImportPrompt && selectedImage && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg">
+                  <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                       <div>
-                        <h3 className="text-base font-bold text-gray-900">Import Ultrakoki JSON</h3>
+                        <h3 className="text-base font-bold text-gray-900 dark:text-white">Import Ultrakoki JSON</h3>
                         <p className="text-xs text-gray-500 mt-0.5">Ultrakoki loads brew timing, flow, and pour total. Point-array JSON still imports EC curve data.</p>
                       </div>
                       <button
                         onClick={() => { setShowJsonImportPrompt(false); setImportedJsonText(''); }}
-                        className="text-gray-400 hover:text-gray-600 dark:text-slate-400 text-xl leading-none"
+                        className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:text-slate-400 text-xl leading-none"
                         aria-label="Close"
                       >
                         ✕
@@ -5067,11 +5067,11 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
                     {/* File upload */}
                     <div className="px-5 pt-4">
-                      <label className="flex items-center gap-3 w-full border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg px-4 py-3 cursor-pointer hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 transition-colors">
+                      <label className="flex items-center gap-3 w-full border-2 border-dashed border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-lg px-4 py-3 cursor-pointer hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50 transition-colors">
                         <span className="text-2xl">📂</span>
                         <div>
-                          <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Upload a .json file</div>
-                          <div className="text-xs text-slate-400 dark:text-slate-500">Replaces anything pasted below</div>
+                          <div className="text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300">Upload a .json file</div>
+                          <div className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-500">Replaces anything pasted below</div>
                         </div>
                         <input
                           type="file"
@@ -5116,14 +5116,14 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                         <div className="text-right">
                           <button
                             onClick={() => setImportedJsonText('')}
-                            className="text-xs text-gray-400 hover:text-gray-600 dark:text-slate-400 mt-0.5"
+                            className="text-xs text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:text-slate-400 mt-0.5"
                           >
                             Clear
                           </button>
                         </div>
                       )}
                       {ultrakokiImportWarning && (
-                        <div className="mt-2 rounded-md border border-amber-300 bg-amber-100 dark:bg-amber-900/30 px-3 py-2 text-xs text-amber-900">
+                        <div className="mt-2 rounded-md border border-amber-300 bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 px-3 py-2 text-xs text-amber-900">
                           <div className="font-semibold">Import file warning</div>
                           <div className="mt-0.5">{ultrakokiImportWarning}</div>
                         </div>
@@ -5135,7 +5135,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       <button
                         type="button"
                         onClick={() => { setShowJsonImportPrompt(false); setImportedJsonText(''); }}
-                        className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                        className="px-4 py-2 text-sm bg-gray-100 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200"
                       >
                         Cancel
                       </button>
@@ -5240,15 +5240,15 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
               {/* Data Table */}
               {(extractedPoints.length > 0 || fineGeneratedCurve.length > 0) && (
-                <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
-                  <div className="border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 via-white to-blue-50 px-4 py-4 sm:px-5">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800 shadow-sm">
+                  <div className="border-b border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-gradient-to-r from-slate-50 via-white to-blue-50 px-4 py-4 sm:px-5">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                       <div>
-                        <div className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Curve Table</div>
-                        <h4 className="mt-1 text-lg font-semibold text-slate-900">
+                        <div className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 dark:text-slate-400">Curve Table</div>
+                        <h4 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
                           {viewMode === 'fine' ? `Generated EC curve (${intervalMs}ms)` : 'Digitized EC curve'}
                         </h4>
-                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400">
                           Same timebase as the charts above, with point-by-point EC values and optional temperature readings.
                         </p>
                       </div>
@@ -5256,7 +5256,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                         {fineGeneratedCurve.length > 0 && (
                           <button
                             onClick={toggleDataView}
-                            className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-200"
+                            className="rounded-full bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-200"
                           >
                             {viewMode === 'fine' ? 'Show Original' : 'Show Generated'}
                           </button>
@@ -5275,7 +5275,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                         <div className="font-medium opacity-80">Total Points</div>
                         <div className="mt-1 text-sm font-semibold">{getCurrentData().length}</div>
                       </div>
-                      <div className="rounded-xl border border-emerald-100 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 text-xs text-emerald-900">
+                      <div className="rounded-xl border border-emerald-100 bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 px-3 py-2 text-xs text-emerald-900">
                         <div className="font-medium opacity-80">Time Range</div>
                         <div className="mt-1 text-sm font-semibold">
                           {getCurrentData().length > 0 ? `${getCurrentData()[getCurrentData().length - 1]?.time.toFixed(0)}s` : '0s'}
@@ -5300,8 +5300,8 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
                   <div className="max-h-96 overflow-auto px-4 py-4 sm:px-5">
                     <table className="min-w-full text-sm">
-                      <thead className="sticky top-0 bg-white dark:bg-slate-800">
-                        <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                      <thead className="sticky top-0 bg-white dark:bg-slate-800 dark:bg-slate-800">
+                        <tr className="border-b border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-500 dark:text-slate-400 dark:text-slate-400">
                           <th className="py-2 pr-4 text-left font-semibold">Time ({showMinSec ? 'Min:Sec' : 'Seconds'})</th>
                           <th className="py-2 pr-4 text-left font-semibold">EC Value</th>
                           <th className="py-2 pr-4 text-left font-semibold">Temperature (°C)</th>
@@ -5309,8 +5309,8 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       </thead>
                       <tbody>
                         {getCurrentData().map((point, index) => (
-                          <tr key={index} className="border-b border-slate-100 dark:border-slate-700 odd:bg-slate-50 dark:bg-slate-900/50/60">
-                            <td className="py-2 pr-4 text-slate-800">
+                          <tr key={index} className="border-b border-slate-100 dark:border-slate-700 dark:border-slate-700 odd:bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50/60">
+                            <td className="py-2 pr-4 text-slate-800 dark:text-white">
                               {showMinSec
                                 ? (() => {
                                     const minutes = Math.floor(point.time / 60);
@@ -5319,8 +5319,8 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                                   })()
                                 : `${point.time.toFixed(1)}s`}
                             </td>
-                            <td className="py-2 pr-4 font-medium text-slate-900">{point.ecValue.toFixed(2)}</td>
-                            <td className="py-2 pr-4 text-slate-700 dark:text-slate-300">
+                            <td className="py-2 pr-4 font-medium text-slate-900 dark:text-white">{point.ecValue.toFixed(2)}</td>
+                            <td className="py-2 pr-4 text-slate-700 dark:text-slate-300 dark:text-slate-300">
                               {point.temperature ? `${point.temperature.toFixed(1)}°C` : 'N/A'}
                             </td>
                           </tr>
@@ -5336,7 +5336,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                 {currentStep === 'extract' && (
                   <div className="w-full space-y-3">
                     <div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Flow</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Flow</div>
                       <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
                         <button
                           onClick={autoDetectCurve}
@@ -5375,7 +5375,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                     </div>
 
                     <div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Edit</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Edit</div>
                       <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
                         {fineGeneratedCurve.length > 0 && (
                           <button
@@ -5423,16 +5423,16 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
           {showJsonImportPrompt && !selectedImage && (
             <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                   <div>
-                    <h3 className="text-base font-bold text-gray-900">Import Ultrakoki JSON</h3>
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white">Import Ultrakoki JSON</h3>
                     <p className="text-xs text-gray-500 mt-0.5">Load Ultrakoki brew timing/flow now. You can add screenshot calibration later.</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => { setShowJsonImportPrompt(false); setImportedJsonText(''); }}
-                    className="text-gray-400 hover:text-gray-600 dark:text-slate-400 text-xl leading-none"
+                    className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:text-slate-400 text-xl leading-none"
                     aria-label="Close"
                   >
                     ✕
@@ -5440,11 +5440,11 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                 </div>
 
                 <div className="px-5 pt-4">
-                  <label className="flex items-center gap-3 w-full border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg px-4 py-3 cursor-pointer hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 transition-colors">
+                  <label className="flex items-center gap-3 w-full border-2 border-dashed border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-lg px-4 py-3 cursor-pointer hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50 transition-colors">
                     <span className="text-2xl">📂</span>
                     <div>
-                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Upload a .json file</div>
-                      <div className="text-xs text-slate-400 dark:text-slate-500">Replaces anything pasted below</div>
+                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300">Upload a .json file</div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-500">Replaces anything pasted below</div>
                     </div>
                     <input
                       type="file"
@@ -5488,14 +5488,14 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                       <button
                         type="button"
                         onClick={() => setImportedJsonText('')}
-                        className="text-xs text-gray-400 hover:text-gray-600 dark:text-slate-400 mt-0.5"
+                        className="text-xs text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:text-slate-400 mt-0.5"
                       >
                         Clear
                       </button>
                     </div>
                   )}
                   {ultrakokiImportWarning && (
-                    <div className="mt-2 rounded-md border border-amber-300 bg-amber-100 dark:bg-amber-900/30 px-3 py-2 text-xs text-amber-900">
+                    <div className="mt-2 rounded-md border border-amber-300 bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 px-3 py-2 text-xs text-amber-900">
                       <div className="font-semibold">Import file warning</div>
                       <div className="mt-0.5">{ultrakokiImportWarning}</div>
                     </div>
@@ -5506,7 +5506,7 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
                   <button
                     type="button"
                     onClick={() => { setShowJsonImportPrompt(false); setImportedJsonText(''); }}
-                    className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    className="px-4 py-2 text-sm bg-gray-100 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200"
                   >
                     Cancel
                   </button>
@@ -5524,8 +5524,8 @@ export const ManualDigitizer = forwardRef<ManualDigitizerHandle, ManualDigitizer
 
           {/* Error Display */}
           {error && (
-            <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg flex items-center">
-              <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 mr-2" />
+            <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 border border-red-200 rounded-lg flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 dark:text-red-400 mr-2" />
               <p className="text-red-700">{error}</p>
             </div>
           )}

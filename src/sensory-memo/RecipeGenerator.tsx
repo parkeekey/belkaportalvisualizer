@@ -209,14 +209,14 @@ export default function RecipeGenerator() {
   const hasSelection = !!coffeeInfo;
 
   const cardColors: Record<string, { border: string; bg: string; label: string; value: string }> = {
-    dose:   { border: 'border-l-slate-400', bg: 'bg-slate-50 dark:bg-slate-900/50',     label: 'text-slate-500 dark:text-slate-400', value: 'text-slate-800' },
+    dose:   { border: 'border-l-slate-400', bg: 'bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50',     label: 'text-slate-500 dark:text-slate-400 dark:text-slate-400', value: 'text-slate-800 dark:text-white' },
     ratio:  { border: 'border-l-cyan-400',   bg: 'bg-cyan-50',     label: 'text-cyan-600',  value: 'text-cyan-900' },
-    grind:  { border: 'border-l-amber-400',  bg: 'bg-amber-50 dark:bg-amber-900/20',    label: 'text-amber-600 dark:text-amber-400', value: 'text-amber-900' },
+    grind:  { border: 'border-l-amber-400',  bg: 'bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20',    label: 'text-amber-600 dark:text-amber-400 dark:text-amber-400', value: 'text-amber-900' },
     temp:   { border: 'border-l-rose-400',   bg: 'bg-rose-50',     label: 'text-rose-600',  value: 'text-rose-900' },
     ey:     { border: 'border-l-yellow-400', bg: 'bg-yellow-50',   label: 'text-yellow-600',value: 'text-yellow-900' },
     bloom:  { border: 'border-l-sky-400',    bg: 'bg-sky-50',      label: 'text-sky-600',   value: 'text-sky-900' },
     pours:  { border: 'border-l-violet-400', bg: 'bg-violet-50',   label: 'text-violet-600',value: 'text-violet-900' },
-    tds:    { border: 'border-l-emerald-400',bg: 'bg-emerald-50 dark:bg-emerald-900/20',  label: 'text-emerald-600',value: 'text-emerald-900' },
+    tds:    { border: 'border-l-emerald-400',bg: 'bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20',  label: 'text-emerald-600',value: 'text-emerald-900' },
   };
 
   const td = cardColors.dose;
@@ -230,29 +230,29 @@ export default function RecipeGenerator() {
 
   return (
     <div className="min-h-screen bg-[#f8f6f0] flex flex-col">
-      <header className="sticky top-0 z-10 bg-white dark:bg-slate-800/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700">
+      <header className="sticky top-0 z-10 bg-white dark:bg-slate-800 dark:bg-slate-800/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 dark:border-slate-700">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-bold text-slate-800">📋 Recipe Generator</h1>
+          <h1 className="text-lg font-bold text-slate-800 dark:text-white">📋 Recipe Generator</h1>
           <button onClick={() => { setSelectedProfileId(''); }}
-            className="px-2 py-1 text-[10px] font-semibold border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+            className="px-2 py-1 text-[10px] font-semibold border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
           >✕ Clear</button>
         </div>
       </header>
 
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-4 space-y-4 pb-20">
         {/* Source picker */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+        <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 shadow-sm p-4">
           <div className="flex gap-2 mb-3">
             <button onClick={() => { setSourceMode('coffee'); setSelectedProfileId(''); }}
-              className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-colors ${sourceMode === 'coffee' ? 'bg-amber-600 border-amber-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
+              className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-colors ${sourceMode === 'coffee' ? 'bg-amber-600 border-amber-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
             >☕ Coffee Profile</button>
             <button onClick={() => { setSourceMode('sensory'); setSelectedProfileId(''); }}
-              className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-colors ${sourceMode === 'sensory' ? 'bg-violet-600 border-violet-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
+              className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-colors ${sourceMode === 'sensory' ? 'bg-violet-600 border-violet-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
             >🧪 Sensory Session</button>
           </div>
           {sourceMode === 'coffee' ? (
             <select value={selectedProfileId} onChange={e => setSelectedProfileId(e.target.value)}
-              className="w-full text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800"
+              className="w-full text-xs border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-600 dark:text-slate-400 dark:text-slate-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
             >
               <option value="">— Select a coffee profile —</option>
               {coffeeProfiles.map(p => (
@@ -261,7 +261,7 @@ export default function RecipeGenerator() {
             </select>
           ) : (
             <select value={selectedProfileId} onChange={e => setSelectedProfileId(e.target.value)}
-              className="w-full text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800"
+              className="w-full text-xs border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-600 dark:text-slate-400 dark:text-slate-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
             >
               <option value="">— Select a sensory session —</option>
               {sensoryProfiles.map(p => (
@@ -276,32 +276,32 @@ export default function RecipeGenerator() {
         {hasSelection && (
           <>
             {/* Flavor profile summary */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+            <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 shadow-sm p-4">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300">🧪 {profileName}</h2>
-                <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{flavorSources.length} flavors</span>
+                <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300">🧪 {profileName}</h2>
+                <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 dark:text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{flavorSources.length} flavors</span>
               </div>
 
               {coffeeInfo && (
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 mb-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg px-3 py-2">
-                  {'roaster' in coffeeInfo && (coffeeInfo as any).roaster && <span><span className="text-slate-400 dark:text-slate-500">Roaster</span> <strong className="text-slate-700 dark:text-slate-300">{(coffeeInfo as any).roaster}</strong></span>}
-                  {'origin' in coffeeInfo && (coffeeInfo as any).origin && <span><span className="text-slate-400 dark:text-slate-500">Origin</span> <strong className="text-slate-700 dark:text-slate-300">{(coffeeInfo as any).origin}</strong></span>}
-                  {process && <span><span className="text-slate-400 dark:text-slate-500">Process</span> <strong className="text-slate-700 dark:text-slate-300">{process}</strong></span>}
-                  <span><span className="text-slate-400 dark:text-slate-500">Roast</span> <strong className="text-slate-700 dark:text-slate-300">{roastNum}/5</strong></span>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-3 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 rounded-lg px-3 py-2">
+                  {'roaster' in coffeeInfo && (coffeeInfo as any).roaster && <span><span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Roaster</span> <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{(coffeeInfo as any).roaster}</strong></span>}
+                  {'origin' in coffeeInfo && (coffeeInfo as any).origin && <span><span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Origin</span> <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{(coffeeInfo as any).origin}</strong></span>}
+                  {process && <span><span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Process</span> <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{process}</strong></span>}
+                  <span><span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">Roast</span> <strong className="text-slate-700 dark:text-slate-300 dark:text-slate-300">{roastNum}/5</strong></span>
                 </div>
               )}
 
               {/* Taste bars */}
               <div className="mb-3">
-                <div className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Taste profile</div>
+                <div className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1.5">Taste profile</div>
                 <div className="flex gap-2">
                   {TASTE_LABELS.map(t => (
                     <div key={t.key} className="flex-1">
                       <div className="h-12 rounded-lg overflow-hidden bg-slate-100 flex flex-col-reverse">
                         <div className={`${t.color} transition-all duration-200`} style={{ height: `${(aggregate.avgTaste[t.key] / 5) * 100}%` }} />
                       </div>
-                      <div className="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center mt-0.5">{aggregate.avgTaste[t.key]}</div>
-                      <div className="text-[7px] text-slate-400 dark:text-slate-500 text-center">{t.label}</div>
+                      <div className="text-[10px] font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400 text-center mt-0.5">{aggregate.avgTaste[t.key]}</div>
+                      <div className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 text-center">{t.label}</div>
                     </div>
                   ))}
                 </div>
@@ -309,15 +309,15 @@ export default function RecipeGenerator() {
 
               {/* Dimension + possibility row */}
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-slate-600 dark:text-slate-400">Dimension</span>{' '}
-                  <span className={`font-bold ${aggregate.dimension === 'aroma' ? 'text-pink-600' : aggregate.dimension === 'mouthfeel' ? 'text-orange-600' : aggregate.dimension === 'flavor' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600'}`}>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 dark:text-slate-400">
+                  <span className="font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-400">Dimension</span>{' '}
+                  <span className={`font-bold ${aggregate.dimension === 'aroma' ? 'text-pink-600' : aggregate.dimension === 'mouthfeel' ? 'text-orange-600' : aggregate.dimension === 'flavor' ? 'text-amber-600 dark:text-amber-400 dark:text-amber-400' : 'text-emerald-600'}`}>
                     {aggregate.dimension}
                   </span>
                 </span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-slate-600 dark:text-slate-400">Possibility</span>{' '}
-                  <span className={`font-bold ${aggregate.possibilityScore >= 80 ? 'text-emerald-600' : aggregate.possibilityScore >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 dark:text-slate-400">
+                  <span className="font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-400">Possibility</span>{' '}
+                  <span className={`font-bold ${aggregate.possibilityScore >= 80 ? 'text-emerald-600' : aggregate.possibilityScore >= 60 ? 'text-amber-600 dark:text-amber-400 dark:text-amber-400' : 'text-red-500 dark:text-red-400 dark:text-red-400'}`}>
                     {aggregate.possibilityScore}%
                   </span>
                 </span>
@@ -335,18 +335,18 @@ export default function RecipeGenerator() {
               {/* Flavor chips */}
               <div className="flex flex-wrap gap-1">
                 {flavorSources.map(f => (
-                  <span key={f.id} className="text-[8px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:text-slate-400">{f.emoji} {f.label}</span>
+                  <span key={f.id} className="text-[8px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:text-slate-400 dark:text-slate-400">{f.emoji} {f.label}</span>
                 ))}
               </div>
             </div>
 
             {/* Generated Recipe */}
             {recipe && (
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-amber-200 dark:border-amber-800 shadow-sm p-4">
+              <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl border border-amber-200 dark:border-amber-800 dark:border-amber-800 shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-bold text-amber-800 dark:text-amber-200">☕ Suggested Recipe</h2>
+                  <h2 className="text-sm font-bold text-amber-800 dark:text-amber-200 dark:text-amber-200">☕ Suggested Recipe</h2>
                   <button onClick={() => setShowReasoning(p => !p)}
-                    className="text-[10px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 font-semibold flex items-center gap-1"
+                    className="text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-400 font-semibold flex items-center gap-1"
                   >
                     <span className={showReasoning ? 'rotate-90' : ''}>▶</span> Reasoning
                   </button>
@@ -358,7 +358,7 @@ export default function RecipeGenerator() {
                     <div className={`text-[9px] font-semibold ${td.label} mb-0.5`}>Dose</div>
                     <div className="flex items-baseline gap-1">
                       <input type="number" value={doseOverride} onChange={e => setDoseOverride(Math.max(10, Math.min(30, parseInt(e.target.value) || 18)))}
-                        className={`w-14 text-sm font-bold ${td.value} bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-1.5 py-0.5 text-center`}
+                        className={`w-14 text-sm font-bold ${td.value} bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-md px-1.5 py-0.5 text-center`}
                       />
                       <span className={`text-xs font-semibold ${td.label}`}>g</span>
                     </div>
@@ -374,8 +374,8 @@ export default function RecipeGenerator() {
                   {/* Grind */}
                   <div className={`border-l-4 ${tg.border} ${tg.bg} rounded-r-lg px-3 py-2`}>
                     <div className={`text-[9px] font-semibold ${tg.label} mb-0.5`}>Grind</div>
-                    <div className="text-sm font-bold text-amber-800 dark:text-amber-200">{recipe.grindUm}µm</div>
-                    {showReasoning && <div className="text-[8px] text-amber-600 dark:text-amber-400/70 mt-0.5">{roastNum <= 2 ? 'Finer for light roast' : roastNum >= 4 ? 'Coarser for dark roast' : 'Medium'}{process ? ` · ${process}` : ''}</div>}
+                    <div className="text-sm font-bold text-amber-800 dark:text-amber-200 dark:text-amber-200">{recipe.grindUm}µm</div>
+                    {showReasoning && <div className="text-[8px] text-amber-600 dark:text-amber-400 dark:text-amber-400/70 mt-0.5">{roastNum <= 2 ? 'Finer for light roast' : roastNum >= 4 ? 'Coarser for dark roast' : 'Medium'}{process ? ` · ${process}` : ''}</div>}
                   </div>
 
                   {/* Water temp */}
@@ -409,7 +409,7 @@ export default function RecipeGenerator() {
                   {/* TDS */}
                   <div className={`border-l-4 ${tts.border} ${tts.bg} rounded-r-lg px-3 py-2`}>
                     <div className={`text-[9px] font-semibold ${tts.label} mb-0.5`}>Target TDS</div>
-                    <div className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                    <div className="text-sm font-bold text-emerald-800 dark:text-emerald-200 dark:text-emerald-200">
                       {(() => {
                         const range = getReferenceTDSRange(recipe.ratio, recipe.targetEYmin, recipe.targetEYmax);
                         return range ? `${range.tdsMin.toFixed(2)}–${range.tdsMax.toFixed(2)}%` : '—';
@@ -421,8 +421,8 @@ export default function RecipeGenerator() {
 
                 {/* Reasoning */}
                 {showReasoning && (
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                    <div className="font-bold text-amber-800 dark:text-amber-200 mb-1.5">Why this recipe?</div>
+                  <div className="bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 dark:border-amber-800 rounded-lg p-3 text-[10px] text-slate-600 dark:text-slate-400 dark:text-slate-400 leading-relaxed">
+                    <div className="font-bold text-amber-800 dark:text-amber-200 dark:text-amber-200 mb-1.5">Why this recipe?</div>
                     <ul className="space-y-1 list-disc list-inside">
                       <li><strong>Roast {roastNum}/5</strong> → {recipe.waterTemp}°C · {recipe.grindUm}µm · bloom {recipe.bloomTime}s</li>
                       {process && <li><strong>Process: {process}</strong> → grind adjusted</li>}
@@ -437,10 +437,10 @@ export default function RecipeGenerator() {
                 {/* Save as Brew Profile */}
                 <div className="mt-3 pt-3 border-t border-amber-100">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">💾 Save as Brew Profile</span>
+                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 dark:text-slate-500">💾 Save as Brew Profile</span>
                     <input type="text" value={brewProfileName} onChange={e => setBrewProfileName(e.target.value)}
                       placeholder='Save as...'
-                      className="flex-1 text-[10px] border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800"
+                      className="flex-1 text-[10px] border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg px-2 py-1.5 text-slate-600 dark:text-slate-400 dark:text-slate-400 bg-white dark:bg-slate-800 dark:bg-slate-800"
                     />
                     <button onClick={() => {
                       const name = brewProfileName.trim() || profileName || 'Untitled';
@@ -473,7 +473,7 @@ export default function RecipeGenerator() {
                       setBrewProfileMsg(`Saved "${name}"`);
                       setTimeout(() => setBrewProfileMsg(''), 2500);
                     }}
-                      className="text-[9px] px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 rounded-lg font-semibold hover:bg-amber-200"
+                      className="text-[9px] px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-700 rounded-lg font-semibold hover:bg-amber-200"
                     >Save</button>
                   </div>
                   {brewProfileMsg && (
@@ -481,8 +481,8 @@ export default function RecipeGenerator() {
                   )}
                   {savedBrewProfiles.length > 0 && (
                     <div className="mt-2">
-                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold">Saved ({savedBrewProfiles.length}): </span>
-                      <span className="text-[9px] text-slate-500 dark:text-slate-400">{savedBrewProfiles.map(p => p.name).join(', ')}</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Saved ({savedBrewProfiles.length}): </span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400">{savedBrewProfiles.map(p => p.name).join(', ')}</span>
                     </div>
                   )}
                 </div>
@@ -492,10 +492,10 @@ export default function RecipeGenerator() {
         )}
 
         {!hasSelection && (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-10 text-center">
+          <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 shadow-sm p-10 text-center">
             <div className="text-3xl mb-3">📋</div>
-            <p className="text-sm text-slate-400 dark:text-slate-500">Select a coffee profile or sensory session to generate a brew recipe.</p>
-            <p className="text-[11px] text-slate-300 dark:text-slate-600 mt-1">Recipe adapts to roast level, process method, and flavor profile.</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-500">Select a coffee profile or sensory session to generate a brew recipe.</p>
+            <p className="text-[11px] text-slate-300 dark:text-slate-600 dark:text-slate-600 mt-1">Recipe adapts to roast level, process method, and flavor profile.</p>
           </div>
         )}
       </div>

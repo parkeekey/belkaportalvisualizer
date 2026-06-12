@@ -327,7 +327,7 @@ export default function Simulation() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-5 select-none">
-      <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider text-center">
+      <h2 className="text-lg font-bold text-slate-800 dark:text-white uppercase tracking-wider text-center">
         Grind Simulator
       </h2>
 
@@ -337,7 +337,7 @@ export default function Simulation() {
           <span className="text-[8px] text-blue-500 font-semibold">Min</span>
           <input type="number" min={0} max={40} step={1} value={grindMin}
             onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v)) setGrindMin(Math.max(0, Math.min(40, v))); }}
-            className="w-full text-center text-sm font-bold text-blue-800 bg-white dark:bg-slate-800 border border-blue-200 rounded-lg py-2" />
+            className="w-full text-center text-sm font-bold text-blue-800 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-blue-200 rounded-lg py-2" />
           <div className="text-[7px] text-blue-400 text-center mt-0.5">{micronMin}µm</div>
         </div>
         <div className="flex-1">
@@ -351,7 +351,7 @@ export default function Simulation() {
           <span className="text-[8px] text-blue-500 font-semibold">Max</span>
           <input type="number" min={0} max={40} step={1} value={grindMax}
             onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v)) setGrindMax(Math.max(0, Math.min(40, v))); }}
-            className="w-full text-center text-sm font-bold text-blue-800 bg-white dark:bg-slate-800 border border-blue-200 rounded-lg py-2" />
+            className="w-full text-center text-sm font-bold text-blue-800 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-blue-200 rounded-lg py-2" />
           <div className="text-[7px] text-blue-400 text-center mt-0.5">{micronMax}µm</div>
         </div>
       </div>
@@ -359,7 +359,7 @@ export default function Simulation() {
       {/* Kruve ruler + distribution histogram */}
       <div className="max-w-xs mx-auto w-full">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold">Particle size distribution</span>
+          <span className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Particle size distribution</span>
           <button onClick={() => { setMode(m => {
             const next = m === 'simulate' ? 'manual' : 'simulate';
             if (next === 'simulate' && m === 'manual') {
@@ -371,7 +371,7 @@ export default function Simulation() {
           }); }}
             className={`text-[7px] font-bold rounded px-1.5 py-0.5 border transition-all ${
               mode === 'manual'
-                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border-amber-300'
+                ? 'bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-700 border-amber-300'
                 : 'bg-blue-50 text-blue-600 border-blue-200'
             }`}>
             {mode === 'simulate' ? '✋ Manual Kruve' : '⚙ Simulate'}
@@ -436,10 +436,10 @@ export default function Simulation() {
                     boxShadow: isCenter ? '0 0 6px rgba(59,130,246,0.5)' : 'none',
                   }}
                 />}
-                <span className={`text-[6px] font-mono ${isFines ? 'text-red-400' : isCenter ? 'text-blue-700 font-bold' : inRange ? 'text-blue-500' : 'text-slate-300 dark:text-slate-600'}`}>
+                <span className={`text-[6px] font-mono ${isFines ? 'text-red-400' : isCenter ? 'text-blue-700 font-bold' : inRange ? 'text-blue-500' : 'text-slate-300 dark:text-slate-600 dark:text-slate-600'}`}>
                   {m}
                 </span>
-                <span className="text-[6px] text-slate-400 dark:text-slate-500">
+                <span className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500">
                   {mode === 'manual' ? `${Math.round(raw)}` : `${pct.toFixed(1)}%`}
                 </span>
               </div>
@@ -447,8 +447,8 @@ export default function Simulation() {
           })}
         </div>
         <div className="flex items-center justify-between mt-1 flex-wrap gap-x-2">
-            <span className="text-[8px] text-slate-500 dark:text-slate-400">Surface: <strong className="text-blue-700">{surfaceArea.toFixed(0)} cm²</strong></span>
-            <span className="text-[8px] text-slate-500 dark:text-slate-400">Fines &lt;200µm: <strong className="text-red-500 dark:text-red-400">
+            <span className="text-[8px] text-slate-500 dark:text-slate-400 dark:text-slate-400">Surface: <strong className="text-blue-700">{surfaceArea.toFixed(0)} cm²</strong></span>
+            <span className="text-[8px] text-slate-500 dark:text-slate-400 dark:text-slate-400">Fines &lt;200µm: <strong className="text-red-500 dark:text-red-400 dark:text-red-400">
               {finesPct.toFixed(1)}%</strong></span>
             {mode === 'simulate' ? (
               <div className="flex items-center gap-1">
@@ -462,13 +462,13 @@ export default function Simulation() {
                   </>
                 )}
                 <button onClick={() => setSiftSeed(prev => prev + 1)}
-                  className="text-[8px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded px-2 py-0.5 hover:bg-amber-100 dark:bg-amber-900/30">
+                  className="text-[8px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 dark:border-amber-800 rounded px-2 py-0.5 hover:bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30">
                   ⟳ Sift
                 </button>
               </div>
             ) : (
               <button onClick={() => setManualRaw(micronSizes.map(() => 5))}
-                className="text-[8px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 border border-slate-300 dark:border-slate-600 rounded px-2 py-0.5 hover:bg-slate-200">
+                className="text-[8px] font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400 bg-slate-100 border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded px-2 py-0.5 hover:bg-slate-200">
                 ↻ Reset taps
               </button>
             )}
@@ -476,25 +476,25 @@ export default function Simulation() {
         {mode === 'manual' && (
           <div className="mt-1.5 flex flex-col items-center gap-1">
             <div className="flex items-center gap-1">
-              <span className="text-[7px] text-slate-400 dark:text-slate-500 mr-0.5">Tap:</span>
+              <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 mr-0.5">Tap:</span>
               {[{v: 1, l: '+1'}, {v: 5, l: '+5'}, {v: 10, l: '+10'}, {v: 25, l: '+25'}, {v: 50, l: '+50'}, {v: 200, l: 'Fill'}].map(p => (
                 <button key={p.v} onClick={() => setTapWeight(p.v)}
                   className={`text-[7px] font-bold rounded px-1.5 py-0.5 border transition-all ${
                     tapWeight === p.v
-                      ? 'bg-amber-200 text-amber-800 dark:text-amber-200 border-amber-400'
-                      : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
+                      ? 'bg-amber-200 text-amber-800 dark:text-amber-200 dark:text-amber-200 border-amber-400'
+                      : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'
                   }`}>
                   {p.l}
                 </button>
               ))}
             </div>
-            <div className="text-[7px] text-slate-400 dark:text-slate-500 italic text-center">
+            <div className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 italic text-center">
               {tapWeight >= 200 ? 'Fills the slot — particles smear into adjacent holes' : `+${tapWeight} particles, smears across neighbors`} · Right-click removes 1
             </div>
           </div>
         )}
         {mode === 'simulate' && calibrated && (
-          <div className="text-[7px] text-slate-400 dark:text-slate-500 italic mt-0.5 text-center">
+          <div className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 italic mt-0.5 text-center">
             Sift applies noise to your Kruve calibration. Bean params control variance.
           </div>
         )}
@@ -505,9 +505,9 @@ export default function Simulation() {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Roast */}
           <div className="flex-1 min-w-[60px]">
-            <span className="text-[7px] text-slate-400 dark:text-slate-500 font-semibold">Roast</span>
+            <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Roast</span>
             <select value={roast} onChange={e => setRoast(e.target.value as Roast)}
-              className="w-full text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-1.5 px-1">
+              className="w-full text-[10px] font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-1.5 px-1">
               <option value="light">Light</option>
               <option value="medium">Medium</option>
               <option value="dark">Dark</option>
@@ -515,9 +515,9 @@ export default function Simulation() {
           </div>
           {/* Process */}
           <div className="flex-1 min-w-[60px]">
-            <span className="text-[7px] text-slate-400 dark:text-slate-500 font-semibold">Process</span>
+            <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Process</span>
             <select value={process} onChange={e => setProcess(e.target.value as Process)}
-              className="w-full text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-1.5 px-1">
+              className="w-full text-[10px] font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-1.5 px-1">
               <option value="washed">Washed</option>
               <option value="natural">Natural</option>
               <option value="anaerobic">Anaerobic</option>
@@ -526,23 +526,23 @@ export default function Simulation() {
           </div>
           {/* Burr profile */}
           <div className="flex-1 min-w-[80px]">
-            <span className="text-[7px] text-slate-400 dark:text-slate-500 font-semibold">Burr</span>
+            <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Burr</span>
             <select value={burrProfile.name} onChange={e => {
               const found = BURR_PROFILES.find(b => b.name === e.target.value);
               if (found) setBurrProfile(found);
             }}
-              className="w-full text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-1.5 px-1">
+              className="w-full text-[10px] font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded py-1.5 px-1">
               {BURR_PROFILES.map(b => (
                 <option key={b.name} value={b.name}>{b.label}</option>
               ))}
             </select>
-            <div className="text-[6px] text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">{burrProfile.desc}</div>
+            <div className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 mt-0.5 leading-tight">{burrProfile.desc}</div>
           </div>
           {/* Humidity */}
           <div className="flex-[2] min-w-[80px]">
             <div className="flex items-center justify-between text-[7px] mb-0.5">
-              <span className="text-slate-400 dark:text-slate-500 font-semibold">Humidity</span>
-              <span className="font-bold text-slate-600 dark:text-slate-400">{humidity}%</span>
+              <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Humidity</span>
+              <span className="font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400">{humidity}%</span>
             </div>
             <input type="range" min={10} max={90} step={5} value={humidity}
               onChange={e => setHumidity(parseInt(e.target.value))}
@@ -552,8 +552,8 @@ export default function Simulation() {
           {/* Water temperature */}
           <div className="flex-[2] min-w-[80px]">
             <div className="flex items-center justify-between text-[7px] mb-0.5">
-              <span className="text-slate-400 dark:text-slate-500 font-semibold">Water Temp</span>
-              <span className="font-bold text-slate-600 dark:text-slate-400">{waterTempC}C</span>
+              <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Water Temp</span>
+              <span className="font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400">{waterTempC}C</span>
             </div>
             <input type="range" min={75} max={100} step={1} value={waterTempC}
               onChange={e => setWaterTempC(parseInt(e.target.value))}
@@ -565,13 +565,13 @@ export default function Simulation() {
       {/* Burr diameter */}
       <div className="max-w-xs mx-auto w-full">
         <div className="flex items-center justify-between text-[7px] mb-0.5">
-          <span className="text-slate-400 dark:text-slate-500 font-semibold">Burr Ø{dia}mm</span>
-          <span className="font-bold text-slate-600 dark:text-slate-400">{dia >= 80 ? 'High inertia' : dia >= 60 ? 'Medium inertia' : 'Light spin'}</span>
+          <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Burr Ø{dia}mm</span>
+          <span className="font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400">{dia >= 80 ? 'High inertia' : dia >= 60 ? 'Medium inertia' : 'Light spin'}</span>
         </div>
         <input type="range" min={40} max={120} step={2} value={dia}
           onChange={e => setDia(parseInt(e.target.value))}
           className="w-full h-1 accent-purple-500" />
-        <div className="flex justify-between text-[6px] text-slate-300 dark:text-slate-600 mt-px">
+        <div className="flex justify-between text-[6px] text-slate-300 dark:text-slate-600 dark:text-slate-600 mt-px">
           <span>40mm</span><span>80mm</span><span>120mm</span>
         </div>
       </div>
@@ -579,16 +579,16 @@ export default function Simulation() {
       {/* Dose + Target RPM */}
       <div className="flex items-center gap-3 max-w-xs mx-auto">
         <div className="flex-1">
-          <span className="text-[8px] text-slate-500 dark:text-slate-400 font-semibold">Dose (g)</span>
+          <span className="text-[8px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-semibold">Dose (g)</span>
           <input type="number" min={1} max={60} step={0.5} value={dose}
             onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) setDose(v); }}
-            className="w-full text-center text-sm font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2" />
+            className="w-full text-center text-sm font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg py-2" />
         </div>
         <div className="flex-1">
-          <span className="text-[8px] text-slate-500 dark:text-slate-400 font-semibold">Target RPM</span>
+          <span className="text-[8px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-semibold">Target RPM</span>
           <input type="number" min={1} max={1800} step={5} value={targetRpm}
             onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v)) setTargetRpm(Math.max(1, Math.min(1800, v))); }}
-            className="w-full text-center text-sm font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2" />
+            className="w-full text-center text-sm font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg py-2" />
         </div>
       </div>
 
@@ -618,7 +618,7 @@ export default function Simulation() {
             />
           ))}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 border-2 border-blue-300 flex items-center justify-center shadow-inner">
+            <div className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 dark:bg-slate-800 border-2 border-blue-300 flex items-center justify-center shadow-inner">
               <div className="text-center">
                 <div className="text-lg font-bold text-blue-800 leading-none">{grindSetting}</div>
                 <div className="text-[7px] text-blue-400 mt-0.5">click</div>
@@ -631,14 +631,14 @@ export default function Simulation() {
         {/* Progress bar */}
         <div className="w-full max-w-xs mt-4">
           <div className="flex items-center justify-between text-[9px] mb-0.5">
-            <span className="text-slate-400 dark:text-slate-500 font-semibold">Grind progress</span>
-            <span className="font-bold text-slate-700 dark:text-slate-300">{Math.round(progress)}%</span>
+            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500 font-semibold">Grind progress</span>
+            <span className="font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300">{Math.round(progress)}%</span>
           </div>
           <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
             <div className={`h-full rounded-full ${progressColor}`}
               style={{ width: `${progress}%` }} />
           </div>
-          <div className="flex justify-between text-[8px] text-slate-400 dark:text-slate-500 mt-0.5">
+          <div className="flex justify-between text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 mt-0.5">
             <span>{Math.round(totalNeeded / 360)} rotations</span>
             {effectiveRpm > 0 && progress < 100 && (
               <span>~{estSeconds >= 60 ? `${Math.floor(estSeconds / 60)}m ${Math.round(estSeconds % 60)}s` : `${Math.round(estSeconds)}s`} at {effectiveRpm} RPM</span>
@@ -649,8 +649,8 @@ export default function Simulation() {
 
         {/* Density indicator */}
         <div className="w-full max-w-xs mt-2 text-center">
-          <span className="text-[8px] text-slate-400 dark:text-slate-500">
-            Density: <strong className={kValue >= 60 ? 'text-blue-600' : kValue >= 35 ? 'text-slate-600 dark:text-slate-400' : 'text-amber-600 dark:text-amber-400'}>{kValue}</strong>
+          <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500">
+            Density: <strong className={kValue >= 60 ? 'text-blue-600' : kValue >= 35 ? 'text-slate-600 dark:text-slate-400 dark:text-slate-400' : 'text-amber-600 dark:text-amber-400 dark:text-amber-400'}>{kValue}</strong>
             {' · '}
             {kValue >= 60 ? 'Dense — heavy spin' : kValue >= 35 ? 'Medium' : 'Brittle — spins light'}
             {' · '}
@@ -665,7 +665,7 @@ export default function Simulation() {
               <div className="h-full rounded-full bg-blue-400 transition-all"
                 style={{ width: `${Math.min(100, rpm * 2)}%` }} />
             </div>
-            <span className="text-[9px] text-slate-400 dark:text-slate-500 tabular-nums w-16">
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 tabular-nums w-16">
               {rpm > 1 ? `${rpm.toFixed(0)} RPM` : 'stopped'}
             </span>
           </div>
@@ -681,7 +681,7 @@ export default function Simulation() {
           </button>
 
           <button onClick={resetGrind}
-            className="px-3 py-1.5 text-[10px] font-bold bg-slate-200 text-slate-600 dark:text-slate-400 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-300">
+            className="px-3 py-1.5 text-[10px] font-bold bg-slate-200 text-slate-600 dark:text-slate-400 dark:text-slate-400 rounded-lg border border-slate-300 dark:border-slate-600 dark:border-slate-600 hover:bg-slate-300">
             ↻ Reset
           </button>
 
@@ -697,21 +697,21 @@ export default function Simulation() {
       {logs.length > 0 && (
         <section className="max-w-xs mx-auto w-full">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Grind Log</h3>
+            <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-wider">Grind Log</h3>
             <button onClick={() => setLogs([])}
               className="text-[8px] text-red-400 hover:text-red-600">Clear</button>
           </div>
           <div className="space-y-1 max-h-40 overflow-y-auto">
             {logs.map((l, i) => (
-              <div key={i} className="text-[9px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 px-2 py-1.5 rounded border border-slate-200 dark:border-slate-700 flex items-center gap-2 flex-wrap">
-                <span className="text-slate-400 dark:text-slate-500 font-mono">{l.date}</span>
+              <div key={i} className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 px-2 py-1.5 rounded border border-slate-200 dark:border-slate-700 dark:border-slate-700 flex items-center gap-2 flex-wrap">
+                <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500 font-mono">{l.date}</span>
                 <span>{l.dose}g</span>
                 <span className="font-bold text-blue-700">#{l.grind}</span>
-                <span className="text-slate-400 dark:text-slate-500">|</span>
+                <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">|</span>
                 <span>{l.rotations} rot</span>
-                <span className="text-slate-400 dark:text-slate-500">|</span>
+                <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">|</span>
                 <span>{l.time >= 60 ? `${Math.floor(l.time / 60)}m ${Math.round(l.time % 60)}s` : `${Math.round(l.time)}s`}</span>
-                <span className="text-slate-400 dark:text-slate-500">@</span>
+                <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">@</span>
                 <span>{l.rpm} RPM</span>
               </div>
             ))}

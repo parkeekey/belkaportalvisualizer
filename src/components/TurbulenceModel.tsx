@@ -343,8 +343,8 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 
       {/* Brewer selector */}
       {onBrewerChange && (
         <div className="flex items-center gap-2">
-          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Brewer</label>
-          <select value={brewerType} onChange={(e) => onBrewerChange(e.target.value)} className="text-[11px] px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400">
+          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400">Brewer</label>
+          <select value={brewerType} onChange={(e) => onBrewerChange(e.target.value)} className="text-[11px] px-2 py-1 border border-slate-300 dark:border-slate-600 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400">
             <option value="V60">V60</option>
             <option value="Chemex">Chemex</option>
             <option value="Kalita Wave">Kalita Wave</option>
@@ -358,62 +358,62 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <div className="flex flex-col gap-0.5">
-          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Pour Height</label>
+          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400">Pour Height</label>
           <div className="flex items-center gap-1">
             <input type="range" min={4} max={20} step={0.5} value={pourHeight} onChange={(e) => setPourHeight(parseFloat(e.target.value))} className="flex-1 accent-orange-500" />
-            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 tabular-nums w-8 text-right">{pourHeight}cm</span>
+            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 tabular-nums w-8 text-right">{pourHeight}cm</span>
           </div>
         </div>
         <div className="flex flex-col gap-0.5">
-          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Pour Rate</label>
+          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400">Pour Rate</label>
           <div className="flex items-center gap-1">
             <input type="range" min={2} max={10} step={0.5} value={pourRate} onChange={(e) => setPourRate(parseFloat(e.target.value))} className="flex-1 accent-orange-500" />
-            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 tabular-nums w-10 text-right">{pourRate}ml/s</span>
+            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 tabular-nums w-10 text-right">{pourRate}ml/s</span>
           </div>
         </div>
         <div className="flex flex-col gap-0.5">
-          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Spout Type</label>
+          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400">Spout Type</label>
           <div className="flex gap-1">
             {(['narrow', 'medium', 'wide'] as const).map((s) => (
-              <button key={s} type="button" onClick={() => setSpoutType(s)} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors capitalize ${spoutType === s ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}>{s}</button>
+              <button key={s} type="button" onClick={() => setSpoutType(s)} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors capitalize ${spoutType === s ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}>{s}</button>
             ))}
           </div>
         </div>
         <div className="flex flex-col gap-0.5">
-          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Pour Pattern</label>
+          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400">Pour Pattern</label>
           <div className="flex gap-1">
             {(['spiral', 'center-pulse', 'single-point'] as const).map((p) => (
-              <button key={p} type="button" onClick={() => setPattern(p)} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors capitalize ${pattern === p ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}>{p === 'center-pulse' ? 'Center' : p === 'single-point' ? 'Single' : 'Spiral'}</button>
+              <button key={p} type="button" onClick={() => setPattern(p)} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors capitalize ${pattern === p ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}>{p === 'center-pulse' ? 'Center' : p === 'single-point' ? 'Single' : 'Spiral'}</button>
             ))}
           </div>
         </div>
       </div>
 
       {/* Bloom / Pre-infusion */}
-      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
+      <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg p-2">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">🌱 Bloom / Pre-infusion</span>
-          {bloomStability > 0.3 && <span className="text-[8px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-1 py-0.5">Stabilizing</span>}
-          {bloomStability < 0 && <span className="text-[8px] font-semibold text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-md px-1 py-0.5">Destabilizing</span>}
+          {bloomStability > 0.3 && <span className="text-[8px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 dark:border-emerald-800 rounded-md px-1 py-0.5">Stabilizing</span>}
+          {bloomStability < 0 && <span className="text-[8px] font-semibold text-red-600 bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 border border-red-200 rounded-md px-1 py-0.5">Destabilizing</span>}
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">Bloom Time</label>
+            <label className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-medium">Bloom Time</label>
             <div className="flex items-center gap-1">
               <input type="range" min={0} max={60} step={5} value={bloomTime} onChange={(e) => setBloomTime(parseInt(e.target.value))} className="flex-1 accent-sky-500" />
-              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 tabular-nums w-8 text-right">{bloomTime}s</span>
+              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 tabular-nums w-8 text-right">{bloomTime}s</span>
             </div>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">Bloom Pour</label>
+            <label className="text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-medium">Bloom Pour</label>
             <div className="flex gap-1">
               {(['gentle', 'normal', 'aggressive'] as const).map((b) => (
-                <button key={b} type="button" onClick={() => setBloomStyle(b)} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors capitalize ${bloomStyle === b ? 'bg-sky-100 text-sky-700 border-sky-300' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}>{b}</button>
+                <button key={b} type="button" onClick={() => setBloomStyle(b)} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors capitalize ${bloomStyle === b ? 'bg-sky-100 text-sky-700 border-sky-300' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}>{b}</button>
               ))}
             </div>
           </div>
         </div>
-        <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">
+        <div className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mt-1 leading-tight">
           {bloomTime === 0 ? 'No bloom — bed is dry when main pour starts, highest channeling risk' :
            bloomTime < 20 ? `Short bloom (${bloomTime}s) — partial saturation, moderate stability gain` :
            bloomTime < 40 ? `Standard bloom (${bloomTime}s) — bed well saturated, good stability` :
@@ -424,21 +424,21 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 
       </div>
 
       {/* Grind Adjustment plan */}
-      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2">
+      <div className="bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 dark:border-amber-800 rounded-lg p-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-bold text-amber-800 dark:text-amber-200 uppercase tracking-wider">Grind</span>
+            <span className="text-[9px] font-bold text-amber-800 dark:text-amber-200 dark:text-amber-200 uppercase tracking-wider">Grind</span>
             <span className="text-[11px] font-mono text-amber-900">{grindSetting < 33 ? 'Finer' : grindSetting < 66 ? 'Neutral' : 'Coarser'}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[9px] text-amber-700 font-mono">perm ×{permFactor.toFixed(2)}</span>
-            <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono">{grindNorm < 0.3 ? 'fine' : grindNorm < 0.7 ? 'medium' : 'coarse'}</span>
+            <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-mono">{grindNorm < 0.3 ? 'fine' : grindNorm < 0.7 ? 'medium' : 'coarse'}</span>
           </div>
         </div>
         <div className="mt-1 h-1.5 bg-amber-200 rounded-full overflow-hidden">
           <div className="h-full rounded-full transition-all duration-300" style={{ width: `${(1 - grindCoeff) * 100}%`, background: 'linear-gradient(to right, #78716c, #d97706)' }} />
         </div>
-        <div className="flex justify-between text-[8px] text-amber-600 dark:text-amber-400 mt-0.5">
+        <div className="flex justify-between text-[8px] text-amber-600 dark:text-amber-400 dark:text-amber-400 mt-0.5">
           <span>Fine</span>
           <span>Coarse</span>
         </div>
@@ -447,9 +447,9 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 
       {/* Forchheimer meter — Darcy vs Turbulence split */}
       <div className="bg-slate-900 border border-slate-700 rounded-lg p-2">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Forchheimer Balance</span>
+          <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 dark:text-slate-500 uppercase tracking-wider">Forchheimer Balance</span>
           <div className="flex items-center gap-2">
-            <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono">v = {v.toFixed(2)}</span>
+            <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-400 font-mono">v = {v.toFixed(2)}</span>
             {brewerMultiplier !== 1.0 && <span className="text-[8px] text-sky-400 font-mono">×{brewerMultiplier.toFixed(2)} ({brewerType})</span>}
             {bloomStability > 0 && <span className="text-[8px] text-sky-400 font-mono">raw {rawV.toFixed(2)}</span>}
             {grindCoeff > 0 && <span className="text-[8px] text-amber-400 font-mono">perm ×{permFactor.toFixed(2)}</span>}
@@ -461,7 +461,7 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 
             <div className="h-full transition-all duration-300" style={{ width: `${(forchheimerTerm / totalResistance) * 100}%`, background: 'linear-gradient(to right, #f97316, #ef4444)' }} />
           </div>
         </div>
-        <div className="flex justify-between text-[8px] text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
+        <div className="flex justify-between text-[8px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mt-0.5 font-mono">
           <span>Darcy (laminar) <span className="text-blue-400">{Math.round((darcyTerm / totalResistance) * 100)}%</span></span>
           <span>Forchheimer (turbulent) <span className="text-orange-400">{Math.round((forchheimerTerm / totalResistance) * 100)}%</span></span>
         </div>
@@ -483,53 +483,53 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 
 
       {/* Triple metrics: Strip benefit · Clog risk · Bed state */}
       <div className="flex items-stretch gap-2">
-        <div className={`flex-1 rounded-lg border p-2 ${sweetSpot ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : boundaryStrip > 25 ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700'}`}>
-          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-600 dark:text-slate-400">Boundary Strip</span>
+        <div className={`flex-1 rounded-lg border p-2 ${sweetSpot ? 'bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 dark:border-emerald-800' : boundaryStrip > 25 ? 'bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 dark:border-slate-700'}`}>
+          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400">Boundary Strip</span>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <div className="flex-1 h-2 bg-white dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+            <div className="flex-1 h-2 bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 dark:border-slate-700">
               <div className="h-full rounded-full bg-emerald-400 transition-all duration-300" style={{ width: `${Math.min(100, boundaryStrip)}%` }} />
             </div>
-            <span className="text-xs font-bold tabular-nums text-slate-700 dark:text-slate-300">{boundaryStrip}%</span>
+            <span className="text-xs font-bold tabular-nums text-slate-700 dark:text-slate-300 dark:text-slate-300">{boundaryStrip}%</span>
           </div>
           {sweetSpot && <div className="text-[8px] text-emerald-600 font-semibold mt-0.5">✦ Sweet spot for {Math.floor(targetBrewTimeSec / 60)}:{String(targetBrewTimeSec % 60).padStart(2, '0')} brew</div>}
         </div>
-        <div className={`flex-1 rounded-lg border p-2 ${clogLevel === 'Minimal' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : clogLevel === 'Moderate' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : clogLevel === 'High' ? 'bg-orange-50 border-orange-200' : 'bg-red-50 dark:bg-red-900/20 border-red-200'}`}>
-          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-600 dark:text-slate-400">Clog Risk (v²·k⁻¹)</span>
+        <div className={`flex-1 rounded-lg border p-2 ${clogLevel === 'Minimal' ? 'bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 dark:border-emerald-800' : clogLevel === 'Moderate' ? 'bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 dark:border-amber-800' : clogLevel === 'High' ? 'bg-orange-50 border-orange-200' : 'bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 border-red-200'}`}>
+          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400">Clog Risk (v²·k⁻¹)</span>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <div className="flex-1 h-2 bg-white dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+            <div className="flex-1 h-2 bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 dark:border-slate-700">
               <div className="h-full rounded-full transition-all duration-300" style={{ width: `${clogRisk}%`, background: clogColor }} />
             </div>
-            <span className="text-xs font-bold tabular-nums text-slate-700 dark:text-slate-300">{clogRisk}%</span>
+            <span className="text-xs font-bold tabular-nums text-slate-700 dark:text-slate-300 dark:text-slate-300">{clogRisk}%</span>
           </div>
-          <div className="text-[8px] text-slate-500 dark:text-slate-400 mt-0.5">{clogLevel === 'Minimal' ? 'Permeability stable' : clogLevel === 'Moderate' ? 'Fines starting to pack' : clogLevel === 'High' ? 'Permeability dropping — brew may stall' : 'Critical — bed is sealing shut'}</div>
+          <div className="text-[8px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mt-0.5">{clogLevel === 'Minimal' ? 'Permeability stable' : clogLevel === 'Moderate' ? 'Fines starting to pack' : clogLevel === 'High' ? 'Permeability dropping — brew may stall' : 'Critical — bed is sealing shut'}</div>
         </div>
       </div>
 
       <div className="flex items-stretch gap-2">
-        <div className={`flex-1 rounded-lg border p-2 ${bedRiskLevel === 'Low' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : bedRiskLevel === 'Moderate' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : bedRiskLevel === 'High' ? 'bg-orange-50 border-orange-200' : 'bg-red-50 dark:bg-red-900/20 border-red-200'}`}>
-          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-600 dark:text-slate-400">Turbulence Dominance</span>
+        <div className={`flex-1 rounded-lg border p-2 ${bedRiskLevel === 'Low' ? 'bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 dark:border-emerald-800' : bedRiskLevel === 'Moderate' ? 'bg-amber-50 dark:bg-amber-900/20 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 dark:border-amber-800' : bedRiskLevel === 'High' ? 'bg-orange-50 border-orange-200' : 'bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 border-red-200'}`}>
+          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400">Turbulence Dominance</span>
           <div className="flex items-center gap-2 mt-0.5">
-            <div className="flex-1 h-2 bg-white dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+            <div className="flex-1 h-2 bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 dark:border-slate-700">
               <div className="h-full rounded-full transition-all duration-300" style={{ width: `${turbDominance}%`, background: scoreColor }} />
             </div>
-            <span className="text-sm font-bold tabular-nums text-slate-700 dark:text-slate-300">{Math.round(turbDominance)}%</span>
+            <span className="text-sm font-bold tabular-nums text-slate-700 dark:text-slate-300 dark:text-slate-300">{Math.round(turbDominance)}%</span>
           </div>
         </div>
-        <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
-          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-600 dark:text-slate-400">Flow Regime</span>
+        <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg p-2">
+          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400">Flow Regime</span>
           <div className="text-sm font-bold mt-0.5" style={{ color: turbDominance < 30 ? '#16a34a' : turbDominance < 55 ? '#d97706' : turbDominance < 75 ? '#ea580c' : '#dc2626' }}>
             {turbDominance < 30 ? 'Laminar (Darcy)' : turbDominance < 55 ? 'Transitional' : turbDominance < 75 ? 'Turbulent (Forchheimer)' : 'Chaotic'}
           </div>
         </div>
       </div>
 
-      <div className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 flex items-center gap-2">
+      <div className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg p-2 flex items-center gap-2">
         <span className="font-semibold">Contact Time:</span>
         <span className={`font-bold ${contactTimeShift >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
           {contactTimeShift >= 0 ? `+${contactTimeShift}s` : `${contactTimeShift}s`}
         </span>
-        <span className="text-slate-300 dark:text-slate-600">|</span>
-        <span className="text-slate-400 dark:text-slate-500">
+        <span className="text-slate-300 dark:text-slate-600 dark:text-slate-600">|</span>
+        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">
           {(() => {
             const brewMin = Math.floor(targetBrewTimeSec / 60);
             const brewSec = targetBrewTimeSec % 60;
@@ -543,10 +543,10 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 
       </div>
 
       <div>
-        <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-1 block">Fix by Tactic</label>
+        <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1 block">Fix by Tactic</label>
         <div className="flex flex-wrap gap-1.5">
           {tactics.map((t) => (
-            <button key={t.id} type="button" onClick={() => { if (activeTactic === t.id) { setActiveTactic(null); } else { t.apply(); } }} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors ${activeTactic === t.id ? 'bg-orange-100 text-orange-700 border-orange-300 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}>
+            <button key={t.id} type="button" onClick={() => { if (activeTactic === t.id) { setActiveTactic(null); } else { t.apply(); } }} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors ${activeTactic === t.id ? 'bg-orange-100 text-orange-700 border-orange-300 shadow-sm' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}>
               {t.label}
             </button>
           ))}
@@ -559,10 +559,10 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 
       </div>
 
       <div>
-        <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-1 block">Fix by Taste</label>
+        <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1 block">Fix by Taste</label>
         <div className="flex flex-wrap gap-1.5">
           {symptoms.map((s) => (
-            <button key={s.id} type="button" onClick={() => { if (activeSymptom === s.id) { setActiveSymptom(null); } else { s.apply(); } }} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors ${activeSymptom === s.id ? 'bg-red-100 text-red-700 border-red-300 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 dark:bg-red-900/20'}`}>
+            <button key={s.id} type="button" onClick={() => { if (activeSymptom === s.id) { setActiveSymptom(null); } else { s.apply(); } }} className={`text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors ${activeSymptom === s.id ? 'bg-red-100 text-red-700 border-red-300 shadow-sm' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 dark:bg-red-900/20 dark:hover:bg-red-900/20 dark:bg-red-900/20'}`}>
               {s.icon} {s.label}
             </button>
           ))}
@@ -572,14 +572,14 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 
           if (!s) return null;
           return (
             <div className="mt-1.5 space-y-1">
-              <div className="text-[10px] text-red-700 bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg p-2 leading-relaxed">
+              <div className="text-[10px] text-red-700 bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 border border-red-200 rounded-lg p-2 leading-relaxed">
                 <span className="font-bold">{s.diagnosis}</span>
               </div>
-              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 space-y-0.5">
+              <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg p-2 space-y-0.5">
                 {s.steps.map((step, i) => (
                   <div key={i} className="flex items-start gap-1.5 text-[10px]">
-                    <span className={`font-bold shrink-0 ${i === 0 ? 'text-emerald-600' : 'text-slate-400 dark:text-slate-500'}`}>{step.action}</span>
-                    <span className="text-slate-500 dark:text-slate-400">{step.detail}</span>
+                    <span className={`font-bold shrink-0 ${i === 0 ? 'text-emerald-600' : 'text-slate-400 dark:text-slate-500 dark:text-slate-500'}`}>{step.action}</span>
+                    <span className="text-slate-500 dark:text-slate-400 dark:text-slate-400">{step.detail}</span>
                   </div>
                 ))}
               </div>
@@ -589,9 +589,9 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 
       </div>
 
       {/* Turbulence Plan Summary */}
-      <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-2">
+      <div className="bg-emerald-50 dark:bg-emerald-900/20 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 dark:border-emerald-800 rounded-lg p-2">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">📋 Turbulence Plan</span>
+          <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 dark:text-emerald-400 uppercase tracking-wider">📋 Turbulence Plan</span>
           <button type="button" onClick={() => {
             const plan = {
               pourHeight, pourRate, spoutType, pattern,
@@ -608,12 +608,12 @@ export default function TurbulenceModel({ targetBrewTimeSec = 180, brewerType = 
             };
             localStorage.setItem('belkaTurbulencePlan', JSON.stringify(plan));
             alert('✅ Turbulence plan imported to Recipe & Pour Planning');
-          }} className="text-[9px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 border border-emerald-300 dark:border-emerald-700 rounded-md px-2 py-0.5 transition-colors">⬆ Import to Recipe</button>
+          }} className="text-[9px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 hover:bg-emerald-200 border border-emerald-300 dark:border-emerald-700 dark:border-emerald-700 rounded-md px-2 py-0.5 transition-colors">⬆ Import to Recipe</button>
         </div>
-        <div className="grid grid-cols-3 gap-1 text-[9px] text-slate-600 dark:text-slate-400">
+        <div className="grid grid-cols-3 gap-1 text-[9px] text-slate-600 dark:text-slate-400 dark:text-slate-400">
           <div><span className="font-semibold">Pour:</span> {pourHeight}cm · {pourRate}ml/s · {spoutType} · {pattern}</div>
           <div><span className="font-semibold">Bloom:</span> {bloomTime}s · {bloomStyle}</div>
-          <div><span className="font-semibold">v:</span> {v.toFixed(2)} <span className="text-slate-400 dark:text-slate-500">(raw {rawV.toFixed(2)})</span></div>
+          <div><span className="font-semibold">v:</span> {v.toFixed(2)} <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">(raw {rawV.toFixed(2)})</span></div>
           <div><span className="font-semibold">Turb:</span> {Math.round(turbDominance)}% · {turbDominance < 30 ? 'Laminar' : turbDominance < 55 ? 'Transitional' : turbDominance < 75 ? 'Turbulent' : 'Chaotic'}</div>
           <div><span className="font-semibold">Bed:</span> {bedRiskLevel} · Clog {clogRisk}%</div>
           <div><span className="font-semibold">Strip:</span> {boundaryStrip}% {sweetSpot ? '✦ Sweet spot' : ''}</div>

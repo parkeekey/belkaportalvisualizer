@@ -284,7 +284,7 @@ export const ECGraph: React.FC<ECGraphProps> = ({ ecData }) => {
         </div>
       )}
       
-      <div className="mt-2 text-sm text-gray-600 dark:text-slate-400">
+      <div className="mt-2 text-sm text-gray-600 dark:text-slate-400 dark:text-slate-400">
         <p>• Hover over EC line to see exact values</p>
         <p>• Click and drag to see crosshair with coordinates</p>
       </div>

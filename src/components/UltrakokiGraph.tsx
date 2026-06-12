@@ -603,17 +603,17 @@ export const UltrakokiGraph: React.FC<Props> = ({
     { label: 'Total Pour', value: `${maxOf(data.cumulativePour).toFixed(1)} g`, tone: 'bg-blue-50 text-blue-900 border-blue-100' },
     { label: 'Peak Flow', value: `${maxOf(cappedPourFlow).toFixed(1)} g/s`, tone: 'bg-cyan-50 text-cyan-900 border-cyan-100' },
     { label: 'Peak Drip', value: `${maxOf(cappedDripFlow).toFixed(1)} g/s`, tone: 'bg-teal-50 text-teal-900 border-teal-100' },
-    { label: 'EC Overlay', value: hasComparisonCurve ? `${sortedComparisonCurve.length} pts` : 'Not loaded', tone: 'bg-slate-50 dark:bg-slate-900/50 text-slate-900 border-slate-200 dark:border-slate-700' },
+    { label: 'EC Overlay', value: hasComparisonCurve ? `${sortedComparisonCurve.length} pts` : 'Not loaded', tone: 'bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700 dark:border-slate-700' },
   ];
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm" ref={containerRef}>
-      <div className="border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-amber-50 via-white to-sky-50 px-4 py-4 sm:px-5">
+    <section className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800 shadow-sm" ref={containerRef}>
+      <div className="border-b border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-gradient-to-r from-amber-50 via-white to-sky-50 px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <div className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Ultrakoki + Custom Curve</div>
-            <h3 className="mt-1 text-lg font-semibold text-slate-900">Interactive brew analysis</h3>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            <div className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 dark:text-slate-400">Ultrakoki + Custom Curve</div>
+            <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Interactive brew analysis</h3>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400">
               {data.label} · smart-scale flow timeline · {data.period}s total{hasComparisonCurve ? ` · ${comparisonLabel} is overlaid automatically` : ''}
             </p>
           </div>
@@ -635,7 +635,7 @@ export const UltrakokiGraph: React.FC<Props> = ({
               <button
                 key={item}
                 onClick={() => setPresetMode(item)}
-                className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${preset === item ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 dark:text-slate-300 hover:bg-slate-200'}`}
+                className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${preset === item ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-200'}`}
               >
                 {PRESET_LABELS[item]}
               </button>
@@ -645,33 +645,33 @@ export const UltrakokiGraph: React.FC<Props> = ({
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowSeriesControls(prev => !prev)}
-              className="rounded-full border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50"
+              className="rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50"
             >
               {showSeriesControls ? 'Hide series' : 'Choose series'}
             </button>
             <button
               onClick={() => setShowFlowPanel(prev => !prev)}
-              className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${showFlowPanel ? 'bg-teal-700 text-white' : 'border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
+              className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${showFlowPanel ? 'bg-teal-700 text-white' : 'border border-slate-300 dark:border-slate-600 dark:border-slate-600 text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
             >
               {showFlowPanel ? '▼ Flow panel ON' : '▼ Flow panel OFF'}
             </button>
             {hasComparisonCurve && (
-              <div className="rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-600 dark:text-slate-400">
-                Always showing <span className="font-medium text-slate-900">{comparisonLabel}</span>
+              <div className="rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400">
+                Always showing <span className="font-medium text-slate-900 dark:text-white">{comparisonLabel}</span>
               </div>
             )}
           </div>
         </div>
 
         {showSeriesControls && (
-          <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50 p-3 sm:grid-cols-3 lg:grid-cols-6">
             {SERIES_CFG.map(series => {
               const isOn = enabled.has(series.key);
               return (
                 <button
                   key={series.key}
                   onClick={() => toggleSeries(series.key)}
-                  className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${isOn ? 'border-slate-900 bg-white dark:bg-slate-800 text-slate-900' : 'border-slate-200 dark:border-slate-700 bg-slate-100 text-slate-500 dark:text-slate-400'}`}
+                  className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${isOn ? 'border-slate-900 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-900 dark:text-white' : 'border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-slate-100 text-slate-500 dark:text-slate-400 dark:text-slate-400'}`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: series.color, opacity: isOn ? 1 : 0.35 }} />
@@ -686,23 +686,23 @@ export const UltrakokiGraph: React.FC<Props> = ({
           </div>
         )}
 
-        <div className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50/40 p-2 sm:p-3">
+        <div className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900/50/40 p-2 sm:p-3">
           <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Zoom</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">Zoom</span>
               <button
                 onClick={() => setZoomLevel(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}
-                className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center"
+                className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 flex items-center justify-center"
               >−</button>
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 w-8 text-center">{zoomLevel === 1 ? '1×' : `${zoomLevel}×`}</span>
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300 w-8 text-center">{zoomLevel === 1 ? '1×' : `${zoomLevel}×`}</span>
               <button
                 onClick={() => setZoomLevel(z => Math.min(4, parseFloat((z + 0.25).toFixed(2))))}
-                className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center"
+                className="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700 flex items-center justify-center"
               >+</button>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Flow height</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">Flow height</span>
               <input
                 type="range"
                 min={0.2}
@@ -712,15 +712,15 @@ export const UltrakokiGraph: React.FC<Props> = ({
                 onChange={(event) => setFlowVisibilityZoom(Number(event.target.value))}
                 className="w-28 accent-teal-600"
               />
-              <span className="w-10 text-right text-xs font-semibold text-slate-700 dark:text-slate-300">{Math.round(flowVisibilityZoom * 100)}%</span>
+              <span className="w-10 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300">{Math.round(flowVisibilityZoom * 100)}%</span>
               <button
                 onClick={() => setFlowVisibilityZoom(0.5)}
-                className="rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="rounded-md border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700"
               >Reset</button>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Flow cap (g/s)</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">Flow cap (g/s)</span>
               <input
                 type="number"
                 min={0}
@@ -730,13 +730,13 @@ export const UltrakokiGraph: React.FC<Props> = ({
                   const next = Number(event.target.value);
                   setFlowRestrictMax(Number.isFinite(next) ? Math.max(0, next) : 0);
                 }}
-                className="w-20 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                className="w-20 rounded-md border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300"
               />
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">0 = no cap</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 dark:text-slate-400">0 = no cap</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+              <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 dark:text-slate-400">
                 <input
                   type="checkbox"
                   checked={cleanShortOverCapSpikes}
@@ -748,7 +748,7 @@ export const UltrakokiGraph: React.FC<Props> = ({
               <select
                 value={spikeMaxDurationSeconds}
                 onChange={(event) => setSpikeMaxDurationSeconds(Number(event.target.value))}
-                className="rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                className="rounded-md border border-slate-300 dark:border-slate-600 dark:border-slate-600 bg-white dark:bg-slate-800 dark:bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300"
                 title="Remove above-cap spikes up to this duration"
               >
                 <option value={1}>1s</option>
@@ -757,7 +757,7 @@ export const UltrakokiGraph: React.FC<Props> = ({
               </select>
             </div>
           </div>
-          <div className="relative rounded-xl bg-white dark:bg-slate-800 overflow-x-auto">
+          <div className="relative rounded-xl bg-white dark:bg-slate-800 dark:bg-slate-800 overflow-x-auto">
             <canvas
               ref={canvasRef}
               onMouseMove={handleMouseMove}
@@ -767,30 +767,30 @@ export const UltrakokiGraph: React.FC<Props> = ({
 
             {hoverIdx !== null && hoverTime !== null && (
               <div
-                className="fixed z-30 w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/95 p-3 text-xs shadow-xl backdrop-blur-sm"
+                className="fixed z-30 w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800/95 p-3 text-xs shadow-xl backdrop-blur-sm"
                 style={{ left: Math.min(tooltipPos.x + 14, window.innerWidth - 240), top: Math.max(tooltipPos.y - 8, 8) }}
               >
-                <div className="font-semibold text-slate-800">{formatClock(hoverTime)} <span className="font-normal text-slate-400 dark:text-slate-500">({hoverTime.toFixed(1)}s)</span></div>
+                <div className="font-semibold text-slate-800 dark:text-white">{formatClock(hoverTime)} <span className="font-normal text-slate-400 dark:text-slate-500 dark:text-slate-500">({hoverTime.toFixed(1)}s)</span></div>
                 <div className="mt-2 space-y-1.5">
                   {SERIES_CFG.filter(series => enabled.has(series.key)).map(series => (
                     <div key={series.key} className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 dark:text-slate-400">
                         <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: series.color }} />
                         <span>{series.shortLabel}</span>
                       </div>
-                      <span className="font-semibold text-slate-900">
+                      <span className="font-semibold text-slate-900 dark:text-white">
                         {(getDisplaySeries(series.key)[hoverIdx] ?? 0).toFixed(series.key === 'cumulativePour' ? 1 : 3)}
-                        <span className="ml-0.5 font-normal text-slate-400 dark:text-slate-500">{series.key === 'cumulativePour' ? 'g' : 'g/s'}</span>
+                        <span className="ml-0.5 font-normal text-slate-400 dark:text-slate-500 dark:text-slate-500">{series.key === 'cumulativePour' ? 'g' : 'g/s'}</span>
                       </span>
                     </div>
                   ))}
                   {hoverComparison && (
-                    <div className="flex items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-700 pt-1.5">
-                      <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-700 dark:border-slate-700 pt-1.5">
+                      <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 dark:text-slate-400">
                         <span className="inline-block h-2 w-2 rounded-full bg-slate-900" />
                         <span>{comparisonLabel}</span>
                       </div>
-                      <span className="font-semibold text-slate-900">{hoverComparison.ecValue.toFixed(2)}</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">{hoverComparison.ecValue.toFixed(2)}</span>
                     </div>
                   )}
                 </div>

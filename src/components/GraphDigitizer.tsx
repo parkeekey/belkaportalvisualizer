@@ -163,12 +163,12 @@ export const GraphDigitizer: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg">
+      <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-lg shadow-lg">
         <div className="p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             Belka Portal Graph Digitizer
           </h2>
-          <p className="text-gray-600 dark:text-slate-400">
+          <p className="text-gray-600 dark:text-slate-400 dark:text-slate-400">
             Upload screenshots of your Belka Portal graphs to extract time-series data
           </p>
         </div>
@@ -176,7 +176,7 @@ export const GraphDigitizer: React.FC = () => {
         <div className="p-6">
           {/* Upload Section */}
           <div className="mb-6">
-            <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-950 hover:bg-gray-100">
+            <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 hover:bg-gray-100">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
                 <Upload className="w-10 h-10 mb-3 text-gray-400" />
                 <p className="mb-2 text-sm text-gray-500">
@@ -196,8 +196,8 @@ export const GraphDigitizer: React.FC = () => {
 
           {/* Error Display */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg flex items-center">
-              <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 mr-2" />
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 border border-red-200 rounded-lg flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 dark:text-red-400 mr-2" />
               <p className="text-red-700">{error}</p>
             </div>
           )}
@@ -264,7 +264,7 @@ export const GraphDigitizer: React.FC = () => {
               </div>
 
               {/* Interactive Graph */}
-              <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-lg shadow p-6">
                 <h4 className="text-md font-semibold mb-4">Interactive Graph Visualization</h4>
                 <ECGraph
                   ecData={extractedData.ec_time_series}
@@ -275,7 +275,7 @@ export const GraphDigitizer: React.FC = () => {
               <div className="border rounded-lg overflow-hidden">
                 <div className="max-h-96 overflow-y-auto">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 dark:bg-gray-950 sticky top-0">
+                    <thead className="bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 sticky top-0">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Time
@@ -285,13 +285,13 @@ export const GraphDigitizer: React.FC = () => {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
+                    <tbody className="bg-white dark:bg-slate-800 dark:bg-slate-800 divide-y divide-gray-200">
                       {extractedData.data_table.map((row, index) => (
-                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 dark:hover:bg-gray-800 dark:bg-gray-950">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {row.time_formatted}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {row.ec_value?.toFixed(2) || '-'}
                           </td>
                         </tr>
@@ -302,9 +302,9 @@ export const GraphDigitizer: React.FC = () => {
               </div>
 
               {/* Metadata */}
-              <div className="bg-gray-50 dark:bg-gray-950 p-4 rounded-lg">
+              <div className="bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 p-4 rounded-lg">
                 <h4 className="font-semibold mb-2">Extraction Metadata</h4>
-                <div className="text-sm text-gray-600 dark:text-slate-400 space-y-1">
+                <div className="text-sm text-gray-600 dark:text-slate-400 dark:text-slate-400 space-y-1">
                   <p><strong>Source:</strong> {extractedData.metadata.source}</p>
                   <p><strong>Method:</strong> {extractedData.metadata.extraction_method}</p>
                   <p><strong>Timestamp:</strong> {new Date(extractedData.metadata.timestamp).toLocaleString()}</p>

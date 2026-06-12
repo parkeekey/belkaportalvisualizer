@@ -17,6 +17,15 @@
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      html.dark input, html.dark textarea, html.dark select {
+        background-color: #1e293b !important;
+        color: #fff !important;
+      }
+      html.dark input::placeholder, html.dark textarea::placeholder {
+        color: #94a3b8 !important;
+      }
+    </style>
   </head>
   <body>
     <script>try { document.documentElement.classList.toggle('dark', localStorage.getItem('belka.theme') === 'dark'); } catch {}</script>

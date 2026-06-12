@@ -19,6 +19,15 @@
     <link rel="icon" type="image/svg+xml" href="/belkaportalvisualizer/favicon.svg" />
     <script type="module" crossorigin src="/belkaportalvisualizer/assets/index-e042f142.js"></script>
     <link rel="stylesheet" href="/belkaportalvisualizer/assets/index-872123ae.css">
+    <style>
+      html.dark input, html.dark textarea, html.dark select {
+        background-color: #1e293b !important;
+        color: #fff !important;
+      }
+      html.dark input::placeholder, html.dark textarea::placeholder {
+        color: #94a3b8 !important;
+      }
+    </style>
   </head>
   <body>
     <script>try { document.documentElement.classList.toggle('dark', localStorage.getItem('belka.theme') === 'dark'); } catch {}</script>

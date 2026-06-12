@@ -333,7 +333,7 @@ const RecipePourPlanning = forwardRef<RecipePourPlanningHandle, RecipePourPlanni
       <div className="p-4">
         <div className="mb-3">
           <div className="flex items-center gap-2 mb-2">
-            <h3 className="text-sm font-bold text-emerald-900 uppercase tracking-wider">Recipe & Pour Planning</h3>
+            <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-400 uppercase tracking-wider">Recipe & Pour Planning</h3>
             {pourPlanImportBadge && (
               <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-sky-100 text-sky-700 border border-sky-200">{pourPlanImportBadge}</span>
             )}

@@ -1337,7 +1337,7 @@ Or just describe what you're tasting.`
         className={`fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-3 text-sm font-bold rounded-full shadow-lg border transition-all ${
           open
             ? 'bg-slate-800 border-slate-800 text-white scale-90 opacity-70'
-            : 'bg-white border-sky-300 text-sky-700 hover:bg-sky-50 hover:shadow-xl hover:scale-105'
+            : 'bg-white dark:bg-slate-800 border-sky-300 text-sky-700 hover:bg-sky-50 hover:shadow-xl hover:scale-105'
         }`}
         title="Brew Chat — ask about your brew"
       >
@@ -1347,9 +1347,9 @@ Or just describe what you're tasting.`
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-20 right-5 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-8rem)] bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="fixed bottom-20 right-5 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-8rem)] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-sky-50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-sky-50">
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-sky-600" />
               <span className="text-sm font-bold text-slate-800">Brew Chat</span>
@@ -1374,7 +1374,7 @@ Or just describe what you're tasting.`
                       sendToAI(msg, updatedMessages);
                     }
                   }}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                  className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 transition-colors"
                   title="Import current brew data into chat"
                 >
                   <span className="text-sm">📊</span>
@@ -1382,14 +1382,14 @@ Or just describe what you're tasting.`
               )}
               <button
                 onClick={() => setShowSettings(v => !v)}
-                className={`p-1.5 rounded-lg transition-colors ${showSettings ? 'bg-sky-200 text-sky-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                className={`p-1.5 rounded-lg transition-colors ${showSettings ? 'bg-sky-200 text-sky-800' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                 title="API settings"
               >
                 <Settings className="w-4 h-4" />
               </button>
               <button
                 onClick={clearChat}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 dark:bg-red-900/20 transition-colors"
                 title="Clear chat"
               >
                 <Trash2 className="w-4 h-4" />
@@ -1399,16 +1399,16 @@ Or just describe what you're tasting.`
 
           {/* Settings panel */}
           {showSettings && (
-            <div className="px-4 py-3 border-b border-slate-200 bg-amber-50/50 text-xs max-h-[260px] overflow-y-auto space-y-2">
+            <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/20/50 text-xs max-h-[260px] overflow-y-auto space-y-2">
               <label className="block">
-                <span className="font-semibold text-slate-700">Gemini API Key</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Gemini API Key</span>
                 <div className="mt-1 flex gap-1.5">
                   <input
                     type="password"
                     value={apiKeyDraft}
                     onChange={e => { setApiKeyDraft(e.target.value); setKeySaved(false); }}
                     placeholder="Paste your API key..."
-                    className="flex-1 px-2 py-1.5 text-xs border border-amber-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="flex-1 px-2 py-1.5 text-xs border border-amber-300 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
                   />
                   <button
                     onClick={() => {
@@ -1424,51 +1424,51 @@ Or just describe what you're tasting.`
               </label>
               {keySaved && <p className="text-[10px] text-emerald-600 font-semibold">✓ Key saved</p>}
               {!apiKey && !keySaved && (
-                <p className="text-[10px] text-slate-500 leading-relaxed">
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
                   Get a free key at{' '}
                   <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-sky-600 underline">aistudio.google.com/apikey</a>
                   . No credit card needed.
                 </p>
               )}
-              <div className="pt-1 border-t border-amber-200/50">
-                <span className="font-semibold text-slate-700">Model</span>
+              <div className="pt-1 border-t border-amber-200 dark:border-amber-800/50">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Model</span>
                 <div className="mt-1 space-y-1">
                   {MODELS.map(m => (
-                    <label key={m.id} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${modelId === m.id ? 'bg-amber-100 text-amber-900' : 'hover:bg-amber-50 text-slate-600'}`}>
+                    <label key={m.id} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${modelId === m.id ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-900' : 'hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/20 text-slate-600 dark:text-slate-400'}`}>
                       <input type="radio" name="model" value={m.id} checked={modelId === m.id} onChange={() => setModelId(m.id)} className="accent-amber-600" />
                       <div>
                         <span className="text-[11px] font-semibold">{m.label}</span>
-                        <p className="text-[9px] text-slate-400">{m.desc}</p>
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500">{m.desc}</p>
                       </div>
                     </label>
                   ))}
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-1 border-t border-amber-200/50">
+              <div className="flex items-center justify-between pt-1 border-t border-amber-200 dark:border-amber-800/50">
                 <div>
-                  <span className="font-semibold text-slate-700">Mode</span>
-                  <p className="text-[9px] text-slate-400">{chatMode === 'ai' ? 'AI (Gemini)' : 'Local (no API needed)'}</p>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">Mode</span>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500">{chatMode === 'ai' ? 'AI (Gemini)' : 'Local (no API needed)'}</p>
                 </div>
                 <div className="flex gap-1">
                   <button onClick={() => { setChatMode('local'); setDiagnostic({ mode: 'menu', step: 0, data: {} }); }}
-                    className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-colors ${chatMode === 'local' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                    className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-colors ${chatMode === 'local' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500 dark:text-slate-400'}`}>
                     Local
                   </button>
                   <button onClick={() => setChatMode('ai')}
-                    className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-colors ${chatMode === 'ai' ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                    className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-colors ${chatMode === 'ai' ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-500 dark:text-slate-400'}`}>
                     AI
                   </button>
                 </div>
               </div>
               {chatMode === 'ai' && (
-              <div className="flex items-center justify-between pt-1 border-t border-amber-200/50">
+              <div className="flex items-center justify-between pt-1 border-t border-amber-200 dark:border-amber-800/50">
                 <div>
-                  <span className="font-semibold text-slate-700">App Control</span>
-                  <p className="text-[9px] text-slate-400">Let AI change dose, ratio, grind, temp</p>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">App Control</span>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500">Let AI change dose, ratio, grind, temp</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" checked={allowControl} onChange={e => setAllowControl(e.target.checked)} className="sr-only peer" />
-                  <div className="w-8 h-4.5 bg-slate-300 peer-checked:bg-amber-500 rounded-full peer-checked:after:translate-x-[14px] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all" />
+                  <div className="w-8 h-4.5 bg-slate-300 peer-checked:bg-amber-500 rounded-full peer-checked:after:translate-x-[14px] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-800 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all" />
                 </label>
               </div>
               )}
@@ -1479,10 +1479,10 @@ Or just describe what you're tasting.`
           )}
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-white">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-white dark:bg-slate-800">
             {messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 text-xs space-y-2">
-                <Bot className="w-10 h-10 text-slate-300" />
+              <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 dark:text-slate-500 text-xs space-y-2">
+                <Bot className="w-10 h-10 text-slate-300 dark:text-slate-600" />
                 <p>Ask me anything about your brew.</p>
               </div>
             )}
@@ -1499,7 +1499,7 @@ Or just describe what you're tasting.`
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-bl-md bg-slate-100 text-slate-400 text-xs flex items-center gap-2">
+                <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-bl-md bg-slate-100 text-slate-400 dark:text-slate-500 text-xs flex items-center gap-2">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   Thinking...
                 </div>
@@ -1509,7 +1509,7 @@ Or just describe what you're tasting.`
           </div>
 
           {/* Input */}
-          <div className="border-t border-slate-200 px-3 py-2 bg-white">
+          <div className="border-t border-slate-200 dark:border-slate-700 px-3 py-2 bg-white dark:bg-slate-800">
             <div className="flex items-end gap-2">
               <textarea
                 ref={inputRef}
@@ -1518,7 +1518,7 @@ Or just describe what you're tasting.`
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about your brew..."
                 rows={2}
-                className="flex-1 px-3 py-2 text-xs border border-slate-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 placeholder:text-slate-400"
+                className="flex-1 px-3 py-2 text-xs border border-slate-300 dark:border-slate-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 placeholder:text-slate-400 dark:text-slate-500"
               />
               <button
                 onClick={handleSend}
@@ -1528,7 +1528,7 @@ Or just describe what you're tasting.`
                 <Send className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-[9px] text-slate-400 mt-1 text-center">{chatMode === 'ai' ? 'Free tier: 1,500 req/day · 4K tokens/response' : 'Local mode — no API needed'}</p>
+            <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 text-center">{chatMode === 'ai' ? 'Free tier: 1,500 req/day · 4K tokens/response' : 'Local mode — no API needed'}</p>
           </div>
         </div>
       )}

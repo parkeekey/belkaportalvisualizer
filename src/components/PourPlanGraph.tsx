@@ -353,10 +353,10 @@ const PourPlanGraph = forwardRef<HTMLCanvasElement, PourPlanGraphProps>(({ pourP
 
   return (
     <div ref={wrapRef} className="w-full" style={{ minHeight: 200 }}>
-      <div className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Pour Plan Visualization</div>
+      <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Pour Plan Visualization</div>
       <canvas
         ref={(el) => { (canvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = el; if (typeof forwardedRef === 'function') forwardedRef(el); else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLCanvasElement | null>).current = el; }}
-        className="w-full rounded-lg border border-slate-200 bg-white shadow-sm"
+        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm"
         style={{ height: 200 }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}

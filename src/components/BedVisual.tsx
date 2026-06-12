@@ -383,21 +383,21 @@ function MiniECChart(
       <div className="flex items-center gap-2 flex-wrap justify-center">
         <button onClick={() => onZoomChange(parseFloat(Math.max(1, chartZoom - 0.25).toFixed(2)))}
           disabled={!canZoomOut}
-          className={`w-7 h-7 rounded-full border text-sm font-bold flex items-center justify-center ${canZoomOut ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100' : 'border-slate-100 text-slate-300 cursor-default bg-transparent'}`}
+          className={`w-7 h-7 rounded-full border text-sm font-bold flex items-center justify-center ${canZoomOut ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' : 'border-slate-100 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-default bg-transparent'}`}
         >−</button>
-        <span className="text-xs font-semibold text-slate-500 w-10 text-center tabular-nums">{chartZoom}×</span>
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 w-10 text-center tabular-nums">{chartZoom}×</span>
         <button onClick={() => onZoomChange(parseFloat(Math.min(8, chartZoom + 0.25).toFixed(2)))}
           disabled={!canZoomIn}
-          className={`w-7 h-7 rounded-full border text-sm font-bold flex items-center justify-center ${canZoomIn ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100' : 'border-slate-100 text-slate-300 cursor-default bg-transparent'}`}
+          className={`w-7 h-7 rounded-full border text-sm font-bold flex items-center justify-center ${canZoomIn ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' : 'border-slate-100 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-default bg-transparent'}`}
         >+</button>
         {chartZoom > 1 && (
           <button onClick={() => { onZoomChange(1); onPanChange(0); }}
-            className="px-2 py-1 text-[9px] font-bold border border-slate-200 rounded text-slate-400 hover:bg-slate-100"
+            className="px-2 py-1 text-[9px] font-bold border border-slate-200 dark:border-slate-700 rounded text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
           >Reset</button>
         )}
       </div>
       {chartZoom > 1 && (
-        <div className="text-[8px] text-slate-400">Drag the chart to pan · scroll to navigate</div>
+        <div className="text-[8px] text-slate-400 dark:text-slate-500">Drag the chart to pan · scroll to navigate</div>
       )}
     </div>
   );
@@ -576,7 +576,7 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
               </>
             )}
             {currentPhase === 'blooming' && (
-              <div className="absolute inset-x-0 top-[30%] h-[1px] bg-white/20" />
+              <div className="absolute inset-x-0 top-[30%] h-[1px] bg-white dark:bg-slate-800/20" />
             )}
           </div>
 
@@ -598,21 +598,21 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
       {/* Phase + EC label */}
       <div className="flex items-center gap-2 text-xs">
         <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: state.color }}>{state.level}</span>
-        <span className="text-slate-400">|</span>
+        <span className="text-slate-400 dark:text-slate-500">|</span>
         <span className="font-bold tabular-nums" style={{ color: state.color }}>EC {currentEC.toFixed(1)}</span>
-        <span className="text-slate-300 mx-0.5">·</span>
-        <span className="text-[9px] text-slate-400">Peak {peak?.ec.toFixed(1) ?? '—'} @ {peak ? `${Math.floor(peak.timeSec / 60)}:${String(Math.floor(peak.timeSec % 60)).padStart(2, '0')}` : '—'}</span>
+        <span className="text-slate-300 dark:text-slate-600 mx-0.5">·</span>
+        <span className="text-[9px] text-slate-400 dark:text-slate-500">Peak {peak?.ec.toFixed(1) ?? '—'} @ {peak ? `${Math.floor(peak.timeSec / 60)}:${String(Math.floor(peak.timeSec % 60)).padStart(2, '0')}` : '—'}</span>
       </div>
 
       {/* Report table */}
       {analysis && (
         <div className="w-full" style={{ maxWidth: BASE_W * chartZoom }}>
-          <table className="w-full text-[9px] text-slate-500 border-collapse">
+          <table className="w-full text-[9px] text-slate-500 dark:text-slate-400 border-collapse">
             <tbody>
               <tr>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider">Phase</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Phase</td>
                 <td className="py-0.5 font-bold" style={{ color: state.color }}>{state.level}</td>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider pl-4">Slope</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider pl-4">Slope</td>
                 <td className="py-0.5 font-bold tabular-nums"
                   style={{ color: currentDerivative && currentDerivative.rate < -(peak?.ec ?? 0) * 0.03 ? '#ef4444' : currentDerivative && currentDerivative.rate < 0 ? '#f59e0b' : '#22c55e' }}
                 >
@@ -620,17 +620,17 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
                 </td>
               </tr>
               <tr>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider">EC</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">EC</td>
                 <td className="py-0.5 font-bold tabular-nums">{currentEC.toFixed(2)}</td>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider pl-4">Peak Δ</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider pl-4">Peak Δ</td>
                 <td className="py-0.5 font-bold tabular-nums">
                   {peak ? `${(currentEC - peak.ec) >= 0 ? '+' : ''}${(currentEC - peak.ec).toFixed(2)}` : '—'}
                 </td>
               </tr>
               <tr>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider">Peak</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Peak</td>
                 <td className="py-0.5 font-bold tabular-nums">{peak ? `${peak.ec.toFixed(1)} @ ${Math.floor(peak.timeSec / 60)}:${String(Math.floor(peak.timeSec % 60)).padStart(2, '0')}` : '—'}</td>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider pl-4">Red Light</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider pl-4">Red Light</td>
                 <td className="py-0.5 font-bold tabular-nums"
                   style={{ color: redLightThreshold !== undefined && currentEC <= redLightThreshold ? '#ef4444' : '#22c55e' }}
                 >
@@ -640,7 +640,7 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
                 </td>
               </tr>
               <tr>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider">Risk</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Risk</td>
                 <td className="py-0.5 font-bold tabular-nums" colSpan={3}
                   style={{ color: currentPhase === 'collapsed' ? '#b91c1c' : currentPhase === 'collapsing' ? '#ef4444' : currentPhase === 'declining' ? '#f59e0b' : '#22c55e' }}
                 >
@@ -652,27 +652,27 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
                 </td>
               </tr>
               <tr>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider" title="First point where EC drop accelerates beyond normal">Decline ↓</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider" title="First point where EC drop accelerates beyond normal">Decline ↓</td>
                 <td className="py-0.5 font-bold tabular-nums" style={{ color: '#f59e0b' }}>
                   {declineStart ? `${Math.floor(declineStart.timeSec / 60)}:${String(Math.floor(declineStart.timeSec % 60)).padStart(2, '0')}  EC ${declineStart.ec.toFixed(1)}` : '—'}
                 </td>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider pl-4" title="First point where bed starts to collapse">Collapse ↓</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider pl-4" title="First point where bed starts to collapse">Collapse ↓</td>
                 <td className="py-0.5 font-bold tabular-nums" style={{ color: '#ef4444' }}>
                   {collapseStart ? `${Math.floor(collapseStart.timeSec / 60)}:${String(Math.floor(collapseStart.timeSec % 60)).padStart(2, '0')}  EC ${collapseStart.ec.toFixed(1)}` : '—'}
                 </td>
               </tr>
               <tr>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider" title="Time EC first drops below red light threshold">Cut @ RL</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider" title="Time EC first drops below red light threshold">Cut @ RL</td>
                 <td className="py-0.5 font-bold tabular-nums" style={{ color: redLightCross ? '#ef4444' : '#22c55e' }}>
                   {redLightCross ? `${Math.floor(redLightCross.timeSec / 60)}:${String(Math.floor(redLightCross.timeSec % 60)).padStart(2, '0')}  EC ${redLightCross.ec.toFixed(1)}` : 'EC > RL ✓'}
                 </td>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider pl-4">Lowest</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider pl-4">Lowest</td>
                 <td className="py-0.5 font-bold tabular-nums" style={{ color: '#64748b' }}>
                   {postPeakLowest ? `${Math.floor(postPeakLowest.timeSec / 60)}:${String(Math.floor(postPeakLowest.timeSec % 60)).padStart(2, '0')}  EC ${postPeakLowest.ec.toFixed(1)}` : '—'}
                 </td>
               </tr>
               <tr>
-                <td className="pr-3 py-0.5 text-slate-400 font-semibold uppercase tracking-wider">Cut at time</td>
+                <td className="pr-3 py-0.5 text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Cut at time</td>
                 <td colSpan={3} className="py-0.5">
                   <div className="flex items-center gap-1.5">
                     <input value={cutTargetSec === '' ? '' : `${Math.floor(cutTargetSec / 60)}:${String(Math.floor(cutTargetSec % 60)).padStart(2, '0')}`}
@@ -683,13 +683,13 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
                         if (!isNaN(m) && !isNaN(s) && s >= 0 && s < 60) setCutTargetSec(m * 60 + s);
                         else if (e.target.value === '') setCutTargetSec('');
                       }}
-                      className="w-14 px-1 py-0.5 text-[9px] border border-slate-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
+                      className="w-14 px-1 py-0.5 text-[9px] border border-slate-200 dark:border-slate-700 rounded font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
                       placeholder="m:ss"
                     />
                     {cutTargetSec !== '' && analysis && (
                       <span className="text-[9px] font-bold tabular-nums">
                         EC {analysis.getEC(cutTargetSec).toFixed(1)}
-                        <span className="text-slate-300 mx-1">·</span>
+                        <span className="text-slate-300 dark:text-slate-600 mx-1">·</span>
                         <span style={{ color: (() => {
                           const p = analysis.getPhase(cutTargetSec);
                           return p === 'collapsed' ? '#b91c1c' : p === 'collapsing' ? '#ef4444' : p === 'declining' ? '#f59e0b' : p === 'extracting' ? '#22c55e' : '#3b82f6';
@@ -711,7 +711,7 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
         <div className="w-full" style={{ maxWidth: BASE_W * chartZoom }}>
           <div className="flex items-center justify-between mt-2 mb-1">
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Detected Phases</span>
+              <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Detected Phases</span>
               <label className="flex items-center gap-1 cursor-pointer select-none">
                 <input type="checkbox" checked={selectedPhaseIndices.size === phaseRanges.length}
                   onChange={(e) => {
@@ -723,7 +723,7 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
                   }}
                   className="w-2.5 h-2.5 accent-slate-700"
                 />
-                <span className="text-[7px] text-slate-400">All</span>
+                <span className="text-[7px] text-slate-400 dark:text-slate-500">All</span>
               </label>
             </div>
             {selectedPhaseIndices.size > 0 && onImportPhases && (
@@ -731,19 +731,19 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
                 const selected = phaseRanges.filter((_, i) => selectedPhaseIndices.has(i));
                 onImportPhases(selected);
               }}
-                className="px-2 py-0.5 text-[8px] font-bold border border-slate-200 rounded hover:bg-slate-100 text-slate-500"
+                className="px-2 py-0.5 text-[8px] font-bold border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
               >+ Import selected ({selectedPhaseIndices.size})</button>
             )}
           </div>
-          <table className="w-full text-[8px] text-slate-500 border-collapse">
+          <table className="w-full text-[8px] text-slate-500 dark:text-slate-400 border-collapse">
             <thead>
-              <tr className="border-b border-slate-100">
+              <tr className="border-b border-slate-100 dark:border-slate-700">
                 <th className="w-4 pr-1 py-0.5"></th>
-                <th className="pr-2 py-0.5 text-left font-semibold text-slate-400">Phase</th>
-                <th className="pr-2 py-0.5 text-left font-semibold text-slate-400">Start</th>
-                <th className="pr-2 py-0.5 text-left font-semibold text-slate-400">End</th>
-                <th className="pr-2 py-0.5 text-right font-semibold text-slate-400">EC</th>
-                <th className="py-0.5 text-right font-semibold text-slate-400">Duration</th>
+                <th className="pr-2 py-0.5 text-left font-semibold text-slate-400 dark:text-slate-500">Phase</th>
+                <th className="pr-2 py-0.5 text-left font-semibold text-slate-400 dark:text-slate-500">Start</th>
+                <th className="pr-2 py-0.5 text-left font-semibold text-slate-400 dark:text-slate-500">End</th>
+                <th className="pr-2 py-0.5 text-right font-semibold text-slate-400 dark:text-slate-500">EC</th>
+                <th className="py-0.5 text-right font-semibold text-slate-400 dark:text-slate-500">Duration</th>
               </tr>
             </thead>
             <tbody>
@@ -754,7 +754,7 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
                 return (
                   <tr key={i}
                     onClick={() => setTime(r.startTime)}
-                    className={`border-b border-slate-50 cursor-pointer transition-colors ${isActive ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
+                    className={`border-b border-slate-50 cursor-pointer transition-colors ${isActive ? 'bg-slate-100' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50'}`}
                     style={isActive ? { borderLeft: `2px solid ${r.color}`, boxShadow: 'inset 2px 0 0 0' } : {}}
                   >
                     <td className="pr-1 py-0.5" onClick={e => e.stopPropagation()}>
@@ -774,7 +774,7 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
                     <td className="pr-2 py-0.5 tabular-nums">
                       {Math.floor(r.endTime / 60)}:{String(Math.floor(r.endTime % 60)).padStart(2, '0')}
                     </td>
-                    <td className="pr-2 py-0.5 text-right tabular-nums text-slate-600">
+                    <td className="pr-2 py-0.5 text-right tabular-nums text-slate-600 dark:text-slate-400">
                       {ecStart.toFixed(1)}→{ecEnd.toFixed(1)}
                     </td>
                     <td className="py-0.5 text-right tabular-nums">
@@ -792,14 +792,14 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
       {pourPlanPhaseAnalysis && pourPlanPhaseAnalysis.length > 0 && (
         <div className="w-full mt-2" style={{ maxWidth: BASE_W * chartZoom }}>
           <div className="flex items-center justify-between mt-2 mb-1">
-            <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Pour Plan Phase Analysis</span>
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Pour Plan Phase Analysis</span>
           </div>
           {pourPlanPhaseAnalysis.map((step) => {
             const stepStartTime = (step.startPct / 100) * brewTimeSec;
             const stepEndTime = (step.endPct / 100) * brewTimeSec;
             return (
               <div key={step.stepIndex} className="mb-2">
-                <div className="flex items-center gap-1.5 text-[8px] text-slate-500 font-medium mb-0.5">
+                <div className="flex items-center gap-1.5 text-[8px] text-slate-500 dark:text-slate-400 font-medium mb-0.5">
                   <span>Step {step.stepIndex + 1}: {step.startPct}% → {step.endPct}% &nbsp;
                     ({Math.floor(stepStartTime / 60)}:{String(Math.floor(stepStartTime % 60)).padStart(2, '0')} → {Math.floor(stepEndTime / 60)}:{String(Math.floor(stepEndTime % 60)).padStart(2, '0')})</span>
                   <span className="px-1 py-0.5 rounded text-[7px] font-bold tabular-nums leading-none"
@@ -809,14 +809,14 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
                     }}
                   >Bed {step.integrity}%</span>
                 </div>
-                <table className="w-full text-[8px] text-slate-500 border-collapse">
+                <table className="w-full text-[8px] text-slate-500 dark:text-slate-400 border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="pr-2 py-0.5 text-left font-semibold text-slate-400">Phase</th>
-                      <th className="pr-2 py-0.5 text-left font-semibold text-slate-400">Start</th>
-                      <th className="pr-2 py-0.5 text-left font-semibold text-slate-400">End</th>
-                      <th className="pr-2 py-0.5 text-right font-semibold text-slate-400">EC</th>
-                      <th className="py-0.5 text-right font-semibold text-slate-400">Dur</th>
+                    <tr className="border-b border-slate-100 dark:border-slate-700">
+                      <th className="pr-2 py-0.5 text-left font-semibold text-slate-400 dark:text-slate-500">Phase</th>
+                      <th className="pr-2 py-0.5 text-left font-semibold text-slate-400 dark:text-slate-500">Start</th>
+                      <th className="pr-2 py-0.5 text-left font-semibold text-slate-400 dark:text-slate-500">End</th>
+                      <th className="pr-2 py-0.5 text-right font-semibold text-slate-400 dark:text-slate-500">EC</th>
+                      <th className="py-0.5 text-right font-semibold text-slate-400 dark:text-slate-500">Dur</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -829,7 +829,7 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
                         <td className="pr-2 py-0.5 tabular-nums">
                           {Math.floor(p.endTime / 60)}:{String(Math.floor(p.endTime % 60)).padStart(2, '0')}
                         </td>
-                        <td className="pr-2 py-0.5 text-right tabular-nums text-slate-600">
+                        <td className="pr-2 py-0.5 text-right tabular-nums text-slate-600 dark:text-slate-400">
                           {p.ecStart.toFixed(1)}→{p.ecEnd.toFixed(1)}
                         </td>
                         <td className="py-0.5 text-right tabular-nums">
@@ -874,13 +874,13 @@ export default function BedVisual({ ecPoints, ec: fallbackEC = 28, brewTimeSec =
             background: `linear-gradient(90deg, ${state.color} 0%, ${state.color} ${progress * 100}%, #e2e8f0 ${progress * 100}%, #e2e8f0 100%)`,
           }}
         />
-        <div className="flex justify-between text-[7px] text-slate-400 tabular-nums" style={{ fontSize: 7 * (chartZoom > 1 ? 1.3 : 1) }}>
+        <div className="flex justify-between text-[7px] text-slate-400 dark:text-slate-500 tabular-nums" style={{ fontSize: 7 * (chartZoom > 1 ? 1.3 : 1) }}>
           {[0, 0.2, 0.4, 0.6, 0.8, 1].map((r, i) => {
             const t = brewTimeSec * r;
             return <span key={i}>{Math.floor(t / 60)}:{String(Math.floor(t % 60)).padStart(2, '0')}</span>;
           })}
         </div>
-        <div className="text-center font-semibold tabular-nums text-slate-500" style={{ fontSize: 9 * (chartZoom > 1 ? 1.3 : 1) }}>
+        <div className="text-center font-semibold tabular-nums text-slate-500 dark:text-slate-400" style={{ fontSize: 9 * (chartZoom > 1 ? 1.3 : 1) }}>
           {Math.floor(time / 60)}:{String(Math.floor(time % 60)).padStart(2, '0')}
         </div>
       </div>

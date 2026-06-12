@@ -1603,46 +1603,46 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-5">
-      <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-6">
         <h2 className="text-2xl font-bold text-slate-900">Ultrakoki JSON Parser</h2>
-        <p className="text-sm text-slate-600 mt-1">
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
           Load Ultrakoki JSON and preview pouring recipe data before exporting CSV.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
           <div className="space-y-3">
-            <label className="block text-sm font-semibold text-slate-700">Load JSON file</label>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Load JSON file</label>
             <input
               type="file"
               accept="application/json,.json,text/plain"
               onChange={onFileChange}
-              className="block w-full text-sm text-slate-700 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-700 file:text-white hover:file:bg-slate-800"
+              className="block w-full text-sm text-slate-700 dark:text-slate-300 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-700 file:text-white hover:file:bg-slate-800"
             />
-            {fileName && <p className="text-xs text-slate-500">Loaded: {fileName}</p>}
+            {fileName && <p className="text-xs text-slate-500 dark:text-slate-400">Loaded: {fileName}</p>}
 
-            <label className="block text-sm font-semibold text-slate-700">Or paste JSON</label>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Or paste JSON</label>
             <textarea
               value={rawJson}
               onChange={(event) => setRawJson(event.target.value)}
               placeholder="Paste Ultrakoki JSON..."
-              className="w-full h-56 p-3 rounded-lg border border-slate-300 font-mono text-xs"
+              className="w-full h-56 p-3 rounded-lg border border-slate-300 dark:border-slate-600 font-mono text-xs"
             />
 
-            <div className="pt-2 border-t border-slate-200">
-              <label className="block text-sm font-semibold text-slate-700">Optional EC chart JSON (for overlay)</label>
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Optional EC chart JSON (for overlay)</label>
               <input
                 type="file"
                 accept="application/json,.json,text/plain"
                 onChange={onEcFileChange}
-                className="mt-1 block w-full text-sm text-slate-700 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-amber-600 file:text-white hover:file:bg-amber-700"
+                className="mt-1 block w-full text-sm text-slate-700 dark:text-slate-300 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-amber-600 file:text-white hover:file:bg-amber-700"
               />
-              {ecFileName && <p className="text-xs text-slate-500 mt-1">Loaded EC file: {ecFileName}</p>}
+              {ecFileName && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Loaded EC file: {ecFileName}</p>}
 
               <textarea
                 value={ecRawJson}
                 onChange={(event) => setEcRawJson(event.target.value)}
                 placeholder="Paste digitized EC JSON here (optional)..."
-                className="mt-2 w-full h-28 p-3 rounded-lg border border-slate-300 font-mono text-xs"
+                className="mt-2 w-full h-28 p-3 rounded-lg border border-slate-300 dark:border-slate-600 font-mono text-xs"
               />
 
               <div className="mt-2 flex flex-wrap gap-2">
@@ -1654,11 +1654,11 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                 </button>
                 <button
                   onClick={clearEcCurve}
-                  className="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold"
+                  className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 text-slate-700 dark:text-slate-300 text-xs font-semibold"
                 >
                   Clear EC Overlay
                 </button>
-                <span className="text-xs text-slate-600 self-center">Points: {ecComparisonCurve.length}</span>
+                <span className="text-xs text-slate-600 dark:text-slate-400 self-center">Points: {ecComparisonCurve.length}</span>
               </div>
 
               {ecImportError && (
@@ -1671,11 +1671,11 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Mode</label>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Mode</label>
               <select
                 value={mode}
                 onChange={(event) => setMode(event.target.value as ParseMode)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm"
               >
                 <option value="legacy">legacy (pour recipe)</option>
                 <option value="phases">phases</option>
@@ -1687,107 +1687,107 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Threshold</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Threshold</label>
                 <input
                   type="number"
                   step="0.01"
                   value={threshold}
                   onChange={(event) => setThreshold(Number(event.target.value))}
-                  className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Min Change</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Min Change</label>
                 <input
                   type="number"
                   step="0.1"
                   value={minChange}
                   onChange={(event) => setMinChange(Number(event.target.value))}
-                  className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Min Pour</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Min Pour</label>
                 <input
                   type="number"
                   step="0.1"
                   value={minPour}
                   onChange={(event) => setMinPour(Number(event.target.value))}
-                  className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-2 text-sm"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Noise Tolerance: Min Water Added (g)</label>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Noise Tolerance: Min Water Added (g)</label>
               <input
                 type="number"
                 step="0.1"
                 min="0"
                 value={noiseMinWaterAdded}
                 onChange={(event) => setNoiseMinWaterAdded(Math.max(0, Number(event.target.value) || 0))}
-                className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-2 text-sm"
               />
-              <p className="text-[11px] text-slate-500 mt-1">Filters tiny pour events from recipe/graph. Set 0 to disable filtering.</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Filters tiny pour events from recipe/graph. Set 0 to disable filtering.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Flow Noise Floor (g/s)</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Flow Noise Floor (g/s)</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
                   value={flowNoiseFloor}
                   onChange={(event) => setFlowNoiseFloor(Math.max(0, Number(event.target.value) || 0))}
-                  className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Flow Spike Threshold (g/s)</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Flow Spike Threshold (g/s)</label>
                 <input
                   type="number"
                   step="0.1"
                   min="0"
                   value={flowSpikeThreshold}
                   onChange={(event) => setFlowSpikeThreshold(Math.max(0, Number(event.target.value) || 0))}
-                  className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-2 text-sm"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">Drops one-sample spikes caused when the dripper is removed.</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Drops one-sample spikes caused when the dripper is removed.</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Flow Max Threshold (g/s)</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Flow Max Threshold (g/s)</label>
                 <input
                   type="number"
                   step="0.1"
                   min="0"
                   value={flowMaxThreshold}
                   onChange={(event) => setFlowMaxThreshold(Math.max(0, Number(event.target.value) || 0))}
-                  className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-2 text-sm"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">Any flow above this is treated as absurd and removed before smoothing.</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Any flow above this is treated as absurd and removed before smoothing.</p>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Flow Graph Ceiling (g/s)</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Flow Graph Ceiling (g/s)</label>
                 <input
                   type="number"
                   step="0.1"
                   min="0"
                   value={flowDisplayMax}
                   onChange={(event) => setFlowDisplayMax(Math.max(0, Number(event.target.value) || 0))}
-                  className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-2 text-sm"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">Set flow chart max. Use 0 for auto scaling (robust 92nd percentile so normal flow stays visible).</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Set flow chart max. Use 0 for auto scaling (robust 92nd percentile so normal flow stays visible).</p>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Flow Smoothing Window</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Flow Smoothing Window</label>
                 <select
                   value={flowSmoothingWindow}
                   onChange={(event) => setFlowSmoothingWindow(Number(event.target.value))}
-                  className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-2 text-sm"
                 >
                   <option value={1}>1 (raw)</option>
                   <option value={3}>3 (light)</option>
@@ -1814,7 +1814,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
             </div>
 
             {result && (
-              <div className="rounded-lg bg-slate-100 border border-slate-200 p-3 text-xs text-slate-700 space-y-1">
+              <div className="rounded-lg bg-slate-100 border border-slate-200 dark:border-slate-700 p-3 text-xs text-slate-700 dark:text-slate-300 space-y-1">
                 <p><span className="font-semibold">Detected:</span> {result.detectedSource}</p>
                 <p><span className="font-semibold">Mode used:</span> {result.modeUsed}</p>
                 <p><span className="font-semibold">Rows:</span> {Math.max(0, rows.length - 1)}</p>
@@ -1834,54 +1834,54 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
       </section>
 
       {recipeRows.length > 0 && (
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-6">
           <h3 className="text-lg font-bold text-slate-900">Pouring Recipe Preview</h3>
-          <p className="text-sm text-slate-600">Derived from legacy pour detection for quick brewing review.</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Derived from legacy pour detection for quick brewing review.</p>
 
           {brewChartData && (
-            <div className="mt-4 rounded-xl border border-slate-200 p-3 bg-slate-50 space-y-4">
+            <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 p-3 bg-slate-50 dark:bg-slate-900/50 space-y-4">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-xs font-semibold text-slate-700">Coffee Dose (g) for ratio:</span>
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Coffee Dose (g) for ratio:</span>
                 <input
                   type="number"
                   min="0.1"
                   step="0.1"
                   value={coffeeDoseG}
                   onChange={(event) => setCoffeeDoseG(Math.max(0.1, Number(event.target.value) || 0.1))}
-                  className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                  className="w-24 rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-1 text-sm"
                 />
                 {suggestedDose && (
                   <button
                     onClick={() => setCoffeeDoseG(suggestedDose)}
-                    className="px-2 py-1 rounded-md border border-slate-300 bg-white text-xs text-slate-700 hover:bg-slate-100"
+                    className="px-2 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     Use parsed dose ({suggestedDose}g)
                   </button>
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-4 border-t border-slate-300 pt-3">
+              <div className="flex flex-wrap gap-4 border-t border-slate-300 dark:border-slate-600 pt-3">
                 <div>
-                  <div className="text-xs font-semibold text-slate-700 mb-2">Zoom</div>
+                  <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Zoom</div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}
-                      className="px-2 py-1 rounded-md border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-100"
+                      className="px-2 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       −
                     </button>
-                    <span className="px-3 py-1 rounded-md border border-slate-300 bg-white text-xs text-slate-700 min-w-[50px] text-center">
+                    <span className="px-3 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 min-w-[50px] text-center">
                       {(zoomLevel * 100).toFixed(0)}%
                     </span>
                     <button
                       onClick={() => setZoomLevel(zoomLevel + 0.25)}
-                      className="px-2 py-1 rounded-md border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-100"
+                      className="px-2 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       +
                     </button>
                     <button
                       onClick={() => setZoomLevel(1)}
-                      className="px-2 py-1 rounded-md border border-slate-300 bg-white text-xs text-slate-700 hover:bg-slate-100"
+                      className="px-2 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       Reset
                     </button>
@@ -1889,7 +1889,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                 </div>
 
                 <div>
-                  <div className="text-xs font-semibold text-slate-700 mb-2">Window 1 Series</div>
+                  <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Window 1 Series</div>
                   <div className="flex flex-wrap gap-2">
                     <label className="flex items-center gap-1 text-xs cursor-pointer">
                       <input
@@ -1898,7 +1898,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                         onChange={(e) => setShowToggleW1CumPour(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-slate-700">Cumulative Pour</span>
+                      <span className="text-slate-700 dark:text-slate-300">Cumulative Pour</span>
                     </label>
                     <label className="flex items-center gap-1 text-xs cursor-pointer">
                       <input
@@ -1907,7 +1907,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                         onChange={(e) => setShowToggleW1CumBrew(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-slate-700">Cumulative Brew</span>
+                      <span className="text-slate-700 dark:text-slate-300">Cumulative Brew</span>
                     </label>
                     <label className="flex items-center gap-1 text-xs cursor-pointer">
                       <input
@@ -1916,7 +1916,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                         onChange={(e) => setShowToggleW1PourRatio(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-slate-700">Pour Ratio</span>
+                      <span className="text-slate-700 dark:text-slate-300">Pour Ratio</span>
                     </label>
                     <label className="flex items-center gap-1 text-xs cursor-pointer">
                       <input
@@ -1925,13 +1925,13 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                         onChange={(e) => setShowToggleW1BrewRatio(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-slate-700">Brew Ratio</span>
+                      <span className="text-slate-700 dark:text-slate-300">Brew Ratio</span>
                     </label>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-xs font-semibold text-slate-700 mb-2">Window 2 Series</div>
+                  <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Window 2 Series</div>
                   <div className="flex flex-wrap gap-2">
                     <label className="flex items-center gap-1 text-xs cursor-pointer">
                       <input
@@ -1940,7 +1940,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                         onChange={(e) => setShowToggleW2PourFlow(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-slate-700">Pour Flow</span>
+                      <span className="text-slate-700 dark:text-slate-300">Pour Flow</span>
                     </label>
                     <label className="flex items-center gap-1 text-xs cursor-pointer">
                       <input
@@ -1949,7 +1949,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                         onChange={(e) => setShowToggleW2BrewFlow(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-slate-700">Brew Flow</span>
+                      <span className="text-slate-700 dark:text-slate-300">Brew Flow</span>
                     </label>
                     <label className="flex items-center gap-1 text-xs cursor-pointer">
                       <input
@@ -1958,7 +1958,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                         onChange={(e) => setShowToggleW2Dripper(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-slate-700">Dripper Flow</span>
+                      <span className="text-slate-700 dark:text-slate-300">Dripper Flow</span>
                     </label>
                     <label className="flex items-center gap-1 text-xs cursor-pointer">
                       <input
@@ -1967,13 +1967,13 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                         onChange={(e) => setShowToggleW2Temp(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-slate-700">Temperature</span>
+                      <span className="text-slate-700 dark:text-slate-300">Temperature</span>
                     </label>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-xs font-semibold text-slate-700 mb-2">Cross-Window Overlay</div>
+                  <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Cross-Window Overlay</div>
                   <div className="flex flex-wrap gap-2">
                     <label className="flex items-center gap-1 text-xs cursor-pointer">
                       <input
@@ -1982,7 +1982,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                         onChange={(e) => setShowWindow2InWindow1(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-slate-700">Show Window 2 data in Window 1</span>
+                      <span className="text-slate-700 dark:text-slate-300">Show Window 2 data in Window 1</span>
                     </label>
                     <label className="flex items-center gap-1 text-xs cursor-pointer">
                       <input
@@ -1991,7 +1991,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                         onChange={(e) => setShowWindow1InWindow2(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-slate-700">Show Window 1 data in Window 2</span>
+                      <span className="text-slate-700 dark:text-slate-300">Show Window 1 data in Window 2</span>
                     </label>
                   </div>
                 </div>
@@ -1999,7 +1999,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
 
               <div>
                 <h4 className="text-sm font-semibold text-slate-800 mb-1">Combined Brew Graph</h4>
-                <p className="text-xs text-slate-500 mb-2">Single graph with a shared timestamp, crosshair, and zoom. Top band shows cumulative and ratio. Bottom band shows flow and temperature.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Single graph with a shared timestamp, crosshair, and zoom. Top band shows cumulative and ratio. Bottom band shows flow and temperature.</p>
                 <div className="overflow-x-auto">
                   {(() => {
                     const svgWidth = Math.round(980 * zoomLevel);
@@ -2249,9 +2249,9 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                     <div>
                       <h4 className="text-sm font-semibold text-slate-800">Experimental Combined Brew + EC Chart</h4>
-                      <p className="text-xs text-slate-500">Uses imported EC curve on top of parser brew data. This is the first integration pass.</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Uses imported EC curve on top of parser brew data. This is the first integration pass.</p>
                     </div>
-                    <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                    <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={showImportedEc}
@@ -2262,7 +2262,7 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
                     </label>
                   </div>
 
-                  <div className="rounded-lg border border-slate-200 bg-white p-2">
+                  <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2">
                     <UltrakokiGraph
                       data={combinedBrewEcData}
                       comparisonCurve={showImportedEc ? ecComparisonCurve : []}
@@ -2276,15 +2276,15 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
 
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {recipeRows.map((row, index) => (
-              <div key={index} className="rounded-xl border border-slate-200 p-3 bg-slate-50">
-                <div className="text-xs text-slate-500">Pour #{row[0]}</div>
+              <div key={index} className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 bg-slate-50 dark:bg-slate-900/50">
+                <div className="text-xs text-slate-500 dark:text-slate-400">Pour #{row[0]}</div>
                 <div className="text-sm font-semibold text-slate-900">{row[1]}</div>
-                <div className="text-xs text-slate-700 mt-1">{row[2]}s to {row[3]}s ({row[4]}s)</div>
-                <div className="text-sm text-emerald-700 font-semibold mt-1">+{row[5]} g</div>
-                <div className="text-xs text-slate-600">Cumulative: {row[6]} g</div>
-                <div className="text-xs text-slate-600">Rate: {row[7]} g/s</div>
+                <div className="text-xs text-slate-700 dark:text-slate-300 mt-1">{row[2]}s to {row[3]}s ({row[4]}s)</div>
+                <div className="text-sm text-emerald-700 dark:text-emerald-400 font-semibold mt-1">+{row[5]} g</div>
+                <div className="text-xs text-slate-600 dark:text-slate-400">Cumulative: {row[6]} g</div>
+                <div className="text-xs text-slate-600 dark:text-slate-400">Rate: {row[7]} g/s</div>
                 {dripperFlowByPour[index] !== undefined && (
-                  <div className="text-xs text-emerald-700">Current dripper flow: {dripperFlowByPour[index].toFixed(2)} g/s</div>
+                  <div className="text-xs text-emerald-700 dark:text-emerald-400">Current dripper flow: {dripperFlowByPour[index].toFixed(2)} g/s</div>
                 )}
               </div>
             ))}
@@ -2293,25 +2293,25 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
       )}
 
       {metadataRows.length > 0 && (
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-6">
           <h3 className="text-lg font-bold text-slate-900">Brew Metadata</h3>
-          <p className="text-sm text-slate-600">Parsed bean, dripper, and recipe text fields from JSON/text.</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Parsed bean, dripper, and recipe text fields from JSON/text.</p>
 
-          <div className="overflow-auto mt-3 border border-slate-200 rounded-lg">
+          <div className="overflow-auto mt-3 border border-slate-200 dark:border-slate-700 rounded-lg">
             <table className="min-w-full text-xs">
               <thead className="bg-slate-100">
                 <tr>
-                  <th className="text-left px-3 py-2 border-b border-slate-200 text-slate-700 font-semibold">Field</th>
-                  <th className="text-left px-3 py-2 border-b border-slate-200 text-slate-700 font-semibold">Value</th>
-                  <th className="text-left px-3 py-2 border-b border-slate-200 text-slate-700 font-semibold">Source</th>
+                  <th className="text-left px-3 py-2 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold">Field</th>
+                  <th className="text-left px-3 py-2 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold">Value</th>
+                  <th className="text-left px-3 py-2 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold">Source</th>
                 </tr>
               </thead>
               <tbody>
                 {metadataRows.map((row, index) => (
-                  <tr key={`${row.key}-${index}`} className="odd:bg-white even:bg-slate-50">
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 font-semibold whitespace-nowrap">{row.key}</td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700">{row.value}</td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-500 uppercase">{row.source}</td>
+                  <tr key={`${row.key}-${index}`} className="odd:bg-white dark:bg-slate-800 even:bg-slate-50 dark:bg-slate-900/50">
+                    <td className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold whitespace-nowrap">{row.key}</td>
+                    <td className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-300">{row.value}</td>
+                    <td className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 uppercase">{row.source}</td>
                   </tr>
                 ))}
               </tbody>
@@ -2321,16 +2321,16 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
       )}
 
       {result && (
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-6">
           <h3 className="text-lg font-bold text-slate-900">Data Table Preview</h3>
-          <p className="text-sm text-slate-600">Showing first {previewRows.length} rows.</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Showing first {previewRows.length} rows.</p>
 
-          <div className="overflow-auto mt-3 border border-slate-200 rounded-lg">
+          <div className="overflow-auto mt-3 border border-slate-200 dark:border-slate-700 rounded-lg">
             <table className="min-w-full text-xs">
               <thead className="bg-slate-100">
                 <tr>
                   {headers.map((header, index) => (
-                    <th key={index} className="text-left px-3 py-2 border-b border-slate-200 text-slate-700 font-semibold whitespace-nowrap">
+                    <th key={index} className="text-left px-3 py-2 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold whitespace-nowrap">
                       {header}
                     </th>
                   ))}
@@ -2338,9 +2338,9 @@ export const UltrakokiParserPage = forwardRef<UltrakokiParserPageHandle>((_, ref
               </thead>
               <tbody>
                 {previewRows.map((row, rowIndex) => (
-                  <tr key={rowIndex} className="odd:bg-white even:bg-slate-50">
+                  <tr key={rowIndex} className="odd:bg-white dark:bg-slate-800 even:bg-slate-50 dark:bg-slate-900/50">
                     {row.map((cell, cellIndex) => (
-                      <td key={cellIndex} className="px-3 py-2 border-b border-slate-100 whitespace-nowrap text-slate-700">
+                      <td key={cellIndex} className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 whitespace-nowrap text-slate-700 dark:text-slate-300">
                         {cell}
                       </td>
                     ))}

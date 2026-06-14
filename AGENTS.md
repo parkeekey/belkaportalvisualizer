@@ -340,6 +340,35 @@ Assign the big aroma category + subgroup, write a 1–2 sentence sensory descrip
 - **Long-term possibility**: DIY IoT load cell + ESP32 → direct to Portal (no app dependency). Hardware + aesthetic integration to solve.
 - **Non-option (discarded)**: Web Bluetooth — can't extract app graphs or EC data, only raw weight. Doesn't solve the core problem.
 
+## 6C Coffee Cognitive Model — Private Reference (UI removed 2026-06-13)
+
+The 6C model is a closed-loop sensory-to-brewing framework forged from the aftermath of loss at PCA (Professional Coffee Athlete). It translates harsh, instinct-based mentorship into architecture — pattern, repeatable knowledge. It is the bridge between a mentor who taught in motion and a neurodivergent mind that needs structure to learn.
+
+### Origin
+This model was forged not in a lab, but in the aftermath of loss at PCA — Professional Coffee Athlete, China's platform for latte, cuptaste, and brewing competition. With one month of training from a mentor who was harsh because he believed in presenting coffee as "trouble" rather than solutions. A man who didn't know how to compete, who won the first round on a technicality (the opponent forgot to count the judge's stopwatch click), and lost the second because the judge said "this is not red fruit, it is yellow fruit" — and nobody had taught him what that meant.
+
+The sensory confusion, the bean defects that look like cancerous cells, the baked coffee that lost all its life, the politics of sponsor-based judging, the weight of being grilled by a mentor who never gave answers — only trouble. All of it is encoded here.
+
+The 6C model is the bridge between that mentor's world and a neurodivergent mind that needs structure to learn. While he taught in motion and instinct — the martial arts way of doing and failing — the 6C model translates that into architecture. Pattern. Repeatable knowledge.
+
+The app itself is the last straw. The refusal to believe that success was never the plan. The rebellion that became a system.
+
+### The Six C's
+
+**1. Capture** — Building the vocabulary foundation. Smelling Scentone and exploring many coffees. Training the brain to recognize and name what the nose detects. Even without a Scentone kit, the act of searching for vocabulary builds the neural map. It is the foundation of all sensory knowledge. But Capture alone is not enough — it gives you words without telling you how to use them.
+
+**2. Compose** — The sandwich theory of flavour balance. Discovered from watching *The Sopranos* and asking "how the hell does an Italian from New Jersey know how to order their sandwich?" Strong flavour must be chased with strong flavour. Intensity matching is everything. A heavy salt needs an equally strong sweet to balance. Same in coffee — a heavy bitter roast needs an equally strong sweet or acidic note to meet it, not a whisper. Reverse-engineered from a TV show and a deli.
+
+**3. Compare** — Side-by-side across attributes. Once you have vocabulary (Capture) and understand balance (Compose), the next step is comparison: two or more coffees head-to-head across different attributes. Not "which is better" but "better for what purpose?" This is how competition judges evaluate.
+
+**4. Compression** — Structured logging on SCA protocol. Turning subjective experience into objective, structured data using SCA protocol as the backbone. This app contains the best note-taking system ever devised for coffee. Without Compression, even perfect Capture + Compose + Compare is just a good memory that fades.
+
+**5. Communication** — Conveying with coherence and precision. The ability to convey findings to others at the umbrella level of sensory and brewing standards. In competition, this is the moment the judge decides if you know what you're talking about. In a mentorship, it's how knowledge passes. On a street stand, it's how a customer trusts you.
+
+**6. Contribution** — Passing the knowledge forward. The cycle doesn't end with knowing. It ends when someone else benefits from what you learned. The chef who made the off-menu sandwich didn't keep the Speck-and-tomato pairing to himself — he gave it freely. This app exists for the same reason: so the next street brewer with a kettle and one month of training has a better shot.
+
+The 6C model is a closed-loop system designed to make a single brewer self-sufficient — capable of operating alone, practicing both brewing and sensory without a coach, without a lab, without a second opinion. A weapon forged in solitude, powerful enough to end the game — but wielded in practice, until the brewer becomes the game.
+
 ### Session 2026-06-12 — Identity: The BOSS
 - **Future project name**: `#blacklistbrewer` Brewing Optimization/Observation Sensory Standardize/Study System = **The BOSS**
 - Rename targets (when ready): `index.html` title, `docs/index.html` title, `src/App.tsx` h1, `package.json` name, `AGENTS.md` headings, deploy base path, localStorage key names

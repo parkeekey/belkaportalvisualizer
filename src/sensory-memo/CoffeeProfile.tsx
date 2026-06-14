@@ -5,6 +5,7 @@ import {
   BIG_CATEGORIES, TASTE_LABELS, BIG_SUBGROUP_LABEL,
   type CoffeeProfile, type FlavorEntry, type AggregateAnalysis, type BigAromaCategory, type SensoryProfile,
 } from './types';
+import { tasteToComposition, COMPOSITION_AXES, COMPOSITION_LABELS } from './compositionMapping';
 import CoffeeOriginSelect from '../components/CoffeeOriginSelect';
 
 const SENSORY_PROFILES_KEY = 'belka.sensoryProfiles';
@@ -202,6 +203,7 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
     try { const r = localStorage.getItem(SENSORY_PROFILES_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
   });
   const [importSensoryOpen, setImportSensoryOpen] = useState(false);
+  const [showCompositionIndex, setShowCompositionIndex] = useState(true);
 
   useEffect(() => { saveProfiles(profiles); }, [profiles]);
 
@@ -491,7 +493,12 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                 <div className="bg-gradient-to-br from-violet-50 to-white border border-violet-200 rounded-lg p-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[9px] font-bold text-violet-700">Sensory Composition</span>
-                    <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500">{analysis.selectedCount} flavors · {analysis.wcrCount} WCR</span>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => setShowCompositionIndex(v => !v)}
+                        className={`text-[6px] font-semibold px-1.5 py-0.5 rounded border transition-colors ${showCompositionIndex ? 'bg-violet-100 border-violet-200 text-violet-600' : 'bg-white border-slate-200 text-slate-400'}`}
+                      >📊 Index</button>
+                      <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500">{analysis.selectedCount} flavors · {analysis.wcrCount} WCR</span>
+                    </div>
                   </div>
 
                   {/* Taste profile bars */}
@@ -586,6 +593,56 @@ export default function CoffeeProfilePage({ onClose }: { onClose?: () => void })
                     </div>
                     <p className="text-[8px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mt-0.5 leading-relaxed">{analysis.dimensionReason}</p>
                   </div>
+
+                  {/* Predicted Composition Index */}
+                  {analysis && showCompositionIndex && (() => {
+                    const comp = tasteToComposition(analysis.avgTaste, {
+                      categoryCounts: analysis.categoryCounts ?? undefined,
+                      selectedCount: analysis.selectedCount,
+                    });
+                    return (
+                      <div className="mb-2">
+                        <span className="text-[7px] text-slate-400 uppercase font-semibold">Predicted Composition Index</span>
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          {COMPOSITION_AXES.map(axis => {
+                            const val = comp[axis];
+                            const pct = ((val + 5) / 10) * 100;
+                            const absVal = Math.abs(val);
+                            const label = absVal <= 1.5 ? 'neutral' : absVal <= 3.5 ? val > 0 ? 'notable' : 'slight' : val > 0 ? 'intense' : 'low';
+                            return (
+                              <div key={axis} className="flex items-center gap-1">
+                                <span className="text-[6px] text-slate-400 w-12 text-right">{COMPOSITION_LABELS[axis]}</span>
+                                <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden relative">
+                                  {/* Center line */}
+                                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-300" />
+                                  {/* Fill bar */}
+                                  <div className={`absolute h-full rounded-full transition-all ${
+                                    val === 0 ? 'bg-slate-300' :
+                                    val < 0 ? 'bg-blue-400' : 'bg-orange-400'
+                                  }`} style={{
+                                    left: val < 0 ? `${pct}%` : '50%',
+                                    width: val === 0 ? '2px' : `${Math.abs(val) / 5 * 50}%`,
+                                    top: 0,
+                                  }} />
+                                  {/* Marker dot */}
+                                  <div className="absolute top-0.5 w-2 h-2 rounded-full border-2 border-white shadow-sm z-10"
+                                    style={{
+                                      left: `calc(${pct}% - 4px)`,
+                                      backgroundColor: val === 0 ? '#94a3b8' : val < 0 ? '#3b82f6' : '#f97316',
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-[7px] text-slate-400 w-6 text-right font-mono">
+                                  {val > 0 ? '+' : ''}{val.toFixed(1)}
+                                </span>
+                                <span className="text-[6px] text-slate-300 w-7">{label}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Possibility score */}
                   <div>

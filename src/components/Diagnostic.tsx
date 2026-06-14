@@ -3,8 +3,9 @@ import { getReferenceTDS, getReferenceTDSRange } from '../utils/tdsReference';
 import shadowJudgeData from '../data/shadowJudge';
 import { SENSORY_VOCAB, POLARITY_COLORS } from '../data/sensoryVocab';
 import TDSHUD from './TDSHUD';
-import type { SensoryProfile, TasteProfile, FlavorEntry } from '../sensory-memo';
+import type { SensoryProfile, CoffeeProfile, TasteProfile, FlavorEntry, BigAromaCategory } from '../sensory-memo';
 import { FLAVORS, TASTE_LABELS } from '../sensory-memo';
+import { tasteToComposition } from '../sensory-memo/compositionMapping';
 
 type Score = number;
 
@@ -479,6 +480,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
   const [showSaveLoad, setShowSaveLoad] = useState(false);
   const [loadedMemoProfile, setLoadedMemoProfile] = useState<SensoryProfile | null>(null);
   const [showMemoPicker, setShowMemoPicker] = useState(false);
+  const [loadedCoffeeProfile, setLoadedCoffeeProfile] = useState<CoffeeProfile | null>(null);
+  const [showCoffeeProfilePicker, setShowCoffeeProfilePicker] = useState(false);
+  const [showPlanMarkers, setShowPlanMarkers] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
   const [snapName, setSnapName] = useState('');
   const [snapRating, setSnapRating] = useState(3);
@@ -953,6 +957,32 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
             {loadedMemoProfile && (
               <button onClick={() => { setLoadedMemoProfile(null); setShowMemoPicker(false); }} className="px-1.5 py-1 text-[9px] font-semibold text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-red-500 dark:text-red-400 dark:text-red-400">✕</button>
             )}
+            <div className="relative">
+              <button onClick={() => setShowCoffeeProfilePicker(p => !p)} className={`px-2 py-1 text-[10px] font-semibold border rounded-lg transition-colors ${loadedCoffeeProfile ? 'bg-amber-100 border-amber-200 text-amber-700' : 'border-slate-200 dark:border-slate-700 dark:border-slate-700 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700'}`}>☕ Profile</button>
+              {showCoffeeProfilePicker && (() => {
+                let profiles: CoffeeProfile[] = [];
+                try { profiles = JSON.parse(localStorage.getItem('belka.coffeeProfiles') || '[]'); } catch {}
+                return (
+                  <div className="absolute right-0 top-full mt-1 w-64 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                    <div className="p-1.5 border-b border-slate-100 dark:border-slate-700 dark:border-slate-700 text-[8px] font-semibold text-slate-400 dark:text-slate-500 dark:text-slate-500">Load from Coffee Profile</div>
+                    {profiles.length === 0 ? (
+                      <div className="p-3 text-[9px] text-slate-400 dark:text-slate-500 dark:text-slate-500 italic text-center">No saved profiles</div>
+                    ) : profiles.map(p => (
+                      <button key={p.id} onClick={() => { setLoadedCoffeeProfile(p); setShowCoffeeProfilePicker(false); }}
+                        className="w-full text-left px-2 py-1.5 text-[9px] hover:bg-amber-50 border-b border-slate-50 last:border-0"
+                      >
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300">{p.name}</span>
+                        {p.roaster && <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500 ml-1">— {p.roaster}</span>}
+                        <div className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500">{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}{p.roastLevel ? ` · ${p.roastLevel}` : ''}</div>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+            {loadedCoffeeProfile && (
+              <button onClick={() => { setLoadedCoffeeProfile(null); setShowCoffeeProfilePicker(false); }} className="px-1.5 py-1 text-[9px] font-semibold text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-red-500 dark:text-red-400 dark:text-red-400">✕</button>
+            )}
             <button onClick={onClose} className="px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700">✕ Close</button>
           </div>
         </div>
@@ -1042,6 +1072,57 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 {/* Flavor chips */}
                 <div className="flex flex-wrap gap-1">
                   {checkedFlavors.map(f => (
+                    <span key={f.id} className="text-[7px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:text-slate-400 dark:text-slate-400">{f.emoji} {f.label}</span>
+                  ))}
+                </div>
+              </div>
+              );
+            })()}
+            {loadedCoffeeProfile && (() => {
+              const profileFlavorIds = new Set(loadedCoffeeProfile.flavorIds);
+              const profileFlavors: FlavorEntry[] = FLAVORS.filter(f => profileFlavorIds.has(f.id));
+              const totalTaste: TasteProfile = { sour: 0, sweet: 0, bitter: 0, salty: 0, umami: 0 };
+              profileFlavors.forEach(f => { for (const k of Object.keys(totalTaste) as (keyof TasteProfile)[]) totalTaste[k] += f.taste[k]; });
+              const cnt = profileFlavors.length || 1;
+              const avgTaste: TasteProfile = { sour: +(totalTaste.sour / cnt).toFixed(1), sweet: +(totalTaste.sweet / cnt).toFixed(1), bitter: +(totalTaste.bitter / cnt).toFixed(1), salty: +(totalTaste.salty / cnt).toFixed(1), umami: +(totalTaste.umami / cnt).toFixed(1) };
+              const bigCats: Record<string, number> = {};
+              profileFlavors.forEach(f => { bigCats[f.bigCategory] = (bigCats[f.bigCategory] || 0) + 1; });
+              return (
+              <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl border border-amber-200 shadow-sm p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-[10px] font-bold text-amber-700">☕ PRE-BREW PLAN</h3>
+                  <button onClick={() => setLoadedCoffeeProfile(null)} className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:text-red-500 dark:text-red-400 dark:text-red-400 font-semibold">✕ Clear</button>
+                </div>
+                {(loadedCoffeeProfile.name || loadedCoffeeProfile.roaster || loadedCoffeeProfile.origin || loadedCoffeeProfile.process || loadedCoffeeProfile.roastLevel) && (
+                  <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[7px] text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
+                    {loadedCoffeeProfile.name && <span className="font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300">{loadedCoffeeProfile.name}</span>}
+                    {loadedCoffeeProfile.roaster && <span>roasted by {loadedCoffeeProfile.roaster}</span>}
+                    {loadedCoffeeProfile.origin && <span>· {loadedCoffeeProfile.origin}</span>}
+                    {loadedCoffeeProfile.process && <span>· {loadedCoffeeProfile.process}</span>}
+                    {loadedCoffeeProfile.roastLevel && <span>· {loadedCoffeeProfile.roastLevel}</span>}
+                  </div>
+                )}
+                <div className="mb-2">
+                  <div className="text-[7px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Planned Taste</div>
+                  <div className="flex gap-2">
+                    {TASTE_LABELS.map(t => (
+                      <div key={t.key} className="flex-1">
+                        <div className="text-[6px] text-slate-400 dark:text-slate-500 dark:text-slate-500 text-center mb-0.5">{t.label}</div>
+                        <div className="h-8 rounded-full overflow-hidden bg-slate-100 flex flex-col-reverse">
+                          <div className={`${t.color} transition-all duration-200`} style={{ height: `${(avgTaste[t.key] / 5) * 100}%` }} />
+                        </div>
+                        <div className="text-[7px] font-bold text-slate-600 dark:text-slate-400 dark:text-slate-400 text-center">{avgTaste[t.key]}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {Object.entries(bigCats).map(([cat, n]) => (
+                    <span key={cat} className="text-[7px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">{cat} {n}</span>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {profileFlavors.map(f => (
                     <span key={f.id} className="text-[7px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:text-slate-400 dark:text-slate-400">{f.emoji} {f.label}</span>
                   ))}
                 </div>
@@ -1721,14 +1802,29 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
           </>
         )}
 
+        <style>{`
+          .comp-dark .text-slate-200 { color: #475569; }
+          .comp-dark .text-slate-300 { color: #475569; }
+          .comp-dark .text-slate-400 { color: #334155; }
+          .comp-dark .text-slate-500 { color: #1e293b; }
+          .comp-dark .text-slate-600 { color: #0f172a; }
+          .comp-dark .text-slate-700 { color: #0f172a; }
+        `}</style>
         {tab === 'composition' && (
-          <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 shadow-sm p-4">
+          <div className="comp-dark bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 dark:border-slate-700 shadow-sm p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">🥪</span>
-              <div>
+              <div className="flex-1">
                 <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300">Composition</h2>
                 <p className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500">Adjust each layer by how much you feel it needs — independent of your sensory score</p>
               </div>
+              {(loadedMemoProfile || loadedCoffeeProfile) && (
+                <button onClick={() => setShowPlanMarkers(p => !p)}
+                  className={`px-1.5 py-0.5 text-[7px] font-semibold rounded border transition-colors ${showPlanMarkers ? 'bg-amber-100 border-amber-200 text-amber-700' : 'bg-white border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'}`}
+                >
+                  {showPlanMarkers ? '🔖 Plan On' : '🔖 Plan Off'}
+                </button>
+              )}
             </div>
             {loadedMemoProfile && (() => {
               const checkedEntries = Object.entries(loadedMemoProfile.checkedFlavors).filter(([, v]) => v.checked);
@@ -1742,6 +1838,21 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     <span key={f.id} className="text-[7px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 dark:bg-slate-800 border border-violet-100 text-slate-600 dark:text-slate-400 dark:text-slate-400">{f.emoji} {f.label}</span>
                   ))}
                   {checkedFlavors.length === 0 && <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 italic">No flavor data</span>}
+                </div>
+              </div>
+              );
+            })()}
+            {loadedCoffeeProfile && (() => {
+              const profileFlavorIds = new Set(loadedCoffeeProfile.flavorIds);
+              const profileFlavors: FlavorEntry[] = FLAVORS.filter(f => profileFlavorIds.has(f.id));
+              return (
+              <div className="mb-3 p-2 bg-amber-50/50 border border-amber-200 rounded-lg">
+                <div className="text-[8px] font-bold text-amber-700 mb-1">☕ Expected from Coffee Profile</div>
+                <div className="flex flex-wrap gap-1">
+                  {profileFlavors.map(f => (
+                    <span key={f.id} className="text-[7px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 dark:bg-slate-800 border border-amber-100 text-slate-600 dark:text-slate-400 dark:text-slate-400">{f.emoji} {f.label}</span>
+                  ))}
+                  {profileFlavors.length === 0 && <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500 italic">No flavor data</span>}
                 </div>
               </div>
               );
@@ -1771,6 +1882,27 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
               ];
               const netBalance = AXES.reduce((sum, k) => sum + (composition[k] || 0), 0);
               const balancePct = ((netBalance / (R * AXES.length)) + 1) / 2 * 100;
+              const tasteFlavors: FlavorEntry[] = (() => {
+                const seen = new Set<string>();
+                const result: FlavorEntry[] = [];
+                const add = (f: FlavorEntry) => { if (!seen.has(f.id)) { seen.add(f.id); result.push(f); } };
+                if (loadedCoffeeProfile) FLAVORS.filter(f => loadedCoffeeProfile.flavorIds.includes(f.id)).forEach(add);
+                if (loadedMemoProfile) FLAVORS.filter(f => { const e = loadedMemoProfile.checkedFlavors[f.id]; return e && e.checked; }).forEach(add);
+                return result;
+              })();
+              const profilePlanned = tasteFlavors.length > 0 ? (() => {
+                const tot: TasteProfile = { sour: 0, sweet: 0, bitter: 0, salty: 0, umami: 0 };
+                const catCounts: Partial<Record<BigAromaCategory, number>> = {};
+                tasteFlavors.forEach(f => {
+                  for (const k of Object.keys(tot) as (keyof TasteProfile)[]) tot[k] += f.taste[k];
+                  catCounts[f.bigCategory] = (catCounts[f.bigCategory] || 0) + 1;
+                });
+                const c = tasteFlavors.length;
+                const avg = { sour: tot.sour / c, sweet: tot.sweet / c, bitter: tot.bitter / c, salty: tot.salty / c, umami: tot.umami / c };
+                return tasteToComposition(avg, { categoryCounts: catCounts, selectedCount: c });
+              })() : null;
+              const profileNetBalance = profilePlanned ? Object.values(profilePlanned).reduce((s, v) => s + v, 0) : null;
+              const profileBalancePct = profileNetBalance !== null ? ((profileNetBalance / (R * AXES.length)) + 1) / 2 * 100 : null;
               return (<>
               {/* Summary section */}
               <div className="mb-3">
@@ -1801,6 +1933,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                     left: `calc(${balancePct}% - 8px)`,
                     borderColor: netBalance === 0 ? '#94a3b8' : netBalance < 0 ? '#3b82f6' : '#f97316'
                   }} />
+                  {showPlanMarkers && profileBalancePct !== null && (
+                    <div className="absolute top-0 bottom-0 w-[3px] bg-amber-500 rounded-full z-20 shadow-sm" style={{ left: `${profileBalancePct}%` }} title={`Planned: ${profileNetBalance!.toFixed(1)}`} />
+                  )}
                 </div>
                 <div className="flex items-center justify-center gap-2 text-[6px] text-slate-300 dark:text-slate-600 dark:text-slate-600 mb-1">
                   <span className="text-slate-400 dark:text-slate-500 dark:text-slate-500">|</span>
@@ -1822,6 +1957,11 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                       {netBalance > 0 ? '+' : ''}{netBalance}
                     </span>
                     <span className="text-[7px] text-slate-300 dark:text-slate-600 dark:text-slate-600 ml-1">/±30</span>
+                    {showPlanMarkers && profileBalancePct !== null && (
+                      <div className="text-[9px] text-amber-600 font-semibold mt-0.5">
+                        ☕ Plan: {profileNetBalance! > 0 ? '+' : ''}{profileNetBalance!.toFixed(1)}
+                      </div>
+                    )}
                   </div>
                 </div>
                 {(() => {
@@ -1863,6 +2003,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                   const pct = l.oneWay ? (v / 5) * 100 : ((v + 5) / 10) * 100;
                   const activeCats = vocabCats[l.key] || {};
                   const selLabel = Object.values(activeCats)[0] || '';
+                  const profileVal = profilePlanned ? (profilePlanned as Record<string, number>)[l.key] : null;
+                  const profilePct = profileVal !== null ? (l.oneWay ? (profileVal / 5) * 100 : ((profileVal + 5) / 10) * 100) : null;
                   return (
                     <div key={l.key} className="flex items-center gap-2">
                       <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400 w-14 shrink-0 text-right">{l.label}</span>
@@ -1880,10 +2022,18 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                           left: `calc(${pct}% - 6px)`,
                           borderColor: v === 0 ? '#94a3b8' : v < 0 ? '#3b82f6' : '#f97316'
                         }} />
+                        {showPlanMarkers && profilePct !== null && (
+                          <div className="absolute top-0 bottom-0 w-[3px] bg-amber-500 rounded-full z-20 shadow-sm" style={{ left: `${profilePct}%` }} />
+                        )}
                       </div>
                       <span className={`text-[10px] font-bold w-5 text-center ${v === 0 ? 'text-slate-300 dark:text-slate-600 dark:text-slate-600' : v < 0 ? 'text-blue-600' : 'text-orange-600'}`}>{v > 0 ? '+' : ''}{v}</span>
                       <span className={`text-[6px] font-semibold ${v === 0 ? 'text-slate-300 dark:text-slate-600 dark:text-slate-600' : v < 0 ? 'text-blue-500' : 'text-orange-500'}`}>{v === 0 ? '—' : Math.abs(v) <= 2 ? 'slight' : Math.abs(v) <= 4 ? 'intense' : 'extreme'}</span>
                       {selLabel && <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 truncate max-w-16">{selLabel}</span>}
+                      {showPlanMarkers && profilePct !== null && profileVal !== v && (
+                        <span className={`text-[6px] font-semibold ${profileVal! < v ? 'text-orange-400' : 'text-blue-400'}`}>
+                          {profileVal! > 0 ? '+' : ''}{profileVal!.toFixed(1)}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
@@ -1953,6 +2103,8 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                 const range = R;
                 const min = layer.oneWay ? 0 : -range;
                 const adjPct = layer.oneWay ? (adj / range) * 100 : ((adj + range) / (range * 2)) * 100;
+                const pProfVal = profilePlanned ? (profilePlanned as Record<string, number>)[layer.key] : null;
+                const pProfPct = pProfVal !== null ? (layer.oneWay ? (pProfVal / range) * 100 : ((pProfVal + range) / (range * 2)) * 100) : null;
                 const activeCats = vocabCats[layer.key] || {};
                 let posCnt = 0, negCnt = 0;
                 const vocab = SENSORY_VOCAB[layer.key];
@@ -2009,6 +2161,9 @@ export default function Diagnostic({ onClose }: { onClose: () => void }) {
                         <input type="range" min={min} max={range} step={1} value={adj} onChange={e => { setComposition(p => ({ ...p, [layer.key]: parseInt(e.target.value) })); if (SENSORY_VOCAB[layer.key] && autoComp[layer.key]) { setVocabCats(p => { const n = { ...p }; delete n[layer.key]; return n; }); setNotedDescriptors(p => ({ ...p, [layer.key]: null })); } }}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                         />
+                        {showPlanMarkers && pProfPct !== null && (
+                          <div className="absolute top-0 bottom-0 w-[3px] bg-amber-500 rounded-full z-30 shadow-sm" style={{ left: `${pProfPct}%` }} />
+                        )}
                       </div>
                       <span className={`text-[7px] w-8 shrink-0 ${!axisPresent[layer.key] ? 'text-slate-300 dark:text-slate-600 dark:text-slate-600' : adj > 0 ? 'text-orange-600 font-semibold' : 'text-slate-400 dark:text-slate-500 dark:text-slate-500'}`}>{axisPresent[layer.key] ? (adj > 0 ? `+${adj} ${layer.pos}` : layer.pos) : '—'}</span>
                     </div>

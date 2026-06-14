@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { FLAVORS } from './flavors';
 import { BIG_CATEGORIES, BIG_SUBGROUP_LABEL, TASTE_LABELS, type BigAromaCategory, type BigAromaSubgroup, type AromaFamily, type TasteProfile, type FlavorEntry, type CustomFlavorEntry, type SessionState, type SensoryProfile } from './types';
+import { tasteToComposition, COMPOSITION_AXES, COMPOSITION_LABELS } from './compositionMapping';
 import { loadCustomFlavors, saveCustomFlavors, createCustomFlavor, deleteCustomFlavor } from './customFlavors';
 import FlavorEditor from './FlavorEditor';
 import CoffeeOriginSelect from '../components/CoffeeOriginSelect';
@@ -59,13 +60,18 @@ function TasteBars({ taste }: { taste: FlavorEntry['taste'] }) {
 
 // ── Flavor card ──
 function FlavorCard({
-  flavor, checked, intensity, onToggleCheck, onIntensity, onEdit, onDelete,
+  flavor, checked, intensity, confidence, inCompare, compareMode, onToggleCheck, onIntensity, onConfidence, onCompareToggle, onEdit, onDelete,
 }: {
   flavor: FlavorEntry;
   checked: boolean;
   intensity: number;
+  confidence: number;
+  inCompare?: boolean;
+  compareMode?: boolean;
   onToggleCheck: (id: string) => void;
   onIntensity: (id: string, v: number) => void;
+  onConfidence: (id: string, v: number) => void;
+  onCompareToggle?: (id: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }) {
@@ -79,13 +85,15 @@ function FlavorCard({
   }, [flavor]);
 
   return (
-    <div className={`rounded-lg border ${checked ? 'border-violet-300 bg-violet-50/50' : 'border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800'} p-2`}>
+    <div className={`rounded-lg border p-2 cursor-pointer ${inCompare ? 'border-violet-500 ring-1 ring-violet-300 bg-violet-50' : checked ? 'border-violet-300 bg-violet-50/50' : 'border-slate-200 dark:border-slate-700 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800'}`}
+      onClick={compareMode ? () => onCompareToggle?.(flavor.id) : undefined}
+    >
       <div className="flex items-start gap-2">
         <input type="checkbox" checked={checked}
-          onChange={() => onToggleCheck(flavor.id)}
-          className="mt-0.5 accent-violet-600"
+          onChange={(e) => { e.stopPropagation(); onToggleCheck(flavor.id); }}
+          className="accent-violet-600"
         />
-        <button onClick={() => setExpanded(v => !v)} className="flex-1 text-left">
+        <button onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }} className="flex-1 text-left">
           <div className="flex items-center gap-1.5">
             <span className="text-sm">{flavor.emoji}</span>
             <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 dark:text-slate-300">{flavor.label}</span>
@@ -97,6 +105,13 @@ function FlavorCard({
             )}
             {flavor.subgroup && (
               <span className="text-[6px] text-slate-300 dark:text-slate-600 dark:text-slate-600 italic capitalize">{flavor.subgroup}</span>
+            )}
+            {checked && (
+              <span className="ml-auto flex gap-0.5">
+                {[1, 2, 3, 4, 5].map(c => (
+                  <span key={c} className={`text-[7px] ${c <= confidence ? (c >= 4 ? 'text-emerald-500' : c >= 3 ? 'text-amber-400' : c >= 2 ? 'text-slate-300' : 'text-red-400') : 'text-slate-200 dark:text-slate-700'}`}>●</span>
+                ))}
+              </span>
             )}
           </div>
             {expanded && (
@@ -117,27 +132,40 @@ function FlavorCard({
         <div className="flex flex-col items-center gap-0.5 shrink-0">
           {isCustom && (
             <div className="flex gap-1">
-              <button onClick={() => onEdit?.(flavor.id)}
+              <button onClick={(e) => { e.stopPropagation(); onEdit?.(flavor.id); }}
                 className="text-[7px] text-violet-400 hover:text-violet-600"
               >✎</button>
-              <button onClick={() => onDelete?.(flavor.id)}
+              <button onClick={(e) => { e.stopPropagation(); onDelete?.(flavor.id); }}
                 className="text-[7px] text-red-400 hover:text-red-600"
               >✕</button>
             </div>
           )}
-          <button onClick={() => setExpanded(v => !v)}
+          <button onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}
             className="text-[8px] text-slate-300 dark:text-slate-600 dark:text-slate-600 hover:text-slate-500 dark:text-slate-400 dark:text-slate-400"
           >{expanded ? '▲' : '▼'}</button>
         </div>
       </div>
       {checked && (
-        <div className="flex items-center gap-2 mt-1.5 pl-0.5">
-          <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500">Intensity:</span>
-          <input type="range" min={1} max={5} value={intensity}
-            onChange={e => onIntensity(flavor.id, parseInt(e.target.value))}
-            className="flex-1 h-1 accent-violet-500"
-          />
-          <span className="text-[9px] font-bold text-violet-600 w-3 text-right">{intensity}</span>
+        <div className="mt-1.5 pl-0.5 space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500">Intensity:</span>
+            <input type="range" min={1} max={5} value={intensity}
+              onChange={e => onIntensity(flavor.id, parseInt(e.target.value))}
+              className="flex-1 h-1 accent-violet-500"
+            />
+            <span className="text-[9px] font-bold text-violet-600 w-3 text-right">{intensity}</span>
+          </div>
+        <div className="flex gap-1">
+            <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500">Confidence:</span>
+            <div className="flex gap-0.5">
+              {[1, 2, 3, 4, 5].map(c => (
+                <button key={c} onClick={() => onConfidence(flavor.id, c)}
+                  className={`text-[9px] transition-colors ${c <= confidence ? (c >= 4 ? 'text-emerald-500' : c >= 3 ? 'text-amber-400' : c >= 2 ? 'text-slate-300' : 'text-red-400') : 'text-slate-200 dark:text-slate-700 dark:text-slate-700'}`}
+                >●</button>
+              ))}
+            </div>
+            <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 dark:text-slate-500 w-3 text-right">{confidence}</span>
+          </div>
         </div>
       )}
     </div>
@@ -154,7 +182,16 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
   const [editingFlavor, setEditingFlavor] = useState<CustomFlavorEntry | undefined>(undefined);
   const [smellLean, setSmellLean] = useState(50); // 0 = pure sour, 50 = balanced, 100 = pure sweet
   const [smellLeanEnabled, setSmellLeanEnabled] = useState(false);
+  const [showCompositionIndex, setShowCompositionIndex] = useState(true);
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
   const [saveProfileOpen, setSaveProfileOpen] = useState(false);
+  const handleCompareToggle = (id: string) => {
+    setCompareIds(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      return [...prev, id];
+    });
+  };
   const [sensoryProfileName, setSensoryProfileName] = useState('');
   const [spCoffeeName, setSpCoffeeName] = useState('');
   const [spRoaster, setSpRoaster] = useState('');
@@ -209,7 +246,7 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
         ...s,
         entries: {
           ...s.entries,
-          [id]: e ? { ...e, checked: !e.checked } : { checked: true, intensity: 3, notes: '' },
+          [id]: e ? { ...e, checked: !e.checked } : { checked: true, intensity: 3, notes: '', confidence: 3 },
         },
       };
     });
@@ -220,7 +257,17 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
       ...s,
       entries: {
         ...s.entries,
-        [id]: { ...s.entries[id] ?? { checked: true, intensity: 3, notes: '' }, intensity },
+        [id]: { ...s.entries[id] ?? { checked: true, intensity: 3, notes: '', confidence: 3 }, intensity },
+      },
+    }));
+  };
+
+  const setConfidence = (id: string, confidence: number) => {
+    updateSession(s => ({
+      ...s,
+      entries: {
+        ...s.entries,
+        [id]: { ...s.entries[id] ?? { checked: true, intensity: 3, notes: '', confidence: 3 }, confidence },
       },
     }));
   };
@@ -412,8 +459,22 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
     return catMap;
   }, [smellLeanFiltered]);
 
-  return (
-    <div className="max-w-2xl mx-auto px-3 py-4">
+  return (<>
+    <style>{`
+      .sensory-dark .text-slate-200 { color: #334155 !important; }
+      .sensory-dark .text-slate-300 { color: #1e293b !important; }
+      .sensory-dark .text-slate-400 { color: #0f172a !important; }
+      .sensory-dark .text-slate-500 { color: #0f172a !important; }
+      .sensory-dark .text-slate-600 { color: #020617 !important; }
+      @media (prefers-color-scheme: dark) {
+        .sensory-dark .text-slate-200,
+        .sensory-dark .text-slate-300,
+        .sensory-dark .text-slate-400,
+        .sensory-dark .text-slate-500,
+        .sensory-dark .text-slate-600 { color: revert !important; }
+      }
+    `}</style>
+    <div className="sensory-dark max-w-2xl mx-auto px-3 py-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -422,6 +483,9 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
           <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500">{allFlavors.length} entries · {customFlavors.length} custom</span>
         </div>
         <div className="flex items-center gap-1.5">
+          <button onClick={() => { setCompareMode(v => !v); if (compareMode) setCompareIds([]); }}
+            className={`text-[10px] font-bold px-2.5 py-1 rounded border-2 transition-all ${compareMode ? 'bg-violet-100 border-violet-400 text-violet-700 shadow-sm' : 'bg-white dark:bg-slate-800 dark:bg-slate-800 border-slate-300 dark:border-slate-600 dark:border-slate-600 text-slate-400 dark:text-slate-500 dark:text-slate-500 hover:border-violet-300 hover:text-violet-500'}`}
+          >{compareMode ? '⇄ Compare ON' : '⇄ Compare OFF'}</button>
           <button onClick={() => { setEditingFlavor(undefined); setShowEditor(true); }}
             className="text-[9px] font-semibold px-2 py-1 rounded border border-violet-200 text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors"
           >+ New flavor</button>
@@ -480,11 +544,16 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
       {checkedCount > 0 && (
         <div className="flex flex-wrap gap-1 mb-2">
           {checkedFlavorList.map(f => (
-            <div key={f.id} className="flex items-center gap-0.5 bg-violet-100 border border-violet-200 rounded px-1.5 py-0.5">
+            <div key={f.id} className={`flex items-center gap-0.5 rounded px-1.5 py-0.5 border transition-colors ${compareIds.includes(f.id) ? 'bg-violet-200 border-violet-400' : 'bg-violet-100 border-violet-200'}`}>
               <span className="text-[10px]">{f.emoji}</span>
               <span className="text-[7px] font-medium text-violet-700">{f.label}</span>
-              <button onClick={() => toggleCheck(f.id)}
-                className="text-[7px] text-violet-400 hover:text-red-500 dark:text-red-400 dark:text-red-400 pl-0.5"
+              {compareMode && (
+                <span onClick={(e) => { e.stopPropagation(); handleCompareToggle(f.id); }}
+                  className={`cursor-pointer text-[10px] font-bold select-none leading-none transition-colors ${compareIds.includes(f.id) ? 'text-violet-700' : 'text-violet-400 hover:text-violet-600'}`}
+                >⇄</span>
+              )}
+              <button onClick={() => { toggleCheck(f.id); setCompareIds(prev => prev.filter(id => id !== f.id)); }}
+                className="text-[7px] text-violet-400 hover:text-red-500 pl-0.5"
               >✕</button>
             </div>
           ))}
@@ -653,6 +722,49 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
         </div>
       )}
 
+      {/* Compare panel */}
+      {compareMode && (() => {
+        const compareFlavors = compareIds.map(id => allFlavors.find(f => f.id === id)).filter(Boolean) as FlavorEntry[];
+        return (
+          <div className="mb-2 bg-white dark:bg-slate-800 dark:bg-slate-800 border border-violet-200 rounded-lg p-2.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[7px] text-violet-500 font-semibold uppercase tracking-wider">⇄ Compare</span>
+              <span className="text-[6px] text-slate-400">⇄ tags to compare</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {compareFlavors.length === 0 ? (
+                <div className="flex-1 border border-dashed border-violet-200 rounded-lg p-2 min-h-[60px] flex items-center justify-center">
+                  <span className="text-[7px] text-slate-300 dark:text-slate-600 dark:text-slate-600 italic">⇄ a tag to compare</span>
+                </div>
+              ) : compareFlavors.map(f => {
+                const entry = session.entries[f.id];
+                const conf = entry?.confidence ?? 3;
+                return (
+                  <div key={f.id} className="flex-1 bg-violet-50/50 rounded-lg p-2">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-sm">{f.emoji}</span>
+                      <span className="text-[9px] font-semibold text-slate-700 dark:text-slate-300">{f.label}</span>
+                      <span className="ml-auto flex gap-0.5">
+                        {[1,2,3,4,5].map(c => (
+                          <button key={c} onClick={() => setConfidence(f.id, c)}
+                            className={`cursor-pointer text-[9px] ${c <= conf ? (c >= 4 ? 'text-emerald-500' : c >= 3 ? 'text-amber-400' : c >= 2 ? 'text-slate-300' : 'text-red-400') : 'text-slate-200 dark:text-slate-700'}`}
+                          >●</button>
+                        ))}
+                      </span>
+                    </div>
+                    <div className="text-[6px] text-slate-400 mb-1">
+                      <span className="px-1 rounded text-white" style={{ backgroundColor: BIG_CATEGORIES.find(c => c.key === f.bigCategory)?.color ?? '#999' }}>{BIG_CATEGORIES.find(c => c.key === f.bigCategory)?.label}</span>
+                      <span className="ml-1 italic">{f.subgroup}</span>
+                    </div>
+                    <TasteBars taste={f.taste} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Search */}
       <div className="relative mb-2">
         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-300 dark:text-slate-600 dark:text-slate-600">🔍</span>
@@ -672,7 +784,12 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
         <div className="mb-2 bg-gradient-to-br from-violet-50 to-white border border-violet-200 rounded-lg p-2.5">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[7px] text-violet-500 font-semibold uppercase tracking-wider">Sensory Composition</span>
-            <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500">{analysis.n} flavors · {analysis.wcrCount} WCR · {analysis.customCount} custom</span>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setShowCompositionIndex(v => !v)}
+                className={`text-[6px] font-semibold px-1.5 py-0.5 rounded border transition-colors ${showCompositionIndex ? 'bg-violet-100 border-violet-200 text-violet-600' : 'bg-white border-slate-200 text-slate-400'}`}
+              >📊 Index</button>
+              <span className="text-[7px] text-slate-400 dark:text-slate-500 dark:text-slate-500">{analysis.n} flavors · {analysis.wcrCount} WCR · {analysis.customCount} custom</span>
+            </div>
           </div>
 
           {/* Average taste profile */}
@@ -736,18 +853,21 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
               <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
                 <div className="h-full rounded-full bg-pink-400" style={{ width: `${analysis.vibrancyScore}%` }} />
               </div>
+              <span className="text-[6px] text-slate-400 dark:text-slate-500 italic mt-0.5 block">brightness from sour + sweet</span>
             </div>
             <div className="flex-1">
               <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Depth</span>
               <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
                 <div className="h-full rounded-full bg-orange-600" style={{ width: `${analysis.depthScore}%` }} />
               </div>
+              <span className="text-[6px] text-slate-400 dark:text-slate-500 italic mt-0.5 block">body from bitter + umami</span>
             </div>
           </div>
 
           {/* Three-pillar composition: Aroma / Flavor / Mouthfeel */}
           <div className="mt-2 mb-0.5">
             <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Three-pillar composition</span>
+            <span className="text-[6px] text-slate-400 dark:text-slate-500 italic ml-1">how this coffee expresses across sensory layers</span>
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
@@ -755,20 +875,71 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
               <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
                 <div className="h-full rounded-full bg-rose-400" style={{ width: `${analysis.vibrancyScore}%` }} />
               </div>
+              <span className="text-[5px] text-slate-400 dark:text-slate-500 italic mt-0.5 block">volatile fragrance & smell</span>
             </div>
             <div className="flex-1">
               <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Flavor</span>
               <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
                 <div className="h-full rounded-full bg-amber-400" style={{ width: `${analysis.flavorScore}%` }} />
               </div>
+              <span className="text-[5px] text-slate-400 dark:text-slate-500 italic mt-0.5 block">retronasal taste perception</span>
             </div>
             <div className="flex-1">
               <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase">Mouthfeel</span>
               <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
                 <div className="h-full rounded-full bg-orange-600" style={{ width: `${analysis.depthScore}%` }} />
               </div>
+              <span className="text-[5px] text-slate-400 dark:text-slate-500 italic mt-0.5 block">tactile body & texture</span>
             </div>
           </div>
+
+          {/* Predicted Composition Index */}
+          {showCompositionIndex && (() => {
+            const comp = tasteToComposition(analysis.avgTaste, {
+              categoryCounts: analysis.categoryCounts as Partial<Record<BigAromaCategory, number>> | undefined,
+              selectedCount: analysis.n,
+            });
+            return (
+              <div className="mt-2 mb-0.5">
+                <span className="text-[6px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Predicted Composition Index</span>
+                <span className="text-[6px] text-slate-400 dark:text-slate-500 italic ml-1">flavor profile mapped to 6 brewing axes</span>
+                <div className="flex flex-col gap-0.5 mt-1">
+                  {COMPOSITION_AXES.map(axis => {
+                    const val = comp[axis];
+                    const pct = ((val + 5) / 10) * 100;
+                    const absVal = Math.abs(val);
+                    const label = absVal <= 1.5 ? 'neutral' : absVal <= 3.5 ? val > 0 ? 'notable' : 'slight' : val > 0 ? 'intense' : 'low';
+                    return (
+                      <div key={axis} className="flex items-center gap-1">
+                        <span className="text-[6px] text-slate-400 dark:text-slate-500 w-12 text-right">{COMPOSITION_LABELS[axis]}</span>
+                        <div className="flex-1 h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden relative">
+                          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-300 dark:bg-slate-600" />
+                          <div className={`absolute h-full rounded-full transition-all ${
+                            val === 0 ? 'bg-slate-300 dark:bg-slate-600' :
+                            val < 0 ? 'bg-blue-400' : 'bg-orange-400'
+                          }`} style={{
+                            left: val < 0 ? `${pct}%` : '50%',
+                            width: val === 0 ? '2px' : `${Math.abs(val) / 5 * 50}%`,
+                            top: 0,
+                          }} />
+                          <div className="absolute top-0.5 w-2 h-2 rounded-full border-2 border-white shadow-sm z-10"
+                            style={{
+                              left: `calc(${pct}% - 4px)`,
+                              backgroundColor: val === 0 ? '#94a3b8' : val < 0 ? '#3b82f6' : '#f97316',
+                            }}
+                          />
+                        </div>
+                        <span className="text-[7px] text-slate-400 dark:text-slate-500 w-6 text-right font-mono">
+                          {val > 0 ? '+' : ''}{val.toFixed(1)}
+                        </span>
+                        <span className="text-[6px] text-slate-300 dark:text-slate-600 w-7">{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -782,7 +953,11 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
               <FlavorCard key={f.id} flavor={f}
                 checked={session.entries[f.id]?.checked ?? false}
                 intensity={session.entries[f.id]?.intensity ?? 3}
+                confidence={session.entries[f.id]?.confidence ?? 3}
+                inCompare={compareIds.includes(f.id)} compareMode={compareMode}
                 onToggleCheck={toggleCheck} onIntensity={setIntensity}
+                onConfidence={setConfidence}
+                onCompareToggle={handleCompareToggle}
                 onEdit={handleEditFlavor} onDelete={handleDeleteFlavor}
               />
             ))
@@ -828,7 +1003,11 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
                               <FlavorCard key={f.id} flavor={f}
                                 checked={session.entries[f.id]?.checked ?? false}
                                 intensity={session.entries[f.id]?.intensity ?? 3}
+                                confidence={session.entries[f.id]?.confidence ?? 3}
+                                inCompare={compareIds.includes(f.id)} compareMode={compareMode}
                                 onToggleCheck={toggleCheck} onIntensity={setIntensity}
+                                onConfidence={setConfidence}
+                                onCompareToggle={handleCompareToggle}
                                 onEdit={handleEditFlavor} onDelete={handleDeleteFlavor}
                               />
                             ))}
@@ -852,5 +1031,5 @@ export default function SensoryMemo({ onClose }: { onClose?: () => void }) {
         />
       )}
     </div>
-  );
+  </>);
 }

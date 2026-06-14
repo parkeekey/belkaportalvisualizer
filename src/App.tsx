@@ -1,6 +1,7 @@
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { ManualDigitizer, type ManualDigitizerHandle, type ManualDigitizerSessionProfile } from './components/ManualDigitizer';
 import { InfoModal } from './components/InfoModal';
+
 import { UltrakokiParserPage, type UltrakokiParserPageHandle, type UltrakokiParserSessionProfile } from './components/UltrakokiParserPage';
 import SetupProfile, { type SetupProfileHandle } from './components/SetupProfile';
 import CoffeeChat from './components/CoffeeChat';
@@ -28,6 +29,7 @@ interface BelkaWorkspaceProfile {
 
 function App() {
   const [showInfo, setShowInfo] = useState(false);
+
   const [chatOpen, setChatOpen] = useState(false);
   const digitizerRef = useRef<ManualDigitizerHandle>(null);
   const ultrakokiParserRef = useRef<UltrakokiParserPageHandle>(null);
@@ -196,6 +198,7 @@ function App() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:bg-slate-950">
       {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
 
+
       {layoutStyle === 'sidebar' && (
         <AppNav
           mode="sidebar"
@@ -231,9 +234,10 @@ function App() {
                   chatOpen={chatOpen}
                   onToggleChat={() => setChatOpen(v => !v)}
                   onShowInfo={() => setShowInfo(true)}
-                />
-              )}
-              {layoutStyle === 'sidebar' ? (
+        />
+      )}
+
+      {layoutStyle === 'sidebar' ? (
                 <>
                   <button
                     onClick={() => setChatOpen(v => !v)}

@@ -123,6 +123,7 @@ export interface SessionEntry {
   checked: boolean;
   intensity: number;
   notes: string;
+  confidence?: number; // 1–5, self-rated accuracy of this flavor ID
 }
 
 export interface SessionState {
